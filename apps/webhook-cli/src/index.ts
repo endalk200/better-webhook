@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { readdirSync, statSync } from "fs";
+import {
+  readdirSync,
+  statSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+} from "fs";
 import { join, resolve, basename, extname } from "path";
 import { loadWebhookFile } from "./loader.js";
 import { executeWebhook } from "./http.js";
-import { WebhookDefinition } from "./schema.js";
+import { WebhookDefinition, validateWebhookJSON } from "./schema.js";
+import { request } from "undici";
 
 const program = new Command();
 
 program
   .name("better-webhook")
-  .description("CLI for listing and executing predefined webhooks")
+  .description("CLI for listing, downloading and executing predefined webhooks")
   .version("0.2.0");
 
 function findWebhooksDir(cwd: string) {
@@ -27,6 +34,95 @@ function listWebhookFiles(dir: string) {
     return [];
   }
 }
+
+// Remote template index (expand over time)
+const TEMPLATE_REPO_BASE =
+  "https://raw.githubusercontent.com/endalk200/better-webhook/main";
+const TEMPLATES: Record<string, string> = {
+  "stripe-invoice.payment_succeeded":
+    "templates/stripe-invoice.payment_succeeded.json",
+};
+
+program
+  .command("download [name]")
+  .description(
+    "Download official webhook template(s) into the .webhooks directory. If no name is provided, prints available templates.",
+  )
+  .option("-a, --all", "Download all available templates")
+  .option("-f, --force", "Overwrite existing files if they exist")
+  .action(
+    async (
+      name: string | undefined,
+      opts: { all?: boolean; force?: boolean },
+    ) => {
+      if (name && opts.all) {
+        console.error("Specify either a template name or --all, not both.");
+        process.exitCode = 1;
+        return;
+      }
+
+      const cwd = process.cwd();
+      const dir = findWebhooksDir(cwd);
+      mkdirSync(dir, { recursive: true });
+
+      const toDownload = opts.all ? Object.keys(TEMPLATES) : name ? [name] : [];
+
+      if (!toDownload.length) {
+        console.log("Available templates:");
+        for (const key of Object.keys(TEMPLATES)) console.log(` - ${key}`);
+        console.log("Use: better-webhook download <name> OR --all");
+        return;
+      }
+
+      for (const templateName of toDownload) {
+        const rel = TEMPLATES[templateName];
+        if (!rel) {
+          console.error(
+            `Unknown template '${templateName}'. Run without arguments to list available templates.`,
+          );
+          continue;
+        }
+        const rawUrl = `${TEMPLATE_REPO_BASE}/${rel}`;
+        try {
+          const { statusCode, body } = await request(rawUrl);
+          if (statusCode !== 200) {
+            console.error(
+              `Failed to fetch ${templateName} (HTTP ${statusCode}) from ${rawUrl}`,
+            );
+            continue;
+          }
+          const text = await body.text();
+          let json: any;
+          try {
+            json = JSON.parse(text);
+          } catch (e: any) {
+            console.error(
+              `Invalid JSON in remote template ${templateName}: ${e.message}`,
+            );
+            continue;
+          }
+          try {
+            validateWebhookJSON(json, rawUrl);
+          } catch (e: any) {
+            console.error(`Template failed schema validation: ${e.message}`);
+            continue;
+          }
+          const fileName = basename(rel); // keep original filename
+          const destPath = join(dir, fileName);
+          if (existsSync(destPath) && !opts.force) {
+            console.log(
+              `Skipping existing file ${fileName} (use --force to overwrite)`,
+            );
+            continue;
+          }
+          writeFileSync(destPath, JSON.stringify(json, null, 2));
+          console.log(`Downloaded ${templateName} -> .webhooks/${fileName}`);
+        } catch (e: any) {
+          console.error(`Error downloading ${templateName}: ${e.message}`);
+        }
+      }
+    },
+  );
 
 program
   .command("list")
