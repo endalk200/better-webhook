@@ -2,7 +2,15 @@
   "extends": "@better-webhook/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": false,
+    "allowJs": false,
+    "sourceMap": false,
+    "removeComments": false,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": false,
+    "noEmitOnError": true
   },
   "include": ["src"]
 }
