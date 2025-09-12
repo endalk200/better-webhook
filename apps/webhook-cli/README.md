@@ -1,6 +1,6 @@
 # Better Webhook CLI
 
-Simple CLI for listing and executing predefined webhook JSON payloads stored in a local `.webhooks` directory.
+Simple CLI for listing, downloading, and executing predefined webhook JSON payloads stored in a local `.webhooks` directory.
 
 ## Install (workspace)
 
@@ -22,6 +22,37 @@ Or in dev (watch) mode:
 ```bash
 pnpm --filter @better-webhook/cli dev run sample
 ```
+
+## Install (published)
+
+After publishing to npm you can use:
+
+```bash
+npx @better-webhook/cli list
+# or (after global install)
+pnpm add -g @better-webhook/cli
+better-webhook list
+```
+
+The binary name is `better-webhook`.
+
+## Publishing (maintainers)
+
+1. Update version (pnpm):
+   ```bash
+   pnpm --filter @better-webhook/cli version patch   # or minor / major
+   ```
+2. Build & publish (ensure you are logged in with `npm whoami`):
+   ```bash
+   pnpm --filter @better-webhook/cli run build
+   cd apps/webhook-cli
+   npm publish --access public
+   ```
+   (The `prepublishOnly` script also builds/validates automatically.)
+3. Test install:
+   ```bash
+   pnpm dlx @better-webhook/cli@latest --help
+   ```
 
 ## Webhook File Schema
 
@@ -62,6 +93,14 @@ better-webhook list
 ```
 
 Lists all JSON filenames (without extension) in `.webhooks`.
+
+### Download Templates
+
+```
+better-webhook download                # lists available templates
+better-webhook download stripe-invoice.payment_succeeded
+better-webhook download --all
+```
 
 ### Run
 
