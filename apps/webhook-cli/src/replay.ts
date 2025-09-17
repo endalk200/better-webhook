@@ -1,8 +1,9 @@
-import { readFileSync, readdirSync, statSync } from "fs";
-import { join, extname } from "path";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { CapturedWebhook } from "./capture.js";
 import { executeWebhook } from "./http.js";
 import { WebhookDefinition } from "./schema.js";
+import { listJsonFiles } from "./utils/index.js";
 
 export interface ReplayOptions {
   url?: string;
@@ -18,14 +19,11 @@ export class WebhookReplayer {
    */
   listCaptured(): Array<{ file: string; capture: CapturedWebhook }> {
     try {
-      const files = readdirSync(this.capturesDir)
-        .filter(f => statSync(join(this.capturesDir, f)).isFile() && extname(f) === ".json")
-        .sort() // Sort by filename (which includes timestamp)
-        .reverse(); // Most recent first
+      const files = listJsonFiles(this.capturesDir).sort().reverse();
 
-      return files.map(file => ({
+      return files.map((file) => ({
         file,
-        capture: this.loadCapture(join(this.capturesDir, file))
+        capture: this.loadCapture(join(this.capturesDir, file)),
       }));
     } catch {
       return [];
@@ -37,35 +35,45 @@ export class WebhookReplayer {
    */
   loadCapture(filePathOrId: string): CapturedWebhook {
     let filepath: string;
-    
+
     if (filePathOrId.includes("/") || filePathOrId.endsWith(".json")) {
       filepath = filePathOrId;
     } else {
       // Try to find by ID
-      const files = readdirSync(this.capturesDir).filter(f => f.includes(filePathOrId));
+      const files = listJsonFiles(this.capturesDir).filter((f) =>
+        f.includes(filePathOrId)
+      );
       if (files.length === 0) {
         throw new Error(`No capture found with ID: ${filePathOrId}`);
       }
       if (files.length > 1) {
-        throw new Error(`Multiple captures found with ID ${filePathOrId}: ${files.join(", ")}`);
+        throw new Error(
+          `Multiple captures found with ID ${filePathOrId}: ${files.join(", ")}`
+        );
       }
-      filepath = join(this.capturesDir, files[0]);
+      filepath = join(this.capturesDir, files[0]!);
     }
 
     try {
       const content = readFileSync(filepath, "utf8");
       return JSON.parse(content);
     } catch (error: any) {
-      throw new Error(`Failed to load capture from ${filepath}: ${error.message}`);
+      throw new Error(
+        `Failed to load capture from ${filepath}: ${error.message}`
+      );
     }
   }
 
   /**
    * Replay a captured webhook to a target URL
    */
-  async replay(captureId: string, targetUrl: string, options: ReplayOptions = {}) {
+  async replay(
+    captureId: string,
+    targetUrl: string,
+    options: ReplayOptions = {}
+  ) {
     const capture = this.loadCapture(captureId);
-    
+
     // Convert captured webhook to WebhookDefinition format
     const webhookDef: WebhookDefinition = {
       url: options.url || targetUrl,
@@ -90,9 +98,12 @@ export class WebhookReplayer {
   /**
    * Convert captured webhook to template format
    */
-  captureToTemplate(captureId: string, templateUrl?: string): WebhookDefinition {
+  captureToTemplate(
+    captureId: string,
+    templateUrl?: string
+  ): WebhookDefinition {
     const capture = this.loadCapture(captureId);
-    
+
     return {
       url: templateUrl || "http://localhost:3000/webhook",
       method: capture.method as any,
@@ -104,21 +115,23 @@ export class WebhookReplayer {
   /**
    * Convert captured headers to template format
    */
-  private convertHeaders(headers: Record<string, string | string[]>): Array<{ key: string; value: string }> {
+  private convertHeaders(
+    headers: Record<string, string | string[]>
+  ): Array<{ key: string; value: string }> {
     const result: Array<{ key: string; value: string }> = [];
-    
+
     for (const [key, value] of Object.entries(headers)) {
       // Skip certain headers that shouldn't be replayed
       const skipHeaders = [
         "host",
-        "content-length", 
+        "content-length",
         "connection",
         "accept-encoding",
         "user-agent",
         "x-forwarded-for",
         "x-forwarded-proto",
       ];
-      
+
       if (skipHeaders.includes(key.toLowerCase())) {
         continue;
       }
@@ -126,7 +139,7 @@ export class WebhookReplayer {
       if (Array.isArray(value)) {
         // For array values, create separate entries or join them
         if (value.length === 1) {
-          result.push({ key, value: value[0] });
+          result.push({ key, value: value[0]! });
         } else {
           result.push({ key, value: value.join(", ") });
         }
@@ -134,7 +147,7 @@ export class WebhookReplayer {
         result.push({ key, value });
       }
     }
-    
+
     return result;
   }
 
@@ -146,7 +159,7 @@ export class WebhookReplayer {
     const date = new Date(capture.timestamp);
     const bodySize = capture.rawBody ? capture.rawBody.length : 0;
     const headerCount = Object.keys(capture.headers).length;
-    
+
     return [
       `ID: ${capture.id}`,
       `Date: ${date.toLocaleString()}`,

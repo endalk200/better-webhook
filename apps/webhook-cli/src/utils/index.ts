@@ -6,16 +6,20 @@ export function findWebhooksDir(cwd: string) {
 }
 
 export function listWebhookFiles(dir: string) {
-  try {
-    const entries = readdirSync(dir);
-    return entries.filter(
-      (e) => statSync(join(dir, e)).isFile() && extname(e) === ".json",
-    );
-  } catch {
-    return [];
-  }
+  return listJsonFiles(dir);
 }
 
 export function findCapturesDir(cwd: string) {
   return resolve(cwd, ".webhook-captures");
+}
+
+export function listJsonFiles(dir: string) {
+  try {
+    const entries = readdirSync(dir);
+    return entries.filter(
+      (e) => statSync(join(dir, e)).isFile() && extname(e) === ".json"
+    );
+  } catch {
+    return [];
+  }
 }

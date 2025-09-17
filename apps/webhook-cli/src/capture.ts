@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
+import { randomUUID } from "crypto";
 
 export interface CapturedWebhook {
   id: string;
@@ -25,35 +26,77 @@ export class WebhookCaptureServer {
     }
   }
 
-  start(port: number = 3001): Promise<number> {
+  start(startPort: number = 3001, maxAttempts: number = 20): Promise<number> {
     return new Promise((resolve, reject) => {
-      this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-        try {
-          await this.handleRequest(req, res);
-        } catch (error) {
-          console.error("Error handling request:", error);
-          res.statusCode = 500;
-          res.end("Internal Server Error");
-        }
-      });
+      // Normalize starting port
+      if (!Number.isInteger(startPort) || startPort < 0 || startPort > 65535) {
+        startPort = 3001;
+      }
 
-      this.server.on("error", (err: any) => {
-        if (err.code === "EADDRINUSE") {
-          // Try next port
-          this.server?.listen(port + 1);
-        } else {
-          reject(err);
-        }
-      });
+      let attempt = 0;
+      const tryListen = (portToTry: number) => {
+        this.server = createServer(
+          async (req: IncomingMessage, res: ServerResponse) => {
+            try {
+              await this.handleRequest(req, res);
+            } catch (error) {
+              console.error("Error handling request:", error);
+              res.statusCode = 500;
+              res.end("Internal Server Error");
+            }
+          }
+        );
 
-      this.server.listen(port, () => {
-        const actualPort = (this.server?.address() as any)?.port || port;
-        console.log(`🎣 Webhook capture server running on http://localhost:${actualPort}`);
-        console.log(`📁 Captured webhooks will be saved to: ${this.capturesDir}`);
-        console.log("💡 Send webhooks to any path on this server to capture them");
-        console.log("⏹️  Press Ctrl+C to stop the server");
-        resolve(actualPort);
-      });
+        const onError = (err: any) => {
+          this.server?.off("error", onError);
+          this.server?.off("listening", onListening);
+          if (err && err.code === "EADDRINUSE") {
+            attempt += 1;
+            if (startPort === 0) {
+              // If port 0 was requested, let Node choose a free port once; do not retry
+              reject(new Error("Failed to bind to an ephemeral port."));
+              return;
+            }
+            if (attempt >= maxAttempts) {
+              reject(
+                new Error(
+                  `All ${maxAttempts} port attempts starting at ${startPort} are in use.`
+                )
+              );
+              return;
+            }
+            const nextPort = startPort + attempt;
+            tryListen(nextPort);
+          } else {
+            reject(err);
+          }
+        };
+
+        const onListening = () => {
+          this.server?.off("error", onError);
+          this.server?.off("listening", onListening);
+          const address = this.server?.address() as any;
+          const actualPort = address?.port ?? portToTry;
+          console.log(
+            `🎣 Webhook capture server running on http://localhost:${actualPort}`
+          );
+          console.log(
+            `📁 Captured webhooks will be saved to: ${this.capturesDir}`
+          );
+          console.log(
+            "💡 Send webhooks to any path on this server to capture them"
+          );
+          console.log("⏹️  Press Ctrl+C to stop the server");
+          resolve(actualPort);
+        };
+
+        this.server.on("error", onError);
+        this.server.on("listening", onListening);
+        this.server.listen(portToTry);
+      };
+
+      // If port is 0, let the OS pick a free port
+      tryListen(startPort === 0 ? 0 : startPort);
     });
   }
 
@@ -70,15 +113,18 @@ export class WebhookCaptureServer {
     });
   }
 
-  private async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  private async handleRequest(
+    req: IncomingMessage,
+    res: ServerResponse
+  ): Promise<void> {
     const timestamp = new Date().toISOString();
     const id = this.generateId();
-    
+
     // Parse URL and query parameters
     const url = req.url || "/";
     const urlParts = new URL(url, `http://${req.headers.host || "localhost"}`);
     const query: Record<string, string | string[]> = {};
-    
+
     for (const [key, value] of urlParts.searchParams.entries()) {
       if (query[key]) {
         if (Array.isArray(query[key])) {
@@ -94,7 +140,7 @@ export class WebhookCaptureServer {
     // Read request body
     const chunks: Buffer[] = [];
     req.on("data", (chunk) => chunks.push(chunk));
-    
+
     await new Promise<void>((resolve) => {
       req.on("end", () => resolve());
     });
@@ -125,10 +171,12 @@ export class WebhookCaptureServer {
     // Save to file
     const filename = `${timestamp.replace(/[:.]/g, "-")}_${id}.json`;
     const filepath = join(this.capturesDir, filename);
-    
+
     try {
       writeFileSync(filepath, JSON.stringify(captured, null, 2));
-      console.log(`📦 Captured ${req.method} ${urlParts.pathname} -> ${filename}`);
+      console.log(
+        `📦 Captured ${req.method} ${urlParts.pathname} -> ${filename}`
+      );
     } catch (error) {
       console.error(`❌ Failed to save capture: ${error}`);
     }
@@ -137,16 +185,25 @@ export class WebhookCaptureServer {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.end(
-      JSON.stringify({
-        message: "Webhook captured successfully",
-        id,
-        timestamp,
-        file: filename,
-      }, null, 2)
+      JSON.stringify(
+        {
+          message: "Webhook captured successfully",
+          id,
+          timestamp,
+          file: filename,
+        },
+        null,
+        2
+      )
     );
   }
 
   private generateId(): string {
-    return Math.random().toString(36).substring(2, 10);
+    try {
+      return randomUUID();
+    } catch {
+      // Fallback, extremely unlikely path
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    }
   }
 }
