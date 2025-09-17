@@ -7,10 +7,15 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "test": "turbo run test",
     "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version && pnpm install --lockfile-only",
     "release:version": "changeset version",
     "release:publish": "turbo run build && changeset publish",
-    "release": "changeset version && pnpm install && turbo run build && changeset publish"
+    "release": "changeset version && pnpm install && turbo run build && changeset publish",
+    "prerelease": "pnpm build && pnpm check-types && pnpm lint",
+    "clean": "turbo run clean"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",

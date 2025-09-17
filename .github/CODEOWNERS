@@ -1,0 +1,12 @@
+# Global code owners
+* @endalk200
+
+# Release-related files require maintainer approval
+/.changeset/ @endalk200
+/apps/*/package.json @endalk200
+/apps/*/CHANGELOG.md @endalk200
+/.github/workflows/ @endalk200
+
+# CLI package specific
+/apps/webhook-cli/ @endalk200
+
