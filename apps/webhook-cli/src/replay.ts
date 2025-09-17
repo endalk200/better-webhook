@@ -51,7 +51,7 @@ export class WebhookReplayer {
           `Multiple captures found with ID ${filePathOrId}: ${files.join(", ")}`
         );
       }
-      filepath = join(this.capturesDir, files[0]!);
+      filepath = join(this.capturesDir, files[0] ?? "");
     }
 
     try {
@@ -139,7 +139,7 @@ export class WebhookReplayer {
       if (Array.isArray(value)) {
         // For array values, create separate entries or join them
         if (value.length === 1) {
-          result.push({ key, value: value[0]! });
+          result.push({ key, value: value[0] ?? "" });
         } else {
           result.push({ key, value: value.join(", ") });
         }
