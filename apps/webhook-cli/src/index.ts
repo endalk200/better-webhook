@@ -9,9 +9,6 @@ const program = new Command()
   .description("CLI for listing, downloading and executing predefined webhooks")
   .version("0.2.0");
 
-program
-  .addCommand(webhooks)
-  .addCommand(capture)
-  .addCommand(replay);
+program.addCommand(webhooks).addCommand(capture).addCommand(replay);
 
 program.parseAsync(process.argv);

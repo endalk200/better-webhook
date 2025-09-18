@@ -1,9 +1,8 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { CapturedWebhook } from "./capture.js";
-import { executeWebhook } from "./http.js";
 import { WebhookDefinition } from "./schema.js";
-import { listJsonFiles } from "./utils/index.js";
+import { executeWebhook, listJsonFiles } from "./utils/index.js";
 
 export interface ReplayOptions {
   url?: string;
@@ -41,14 +40,14 @@ export class WebhookReplayer {
     } else {
       // Try to find by ID
       const files = listJsonFiles(this.capturesDir).filter((f) =>
-        f.includes(filePathOrId)
+        f.includes(filePathOrId),
       );
       if (files.length === 0) {
         throw new Error(`No capture found with ID: ${filePathOrId}`);
       }
       if (files.length > 1) {
         throw new Error(
-          `Multiple captures found with ID ${filePathOrId}: ${files.join(", ")}`
+          `Multiple captures found with ID ${filePathOrId}: ${files.join(", ")}`,
         );
       }
       filepath = join(this.capturesDir, files[0] ?? "");
@@ -59,7 +58,7 @@ export class WebhookReplayer {
       return JSON.parse(content);
     } catch (error: any) {
       throw new Error(
-        `Failed to load capture from ${filepath}: ${error.message}`
+        `Failed to load capture from ${filepath}: ${error.message}`,
       );
     }
   }
@@ -70,7 +69,7 @@ export class WebhookReplayer {
   async replay(
     captureId: string,
     targetUrl: string,
-    options: ReplayOptions = {}
+    options: ReplayOptions = {},
   ) {
     const capture = this.loadCapture(captureId);
 
@@ -100,7 +99,7 @@ export class WebhookReplayer {
    */
   captureToTemplate(
     captureId: string,
-    templateUrl?: string
+    templateUrl?: string,
   ): WebhookDefinition {
     const capture = this.loadCapture(captureId);
 
@@ -116,7 +115,7 @@ export class WebhookReplayer {
    * Convert captured headers to template format
    */
   private convertHeaders(
-    headers: Record<string, string | string[]>
+    headers: Record<string, string | string[]>,
   ): Array<{ key: string; value: string }> {
     const result: Array<{ key: string; value: string }> = [];
 

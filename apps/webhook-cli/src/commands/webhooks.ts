@@ -1,21 +1,17 @@
 import { Command } from "commander";
 import { join, resolve, basename } from "path";
 import { statSync } from "fs";
-import { findWebhooksDir, listWebhookFiles } from "../utils/index.js";
+import {
+  executeWebhook,
+  findWebhooksDir,
+  listWebhookFiles,
+  loadWebhookFile,
+} from "../utils/index.js";
 import { WebhookDefinition } from "../schema.js";
-import { loadWebhookFile } from "../loader.js";
-import { executeWebhook } from "../http.js";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { request } from "undici";
 import { validateWebhookJSON } from "../schema.js";
-
-// For download subcommand - Remote template index
-const TEMPLATE_REPO_BASE =
-  "https://raw.githubusercontent.com/endalk200/better-webhook/main";
-const TEMPLATES: Record<string, string> = {
-  "stripe-invoice.payment_succeeded":
-    "templates/stripe-invoice.payment_succeeded.json",
-};
+import { TEMPLATE_REPO_BASE, TEMPLATES } from "../config.js";
 
 interface RunOptions {
   url?: string;
@@ -43,6 +39,7 @@ const listCommand = new Command()
       console.log("No webhook definitions found in .webhooks");
       return;
     }
+
     files.forEach((f) => console.log(basename(f, ".json")));
   });
 
@@ -156,6 +153,7 @@ const downloadCommand = new Command()
           );
           continue;
         }
+
         const rawUrl = `${TEMPLATE_REPO_BASE}/${rel}`;
         try {
           const { statusCode, body } = await request(rawUrl);
@@ -165,6 +163,7 @@ const downloadCommand = new Command()
             );
             continue;
           }
+
           const text = await body.text();
           let json: any;
           try {
@@ -181,6 +180,7 @@ const downloadCommand = new Command()
             console.error(`Template failed schema validation: ${e.message}`);
             continue;
           }
+
           const fileName = basename(rel); // keep original filename
           const destPath = join(dir, fileName);
           if (existsSync(destPath) && !opts.force) {
@@ -205,4 +205,3 @@ export const webhooks = new Command()
   .addCommand(listCommand)
   .addCommand(runCommand)
   .addCommand(downloadCommand);
-

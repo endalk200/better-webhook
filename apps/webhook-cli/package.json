@@ -16,8 +16,9 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup --format cjs,esm --dts",
     "dev": "tsup --watch",
+    "lint": "tsc",
     "prepublishOnly": "pnpm run build",
     "prepare": "pnpm run build"
   },
