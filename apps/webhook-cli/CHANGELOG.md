@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 0.3.1
+
+### Patch Changes
+
+- Add better DX when working with webhooks run and replay commands
+
 ## 0.3.0
 
 ### Minor Changes
