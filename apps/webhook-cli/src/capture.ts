@@ -1,4 +1,4 @@
-import { createServer, IncomingMessage, ServerResponse } from "http";
+import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -44,7 +44,7 @@ export class WebhookCaptureServer {
               res.statusCode = 500;
               res.end("Internal Server Error");
             }
-          }
+          },
         );
 
         const onError = (err: any) => {
@@ -60,8 +60,8 @@ export class WebhookCaptureServer {
             if (attempt >= maxAttempts) {
               reject(
                 new Error(
-                  `All ${maxAttempts} port attempts starting at ${startPort} are in use.`
-                )
+                  `All ${maxAttempts} port attempts starting at ${startPort} are in use.`,
+                ),
               );
               return;
             }
@@ -78,13 +78,13 @@ export class WebhookCaptureServer {
           const address = this.server?.address() as any;
           const actualPort = address?.port ?? portToTry;
           console.log(
-            `🎣 Webhook capture server running on http://localhost:${actualPort}`
+            `🎣 Webhook capture server running on http://localhost:${actualPort}`,
           );
           console.log(
-            `📁 Captured webhooks will be saved to: ${this.capturesDir}`
+            `📁 Captured webhooks will be saved to: ${this.capturesDir}`,
           );
           console.log(
-            "💡 Send webhooks to any path on this server to capture them"
+            "💡 Send webhooks to any path on this server to capture them",
           );
           console.log("⏹️  Press Ctrl+C to stop the server");
           resolve(actualPort);
@@ -115,7 +115,7 @@ export class WebhookCaptureServer {
 
   private async handleRequest(
     req: IncomingMessage,
-    res: ServerResponse
+    res: ServerResponse,
   ): Promise<void> {
     const timestamp = new Date().toISOString();
     const id = this.generateId();
@@ -175,7 +175,7 @@ export class WebhookCaptureServer {
     try {
       writeFileSync(filepath, JSON.stringify(captured, null, 2));
       console.log(
-        `📦 Captured ${req.method} ${urlParts.pathname} -> ${filename}`
+        `📦 Captured ${req.method} ${urlParts.pathname} -> ${filename}`,
       );
     } catch (error) {
       console.error(`❌ Failed to save capture: ${error}`);
@@ -193,8 +193,8 @@ export class WebhookCaptureServer {
           file: filename,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
   }
 

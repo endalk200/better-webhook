@@ -7,7 +7,7 @@ import {
   listWebhookFiles,
   loadWebhookFile,
 } from "../utils/index.js";
-import { WebhookDefinition } from "../schema.js";
+import { type WebhookDefinition } from "../schema.js";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { request } from "undici";
 import { validateWebhookJSON } from "../schema.js";

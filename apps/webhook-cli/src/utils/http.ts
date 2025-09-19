@@ -1,5 +1,5 @@
 import { request } from "undici";
-import { WebhookDefinition } from "../schema.js";
+import { type WebhookDefinition } from "../schema.js";
 
 export interface ExecutionResult {
   status: number;

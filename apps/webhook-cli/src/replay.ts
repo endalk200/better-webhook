@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { CapturedWebhook } from "./capture.js";
-import { WebhookDefinition } from "./schema.js";
+import { type CapturedWebhook } from "./capture.js";
+import { type WebhookDefinition } from "./schema.js";
 import { executeWebhook, listJsonFiles } from "./utils/index.js";
 
 export interface ReplayOptions {

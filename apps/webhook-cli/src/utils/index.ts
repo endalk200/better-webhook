@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "fs";
 import { join, resolve, extname } from "path";
-import { validateWebhookJSON, WebhookDefinition } from "../schema.js";
+import { validateWebhookJSON, type WebhookDefinition } from "../schema.js";
 
 export function findWebhooksDir(cwd: string) {
   return resolve(cwd, ".webhooks");
