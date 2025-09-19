@@ -12,6 +12,8 @@ import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { request } from "undici";
 import { validateWebhookJSON } from "../schema.js";
 import { TEMPLATE_REPO_BASE, TEMPLATES } from "../config.js";
+import prompts from "prompts";
+import ora from "ora";
 
 interface RunOptions {
   url?: string;
@@ -36,40 +38,168 @@ const listCommand = new Command()
     const dir = findWebhooksDir(cwd);
     const files = listWebhookFiles(dir);
     if (!files.length) {
-      console.log("No webhook definitions found in .webhooks");
+      console.log("📭 No webhook definitions found in .webhooks directory.");
+      console.log("💡 Create webhook files or download templates with:");
+      console.log("   better-webhook webhooks download --all");
       return;
     }
 
-    files.forEach((f) => console.log(basename(f, ".json")));
+    console.log("Available webhook definitions:");
+    files.forEach((f) => console.log(`  • ${basename(f, ".json")}`));
   });
 
 // Run subcommand
 const runCommand = new Command()
   .name("run")
-  .argument("<nameOrPath>", "Webhook name (in .webhooks) or path to JSON file")
+  .argument(
+    "[nameOrPath]",
+    "Webhook name (in .webhooks) or path to JSON file (optional - will prompt if not provided)"
+  )
   .description(
-    "Run a webhook by name (in .webhooks) or by providing a path to a JSON file",
+    "Run a webhook by name (in .webhooks) or by providing a path to a JSON file"
   )
   .option("-u, --url <url>", "Override destination URL")
   .option("-m, --method <method>", "Override HTTP method")
-  .action(async (nameOrPath: string, options: RunOptions) => {
+  .action(async (nameOrPath?: string, options: RunOptions = {}) => {
     const cwd = process.cwd();
+    const webhooksDir = findWebhooksDir(cwd);
+
+    let selectedNameOrPath = nameOrPath;
+
+    // If no nameOrPath provided, show selection prompt
+    if (!selectedNameOrPath) {
+      const spinner = ora("Loading available webhooks...").start();
+      const localFiles = listWebhookFiles(webhooksDir);
+      const templates = Object.keys(TEMPLATES);
+      spinner.stop();
+
+      if (localFiles.length === 0 && templates.length === 0) {
+        console.log("📭 No webhook definitions found.");
+        console.log(
+          "💡 Create webhook files in .webhooks directory or download templates with:"
+        );
+        console.log("   better-webhook webhooks download --all");
+        return;
+      }
+
+      const choices: Array<{
+        title: string;
+        description: string;
+        value: string;
+        type?: string;
+      }> = [];
+
+      // Add local webhook files
+      if (localFiles.length > 0) {
+        choices.push(
+          {
+            title: "--- Local Webhooks (.webhooks) ---",
+            description: "",
+            value: "",
+            type: "separator",
+          },
+          ...localFiles.map((file) => ({
+            title: basename(file, ".json"),
+            description: `Local file: ${file}`,
+            value: basename(file, ".json"),
+            type: "local" as const,
+          }))
+        );
+      }
+
+      // Add templates
+      if (templates.length > 0) {
+        choices.push(
+          {
+            title: "--- Available Templates ---",
+            description: "",
+            value: "",
+            type: "separator",
+          },
+          ...templates.map((template) => ({
+            title: template,
+            description: `Template: ${TEMPLATES[template]}`,
+            value: template,
+            type: "template" as const,
+          }))
+        );
+      }
+
+      const response = await prompts({
+        type: "select",
+        name: "webhook",
+        message: "Select a webhook to run:",
+        choices: choices.filter((choice) => choice.value !== ""), // Remove separators for selection
+        initial: 0,
+      });
+
+      if (!response.webhook) {
+        console.log("❌ No webhook selected. Exiting.");
+        process.exitCode = 1;
+        return;
+      }
+
+      selectedNameOrPath = response.webhook;
+
+      // If template selected, download it first
+      if (selectedNameOrPath && templates.includes(selectedNameOrPath)) {
+        const downloadSpinner = ora(
+          `Downloading template: ${selectedNameOrPath}...`
+        ).start();
+        try {
+          const rel = TEMPLATES[selectedNameOrPath]!;
+          const rawUrl = `${TEMPLATE_REPO_BASE}/${rel}`;
+          const { statusCode, body } = await request(rawUrl);
+
+          if (statusCode !== 200) {
+            throw new Error(`HTTP ${statusCode}`);
+          }
+
+          const text = await body.text();
+          const json = JSON.parse(text);
+          validateWebhookJSON(json, rawUrl);
+
+          // Create webhooks directory if it doesn't exist
+          mkdirSync(webhooksDir, { recursive: true });
+
+          const fileName = basename(rel);
+          const destPath = join(webhooksDir, fileName);
+          writeFileSync(destPath, JSON.stringify(json, null, 2));
+
+          selectedNameOrPath = basename(fileName, ".json");
+          downloadSpinner.succeed(`Downloaded template: ${selectedNameOrPath}`);
+        } catch (error: any) {
+          downloadSpinner.fail(`Failed to download template: ${error.message}`);
+          process.exitCode = 1;
+          return;
+        }
+      }
+    }
+
+    // At this point selectedNameOrPath should never be undefined
+    if (!selectedNameOrPath) {
+      console.error("❌ No webhook selected.");
+      process.exitCode = 1;
+      return;
+    }
+
     let filePath: string;
     if (
-      nameOrPath.endsWith(".json") &&
-      !nameOrPath.includes("/") &&
-      !nameOrPath.startsWith(".")
+      selectedNameOrPath.endsWith(".json") &&
+      !selectedNameOrPath.includes("/") &&
+      !selectedNameOrPath.startsWith(".")
     ) {
-      filePath = join(findWebhooksDir(cwd), nameOrPath);
+      filePath = join(webhooksDir, selectedNameOrPath);
     } else {
       const candidate = join(
-        findWebhooksDir(cwd),
-        nameOrPath + (nameOrPath.endsWith(".json") ? "" : ".json"),
+        webhooksDir,
+        selectedNameOrPath +
+          (selectedNameOrPath.endsWith(".json") ? "" : ".json")
       );
       if (statExists(candidate)) {
         filePath = candidate;
       } else {
-        filePath = resolve(cwd, nameOrPath);
+        filePath = resolve(cwd, selectedNameOrPath);
       }
     }
 
@@ -92,8 +222,13 @@ const runCommand = new Command()
     if (options.method)
       def = { ...def, method: options.method.toUpperCase() as any };
 
+    const executeSpinner = ora(
+      `Executing webhook: ${basename(filePath, ".json")}...`
+    ).start();
     try {
       const result = await executeWebhook(def);
+      executeSpinner.succeed("Webhook executed successfully!");
+
       console.log("Status:", result.status);
       console.log("Headers:");
       for (const [k, v] of Object.entries(result.headers)) {
@@ -107,7 +242,8 @@ const runCommand = new Command()
         console.log(result.bodyText);
       }
     } catch (err: any) {
-      console.error("Request failed:", err.message);
+      executeSpinner.fail("Request failed");
+      console.error("Error:", err.message);
       process.exitCode = 1;
     }
   });
@@ -117,14 +253,14 @@ const downloadCommand = new Command()
   .name("download")
   .argument("[name]", "Template name to download")
   .description(
-    "Download official webhook template(s) into the .webhooks directory. If no name is provided, prints available templates.",
+    "Download official webhook template(s) into the .webhooks directory. If no name is provided, prints available templates."
   )
   .option("-a, --all", "Download all available templates")
   .option("-f, --force", "Overwrite existing files if they exist")
   .action(
     async (
       name: string | undefined,
-      opts: { all?: boolean; force?: boolean },
+      opts: { all?: boolean; force?: boolean }
     ) => {
       if (name && opts.all) {
         console.error("Specify either a template name or --all, not both.");
@@ -149,7 +285,7 @@ const downloadCommand = new Command()
         const rel = TEMPLATES[templateName];
         if (!rel) {
           console.error(
-            `Unknown template '${templateName}'. Run without arguments to list available templates.`,
+            `Unknown template '${templateName}'. Run without arguments to list available templates.`
           );
           continue;
         }
@@ -159,7 +295,7 @@ const downloadCommand = new Command()
           const { statusCode, body } = await request(rawUrl);
           if (statusCode !== 200) {
             console.error(
-              `Failed to fetch ${templateName} (HTTP ${statusCode}) from ${rawUrl}`,
+              `Failed to fetch ${templateName} (HTTP ${statusCode}) from ${rawUrl}`
             );
             continue;
           }
@@ -170,7 +306,7 @@ const downloadCommand = new Command()
             json = JSON.parse(text);
           } catch (e: any) {
             console.error(
-              `Invalid JSON in remote template ${templateName}: ${e.message}`,
+              `Invalid JSON in remote template ${templateName}: ${e.message}`
             );
             continue;
           }
@@ -185,7 +321,7 @@ const downloadCommand = new Command()
           const destPath = join(dir, fileName);
           if (existsSync(destPath) && !opts.force) {
             console.log(
-              `Skipping existing file ${fileName} (use --force to overwrite)`,
+              `Skipping existing file ${fileName} (use --force to overwrite)`
             );
             continue;
           }
@@ -195,7 +331,7 @@ const downloadCommand = new Command()
           console.error(`Error downloading ${templateName}: ${e.message}`);
         }
       }
-    },
+    }
   );
 
 // Main webhooks parent command
