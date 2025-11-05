@@ -1,0 +1,59 @@
+{
+  "name": "@better-webhook/core",
+  "version": "0.1.0",
+  "description": "Core webhook handling functionality for better-webhook",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo",
+    "prepublishOnly": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "webhook",
+    "webhook-handler",
+    "http",
+    "events"
+  ],
+  "license": "MIT",
+  "author": "Endalk <endalk200>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@better-webhook/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.6.3"
+  }
+}

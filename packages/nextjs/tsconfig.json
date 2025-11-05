@@ -1,0 +1,19 @@
+{
+  "extends": "@better-webhook/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declarationMap": false,
+    "allowJs": false,
+    "sourceMap": false,
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": false,
+    "noEmitOnError": true,
+    "composite": false,
+    "incremental": false,
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}
