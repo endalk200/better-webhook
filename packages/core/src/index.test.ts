@@ -12,6 +12,7 @@ import {
   customWebhook,
   type Provider,
   type Headers,
+  type HandlerContext,
 } from "./index.js";
 
 // ============================================================================
@@ -139,7 +140,13 @@ describe("WebhookBuilder", () => {
       });
 
       expect(result.status).toBe(200);
-      expect(handler).toHaveBeenCalledWith(validPayload);
+      expect(handler).toHaveBeenCalledWith(
+        validPayload,
+        expect.objectContaining({
+          eventType: "test.event",
+          provider: "test",
+        })
+      );
     });
 
     it("should support multiple handlers for the same event", async () => {
@@ -157,8 +164,14 @@ describe("WebhookBuilder", () => {
         secret: "test-secret",
       });
 
-      expect(handler1).toHaveBeenCalledWith(validPayload);
-      expect(handler2).toHaveBeenCalledWith(validPayload);
+      expect(handler1).toHaveBeenCalledWith(
+        validPayload,
+        expect.objectContaining({ eventType: "test.event" })
+      );
+      expect(handler2).toHaveBeenCalledWith(
+        validPayload,
+        expect.objectContaining({ eventType: "test.event" })
+      );
     });
 
     it("should execute handlers sequentially", async () => {
@@ -181,6 +194,200 @@ describe("WebhookBuilder", () => {
       });
 
       expect(order).toEqual([1, 2]);
+    });
+  });
+
+  describe("handler context", () => {
+    it("should pass context with eventType to handlers", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.eventType).toBe("test.event");
+    });
+
+    it("should pass context with provider name to handlers", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.provider).toBe("test");
+    });
+
+    it("should pass context with normalized headers to handlers", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: {
+          "X-Test-Event": "test.event",
+          "X-Custom-Header": "custom-value",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.headers["x-test-event"]).toBe("test.event");
+      expect(receivedContext!.headers["x-custom-header"]).toBe("custom-value");
+    });
+
+    it("should pass context with rawBody to handlers", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+      const rawBodyString = JSON.stringify(validPayload);
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: rawBodyString,
+        secret: "test-secret",
+      });
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.rawBody).toBe(rawBodyString);
+    });
+
+    it("should pass context with rawBody as string when Buffer is provided", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+      const rawBodyString = JSON.stringify(validPayload);
+      const rawBodyBuffer = Buffer.from(rawBodyString, "utf-8");
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: rawBodyBuffer,
+        secret: "test-secret",
+      });
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.rawBody).toBe(rawBodyString);
+    });
+
+    it("should pass context with receivedAt timestamp to handlers", async () => {
+      const provider = createTestProvider();
+      let receivedContext: HandlerContext | undefined;
+      const beforeProcess = new Date();
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          receivedContext = context;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      const afterProcess = new Date();
+
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext!.receivedAt).toBeInstanceOf(Date);
+      expect(receivedContext!.receivedAt.getTime()).toBeGreaterThanOrEqual(
+        beforeProcess.getTime()
+      );
+      expect(receivedContext!.receivedAt.getTime()).toBeLessThanOrEqual(
+        afterProcess.getTime()
+      );
+    });
+
+    it("should pass the same context to all handlers for the same event", async () => {
+      const provider = createTestProvider();
+      const receivedContexts: HandlerContext[] = [];
+
+      const webhook = createWebhook(provider)
+        .event("test.event", (_payload, context) => {
+          receivedContexts.push(context);
+        })
+        .event("test.event", (_payload, context) => {
+          receivedContexts.push(context);
+        });
+
+      await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-custom-header": "custom-value",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(receivedContexts.length).toBe(2);
+      // Both handlers should receive the same context object
+      expect(receivedContexts[0]).toBe(receivedContexts[1]);
+      expect(receivedContexts[0].headers["x-custom-header"]).toBe(
+        "custom-value"
+      );
+    });
+
+    it("should allow handlers to use context without payload", async () => {
+      const provider = createTestProvider();
+      let loggedProvider: string | undefined;
+
+      const webhook = createWebhook(provider).event(
+        "test.event",
+        (_payload, context) => {
+          // Handler that only uses context
+          loggedProvider = context.provider;
+        }
+      );
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(loggedProvider).toBe("test");
     });
   });
 
@@ -797,7 +1004,13 @@ describe("customWebhook", () => {
     });
 
     expect(result.status).toBe(200);
-    expect(handler).toHaveBeenCalledWith(payload);
+    expect(handler).toHaveBeenCalledWith(
+      payload,
+      expect.objectContaining({
+        eventType: "payment.completed",
+        provider: "payment-provider",
+      })
+    );
   });
 
   it("should work with HMAC verification", async () => {

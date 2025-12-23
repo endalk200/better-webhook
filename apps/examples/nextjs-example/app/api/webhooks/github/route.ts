@@ -2,9 +2,11 @@ import { github } from "@better-webhook/github";
 import { toNextJS } from "@better-webhook/nextjs";
 
 // Create a GitHub webhook handler
-const webhook = github()
-  .event("push", async (payload) => {
+const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
+  .event("push", async (payload, context) => {
     console.log("📦 Push event received!");
+    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
+    console.log(`   Received at: ${context.receivedAt.toISOString()}`);
     console.log(`   Repository: ${payload.repository.full_name}`);
     console.log(`   Branch: ${payload.ref}`);
     console.log(`   Commits: ${payload.commits.length}`);
@@ -12,16 +14,18 @@ const webhook = github()
       console.log(`   - ${commit.message} (${commit.id.slice(0, 7)})`);
     });
   })
-  .event("pull_request", async (payload) => {
+  .event("pull_request", async (payload, context) => {
     console.log("🔀 Pull request event received!");
+    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
     console.log(
       `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
     );
     console.log(`   State: ${payload.pull_request.state}`);
   })
-  .event("issues", async (payload) => {
+  .event("issues", async (payload, context) => {
     console.log("🎫 Issue event received!");
+    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
     console.log(`   Issue #${payload.issue.number}: ${payload.issue.title}`);
     console.log(`   State: ${payload.issue.state}`);

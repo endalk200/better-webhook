@@ -20,6 +20,27 @@ export interface ErrorContext {
 }
 
 /**
+ * Context passed to event handlers
+ * Provides metadata about the webhook request beyond just the payload
+ */
+export interface HandlerContext {
+  /** The event type (e.g., "push", "pull_request", "order.created") */
+  eventType: string;
+
+  /** The provider name (e.g., "github", "stripe") */
+  provider: string;
+
+  /** Normalized headers from the webhook request (lowercase keys) */
+  headers: Headers;
+
+  /** The raw request body as a string */
+  rawBody: string;
+
+  /** Timestamp when the webhook was received */
+  receivedAt: Date;
+}
+
+/**
  * Provider interface that webhook sources must implement
  */
 export interface Provider<
@@ -109,8 +130,29 @@ export interface HmacVerifyOptions {
 
 /**
  * Handler function for a specific event type
+ *
+ * @param payload - The validated and typed event payload
+ * @param context - Metadata about the webhook request (event type, delivery ID, headers, etc.)
+ *
+ * @example
+ * ```ts
+ * // Simple handler - just use payload
+ * .event('push', async (payload) => {
+ *   console.log(payload.repository.name);
+ * })
+ *
+ * // With context - access delivery ID, headers, etc.
+ * .event('push', async (payload, context) => {
+ *   console.log(`[${context.deliveryId}] Push to ${payload.repository.name}`);
+ *   console.log(`Provider: ${context.provider}`);
+ *   console.log(`Received at: ${context.receivedAt}`);
+ * })
+ * ```
  */
-export type EventHandler<T> = (payload: T) => Promise<void> | void;
+export type EventHandler<T> = (
+  payload: T,
+  context: HandlerContext
+) => Promise<void> | void;
 
 /**
  * Error handler function
@@ -411,7 +453,10 @@ export class WebhookBuilder<
   EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
 > {
   private readonly provider: Provider<EventMap>;
-  private readonly handlers: Map<string, EventHandler<unknown>[]> = new Map();
+  private readonly handlers: Map<
+    string,
+    ((payload: unknown, context: HandlerContext) => Promise<void> | void)[]
+  > = new Map();
   private errorHandler?: ErrorHandler;
   private verificationFailedHandler?: VerificationFailedHandler;
 
@@ -422,6 +467,23 @@ export class WebhookBuilder<
   /**
    * Register a handler for a specific event type
    * Returns a new builder instance for immutable chaining
+   *
+   * @param eventType - The event type to handle
+   * @param handler - The handler function that receives the typed payload and context
+   *
+   * @example
+   * ```ts
+   * // Simple handler
+   * .event('push', async (payload) => {
+   *   console.log(payload.repository.name);
+   * })
+   *
+   * // Handler with context
+   * .event('push', async (payload, context) => {
+   *   console.log(`[${context.deliveryId}] Push event`);
+   *   console.log(`Headers:`, context.headers);
+   * })
+   * ```
    */
   event<E extends keyof EventMap & string>(
     eventType: E,
@@ -429,7 +491,12 @@ export class WebhookBuilder<
   ): WebhookBuilder<EventMap> {
     const newBuilder = this.clone();
     const existing = newBuilder.handlers.get(eventType) || [];
-    existing.push(handler as EventHandler<unknown>);
+    existing.push(
+      handler as (
+        payload: unknown,
+        context: HandlerContext
+      ) => Promise<void> | void
+    );
     newBuilder.handlers.set(eventType, existing);
     return newBuilder;
   }
@@ -545,12 +612,24 @@ export class WebhookBuilder<
       payload = parsedBody;
     }
 
+    // Build handler context
+    const bodyString =
+      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
+
+    const handlerContext: HandlerContext = {
+      eventType,
+      provider: this.provider.name,
+      headers,
+      rawBody: bodyString,
+      receivedAt: new Date(),
+    };
+
     // Execute handlers sequentially
     const eventHandlers = this.handlers.get(eventType) || [];
 
     for (const handler of eventHandlers) {
       try {
-        await handler(payload);
+        await handler(payload, handlerContext);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
 

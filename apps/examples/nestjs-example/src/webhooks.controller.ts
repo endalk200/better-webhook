@@ -12,8 +12,10 @@ interface RawBodyRequest extends Request {
 export class WebhooksController {
   // Create a GitHub webhook handler
   private webhook = github()
-    .event("push", async (payload) => {
+    .event("push", async (payload, context) => {
       console.log("📦 Push event received!");
+      console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
+      console.log(`   Received at: ${context.receivedAt.toISOString()}`);
       console.log(`   Repository: ${payload.repository.full_name}`);
       console.log(`   Branch: ${payload.ref}`);
       console.log(`   Commits: ${payload.commits.length}`);
@@ -21,16 +23,18 @@ export class WebhooksController {
         console.log(`   - ${commit.message} (${commit.id.slice(0, 7)})`);
       });
     })
-    .event("pull_request", async (payload) => {
+    .event("pull_request", async (payload, context) => {
       console.log("🔀 Pull request event received!");
+      console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Action: ${payload.action}`);
       console.log(
-        `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
+        `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
       );
       console.log(`   State: ${payload.pull_request.state}`);
     })
-    .event("issues", async (payload) => {
+    .event("issues", async (payload, context) => {
       console.log("🎫 Issue event received!");
+      console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Action: ${payload.action}`);
       console.log(`   Issue #${payload.issue.number}: ${payload.issue.title}`);
       console.log(`   State: ${payload.issue.state}`);
@@ -54,7 +58,7 @@ export class WebhooksController {
   @Post("webhooks/github")
   async handleGitHubWebhook(
     @Req() req: RawBodyRequest,
-    @Res() res: Response,
+    @Res() res: Response
   ): Promise<void> {
     const result = await this.handler({
       headers: req.headers as Record<string, string | string[] | undefined>,
