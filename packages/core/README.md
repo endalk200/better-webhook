@@ -1,6 +1,25 @@
 # @better-webhook/core
 
-Core webhook handling functionality for better-webhook. Provides the foundation for building webhook handlers with type-safe event handling, signature verification, and schema validation.
+**Type-safe webhooks in TypeScript. Verified. Validated. Delightful.**
+
+Stop wrestling with raw webhook payloads. `better-webhook` gives you fully-typed event handlers, automatic signature verification, and schema validation—all with a beautiful, chainable API.
+
+```ts
+import { github } from "@better-webhook/github";
+
+const webhook = github().event("push", async (payload) => {
+  // ✨ payload is fully typed!
+  console.log(`${payload.pusher.name} pushed to ${payload.repository.name}`);
+});
+```
+
+## Why better-webhook?
+
+- **🔒 Secure by default** — HMAC signature verification out of the box
+- **📝 Fully typed** — TypeScript autocomplete for every event payload
+- **✅ Schema validated** — Zod validation catches malformed webhooks
+- **🔗 Chainable API** — Register multiple handlers with elegant fluent syntax
+- **🎯 Framework adapters** — First-class support for Next.js, Express, NestJS
 
 ## Installation
 
@@ -12,40 +31,204 @@ pnpm add @better-webhook/core
 yarn add @better-webhook/core
 ```
 
-## Usage
+## Quick Start
 
-### Using Built-in Providers
-
-For common services like GitHub, Stripe, etc., use the pre-built provider packages:
+The fastest way to get started is with a pre-built provider:
 
 ```bash
-npm install @better-webhook/github
+npm install @better-webhook/github @better-webhook/nextjs
 ```
 
 ```ts
+// app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github({ secret: "your-secret" }).event(
-  "push",
-  async (payload) => {
-    console.log(`Push to ${payload.repository.name}`);
-  }
-);
+const webhook = github()
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.full_name}`);
+    console.log(`Commits: ${payload.commits.length}`);
+  })
+  .event("pull_request", async (payload) => {
+    if (payload.action === "opened") {
+      console.log(`New PR: ${payload.pull_request.title}`);
+    }
+  });
+
+export const POST = toNextJS(webhook);
 ```
 
-### Creating Custom Providers
+That's it. Your webhook endpoint is:
 
-For services that don't have a pre-built provider, you can create your own using the core package utilities.
+- ✅ Verifying signatures (set `GITHUB_WEBHOOK_SECRET` env var)
+- ✅ Validating payloads against schemas
+- ✅ Fully typed with autocomplete
+- ✅ Handling multiple event types
 
-#### Quick Start with `customWebhook`
+## Error Handling
 
-The simplest way to create a custom webhook handler:
+Gracefully handle failures with the built-in error hooks:
+
+```ts
+const webhook = github()
+  .event("push", async (payload) => {
+    await deployToProduction(payload);
+  })
+  .onError((error, context) => {
+    // Called when your handler throws
+    console.error(`Failed to handle ${context.eventType}:`, error);
+    console.error("Payload:", context.payload);
+
+    // Send to your error tracking service
+    Sentry.captureException(error, { extra: context });
+  })
+  .onVerificationFailed((reason, headers) => {
+    // Called when signature verification fails
+    console.warn("Webhook verification failed:", reason);
+    console.warn("Headers:", headers);
+
+    // Alert on potential attacks
+    alertSecurityTeam({ reason, headers });
+  });
+```
+
+## Handler Context
+
+Every event handler receives a second parameter—`context`—containing metadata about the webhook request. This is useful for logging, debugging, and accessing request details:
+
+```ts
+const webhook = github().event("push", async (payload, context) => {
+  // Know which provider sent this webhook
+  console.log(`Provider: ${context.provider}`); // "github"
+
+  // Access the event type
+  console.log(`Event: ${context.eventType}`); // "push"
+
+  // Get all request headers (normalized to lowercase)
+  console.log(`User-Agent: ${context.headers["user-agent"]}`);
+
+  // Access provider-specific headers (e.g., GitHub's delivery ID)
+  console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
+
+  // Access the raw body for advanced use cases
+  console.log(`Raw body length: ${context.rawBody.length}`);
+
+  // Know when the webhook was received
+  console.log(`Received at: ${context.receivedAt.toISOString()}`);
+
+  await processWebhook(payload);
+});
+```
+
+### HandlerContext Properties
+
+| Property     | Type                                | Description                                    |
+| ------------ | ----------------------------------- | ---------------------------------------------- |
+| `eventType`  | `string`                            | The event type (e.g., "push", "order.created") |
+| `provider`   | `string`                            | Provider name (e.g., "github", "stripe")       |
+| `headers`    | `Record<string, string\|undefined>` | Normalized request headers (lowercase keys)    |
+| `rawBody`    | `string`                            | The raw request body as a string               |
+| `receivedAt` | `Date`                              | Timestamp when the webhook was received        |
+
+### Using Context for Deduplication
+
+Provider-specific delivery IDs can be accessed from headers:
+
+```ts
+const processedIds = new Set<string>();
+
+const webhook = github().event("push", async (payload, context) => {
+  // GitHub sends delivery ID in x-github-delivery header
+  const deliveryId = context.headers["x-github-delivery"];
+
+  // Skip if we've already processed this webhook
+  if (deliveryId && processedIds.has(deliveryId)) {
+    console.log(`Skipping duplicate delivery: ${deliveryId}`);
+    return;
+  }
+
+  // Mark as processed
+  if (deliveryId) {
+    processedIds.add(deliveryId);
+  }
+
+  await processWebhook(payload);
+});
+```
+
+### Context in Multiple Handlers
+
+All handlers for the same event receive the same context object:
+
+```ts
+const webhook = github()
+  .event("push", async (payload, context) => {
+    // Log the webhook
+    await logger.info(`Received ${context.eventType}`, {
+      provider: context.provider,
+      receivedAt: context.receivedAt,
+    });
+  })
+  .event("push", async (payload, context) => {
+    // Both handlers receive the exact same context
+    await processPayload(payload);
+  });
+```
+
+## Multiple Handlers
+
+Register multiple handlers for the same event—they run sequentially:
+
+```ts
+const webhook = github()
+  .event("push", async (payload) => {
+    // First: Update database
+    await db.commits.insertMany(payload.commits);
+  })
+  .event("push", async (payload) => {
+    // Second: Send notifications
+    await slack.notify(`New push to ${payload.repository.name}`);
+  })
+  .event("push", async (payload) => {
+    // Third: Trigger CI/CD
+    await triggerBuild(payload.after);
+  });
+```
+
+## Secret Management
+
+Secrets are resolved automatically in this order:
+
+1. **Explicit secret** — Passed to the adapter
+2. **Provider default** — Set when creating the provider
+3. **Environment variable** — `{PROVIDER}_WEBHOOK_SECRET` (e.g., `GITHUB_WEBHOOK_SECRET`)
+4. **Fallback** — `WEBHOOK_SECRET`
+
+```ts
+// Option 1: Environment variable (recommended)
+// Set GITHUB_WEBHOOK_SECRET=your-secret
+const webhook = github().event("push", handler);
+
+// Option 2: Explicit secret
+const webhook = github({ secret: "your-secret" }).event("push", handler);
+
+// Option 3: At adapter level
+export const POST = toNextJS(webhook, { secret: "your-secret" });
+```
+
+## Creating Custom Providers
+
+Need to handle webhooks from a service we don't have a pre-built provider for? Create your own in minutes:
+
+### Quick Custom Webhook
+
+For one-off integrations, use `customWebhook`:
 
 ```ts
 import { customWebhook, createHmacVerifier, z } from "@better-webhook/core";
 
-// Define your event schemas
-const OrderEventSchema = z.object({
+// Define your event schemas with Zod
+const OrderSchema = z.object({
   orderId: z.string(),
   status: z.enum(["pending", "completed", "cancelled"]),
   amount: z.number(),
@@ -55,45 +238,46 @@ const OrderEventSchema = z.object({
   }),
 });
 
-const RefundEventSchema = z.object({
+const RefundSchema = z.object({
   refundId: z.string(),
   orderId: z.string(),
   amount: z.number(),
   reason: z.string().optional(),
 });
 
-// Create the webhook handler
+// Create your webhook handler
 const webhook = customWebhook({
   name: "my-ecommerce",
   schemas: {
-    "order.created": OrderEventSchema,
-    "order.updated": OrderEventSchema,
-    "refund.requested": RefundEventSchema,
+    "order.created": OrderSchema,
+    "order.updated": OrderSchema,
+    "refund.requested": RefundSchema,
   },
-  // Extract event type from headers
+  // Tell us where to find the event type
   getEventType: (headers) => headers["x-webhook-event"],
   // Optional: Extract delivery ID for logging/deduplication
   getDeliveryId: (headers) => headers["x-delivery-id"],
-  // Optional: Verify webhook signature
+  // Optional: Verify webhook signatures
   verify: createHmacVerifier({
     algorithm: "sha256",
     signatureHeader: "x-webhook-signature",
-    signaturePrefix: "sha256=", // Optional prefix
+    signaturePrefix: "sha256=",
   }),
 })
   .event("order.created", async (payload) => {
-    // payload is fully typed as OrderEventSchema
-    console.log(`New order: ${payload.orderId} for ${payload.customer.email}`);
+    // payload is typed as OrderSchema!
+    console.log(`New order: ${payload.orderId}`);
+    await sendConfirmationEmail(payload.customer.email);
   })
   .event("refund.requested", async (payload) => {
-    // payload is fully typed as RefundEventSchema
+    // payload is typed as RefundSchema!
     console.log(`Refund requested: ${payload.refundId}`);
   });
 ```
 
-#### Advanced: Using `createProvider` for Reusable Providers
+### Reusable Provider Package
 
-If you need to share a provider across your application or publish it as a package:
+Building a provider to share across your organization or publish to npm? Use `createProvider`:
 
 ```ts
 import {
@@ -103,23 +287,37 @@ import {
   z,
 } from "@better-webhook/core";
 
-// Define schemas
-const PaymentSchema = z.object({
+// schemas.ts
+export const PaymentSucceededSchema = z.object({
   id: z.string(),
   amount: z.number(),
   currency: z.string(),
-  status: z.enum(["pending", "succeeded", "failed"]),
+  customer_email: z.string().email(),
 });
 
-// Create a reusable provider
-export function createPaymentProvider(options?: { secret?: string }) {
+export const PaymentFailedSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  error_code: z.string(),
+  error_message: z.string(),
+});
+
+// provider.ts
+const PaymentSchemas = {
+  "payment.succeeded": PaymentSucceededSchema,
+  "payment.failed": PaymentFailedSchema,
+} as const;
+
+export interface PaymentGatewayOptions {
+  secret?: string;
+}
+
+function createPaymentGatewayProvider(options?: PaymentGatewayOptions) {
   return createProvider({
     name: "payment-gateway",
     secret: options?.secret,
-    schemas: {
-      "payment.succeeded": PaymentSchema,
-      "payment.failed": PaymentSchema,
-    },
+    schemas: PaymentSchemas,
     getEventType: (headers) => headers["x-event-type"],
     getDeliveryId: (headers) => headers["x-request-id"],
     verify: createHmacVerifier({
@@ -129,67 +327,80 @@ export function createPaymentProvider(options?: { secret?: string }) {
   });
 }
 
-// Export a convenience function like built-in providers
-export function paymentGateway(options?: { secret?: string }) {
-  return createWebhook(createPaymentProvider(options));
+// Public API - matches the pattern of built-in providers
+export function paymentGateway(options?: PaymentGatewayOptions) {
+  return createWebhook(createPaymentGatewayProvider(options));
 }
 
-// Usage
-const webhook = paymentGateway({ secret: "my-secret" }).event(
+// Usage is identical to built-in providers!
+const webhook = paymentGateway({ secret: "sk_..." }).event(
   "payment.succeeded",
   async (payload) => {
-    console.log(`Payment received: ${payload.id}`);
+    await fulfillOrder(payload.id);
+    await sendReceipt(payload.customer_email);
   }
 );
 ```
 
 ### Verification Helpers
 
-#### `createHmacVerifier`
+#### HMAC Verification
 
-Creates a verification function for HMAC-based signatures:
+Most webhook providers use HMAC signatures. We make it easy:
 
 ```ts
 import { createHmacVerifier } from "@better-webhook/core";
 
-// GitHub-style (sha256=<hex>)
+// GitHub-style: sha256=<hex>
 const githubVerifier = createHmacVerifier({
   algorithm: "sha256",
   signatureHeader: "x-hub-signature-256",
   signaturePrefix: "sha256=",
 });
 
-// Stripe-style (t=timestamp,v1=signature)
-// For complex formats, use the low-level verifyHmac function
-
-// Base64 encoded signature
+// Base64-encoded signatures
 const base64Verifier = createHmacVerifier({
   algorithm: "sha256",
   signatureHeader: "x-signature",
   signatureEncoding: "base64",
 });
+
+// SHA-1 (for legacy systems)
+const sha1Verifier = createHmacVerifier({
+  algorithm: "sha1",
+  signatureHeader: "x-signature",
+});
 ```
 
-#### `verifyHmac`
+#### Custom Verification Logic
 
-Low-level function for custom verification logic:
+For complex signature formats (like Stripe's `t=timestamp,v1=signature`), use the low-level `verifyHmac`:
 
 ```ts
 import { verifyHmac } from "@better-webhook/core";
 
-function customVerify(
+function stripeVerify(
   rawBody: string | Buffer,
   headers: Headers,
   secret: string
 ): boolean {
-  // Extract signature from complex header format
-  const signatureHeader = headers["x-signature"];
-  const parts = signatureHeader?.split(",");
-  const signature = parts?.find((p) => p.startsWith("v1="))?.slice(3);
+  const signatureHeader = headers["stripe-signature"];
+  if (!signatureHeader) return false;
+
+  // Parse Stripe's format: t=1234567890,v1=abc123...
+  const parts = Object.fromEntries(
+    signatureHeader.split(",").map((part) => part.split("="))
+  );
+
+  const timestamp = parts["t"];
+  const signature = parts["v1"];
+
+  // Stripe signs: timestamp.payload
+  const signedPayload = `${timestamp}.${rawBody}`;
 
   return verifyHmac({
     algorithm: "sha256",
-    rawBody,
+    rawBody: signedPayload,
     secret,
     signature,
   });
@@ -198,45 +409,35 @@ function customVerify(
 
 ### Provider Without Verification
 
-For development or trusted internal services where signature verification isn't needed:
+For development or trusted internal services:
 
 ```ts
 const webhook = customWebhook({
   name: "internal-service",
   schemas: {
     "user.created": UserSchema,
+    "user.deleted": UserSchema,
   },
   getEventType: (headers) => headers["x-event-type"],
-  // No verify function = verification is skipped
+  // No verify function = skip verification
 });
-```
-
-### Error Handling
-
-```ts
-const webhook = customWebhook({
-  name: "my-provider",
-  schemas: { "event.type": MySchema },
-  getEventType: (headers) => headers["x-event-type"],
-})
-  .event("event.type", async (payload) => {
-    // Handle event
-  })
-  .onError((error, context) => {
-    console.error(`Error handling ${context.eventType}:`, error);
-    console.error("Payload:", context.payload);
-  })
-  .onVerificationFailed((reason, headers) => {
-    console.error("Verification failed:", reason);
-  });
 ```
 
 ## API Reference
 
+### Functions
+
+| Function                      | Description                                        |
+| ----------------------------- | -------------------------------------------------- |
+| `customWebhook(config)`       | Create a webhook builder with inline configuration |
+| `createProvider(config)`      | Create a reusable provider instance                |
+| `createWebhook(provider)`     | Create a webhook builder from a provider           |
+| `createHmacVerifier(options)` | Create an HMAC verification function               |
+| `verifyHmac(options)`         | Low-level HMAC verification                        |
+
 ### Types
 
 ```ts
-// Provider configuration
 interface ProviderConfig<EventMap> {
   name: string;
   schemas: EventMap;
@@ -250,22 +451,33 @@ interface ProviderConfig<EventMap> {
   ) => boolean;
 }
 
-// HMAC verification options
 interface HmacVerifyOptions {
   algorithm: "sha1" | "sha256" | "sha384" | "sha512";
   signatureHeader: string;
   signaturePrefix?: string;
   signatureEncoding?: "hex" | "base64";
 }
+
+interface HandlerContext {
+  eventType: string;
+  provider: string;
+  headers: Record<string, string | undefined>;
+  rawBody: string;
+  receivedAt: Date;
+}
+
+interface ErrorContext {
+  eventType: string;
+  deliveryId?: string;
+  payload: unknown;
+}
+
+// Event handler signature
+type EventHandler<T> = (
+  payload: T,
+  context: HandlerContext
+) => Promise<void> | void;
 ```
-
-### Functions
-
-- `customWebhook(config)` - Create a webhook builder with inline configuration
-- `createProvider(config)` - Create a reusable provider instance
-- `createWebhook(provider)` - Create a webhook builder from a provider
-- `createHmacVerifier(options)` - Create an HMAC verification function
-- `verifyHmac(options)` - Low-level HMAC verification
 
 ## License
 
