@@ -18,6 +18,8 @@
     "dev": "tsup --watch",
     "lint": "tsc --noEmit",
     "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist .turbo",
     "prepublishOnly": "pnpm run build"
   },
@@ -49,11 +51,14 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",
     "@types/node": "^24.3.1",
     "tsup": "^8.5.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16"
   }
 }
