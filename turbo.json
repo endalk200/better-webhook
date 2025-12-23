@@ -8,11 +8,11 @@
       "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"],
+      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".eslintrc*", ".eslintignore"]
     },
     "check-types": {
-      "dependsOn": ["^check-types"],
+      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
     },
     "test": {
