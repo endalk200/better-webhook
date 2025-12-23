@@ -1,0 +1,31 @@
+{
+  "name": "@better-webhook/nestjs-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NestJS example for better-webhook",
+  "scripts": {
+    "dev": "nest start --watch",
+    "start": "nest start",
+    "build": "nest build",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-webhook/github": "workspace:*",
+    "@better-webhook/nestjs": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@better-webhook/typescript-config": "workspace:*",
+    "@nestjs/cli": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.3.1",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
