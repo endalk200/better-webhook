@@ -1,26 +1,27 @@
 {
-  "name": "@better-webhook/cli",
-  "version": "0.3.1",
-  "description": "CLI for developing and replaying webhook payloads locally.",
+  "name": "@better-webhook/express",
+  "version": "0.1.0",
+  "description": "Express.js middleware for better-webhook",
   "type": "module",
-  "bin": {
-    "better-webhook": "dist/index.js"
-  },
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "build": "tsup --format cjs,esm --dts",
+    "build": "tsup",
     "dev": "tsup --watch",
-    "lint": "tsc",
-    "prepublishOnly": "pnpm run build",
-    "prepare": "pnpm run build"
+    "lint": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo",
+    "prepublishOnly": "pnpm run build"
   },
   "files": [
     "dist",
@@ -29,16 +30,17 @@
   ],
   "keywords": [
     "webhook",
-    "cli",
-    "developer-tools",
-    "testing",
+    "express",
+    "middleware",
+    "webhook-handler",
     "http"
   ],
   "license": "MIT",
   "author": "Endalk <endalk200>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/endalk200/better-webhook.git"
+    "url": "git+https://github.com/endalk200/better-webhook.git",
+    "directory": "packages/express"
   },
   "bugs": {
     "url": "https://github.com/endalk200/better-webhook/issues"
@@ -51,18 +53,19 @@
     "node": ">=18"
   },
   "dependencies": {
-    "commander": "^14.0.1",
-    "ora": "^9.0.0",
-    "prompts": "^2.4.2",
-    "undici": "^7.16.0",
-    "zod": "^4.0.0"
+    "@better-webhook/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "express": "^4.0.0 || ^5.0.0"
   },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",
+    "@types/express": "^5.0.0",
     "@types/node": "^24.3.1",
-    "@types/prompts": "^2.4.9",
+    "express": "^4.21.2",
     "tsup": "^8.5.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16",
+    "zod": "^4.0.0"
   }
 }

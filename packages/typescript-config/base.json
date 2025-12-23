@@ -21,7 +21,7 @@
     "composite": true,
     "declarationMap": true,
 
-    "incremental": false,
+    "incremental": true,
     "isolatedModules": true,
 
     /* If code runs in the DOM: */
