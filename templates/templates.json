@@ -50,6 +50,86 @@
       "file": "github/github-installation_repositories.json",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories"
+    },
+    {
+      "id": "ragie-document_status_updated",
+      "name": "Ragie Document Status Updated",
+      "description": "Ragie document status updated event triggered when a document enters indexed, keyword_indexed, ready, or failed state",
+      "provider": "ragie",
+      "event": "document_status_updated",
+      "file": "ragie/ragie-document_status_updated.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_status_updated"
+    },
+    {
+      "id": "ragie-document_deleted",
+      "name": "Ragie Document Deleted",
+      "description": "Ragie document deleted event triggered when a document is deleted",
+      "provider": "ragie",
+      "event": "document_deleted",
+      "file": "ragie/ragie-document_deleted.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_deleted"
+    },
+    {
+      "id": "ragie-entity_extracted",
+      "name": "Ragie Entity Extracted",
+      "description": "Ragie entity extracted event triggered when entity extraction completes for a document",
+      "provider": "ragie",
+      "event": "entity_extracted",
+      "file": "ragie/ragie-entity_extracted.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#entity_extracted"
+    },
+    {
+      "id": "ragie-connection_sync_started",
+      "name": "Ragie Connection Sync Started",
+      "description": "Ragie connection sync started event triggered when a connection sync begins",
+      "provider": "ragie",
+      "event": "connection_sync_started",
+      "file": "ragie/ragie-connection_sync_started.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+    },
+    {
+      "id": "ragie-connection_sync_progress",
+      "name": "Ragie Connection Sync Progress",
+      "description": "Ragie connection sync progress event triggered periodically during a sync to report progress",
+      "provider": "ragie",
+      "event": "connection_sync_progress",
+      "file": "ragie/ragie-connection_sync_progress.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+    },
+    {
+      "id": "ragie-connection_sync_finished",
+      "name": "Ragie Connection Sync Finished",
+      "description": "Ragie connection sync finished event triggered when a connection sync completes",
+      "provider": "ragie",
+      "event": "connection_sync_finished",
+      "file": "ragie/ragie-connection_sync_finished.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+    },
+    {
+      "id": "ragie-connection_limit_exceeded",
+      "name": "Ragie Connection Limit Exceeded",
+      "description": "Ragie connection limit exceeded event triggered when a connection exceeds its page limit",
+      "provider": "ragie",
+      "event": "connection_limit_exceeded",
+      "file": "ragie/ragie-connection_limit_exceeded.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#connection_limit_exceeded"
+    },
+    {
+      "id": "ragie-partition_limit_exceeded",
+      "name": "Ragie Partition Limit Exceeded",
+      "description": "Ragie partition limit exceeded event triggered when a partition exceeds its document limit",
+      "provider": "ragie",
+      "event": "partition_limit_exceeded",
+      "file": "ragie/ragie-partition_limit_exceeded.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#partition_limit_exceeded"
     }
   ]
 }

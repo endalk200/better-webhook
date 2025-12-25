@@ -1,0 +1,40 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-Ragie-Event",
+      "value": "connection_sync_started"
+    },
+    {
+      "key": "X-Ragie-Delivery",
+      "value": "delivery-423e4567-e89b-12d3-a456-426614174003"
+    },
+    {
+      "key": "X-Signature",
+      "value": "placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "Ragie-Webhook/1.0"
+    }
+  ],
+  "body": {
+    "nonce": "nonce-423e4567-e89b-12d3-a456-426614174003",
+    "connection_id": "conn-abc123",
+    "sync_id": "sync-xyz789abc012",
+    "partition": "partition-default",
+    "connection_metadata": {
+      "source": "google-drive",
+      "folder_id": "1a2b3c4d5e6f7g8h9i",
+      "folder_name": "Documents"
+    }
+  },
+  "provider": "ragie",
+  "event": "connection_sync_started",
+  "description": "Ragie connection sync started - syncing Google Drive documents"
+}
+

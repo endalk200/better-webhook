@@ -1,0 +1,37 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-Ragie-Event",
+      "value": "document_status_updated"
+    },
+    {
+      "key": "X-Ragie-Delivery",
+      "value": "delivery-123e4567-e89b-12d3-a456-426614174000"
+    },
+    {
+      "key": "X-Signature",
+      "value": "placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "Ragie-Webhook/1.0"
+    }
+  ],
+  "body": {
+    "nonce": "nonce-123e4567-e89b-12d3-a456-426614174000",
+    "document_id": "doc-abc123def456",
+    "external_id": "user-document-001",
+    "status": "ready",
+    "sync_id": "sync-xyz789abc012",
+    "partition": "partition-default"
+  },
+  "provider": "ragie",
+  "event": "document_status_updated",
+  "description": "Ragie document status updated - document is now ready for retrieval"
+}
+

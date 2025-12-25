@@ -1,0 +1,33 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-Ragie-Event",
+      "value": "partition_limit_exceeded"
+    },
+    {
+      "key": "X-Ragie-Delivery",
+      "value": "delivery-823e4567-e89b-12d3-a456-426614174007"
+    },
+    {
+      "key": "X-Signature",
+      "value": "placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "Ragie-Webhook/1.0"
+    }
+  ],
+  "body": {
+    "nonce": "nonce-823e4567-e89b-12d3-a456-426614174007",
+    "partition": "partition-large"
+  },
+  "provider": "ragie",
+  "event": "partition_limit_exceeded",
+  "description": "Ragie partition limit exceeded - partition document limit reached"
+}
+

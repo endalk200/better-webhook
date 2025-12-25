@@ -1,0 +1,48 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-Ragie-Event",
+      "value": "connection_sync_finished"
+    },
+    {
+      "key": "X-Ragie-Delivery",
+      "value": "delivery-623e4567-e89b-12d3-a456-426614174005"
+    },
+    {
+      "key": "X-Signature",
+      "value": "placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "Ragie-Webhook/1.0"
+    }
+  ],
+  "body": {
+    "nonce": "nonce-623e4567-e89b-12d3-a456-426614174005",
+    "connection_id": "conn-abc123",
+    "sync_id": "sync-xyz789abc012",
+    "partition": "partition-default",
+    "connection_metadata": {
+      "source": "google-drive",
+      "folder_id": "1a2b3c4d5e6f7g8h9i",
+      "folder_name": "Documents"
+    },
+    "total_creates_count": 250,
+    "created_count": 0,
+    "total_contents_updates_count": 100,
+    "contents_updated_count": 0,
+    "total_metadata_updates_count": 50,
+    "metadata_updated_count": 0,
+    "total_deletes_count": 15,
+    "deleted_count": 0
+  },
+  "provider": "ragie",
+  "event": "connection_sync_finished",
+  "description": "Ragie connection sync finished - 250 created, 100 updated, 15 deleted"
+}
+
