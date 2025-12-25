@@ -1,12 +1,13 @@
 import express from "express";
 import { github } from "@better-webhook/github";
+import { ragie } from "@better-webhook/ragie";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Create a GitHub webhook handler
-const webhook = github()
+const githubWebhook = github()
   .event("push", async (payload, context) => {
     console.log("📦 Push event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
@@ -23,7 +24,7 @@ const webhook = github()
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
     console.log(
-      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
+      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
     );
     console.log(`   State: ${payload.pull_request.state}`);
   })
@@ -42,17 +43,64 @@ const webhook = github()
     console.error("🔐 Verification failed:", reason);
   });
 
-// Mount the webhook handler
+// Create a Ragie webhook handler
+const ragieWebhook = ragie()
+  .event("document_status_updated", async (payload, context) => {
+    console.log("📄 Document status updated!");
+    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Document ID: ${payload.document_id}`);
+    console.log(`   Status: ${payload.status}`);
+    console.log(`   Partition: ${payload.partition}`);
+  })
+  .event("connection_sync_finished", async (payload, context) => {
+    console.log("✅ Connection sync finished!");
+    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Connection ID: ${payload.connection_id}`);
+    console.log(`   Total creates: ${payload.total_creates_count}`);
+    console.log(
+      `   Total content updates: ${payload.total_contents_updates_count}`
+    );
+    console.log(
+      `   Total metadata updates: ${payload.total_metadata_updates_count}`
+    );
+    console.log(`   Total deletes: ${payload.total_deletes_count}`);
+  })
+  .event("entity_extracted", async (payload, context) => {
+    console.log("🔍 Entity extraction completed!");
+    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Document ID: ${payload.document_id}`);
+    console.log(`   Partition: ${payload.partition || "default"}`);
+  })
+  .onError(async (error, context) => {
+    console.error("❌ Ragie webhook error:", error.message);
+    console.error("   Event type:", context.eventType);
+  })
+  .onVerificationFailed(async (reason) => {
+    console.error("🔐 Ragie verification failed:", reason);
+  });
+
+// Mount the webhook handlers
 // Note: express.raw() is required to get the raw body for signature verification
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook, {
+  toExpress(githubWebhook, {
     secret: process.env.GITHUB_WEBHOOK_SECRET,
     onSuccess: (eventType) => {
-      console.log(`✅ Successfully processed ${eventType} event`);
+      console.log(`✅ Successfully processed GitHub ${eventType} event`);
     },
-  }),
+  })
+);
+
+app.post(
+  "/webhooks/ragie",
+  express.raw({ type: "application/json" }),
+  toExpress(ragieWebhook, {
+    secret: process.env.RAGIE_WEBHOOK_SECRET,
+    onSuccess: (eventType) => {
+      console.log(`✅ Successfully processed Ragie ${eventType} event`);
+    },
+  })
 );
 
 // Health check endpoint
@@ -65,19 +113,18 @@ app.listen(PORT, () => {
   console.log(`
 🚀 Express webhook server running!
    
-   Webhook endpoint: http://localhost:${PORT}/webhooks/github
-   Health check:     http://localhost:${PORT}/health
+   Webhook endpoints:
+   - GitHub: http://localhost:${PORT}/webhooks/github
+   - Ragie:  http://localhost:${PORT}/webhooks/ragie
+   
+   Health check: http://localhost:${PORT}/health
+
+   Environment variables:
+   - GITHUB_WEBHOOK_SECRET (for GitHub webhooks)
+   - RAGIE_WEBHOOK_SECRET (for Ragie webhooks)
 
    To test with ngrok:
    1. ngrok http ${PORT}
-   2. Configure GitHub webhook with the ngrok URL + /webhooks/github
-   3. Set GITHUB_WEBHOOK_SECRET environment variable
-
-   Or test locally with curl:
-   curl -X POST http://localhost:${PORT}/webhooks/github \\
-     -H "Content-Type: application/json" \\
-     -H "X-GitHub-Event: push" \\
-     -H "X-GitHub-Delivery: test-123" \\
-     -d '{"ref":"refs/heads/main","repository":{"id":1,"name":"test","full_name":"org/test","private":false},"commits":[{"id":"abc123","message":"Test commit","timestamp":"2024-01-01T00:00:00Z","url":"https://example.com","author":{"name":"Test","email":"test@example.com"},"committer":{"name":"Test","email":"test@example.com"}}],"head_commit":null,"before":"000","after":"abc","created":false,"deleted":false,"forced":false,"base_ref":null,"compare":"https://example.com","pusher":{"name":"test"},"sender":{"login":"test","id":1,"type":"User"}}'
+   2. Configure webhooks with the ngrok URL + /webhooks/[provider]
   `);
 });

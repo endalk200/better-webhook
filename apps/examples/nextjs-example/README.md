@@ -1,6 +1,6 @@
 # Next.js Example
 
-A simple Next.js app demonstrating `@better-webhook/github` and `@better-webhook/nextjs`.
+A simple Next.js app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, and `@better-webhook/nextjs`.
 
 ## Quick Start
 
@@ -16,22 +16,27 @@ The app will be available at http://localhost:3002
 
 ## Configuration
 
-Set the `GITHUB_WEBHOOK_SECRET` environment variable to enable signature verification:
+Set environment variables to enable signature verification:
 
 ```bash
-GITHUB_WEBHOOK_SECRET=your-secret pnpm --filter @better-webhook/nextjs-example dev
+GITHUB_WEBHOOK_SECRET=your-github-secret \
+RAGIE_WEBHOOK_SECRET=your-ragie-secret \
+pnpm --filter @better-webhook/nextjs-example dev
 ```
 
 Or create a `.env.local` file:
 
 ```env
-GITHUB_WEBHOOK_SECRET=your-secret
+GITHUB_WEBHOOK_SECRET=your-github-secret
+RAGIE_WEBHOOK_SECRET=your-ragie-secret
 ```
 
 ## Endpoints
 
 - `POST /api/webhooks/github` - GitHub webhook endpoint
-- `GET /api/webhooks/github` - Returns endpoint info
+- `GET /api/webhooks/github` - Returns GitHub endpoint info
+- `POST /api/webhooks/ragie` - Ragie webhook endpoint
+- `GET /api/webhooks/ragie` - Returns Ragie endpoint info
 
 ## Testing Locally
 
@@ -52,8 +57,10 @@ nextjs-example/
 ├── app/
 │   ├── api/
 │   │   └── webhooks/
-│   │       └── github/
-│   │           └── route.ts  # Webhook handler
+│   │       ├── github/
+│   │       │   └── route.ts  # GitHub webhook handler
+│   │       └── ragie/
+│   │           └── route.ts  # Ragie webhook handler
 │   ├── layout.tsx
 │   └── page.tsx
 ├── next.config.js

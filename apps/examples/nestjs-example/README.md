@@ -1,6 +1,6 @@
 # NestJS Example
 
-A simple NestJS app demonstrating `@better-webhook/github` and `@better-webhook/nestjs`.
+A simple NestJS app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, and `@better-webhook/nestjs`.
 
 ## Quick Start
 
@@ -16,16 +16,20 @@ The app will be available at http://localhost:3003
 
 ## Configuration
 
-Set the `GITHUB_WEBHOOK_SECRET` environment variable to enable signature verification:
+Set environment variables to enable signature verification:
 
 ```bash
-GITHUB_WEBHOOK_SECRET=your-secret pnpm --filter @better-webhook/nestjs-example dev
+GITHUB_WEBHOOK_SECRET=your-github-secret \
+RAGIE_WEBHOOK_SECRET=your-ragie-secret \
+pnpm --filter @better-webhook/nestjs-example dev
 ```
 
 ## Endpoints
 
 - `POST /webhooks/github` - GitHub webhook endpoint
-- `GET /webhooks/github` - Returns endpoint info
+- `GET /webhooks/github` - Returns GitHub endpoint info
+- `POST /webhooks/ragie` - Ragie webhook endpoint
+- `GET /webhooks/ragie` - Returns Ragie endpoint info
 - `GET /health` - Health check
 
 ## Testing Locally

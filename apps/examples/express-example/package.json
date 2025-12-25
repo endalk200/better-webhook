@@ -13,6 +13,7 @@
   "dependencies": {
     "@better-webhook/express": "workspace:*",
     "@better-webhook/github": "workspace:*",
+    "@better-webhook/ragie": "workspace:*",
     "express": "^4.21.2"
   },
   "devDependencies": {

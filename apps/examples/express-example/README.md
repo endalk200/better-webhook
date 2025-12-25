@@ -1,6 +1,6 @@
 # Express Example
 
-A simple Express.js server demonstrating `@better-webhook/github` and `@better-webhook/express`.
+A simple Express.js server demonstrating `@better-webhook/github`, `@better-webhook/ragie`, and `@better-webhook/express`.
 
 ## Quick Start
 
@@ -14,15 +14,18 @@ pnpm --filter @better-webhook/express-example dev
 
 ## Configuration
 
-Set the `GITHUB_WEBHOOK_SECRET` environment variable to enable signature verification:
+Set environment variables to enable signature verification:
 
 ```bash
-GITHUB_WEBHOOK_SECRET=your-secret pnpm --filter @better-webhook/express-example dev
+GITHUB_WEBHOOK_SECRET=your-github-secret \
+RAGIE_WEBHOOK_SECRET=your-ragie-secret \
+pnpm --filter @better-webhook/express-example dev
 ```
 
 ## Endpoints
 
 - `POST /webhooks/github` - GitHub webhook endpoint
+- `POST /webhooks/ragie` - Ragie webhook endpoint
 - `GET /health` - Health check
 
 ## Testing Locally

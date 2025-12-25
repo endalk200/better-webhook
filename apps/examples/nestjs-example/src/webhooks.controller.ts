@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Req, Res, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { ragie } from "@better-webhook/ragie";
 import { toNestJS } from "@better-webhook/nestjs";
 
 // Extend Request type to include rawBody
@@ -11,7 +12,7 @@ interface RawBodyRequest extends Request {
 @Controller()
 export class WebhooksController {
   // Create a GitHub webhook handler
-  private webhook = github()
+  private githubWebhook = github()
     .event("push", async (payload, context) => {
       console.log("📦 Push event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
@@ -47,11 +48,50 @@ export class WebhooksController {
       console.error("🔐 Verification failed:", reason);
     });
 
-  // Create the handler with options
-  private handler = toNestJS(this.webhook, {
+  // Create a Ragie webhook handler
+  private ragieWebhook = ragie()
+    .event("document_status_updated", async (payload, context) => {
+      console.log("📄 Document status updated!");
+      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Document ID: ${payload.document_id}`);
+      console.log(`   Status: ${payload.status}`);
+      console.log(`   Partition: ${payload.partition}`);
+    })
+    .event("connection_sync_finished", async (payload, context) => {
+      console.log("✅ Connection sync finished!");
+      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Connection ID: ${payload.connection_id}`);
+      console.log(`   Total creates: ${payload.total_creates_count}`);
+      console.log(`   Total content updates: ${payload.total_contents_updates_count}`);
+      console.log(`   Total metadata updates: ${payload.total_metadata_updates_count}`);
+      console.log(`   Total deletes: ${payload.total_deletes_count}`);
+    })
+    .event("entity_extracted", async (payload, context) => {
+      console.log("🔍 Entity extraction completed!");
+      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Document ID: ${payload.document_id}`);
+      console.log(`   Partition: ${payload.partition || "default"}`);
+    })
+    .onError(async (error, context) => {
+      console.error("❌ Ragie webhook error:", error.message);
+      console.error("   Event type:", context.eventType);
+    })
+    .onVerificationFailed(async (reason) => {
+      console.error("🔐 Ragie verification failed:", reason);
+    });
+
+  // Create the handlers with options
+  private githubHandler = toNestJS(this.githubWebhook, {
     secret: process.env.GITHUB_WEBHOOK_SECRET,
     onSuccess: (eventType) => {
-      console.log(`✅ Successfully processed ${eventType} event`);
+      console.log(`✅ Successfully processed GitHub ${eventType} event`);
+    },
+  });
+
+  private ragieHandler = toNestJS(this.ragieWebhook, {
+    secret: process.env.RAGIE_WEBHOOK_SECRET,
+    onSuccess: (eventType) => {
+      console.log(`✅ Successfully processed Ragie ${eventType} event`);
     },
   });
 
@@ -60,7 +100,7 @@ export class WebhooksController {
     @Req() req: RawBodyRequest,
     @Res() res: Response,
   ): Promise<void> {
-    const result = await this.handler({
+    const result = await this.githubHandler({
       headers: req.headers as Record<string, string | string[] | undefined>,
       body: req.body,
       rawBody: req.rawBody,
@@ -74,11 +114,47 @@ export class WebhooksController {
   }
 
   @Get("webhooks/github")
-  getWebhookInfo(): object {
+  getGitHubWebhookInfo(): object {
     return {
       status: "ok",
       endpoint: "/webhooks/github",
       supportedEvents: ["push", "pull_request", "issues"],
+    };
+  }
+
+  @Post("webhooks/ragie")
+  async handleRagieWebhook(
+    @Req() req: RawBodyRequest,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.ragieHandler({
+      headers: req.headers as Record<string, string | string[] | undefined>,
+      body: req.body,
+      rawBody: req.rawBody,
+    });
+
+    if (result.body) {
+      res.status(result.statusCode).json(result.body);
+    } else {
+      res.status(result.statusCode).end();
+    }
+  }
+
+  @Get("webhooks/ragie")
+  getRagieWebhookInfo(): object {
+    return {
+      status: "ok",
+      endpoint: "/webhooks/ragie",
+      supportedEvents: [
+        "document_status_updated",
+        "document_deleted",
+        "entity_extracted",
+        "connection_sync_started",
+        "connection_sync_progress",
+        "connection_sync_finished",
+        "connection_limit_exceeded",
+        "partition_limit_exceeded",
+      ],
     };
   }
 
