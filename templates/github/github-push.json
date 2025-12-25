@@ -1,0 +1,112 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-GitHub-Event",
+      "value": "push"
+    },
+    {
+      "key": "X-GitHub-Delivery",
+      "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "key": "X-Hub-Signature-256",
+      "value": "sha256=placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "GitHub-Hookshot/abcd1234"
+    }
+  ],
+  "body": {
+    "ref": "refs/heads/main",
+    "before": "0000000000000000000000000000000000000000",
+    "after": "abc123def456789012345678901234567890abcd",
+    "created": false,
+    "deleted": false,
+    "forced": false,
+    "base_ref": null,
+    "compare": "https://github.com/octocat/hello-world/compare/main",
+    "commits": [
+      {
+        "id": "abc123def456789012345678901234567890abcd",
+        "message": "feat: add new feature\n\nThis commit adds a new feature to the application.",
+        "timestamp": "2024-01-15T10:30:00Z",
+        "url": "https://github.com/octocat/hello-world/commit/abc123def456789012345678901234567890abcd",
+        "author": {
+          "name": "Mona Lisa",
+          "email": "mona@github.com",
+          "username": "octocat"
+        },
+        "committer": {
+          "name": "Mona Lisa",
+          "email": "mona@github.com",
+          "username": "octocat"
+        },
+        "added": ["src/new-feature.ts"],
+        "removed": [],
+        "modified": ["src/index.ts", "package.json"]
+      },
+      {
+        "id": "def456789012345678901234567890abcdef12",
+        "message": "chore: update dependencies",
+        "timestamp": "2024-01-15T10:25:00Z",
+        "url": "https://github.com/octocat/hello-world/commit/def456789012345678901234567890abcdef12",
+        "author": {
+          "name": "Mona Lisa",
+          "email": "mona@github.com",
+          "username": "octocat"
+        },
+        "committer": {
+          "name": "Mona Lisa",
+          "email": "mona@github.com",
+          "username": "octocat"
+        },
+        "added": [],
+        "removed": [],
+        "modified": ["package-lock.json"]
+      }
+    ],
+    "head_commit": {
+      "id": "abc123def456789012345678901234567890abcd",
+      "message": "feat: add new feature\n\nThis commit adds a new feature to the application.",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "url": "https://github.com/octocat/hello-world/commit/abc123def456789012345678901234567890abcd",
+      "author": {
+        "name": "Mona Lisa",
+        "email": "mona@github.com",
+        "username": "octocat"
+      },
+      "committer": {
+        "name": "Mona Lisa",
+        "email": "mona@github.com",
+        "username": "octocat"
+      },
+      "added": ["src/new-feature.ts"],
+      "removed": [],
+      "modified": ["src/index.ts", "package.json"]
+    },
+    "repository": {
+      "id": 123456789,
+      "name": "hello-world",
+      "full_name": "octocat/hello-world",
+      "private": false
+    },
+    "pusher": {
+      "name": "octocat",
+      "email": "mona@github.com"
+    },
+    "sender": {
+      "login": "octocat",
+      "id": 583231,
+      "type": "User"
+    }
+  },
+  "provider": "github",
+  "event": "push",
+  "description": "GitHub push event - commits pushed to main branch"
+}

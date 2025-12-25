@@ -1,0 +1,99 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-GitHub-Event",
+      "value": "installation_repositories"
+    },
+    {
+      "key": "X-GitHub-Delivery",
+      "value": "e5f6a7b8-c9d0-1234-ef01-567890123456"
+    },
+    {
+      "key": "X-Hub-Signature-256",
+      "value": "sha256=placeholder"
+    },
+    {
+      "key": "X-GitHub-Hook-ID",
+      "value": "123456789"
+    },
+    {
+      "key": "X-GitHub-Hook-Installation-Target-ID",
+      "value": "12345"
+    },
+    {
+      "key": "X-GitHub-Hook-Installation-Target-Type",
+      "value": "integration"
+    },
+    {
+      "key": "User-Agent",
+      "value": "GitHub-Hookshot/abcd1234"
+    }
+  ],
+  "body": {
+    "action": "added",
+    "installation": {
+      "id": 12345678,
+      "account": {
+        "login": "octocat",
+        "id": 583231,
+        "node_id": "MDQ6VXNlcjU4MzIzMQ==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/583231?v=4",
+        "type": "User"
+      },
+      "repository_selection": "selected",
+      "access_tokens_url": "https://api.github.com/app/installations/12345678/access_tokens",
+      "repositories_url": "https://api.github.com/installation/repositories",
+      "html_url": "https://github.com/settings/installations/12345678",
+      "app_id": 123456,
+      "app_slug": "my-github-app",
+      "target_id": 583231,
+      "target_type": "User",
+      "permissions": {
+        "contents": "read",
+        "issues": "write",
+        "metadata": "read",
+        "pull_requests": "write"
+      },
+      "events": ["issues", "pull_request", "push"],
+      "created_at": "2024-01-15T12:00:00Z",
+      "updated_at": "2024-01-15T14:30:00Z",
+      "single_file_name": null,
+      "has_multiple_single_files": false,
+      "single_file_paths": [],
+      "suspended_by": null,
+      "suspended_at": null
+    },
+    "repository_selection": "selected",
+    "repositories_added": [
+      {
+        "id": 111222333,
+        "node_id": "MDEwOlJlcG9zaXRvcnkxMTEyMjIzMzM=",
+        "name": "new-repository",
+        "full_name": "octocat/new-repository",
+        "private": false
+      },
+      {
+        "id": 444555666,
+        "node_id": "MDEwOlJlcG9zaXRvcnk0NDQ1NTU2NjY=",
+        "name": "another-repo",
+        "full_name": "octocat/another-repo",
+        "private": true
+      }
+    ],
+    "repositories_removed": [],
+    "sender": {
+      "login": "octocat",
+      "id": 583231,
+      "type": "User"
+    },
+    "requester": null
+  },
+  "provider": "github",
+  "event": "installation_repositories",
+  "description": "GitHub App installation repositories event - repositories added to installation"
+}

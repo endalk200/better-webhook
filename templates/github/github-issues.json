@@ -1,0 +1,75 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "X-GitHub-Event",
+      "value": "issues"
+    },
+    {
+      "key": "X-GitHub-Delivery",
+      "value": "c3d4e5f6-a7b8-9012-cdef-345678901234"
+    },
+    {
+      "key": "X-Hub-Signature-256",
+      "value": "sha256=placeholder"
+    },
+    {
+      "key": "User-Agent",
+      "value": "GitHub-Hookshot/abcd1234"
+    }
+  ],
+  "body": {
+    "action": "opened",
+    "issue": {
+      "id": 567890123,
+      "number": 101,
+      "title": "Bug: Application crashes on startup with invalid config",
+      "body": "## Description\n\nThe application crashes immediately on startup when the configuration file contains invalid JSON.\n\n## Steps to Reproduce\n\n1. Create a config file with invalid JSON syntax\n2. Start the application\n3. Observe the crash\n\n## Expected Behavior\n\nThe application should display a helpful error message and exit gracefully.\n\n## Actual Behavior\n\nThe application crashes with an unhandled exception.\n\n## Environment\n\n- OS: macOS 14.0\n- Node.js: 20.10.0\n- Version: 1.2.3",
+      "state": "open",
+      "locked": false,
+      "created_at": "2024-01-15T16:45:00Z",
+      "updated_at": "2024-01-15T16:45:00Z",
+      "closed_at": null,
+      "user": {
+        "login": "contributor",
+        "id": 12345678,
+        "type": "User"
+      },
+      "labels": [
+        {
+          "id": 111111111,
+          "name": "bug",
+          "color": "d73a4a"
+        },
+        {
+          "id": 222222222,
+          "name": "priority: high",
+          "color": "b60205"
+        },
+        {
+          "id": 333333333,
+          "name": "needs-triage",
+          "color": "fbca04"
+        }
+      ]
+    },
+    "repository": {
+      "id": 123456789,
+      "name": "hello-world",
+      "full_name": "octocat/hello-world",
+      "private": false
+    },
+    "sender": {
+      "login": "contributor",
+      "id": 12345678,
+      "type": "User"
+    }
+  },
+  "provider": "github",
+  "event": "issues",
+  "description": "GitHub issues event - new issue opened"
+}

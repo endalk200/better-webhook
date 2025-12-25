@@ -256,6 +256,10 @@ describe("github()", () => {
         expect.objectContaining({
           ref: "refs/heads/main",
           repository: expect.objectContaining({ name: "repo" }),
+        }),
+        expect.objectContaining({
+          eventType: "push",
+          provider: "github",
         })
       );
     });
@@ -281,6 +285,10 @@ describe("github()", () => {
         expect.objectContaining({
           action: "opened",
           pull_request: expect.objectContaining({ title: "Test PR" }),
+        }),
+        expect.objectContaining({
+          eventType: "pull_request",
+          provider: "github",
         })
       );
     });
@@ -306,6 +314,10 @@ describe("github()", () => {
         expect.objectContaining({
           action: "opened",
           issue: expect.objectContaining({ title: "Test Issue" }),
+        }),
+        expect.objectContaining({
+          eventType: "issues",
+          provider: "github",
         })
       );
     });

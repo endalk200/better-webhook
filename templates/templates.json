@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "templates": [
+    {
+      "id": "github-push",
+      "name": "GitHub Push",
+      "description": "GitHub push event triggered when commits are pushed to a repository branch or tag",
+      "provider": "github",
+      "event": "push",
+      "file": "github/github-push.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#push"
+    },
+    {
+      "id": "github-pull_request",
+      "name": "GitHub Pull Request",
+      "description": "GitHub pull request event triggered when a PR is opened, closed, reopened, edited, assigned, labeled, synchronized, etc.",
+      "provider": "github",
+      "event": "pull_request",
+      "file": "github/github-pull_request.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request"
+    },
+    {
+      "id": "github-issues",
+      "name": "GitHub Issues",
+      "description": "GitHub issues event triggered when an issue is opened, edited, deleted, pinned, closed, reopened, assigned, labeled, etc.",
+      "provider": "github",
+      "event": "issues",
+      "file": "github/github-issues.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues"
+    },
+    {
+      "id": "github-installation",
+      "name": "GitHub Installation",
+      "description": "GitHub App installation event triggered when the app is installed, uninstalled, suspended, or has permissions changed",
+      "provider": "github",
+      "event": "installation",
+      "file": "github/github-installation.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation"
+    },
+    {
+      "id": "github-installation_repositories",
+      "name": "GitHub Installation Repositories",
+      "description": "GitHub App installation repositories event triggered when repositories are added to or removed from an installation",
+      "provider": "github",
+      "event": "installation_repositories",
+      "file": "github/github-installation_repositories.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories"
+    }
+  ]
+}
