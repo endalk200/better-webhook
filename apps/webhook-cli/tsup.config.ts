@@ -6,9 +6,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   outDir: "dist",
-  banner: {
-    js: "#!/usr/bin/env node",
-  },
   target: "node18",
   sourcemap: false,
   minify: false,

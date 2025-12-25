@@ -5,121 +5,423 @@
 [![License](https://img.shields.io/github/license/endalk200/better-webhook?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/node/v/@better-webhook/cli?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 
-A powerful CLI tool for webhook development, testing, and management. Capture incoming webhooks, replay them, generate reusable templates, and manage webhook definitions locally.
+A modern CLI tool for webhook development, testing, and debugging. Capture incoming webhooks, replay them against your local server, manage reusable templates, and generate provider-specific signatures automatically.
 
 ## Features
 
-✅ **Webhook Management** - Store and execute webhook definitions locally  
-🎣 **Live Capture** - Capture incoming webhooks with a local server  
-🔄 **Replay** - Replay captured webhooks to any endpoint  
-📋 **Templates** - Generate reusable templates from captured requests  
-📥 **Download** - Access curated webhook templates from the community  
-🎯 **Override** - Override URLs, methods, and headers on the fly
+- 🎣 **Capture** — Start a local server to capture incoming webhooks from any provider
+- 🔄 **Replay** — Replay captured webhooks to any endpoint with full header preservation
+- 📋 **Templates** — Download and run curated webhook templates from the community
+- 🔐 **Signatures** — Automatic signature generation for Stripe, GitHub, Shopify, Slack, and more
+- 🌐 **WebSocket** — Real-time capture notifications via WebSocket for dashboard integration
+- 🎯 **Provider Detection** — Automatically identifies webhook providers from headers
+
+## Supported Providers
+
+| Provider     | Signature Algorithm             | Auto-Detection |
+| ------------ | ------------------------------- | -------------- |
+| Stripe       | HMAC-SHA256 (`t={ts},v1={sig}`) | ✅             |
+| GitHub       | HMAC-SHA256 (`sha256={sig}`)    | ✅             |
+| Shopify      | HMAC-SHA256 (Base64)            | ✅             |
+| Slack        | HMAC-SHA256 (`v0={sig}`)        | ✅             |
+| Twilio       | HMAC-SHA1 (Base64)              | ✅             |
+| SendGrid     | HMAC-SHA256 (Base64)            | ✅             |
+| Linear       | HMAC-SHA256 (Hex)               | ✅             |
+| Clerk (Svix) | HMAC-SHA256 (`v1,{sig}`)        | ✅             |
+| Discord      | Ed25519                         | ✅             |
+| Custom       | —                               | —              |
 
 ## Installation
 
-### NPM/YARN/PNPM
-
 ```bash
-# Install globally
+# NPM
 npm install -g @better-webhook/cli
-# or use with npx
-npx @better-webhook/cli --help
 
-# With yarn
+# Yarn
 yarn global add @better-webhook/cli
 
-# With pnpm
+# PNPM
 pnpm add -g @better-webhook/cli
+
+# Or use with npx (no installation required)
+npx @better-webhook/cli --help
 ```
 
 ### Verify Installation
 
 ```bash
-better-webhook --help
+better-webhook --version
+# 2.0.0
 ```
 
 ## Quick Start
 
-### 1. Manage Webhook Definitions
+### 1. Capture Webhooks
+
+Start a local server to capture incoming webhooks:
 
 ```bash
-# List available webhook definitions
-better-webhook webhooks list
+# Start capture server on default port 3001
+better-webhook capture
 
-# Download community templates
-better-webhook webhooks download stripe-invoice.payment_succeeded
-better-webhook webhooks download --all
-
-# Run a webhook
-better-webhook webhooks run stripe-invoice
-better-webhook webhooks run mywebhook --url https://example.com/hook --method POST
+# Use a custom port
+better-webhook capture --port 4000
 ```
 
-### 2. Capture Live Webhooks
+Point your webhook provider (Stripe, GitHub, etc.) to `http://localhost:3001` or use a tunneling service like ngrok.
+
+### 2. View & Manage Captures
 
 ```bash
-# Start capture server (default port 3001)
-better-webhook capture
-better-webhook capture --port 3000
-
 # List captured webhooks
-better-webhook capture list
-better-webhook capture list --limit 20
+better-webhook captures list
 
-# Generate template from capture
-better-webhook capture template abc123 my-template-name
+# Show detailed information about a capture
+better-webhook captures show abc123
+
+# Search captures
+better-webhook captures search "github"
+
+# Delete a capture
+better-webhook captures delete abc123
 ```
 
 ### 3. Replay Webhooks
 
+Replay a captured webhook to your local development server:
+
 ```bash
-# Replay captured webhook to any endpoint
-better-webhook replay abc123 https://example.com/webhook
-better-webhook replay abc123 https://test.com/hook --method PUT
+# Interactive mode (select capture and enter URL)
+better-webhook replay
+
+# Direct replay
+better-webhook replay abc123 http://localhost:3000/api/webhooks/github
 ```
 
-## Commands
+### 4. Use Templates
 
-### `better-webhook webhooks`
+Download and run curated webhook templates:
 
-Manage and execute webhook definitions stored in `.webhooks/` directory.
+```bash
+# List available templates
+better-webhook templates list
 
-| Command                    | Description                        | Options             |
-| -------------------------- | ---------------------------------- | ------------------- |
-| `webhooks list`            | List available webhook definitions | -                   |
-| `webhooks run <name>`      | Execute a webhook definition       | `--url`, `--method` |
-| `webhooks download [name]` | Download community templates       | `--all`, `--force`  |
+# Download a template
+better-webhook templates download github-push
+
+# Run a template against your endpoint
+better-webhook run github-push --url http://localhost:3000/webhooks/github
+```
+
+---
+
+## Commands Reference
 
 ### `better-webhook capture`
 
-Capture, list, and generate templates from live webhook requests.
+Start a server to capture incoming webhooks. All captured webhooks are saved to `~/.better-webhook/captures/`.
 
-| Command                        | Description                    | Options                 |
-| ------------------------------ | ------------------------------ | ----------------------- |
-| `capture`                      | Start webhook capture server   | `--port`                |
-| `capture list`                 | List captured webhook requests | `--limit`               |
-| `capture template <id> [name]` | Generate template from capture | `--url`, `--output-dir` |
+```bash
+better-webhook capture [options]
+```
+
+| Option              | Description       | Default   |
+| ------------------- | ----------------- | --------- |
+| `-p, --port <port>` | Port to listen on | `3001`    |
+| `-h, --host <host>` | Host to bind to   | `0.0.0.0` |
+
+**Features:**
+
+- Automatically detects webhook provider from headers
+- Saves full request including headers, body, query params
+- WebSocket server for real-time notifications
+- Returns capture ID in response for easy reference
+
+**Example:**
+
+```bash
+better-webhook capture --port 4000 --host localhost
+```
+
+---
+
+### `better-webhook captures` (alias: `c`)
+
+Manage captured webhooks.
+
+#### `captures list` (alias: `ls`)
+
+List captured webhooks, sorted by most recent first.
+
+```bash
+better-webhook captures list [options]
+```
+
+| Option                      | Description                               | Default |
+| --------------------------- | ----------------------------------------- | ------- |
+| `-l, --limit <limit>`       | Maximum captures to show                  | `20`    |
+| `-p, --provider <provider>` | Filter by provider (stripe, github, etc.) | —       |
+
+#### `captures show <captureId>`
+
+Show detailed information about a specific capture.
+
+```bash
+better-webhook captures show <captureId> [options]
+```
+
+| Option       | Description            |
+| ------------ | ---------------------- |
+| `-b, --body` | Show full body content |
+
+**Arguments:**
+
+- `<captureId>` — Full or partial capture ID
+
+#### `captures search <query>`
+
+Search captures by ID, path, method, provider, or filename.
+
+```bash
+better-webhook captures search <query>
+```
+
+#### `captures delete` (alias: `rm`)
+
+Delete a specific captured webhook.
+
+```bash
+better-webhook captures delete <captureId> [options]
+```
+
+| Option        | Description              |
+| ------------- | ------------------------ |
+| `-f, --force` | Skip confirmation prompt |
+
+#### `captures clean` (alias: `remove-all`)
+
+Remove all captured webhooks.
+
+```bash
+better-webhook captures clean [options]
+```
+
+| Option        | Description              |
+| ------------- | ------------------------ |
+| `-f, --force` | Skip confirmation prompt |
+
+---
+
+### `better-webhook templates` (alias: `t`)
+
+Manage webhook templates. Templates are fetched from the [better-webhook repository](https://github.com/endalk200/better-webhook/tree/main/templates).
+
+#### `templates list` (alias: `ls`)
+
+List available remote templates from the repository.
+
+```bash
+better-webhook templates list [options]
+```
+
+| Option                      | Description                            |
+| --------------------------- | -------------------------------------- |
+| `-p, --provider <provider>` | Filter by provider                     |
+| `-r, --refresh`             | Force refresh the template index cache |
+
+#### `templates download` (alias: `get`)
+
+Download a template to local storage (`~/.better-webhook/templates/`).
+
+```bash
+better-webhook templates download [templateId] [options]
+```
+
+| Option      | Description                      |
+| ----------- | -------------------------------- |
+| `-a, --all` | Download all available templates |
+
+If no `templateId` is provided, shows an interactive selection menu.
+
+#### `templates local`
+
+List downloaded local templates.
+
+```bash
+better-webhook templates local [options]
+```
+
+| Option                      | Description        |
+| --------------------------- | ------------------ |
+| `-p, --provider <provider>` | Filter by provider |
+
+#### `templates search <query>`
+
+Search templates by name, provider, or event type.
+
+```bash
+better-webhook templates search <query>
+```
+
+#### `templates cache`
+
+Manage the template index cache.
+
+```bash
+better-webhook templates cache [options]
+```
+
+| Option        | Description              |
+| ------------- | ------------------------ |
+| `-c, --clear` | Clear the template cache |
+
+#### `templates clean` (alias: `remove-all`)
+
+Remove all downloaded templates.
+
+```bash
+better-webhook templates clean [options]
+```
+
+| Option        | Description              |
+| ------------- | ------------------------ |
+| `-f, --force` | Skip confirmation prompt |
+
+---
+
+### `better-webhook run`
+
+Run a webhook template against a target URL. Automatically generates provider-specific signatures when a secret is provided.
+
+```bash
+better-webhook run [templateId] [options]
+```
+
+| Option                  | Description                                | Required |
+| ----------------------- | ------------------------------------------ | -------- |
+| `-u, --url <url>`       | Target URL to send the webhook to          | ✅       |
+| `-s, --secret <secret>` | Secret for signature generation            | —        |
+| `-H, --header <header>` | Add custom header (format: `key:value`)    | —        |
+| `-v, --verbose`         | Show detailed request/response information | —        |
+
+**Arguments:**
+
+- `[templateId]` — Template ID to run (interactive selection if omitted)
+
+**Signature Generation:**
+
+When you provide a secret (`--secret`), the CLI automatically generates the correct signature header based on the template's provider. You can also use environment variables (see [Environment Variables](#environment-variables)).
+
+**Example:**
+
+```bash
+# Run with inline secret
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret "your-webhook-secret"
+
+# Run with custom headers
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret "$GITHUB_WEBHOOK_SECRET" \
+  --header "X-Custom-Header:value" \
+  --verbose
+```
+
+---
 
 ### `better-webhook replay`
 
-Replay captured webhooks to any endpoint.
+Replay a captured webhook to a target URL. Preserves original headers (except connection-related ones) and allows overrides.
 
-| Command                          | Description             | Options                |
-| -------------------------------- | ----------------------- | ---------------------- |
-| `replay <captureId> <targetUrl>` | Replay captured webhook | `--method`, `--header` |
+```bash
+better-webhook replay [captureId] [targetUrl] [options]
+```
 
-## Webhook Definition Format
+| Option                  | Description                                  |
+| ----------------------- | -------------------------------------------- |
+| `-m, --method <method>` | Override HTTP method                         |
+| `-H, --header <header>` | Add or override header (format: `key:value`) |
+| `-v, --verbose`         | Show detailed request/response information   |
 
-Webhook definitions are JSON files that follow this schema:
+**Arguments:**
+
+- `[captureId]` — Capture ID to replay (interactive selection if omitted)
+- `[targetUrl]` — Target URL (prompts if omitted, defaults to original path on localhost:3000)
+
+**Example:**
+
+```bash
+# Interactive mode
+better-webhook replay
+
+# Direct replay with options
+better-webhook replay abc123 http://localhost:3000/webhooks \
+  --method POST \
+  --header "X-Debug:true" \
+  --verbose
+```
+
+---
+
+## Environment Variables
+
+The CLI automatically reads webhook secrets from environment variables based on the provider:
+
+| Provider | Environment Variable      |
+| -------- | ------------------------- |
+| Stripe   | `STRIPE_WEBHOOK_SECRET`   |
+| GitHub   | `GITHUB_WEBHOOK_SECRET`   |
+| Shopify  | `SHOPIFY_WEBHOOK_SECRET`  |
+| Twilio   | `TWILIO_WEBHOOK_SECRET`   |
+| Slack    | `SLACK_WEBHOOK_SECRET`    |
+| Linear   | `LINEAR_WEBHOOK_SECRET`   |
+| Clerk    | `CLERK_WEBHOOK_SECRET`    |
+| SendGrid | `SENDGRID_WEBHOOK_SECRET` |
+| Discord  | `DISCORD_WEBHOOK_SECRET`  |
+| Custom   | `WEBHOOK_SECRET`          |
+
+**Usage:**
+
+```bash
+export GITHUB_WEBHOOK_SECRET="your-secret-here"
+better-webhook run github-push --url http://localhost:3000/webhooks/github
+# Secret is automatically used for signature generation
+```
+
+---
+
+## Storage Locations
+
+All CLI data is stored in `~/.better-webhook/`:
+
+```
+~/.better-webhook/
+├── captures/                    # Captured webhook requests
+│   ├── 2024-01-15_10-30-00_abc12345.json
+│   └── 2024-01-15_11-00-00_def67890.json
+├── templates/                   # Downloaded templates
+│   ├── github/
+│   │   ├── github-push.json
+│   │   └── github-pull_request.json
+│   └── stripe/
+│       └── stripe-invoice.json
+└── templates-cache.json         # Template index cache (1 hour TTL)
+```
+
+---
+
+## Webhook Template Format
+
+Templates follow this JSON schema:
 
 ```json
 {
   "url": "https://api.example.com/webhook",
   "method": "POST",
   "headers": [
-    { "key": "Authorization", "value": "Bearer token123" },
-    { "key": "Content-Type", "value": "application/json" }
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-Custom-Header", "value": "custom-value" }
   ],
   "body": {
     "event": "user.created",
@@ -127,165 +429,170 @@ Webhook definitions are JSON files that follow this schema:
       "id": "12345",
       "email": "user@example.com"
     }
-  }
+  },
+  "provider": "custom",
+  "event": "user.created",
+  "description": "Triggered when a new user is created"
 }
 ```
 
-### Schema Fields
+| Field         | Type   | Required | Description                                         |
+| ------------- | ------ | -------- | --------------------------------------------------- |
+| `url`         | string | —        | Default target URL (can be overridden with `--url`) |
+| `method`      | string | —        | HTTP method (default: `POST`)                       |
+| `headers`     | array  | —        | Array of `{ key, value }` header objects            |
+| `body`        | any    | —        | Request payload (object or string)                  |
+| `provider`    | string | —        | Provider name for signature generation              |
+| `event`       | string | —        | Event type identifier                               |
+| `description` | string | —        | Human-readable description                          |
 
-| Field     | Type   | Required | Description                 |
-| --------- | ------ | -------- | --------------------------- |
-| `url`     | string | ✅       | Target webhook URL          |
-| `method`  | string | ❌       | HTTP method (default: POST) |
-| `headers` | array  | ❌       | Array of header objects     |
-| `body`    | any    | ❌       | Request payload             |
+---
 
-## Directory Structure
+## Captured Webhook Format
 
+Captured webhooks are stored with full request details:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "method": "POST",
+  "url": "/webhooks/github?action=opened",
+  "path": "/webhooks/github",
+  "headers": {
+    "content-type": "application/json",
+    "x-github-event": "push",
+    "x-hub-signature-256": "sha256=..."
+  },
+  "body": { "...parsed JSON..." },
+  "rawBody": "{...original string...}",
+  "query": { "action": "opened" },
+  "provider": "github",
+  "contentType": "application/json",
+  "contentLength": 1234
+}
 ```
-your-project/
-├── .webhooks/           # Webhook definitions
-│   ├── stripe-payment.json
-│   ├── user-signup.json
-│   └── order-complete.json
-└── .webhook-captures/   # Captured requests (auto-created)
-    ├── 2024-01-15T10-30-00_abc123.json
-    └── 2024-01-15T11-00-00_def456.json
-```
+
+---
 
 ## Use Cases
 
-### Development & Testing
+### Local Development
+
+Test your webhook endpoints during development:
 
 ```bash
-# Test your webhook endpoint during development
-better-webhook webhooks run test-payload --url http://localhost:3000/webhook
+# Terminal 1: Start your app
+npm run dev
 
-# Capture webhooks from external services
+# Terminal 2: Capture webhooks
 better-webhook capture --port 4000
-# Point your webhook provider to http://localhost:4000
 
-# Replay captured requests for debugging
-better-webhook replay abc123 http://localhost:3000/debug
+# Configure your webhook provider to send to http://localhost:4000
+# (use ngrok for external providers: ngrok http 4000)
+
+# Terminal 3: Replay captured webhooks to your app
+better-webhook replay abc123 http://localhost:3000/api/webhooks
 ```
 
-### CI/CD & Automation
+### Debugging Webhook Issues
+
+```bash
+# Capture the problematic webhook
+better-webhook capture
+
+# Inspect the full request
+better-webhook captures show abc123 --body
+
+# Replay to your local server with verbose output
+better-webhook replay abc123 http://localhost:3000/webhooks --verbose
+```
+
+### Testing Signature Verification
+
+```bash
+# Run a template with your production secret
+better-webhook run stripe-invoice.payment_succeeded \
+  --url http://localhost:3000/api/webhooks/stripe \
+  --secret "whsec_your_stripe_secret" \
+  --verbose
+```
+
+### CI/CD Integration
 
 ```bash
 # Test webhook endpoints in your pipeline
-better-webhook webhooks run deployment-success --url $PROD_WEBHOOK_URL
+better-webhook templates download github-push
+better-webhook run github-push \
+  --url "$TEST_ENDPOINT" \
+  --secret "$GITHUB_WEBHOOK_SECRET"
 
-# Capture and replay for integration testing
-better-webhook capture --port 8080 &
-run_integration_tests
-better-webhook capture list
-better-webhook replay latest-capture $TEST_ENDPOINT
+# Check exit code
+if [ $? -eq 0 ]; then
+  echo "Webhook test passed"
+fi
 ```
 
-### API Integration
+---
 
-```bash
-# Download and customize templates for popular services
-better-webhook webhooks download stripe-invoice.payment_succeeded
-better-webhook webhooks run stripe-invoice --url https://myapp.com/stripe
+## WebSocket API
 
-# Generate templates from real webhook data
-better-webhook capture template abc123 stripe-custom-template
-```
+The capture server exposes a WebSocket endpoint on the same port for real-time notifications:
 
-## Examples
+```javascript
+const ws = new WebSocket("ws://localhost:3001");
 
-### Stripe Payment Webhook
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
 
-```json
-{
-  "url": "https://api.myapp.com/webhooks/stripe",
-  "method": "POST",
-  "headers": [
-    { "key": "Stripe-Signature", "value": "t=1234567890,v1=signature" }
-  ],
-  "body": {
-    "id": "evt_1234567890",
-    "object": "event",
-    "type": "payment_intent.succeeded",
-    "data": {
-      "object": {
-        "id": "pi_1234567890",
-        "amount": 2000,
-        "currency": "usd",
-        "status": "succeeded"
-      }
-    }
+  switch (message.type) {
+    case "capture":
+      console.log("New capture:", message.payload.capture);
+      break;
+    case "captures_updated":
+      console.log("Captures list:", message.payload.captures);
+      break;
   }
-}
+};
 ```
 
-### GitHub Webhook
+**Message Types:**
 
-```json
-{
-  "url": "https://api.myapp.com/webhooks/github",
-  "method": "POST",
-  "headers": [
-    { "key": "X-GitHub-Event", "value": "push" },
-    { "key": "X-Hub-Signature-256", "value": "sha256=signature" }
-  ],
-  "body": {
-    "ref": "refs/heads/main",
-    "commits": [
-      {
-        "id": "abc123",
-        "message": "Update README",
-        "author": {
-          "name": "Developer",
-          "email": "dev@example.com"
-        }
-      }
-    ]
-  }
-}
-```
+| Type               | Description                 | Payload               |
+| ------------------ | --------------------------- | --------------------- |
+| `capture`          | New webhook captured        | `{ file, capture }`   |
+| `captures_updated` | Initial state on connection | `{ captures, count }` |
+
+---
 
 ## Error Handling
 
-The CLI provides detailed error messages and uses appropriate exit codes:
+The CLI uses standard exit codes:
 
-- **0**: Success
-- **1**: General error (network, validation, file not found)
+| Code | Description                                       |
+| ---- | ------------------------------------------------- |
+| `0`  | Success                                           |
+| `1`  | Error (validation, network, file not found, etc.) |
+
+Detailed error messages are displayed in the terminal:
 
 ```bash
-# Validation errors show detailed field information
-better-webhook webhooks run invalid-webhook
-# Error: Webhook validation failed:
-#   - url: Required field missing
-#   - method: Invalid HTTP method "INVALID"
+better-webhook run nonexistent-template --url http://localhost:3000
+# ❌ Template not found: nonexistent-template
+#    Download it with: better-webhook templates download nonexistent-template
 
-# Network errors are clearly reported
-better-webhook webhooks run test --url https://invalid-domain.nonexistent
-# Error: Request failed: getaddrinfo ENOTFOUND invalid-domain.nonexistent
+better-webhook capture --port 99999
+# Invalid port number
+
+better-webhook replay abc123 invalid-url
+# Please enter a valid URL
 ```
 
-## Configuration
+---
 
-### Environment Variables
+## Development
 
-| Variable       | Description                       | Default             |
-| -------------- | --------------------------------- | ------------------- |
-| `WEBHOOKS_DIR` | Directory for webhook definitions | `.webhooks`         |
-| `CAPTURES_DIR` | Directory for captured webhooks   | `.webhook-captures` |
-
-### Global Options
-
-| Flag        | Description              |
-| ----------- | ------------------------ |
-| `--help`    | Show help information    |
-| `--version` | Show version information |
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](https://github.com/endalk200/better-webhook/blob/main/CONTRIBUTING.md) for details.
-
-### Development Setup
+### Building from Source
 
 ```bash
 git clone https://github.com/endalk200/better-webhook.git
@@ -294,15 +601,22 @@ pnpm install
 pnpm --filter @better-webhook/cli build
 ```
 
-### Running Tests
+### Running Locally
 
 ```bash
-pnpm --filter @better-webhook/cli test
+cd apps/webhook-cli
+pnpm start -- capture --port 3001
 ```
+
+---
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](https://github.com/endalk200/better-webhook/blob/main/CONTRIBUTING.md) for details.
 
 ## Changelog
 
-See [CHANGELOG.md](https://github.com/endalk200/better-webhook/blob/main/apps/webhook-cli/CHANGELOG.md) for version history.
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 ## License
 
@@ -313,8 +627,3 @@ MIT © [Endalk](https://github.com/endalk200)
 - 🐛 [Report bugs](https://github.com/endalk200/better-webhook/issues)
 - 💡 [Request features](https://github.com/endalk200/better-webhook/issues)
 - 📖 [Documentation](https://github.com/endalk200/better-webhook#readme)
-
----
-
-Made with ❤️ by [Endalk](https://github.com/endalk200)
-

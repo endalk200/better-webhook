@@ -1,14 +1,22 @@
-import { Command } from "commander";
+#!/usr/bin/env node
 
-import { webhooks } from "./commands/webhooks.js";
-import { capture } from "./commands/capture.js";
-import { replay } from "./commands/replay.js";
+import { Command } from "commander";
+import { templates, run, capture, captures, replay } from "./commands/index.js";
 
 const program = new Command()
   .name("better-webhook")
-  .description("CLI for listing, downloading and executing predefined webhooks")
-  .version("0.2.0");
+  .description(
+    "Modern CLI for developing, capturing, and replaying webhooks locally",
+  )
+  .version("2.0.0");
 
-program.addCommand(webhooks).addCommand(capture).addCommand(replay);
+// Add all commands
+program
+  .addCommand(templates)
+  .addCommand(run)
+  .addCommand(capture)
+  .addCommand(captures)
+  .addCommand(replay);
 
+// Parse and execute
 program.parseAsync(process.argv);

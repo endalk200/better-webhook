@@ -1,7 +1,7 @@
 {
   "name": "@better-webhook/cli",
-  "version": "0.3.1",
-  "description": "CLI for developing and replaying webhook payloads locally.",
+  "version": "3.0.0",
+  "description": "Modern CLI for developing, capturing, and replaying webhooks locally with dashboard UI.",
   "type": "module",
   "bin": {
     "better-webhook": "dist/index.js"
@@ -16,8 +16,10 @@
     }
   },
   "scripts": {
-    "build": "tsup --format cjs,esm --dts",
+    "build:cli": "tsup --format cjs,esm --dts",
+    "build": "npm run build:cli",
     "dev": "tsup --watch",
+    "start": "tsx src/index.ts",
     "lint": "tsc",
     "prepublishOnly": "pnpm run build",
     "prepare": "pnpm run build"
@@ -32,7 +34,13 @@
     "cli",
     "developer-tools",
     "testing",
-    "http"
+    "http",
+    "stripe",
+    "github",
+    "webhooks",
+    "capture",
+    "replay",
+    "dashboard"
   ],
   "license": "MIT",
   "author": "Endalk <endalk200>",
@@ -51,16 +59,21 @@
     "node": ">=18"
   },
   "dependencies": {
+    "chalk": "^5.3.0",
     "commander": "^14.0.1",
-    "ora": "^9.0.0",
+    "express": "^4.21.0",
+    "ora": "^8.1.0",
     "prompts": "^2.4.2",
     "undici": "^7.16.0",
-    "zod": "^4.0.0"
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",
+    "@types/express": "^4.17.21",
     "@types/node": "^24.3.1",
     "@types/prompts": "^2.4.9",
+    "@types/ws": "^8.5.12",
     "tsup": "^8.5.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"

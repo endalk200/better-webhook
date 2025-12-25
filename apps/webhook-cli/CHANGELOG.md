@@ -1,5 +1,16 @@
 # @better-webhook/cli
 
+## 3.0.0
+
+### Major Changes
+
+- Major refactor of the CLI codebase to improve readability, maintainability, and performance.
+- Add new flags to the capture command to allow for custom port and host configuration.
+- Add new flags to the replay command to allow for custom method and header configuration.
+- Add new flags to the run command to allow for custom secret and header configuration.
+- Add new flags to the templates command to allow for custom provider configuration.
+- Add new flags to the captures command to allow for custom limit and provider configuration.
+
 ## 0.3.1
 
 ### Patch Changes

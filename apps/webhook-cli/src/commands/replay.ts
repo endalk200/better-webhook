@@ -1,25 +1,20 @@
 import { Command } from "commander";
-import { WebhookReplayer } from "../replay.js";
-import { findCapturesDir } from "../utils/index.js";
-import prompts from "prompts";
 import ora from "ora";
+import prompts from "prompts";
+import chalk from "chalk";
+import { getReplayEngine } from "../core/replay-engine.js";
+import type { HeaderEntry } from "../types/index.js";
 
 export const replay = new Command()
   .name("replay")
-  .argument(
-    "[captureId]",
-    "ID of the captured webhook to replay (optional - will prompt if not provided)"
-  )
-  .argument(
-    "[targetUrl]",
-    "Target URL to replay the webhook to (optional - will prompt if not provided)"
-  )
+  .argument("[captureId]", "Capture ID to replay")
+  .argument("[targetUrl]", "Target URL to replay to")
   .description("Replay a captured webhook to a target URL")
   .option("-m, --method <method>", "Override HTTP method")
   .option(
     "-H, --header <header>",
-    "Add custom header (format: key:value)",
-    (value, previous: Array<{ key: string; value: string }>) => {
+    "Add or override header (format: key:value)",
+    (value: string, previous: HeaderEntry[]) => {
       const [key, ...valueParts] = value.split(":");
       const headerValue = valueParts.join(":");
       if (!key || !headerValue) {
@@ -29,45 +24,39 @@ export const replay = new Command()
         { key: key.trim(), value: headerValue.trim() },
       ]);
     },
-    [] as Array<{ key: string; value: string }>
+    [] as HeaderEntry[],
   )
+  .option("-v, --verbose", "Show detailed request/response information")
   .action(
     async (
       captureId?: string,
       targetUrl?: string,
-      options: {
+      options?: {
         method?: string;
-        header?: Array<{ key: string; value: string }>;
-      } = {}
+        header?: HeaderEntry[];
+        verbose?: boolean;
+      },
     ) => {
-      const cwd = process.cwd();
-      const capturesDir = findCapturesDir(cwd);
-      const replayer = new WebhookReplayer(capturesDir);
+      const engine = getReplayEngine();
 
-      // Get list of captured webhooks
-      const spinner = ora("Loading captured webhooks...").start();
-      const captured = replayer.listCaptured();
-      spinner.stop();
+      // Interactive selection if no captureId provided
+      if (!captureId) {
+        const captures = engine.listCaptures(50);
 
-      if (captured.length === 0) {
-        console.log("📭 No captured webhooks found.");
-        console.log(
-          "💡 Run 'better-webhook capture' to start capturing webhooks first."
-        );
-        return;
-      }
+        if (captures.length === 0) {
+          console.log(chalk.yellow("\n📭 No captured webhooks found."));
+          console.log(
+            chalk.gray("   Start capturing with: better-webhook capture\n"),
+          );
+          return;
+        }
 
-      let selectedCaptureId = captureId;
-      let selectedTargetUrl = targetUrl;
-
-      // Prompt for capture selection if not provided
-      if (!selectedCaptureId) {
-        const choices = captured.map((c) => {
+        const choices = captures.map((c) => {
           const date = new Date(c.capture.timestamp).toLocaleString();
-          const bodySize = c.capture.rawBody?.length ?? 0;
+          const provider = c.capture.provider ? `[${c.capture.provider}]` : "";
           return {
-            title: `${c.capture.id} - ${c.capture.method} ${c.capture.url}`,
-            description: `${date} | Body: ${bodySize} bytes`,
+            title: `${c.capture.id.slice(0, 8)} ${provider} ${c.capture.method} ${c.capture.path}`,
+            description: date,
             value: c.capture.id,
           };
         });
@@ -75,27 +64,33 @@ export const replay = new Command()
         const response = await prompts({
           type: "select",
           name: "captureId",
-          message: "Select a captured webhook to replay:",
+          message: "Select a capture to replay:",
           choices,
-          initial: 0,
         });
 
         if (!response.captureId) {
-          console.log("❌ No webhook selected. Exiting.");
-          process.exitCode = 1;
+          console.log(chalk.yellow("Cancelled"));
           return;
         }
 
-        selectedCaptureId = response.captureId;
+        captureId = response.captureId;
       }
 
-      // Prompt for target URL if not provided
-      if (!selectedTargetUrl) {
+      // Verify capture exists
+      const captureFile = engine.getCapture(captureId!);
+      if (!captureFile) {
+        console.log(chalk.red(`\n❌ Capture not found: ${captureId}\n`));
+        process.exitCode = 1;
+        return;
+      }
+
+      // Get target URL
+      if (!targetUrl) {
         const response = await prompts({
           type: "text",
-          name: "targetUrl",
-          message: "Enter the target URL to replay to:",
-          initial: "http://localhost:3000/webhook",
+          name: "url",
+          message: "Enter target URL:",
+          initial: `http://localhost:3000${captureFile.capture.path}`,
           validate: (value) => {
             try {
               new URL(value);
@@ -106,41 +101,91 @@ export const replay = new Command()
           },
         });
 
-        if (!response.targetUrl) {
-          console.log("❌ No target URL provided. Exiting.");
-          process.exitCode = 1;
+        if (!response.url) {
+          console.log(chalk.yellow("Cancelled"));
           return;
         }
 
-        selectedTargetUrl = response.targetUrl;
+        targetUrl = response.url;
       }
+
+      // Show info
+      const { capture } = captureFile;
+      console.log(chalk.bold("\n🔄 Replaying Webhook\n"));
+      console.log(chalk.gray(`   Capture ID: ${capture.id.slice(0, 8)}`));
+      console.log(chalk.gray(`   Original: ${capture.method} ${capture.path}`));
+      if (capture.provider) {
+        console.log(chalk.gray(`   Provider: ${capture.provider}`));
+      }
+      console.log(chalk.gray(`   Target: ${targetUrl}`));
+      console.log();
+
+      // Execute replay
+      const spinner = ora("Replaying webhook...").start();
 
       try {
-        const result = await replayer.replay(
-          selectedCaptureId!,
-          selectedTargetUrl!,
-          {
-            method: options.method,
-            headers: options.header,
-          }
-        );
+        const result = await engine.replay(captureId!, {
+          targetUrl: targetUrl!,
+          method: options?.method as any,
+          headers: options?.header,
+        });
 
-        console.log("✅ Replay completed successfully!");
-        console.log("Status:", result.status);
-        console.log("Headers:");
-        for (const [k, v] of Object.entries(result.headers)) {
-          console.log(`  ${k}: ${Array.isArray(v) ? v.join(", ") : v}`);
+        spinner.stop();
+
+        // Show result
+        const statusColor =
+          result.status >= 200 && result.status < 300
+            ? chalk.green
+            : result.status >= 400
+              ? chalk.red
+              : chalk.yellow;
+
+        console.log(chalk.bold("📥 Response\n"));
+        console.log(
+          `   Status: ${statusColor(`${result.status} ${result.statusText}`)}`,
+        );
+        console.log(`   Duration: ${chalk.cyan(`${result.duration}ms`)}`);
+
+        if (options?.verbose) {
+          console.log(chalk.bold("\n   Headers:"));
+          for (const [key, value] of Object.entries(result.headers)) {
+            const headerValue = Array.isArray(value) ? value.join(", ") : value;
+            console.log(chalk.gray(`     ${key}: ${headerValue}`));
+          }
         }
+
         if (result.json !== undefined) {
-          console.log("Response JSON:");
-          console.log(JSON.stringify(result.json, null, 2));
+          console.log(chalk.bold("\n   Body:"));
+          console.log(
+            chalk.gray(
+              JSON.stringify(result.json, null, 2)
+                .split("\n")
+                .map((l) => `     ${l}`)
+                .join("\n"),
+            ),
+          );
+        } else if (result.bodyText) {
+          console.log(chalk.bold("\n   Body:"));
+          const preview =
+            result.bodyText.length > 500
+              ? result.bodyText.slice(0, 500) + "..."
+              : result.bodyText;
+          console.log(chalk.gray(`     ${preview}`));
+        }
+
+        console.log();
+
+        if (result.status >= 200 && result.status < 300) {
+          console.log(chalk.green("✓ Replay completed successfully\n"));
         } else {
-          console.log("Response Body:");
-          console.log(result.bodyText);
+          console.log(
+            chalk.yellow(`⚠ Replay completed with status ${result.status}\n`),
+          );
         }
       } catch (error: any) {
-        console.error("❌ Replay failed:", error.message);
+        spinner.fail("Replay failed");
+        console.error(chalk.red(`\n❌ ${error.message}\n`));
         process.exitCode = 1;
       }
-    }
+    },
   );
