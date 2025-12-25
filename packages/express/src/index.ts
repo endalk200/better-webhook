@@ -26,7 +26,7 @@ export interface ExpressAdapterOptions {
 export type ExpressMiddleware = (
   req: Request,
   res: Response,
-  next?: NextFunction
+  next?: NextFunction,
 ) => Promise<void>;
 
 // ============================================================================
@@ -64,12 +64,12 @@ export type ExpressMiddleware = (
  */
 export function toExpress<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
-  options?: ExpressAdapterOptions
+  options?: ExpressAdapterOptions,
 ): ExpressMiddleware {
   return async (
     req: Request,
     res: Response,
-    next?: NextFunction
+    next?: NextFunction,
   ): Promise<void> => {
     try {
       // Get raw body - expect Buffer from express.raw()
@@ -115,7 +115,7 @@ export function toExpress<EventMap extends Record<string, ZodSchema>>(
         result.body || {
           ok: result.status === 200,
           eventType: result.eventType,
-        }
+        },
       );
     } catch (error) {
       // Pass to Express error handler if available

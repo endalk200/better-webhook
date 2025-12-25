@@ -92,7 +92,7 @@ export type NestJSHandler = (req: NestJSRequest) => Promise<NestJSResult>;
  */
 export function toNestJS<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
-  options?: NestJSAdapterOptions
+  options?: NestJSAdapterOptions,
 ): NestJSHandler {
   return async (req: NestJSRequest): Promise<NestJSResult> => {
     // Get raw body

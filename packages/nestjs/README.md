@@ -12,10 +12,9 @@ import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github()
-    .event("push", async (payload) => {
-      console.log(`Push to ${payload.repository.name}`);
-    });
+  private webhook = github().event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
 
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
@@ -91,7 +90,7 @@ export class WebhooksController {
     .event("pull_request", async (payload) => {
       if (payload.action === "opened") {
         await this.notificationService.sendSlack(
-          `New PR: ${payload.pull_request.title}`
+          `New PR: ${payload.pull_request.title}`,
         );
       }
     });
@@ -142,7 +141,7 @@ export class WebhooksController {
       .event("pull_request", async (payload) => {
         if (payload.action === "merged") {
           await this.notificationService.notify(
-            `PR #${payload.number} merged!`
+            `PR #${payload.number} merged!`,
           );
         }
       });
@@ -163,19 +162,17 @@ Handle different webhook sources in separate controller methods:
 ```ts
 @Controller("webhooks")
 export class WebhooksController {
-  private githubWebhook = github()
-    .event("push", async (payload) => {
-      console.log("GitHub push:", payload.repository.name);
-    });
+  private githubWebhook = github().event("push", async (payload) => {
+    console.log("GitHub push:", payload.repository.name);
+  });
 
   private stripeWebhook = customWebhook({
     name: "stripe",
     schemas: { "payment.succeeded": PaymentSchema },
     getEventType: (headers) => headers["stripe-event-type"],
-  })
-    .event("payment.succeeded", async (payload) => {
-      console.log("Payment received:", payload.id);
-    });
+  }).event("payment.succeeded", async (payload) => {
+    console.log("Payment received:", payload.id);
+  });
 
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
@@ -207,7 +204,7 @@ private webhook = github()
       `Webhook error: ${context.eventType}`,
       error.stack,
     );
-    
+
     // context.deliveryId is the X-GitHub-Delivery header
     this.errorTracker.capture(error, {
       eventType: context.eventType,
@@ -273,13 +270,13 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
 
 ## Response Codes
 
-| Code | Meaning |
-|------|---------|
-| `200` | Webhook processed successfully |
+| Code  | Meaning                                   |
+| ----- | ----------------------------------------- |
+| `200` | Webhook processed successfully            |
 | `204` | No handler registered for this event type |
-| `400` | Invalid body or schema validation failed |
-| `401` | Signature verification failed |
-| `500` | Handler threw an error |
+| `400` | Invalid body or schema validation failed  |
+| `401` | Signature verification failed             |
+| `500` | Handler threw an error                    |
 
 ## Module Registration
 

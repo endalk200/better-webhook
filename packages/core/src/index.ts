@@ -102,7 +102,7 @@ export interface ProviderConfig<
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string
+    secret: string,
   ) => boolean;
 }
 
@@ -151,7 +151,7 @@ export interface HmacVerifyOptions {
  */
 export type EventHandler<T> = (
   payload: T,
-  context: HandlerContext
+  context: HandlerContext,
 ) => Promise<void> | void;
 
 /**
@@ -159,7 +159,7 @@ export type EventHandler<T> = (
  */
 export type ErrorHandler = (
   error: Error,
-  context: ErrorContext
+  context: ErrorContext,
 ) => Promise<void> | void;
 
 /**
@@ -167,7 +167,7 @@ export type ErrorHandler = (
  */
 export type VerificationFailedHandler = (
   reason: string,
-  headers: Headers
+  headers: Headers,
 ) => Promise<void> | void;
 
 /**
@@ -196,7 +196,7 @@ export interface ProcessOptions {
  * Normalize headers to lowercase keys with string values
  */
 export function normalizeHeaders(
-  headers: Record<string, string | string[] | undefined>
+  headers: Record<string, string | string[] | undefined>,
 ): Headers {
   const normalized: Headers = {};
   for (const [key, value] of Object.entries(headers)) {
@@ -311,7 +311,7 @@ export function verifyHmac(options: {
  * ```
  */
 export function createHmacVerifier(
-  options: HmacVerifyOptions
+  options: HmacVerifyOptions,
 ): (rawBody: string | Buffer, headers: Headers, secret: string) => boolean {
   const {
     algorithm,
@@ -323,7 +323,7 @@ export function createHmacVerifier(
   return (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string
+    secret: string,
   ): boolean => {
     const signature = headers[signatureHeader.toLowerCase()];
 
@@ -487,15 +487,15 @@ export class WebhookBuilder<
    */
   event<E extends keyof EventMap & string>(
     eventType: E,
-    handler: EventHandler<InferPayload<EventMap[E]>>
+    handler: EventHandler<InferPayload<EventMap[E]>>,
   ): WebhookBuilder<EventMap> {
     const newBuilder = this.clone();
     const existing = newBuilder.handlers.get(eventType) || [];
     existing.push(
       handler as (
         payload: unknown,
-        context: HandlerContext
-      ) => Promise<void> | void
+        context: HandlerContext,
+      ) => Promise<void> | void,
     );
     newBuilder.handlers.set(eventType, existing);
     return newBuilder;
@@ -516,7 +516,7 @@ export class WebhookBuilder<
    * Returns a new builder instance for immutable chaining
    */
   onVerificationFailed(
-    handler: VerificationFailedHandler
+    handler: VerificationFailedHandler,
   ): WebhookBuilder<EventMap> {
     const newBuilder = this.clone();
     newBuilder.verificationFailedHandler = handler;

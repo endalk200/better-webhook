@@ -11,15 +11,14 @@ import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github()
-  .event("push", async (payload) => {
-    console.log(`Push to ${payload.repository.name}`);
-  });
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
 
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);
@@ -79,7 +78,7 @@ const webhook = github()
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 // Your other routes use regular JSON parsing
@@ -106,7 +105,7 @@ Webhook signature verification requires the raw request body. Use `express.raw()
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 // ❌ Wrong - body is parsed as JSON, signature verification will fail
@@ -123,32 +122,30 @@ import { github } from "@better-webhook/github";
 import { toExpress } from "@better-webhook/express";
 
 // GitHub webhooks
-const githubWebhook = github()
-  .event("push", async (payload) => {
-    console.log("GitHub push:", payload.repository.name);
-  });
+const githubWebhook = github().event("push", async (payload) => {
+  console.log("GitHub push:", payload.repository.name);
+});
 
 // Custom internal service
 const internalWebhook = customWebhook({
   name: "internal",
   schemas: { "job.completed": JobSchema },
   getEventType: (headers) => headers["x-event-type"],
-})
-  .event("job.completed", async (payload) => {
-    console.log("Job completed:", payload.jobId);
-  });
+}).event("job.completed", async (payload) => {
+  console.log("Job completed:", payload.jobId);
+});
 
 // Mount each on its own route
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(githubWebhook)
+  toExpress(githubWebhook),
 );
 
 app.post(
   "/webhooks/internal",
   express.raw({ type: "application/json" }),
-  toExpress(internalWebhook)
+  toExpress(internalWebhook),
 );
 ```
 
@@ -165,7 +162,7 @@ const webhook = github()
   })
   .onError((error, context) => {
     console.error(`Error in ${context.eventType} handler:`, error);
-    
+
     // Send to error tracking
     Sentry.captureException(error, {
       tags: { event: context.eventType },
@@ -182,7 +179,7 @@ Uncaught errors are passed to Express error handlers:
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 // Global error handler
@@ -216,7 +213,7 @@ app.post(
   express.raw({ type: "application/json" }),
   toExpress(webhook, {
     secret: process.env.MY_GITHUB_SECRET,
-  })
+  }),
 );
 ```
 
@@ -230,19 +227,19 @@ app.post(
     onSuccess: async (eventType) => {
       metrics.increment("webhook.success", { event: eventType });
     },
-  })
+  }),
 );
 ```
 
 ## Response Codes
 
-| Code | Meaning |
-|------|---------|
-| `200` | Webhook processed successfully |
+| Code  | Meaning                                   |
+| ----- | ----------------------------------------- |
+| `200` | Webhook processed successfully            |
 | `204` | No handler registered for this event type |
-| `400` | Invalid body or schema validation failed |
-| `401` | Signature verification failed |
-| `500` | Handler threw an error |
+| `400` | Invalid body or schema validation failed  |
+| `401` | Signature verification failed             |
+| `500` | Handler threw an error                    |
 
 ## TypeScript
 
@@ -253,10 +250,9 @@ import express, { Request, Response } from "express";
 import { github } from "@better-webhook/github";
 import { toExpress, ExpressMiddleware } from "@better-webhook/express";
 
-const webhook = github()
-  .event("push", async (payload) => {
-    // payload is fully typed
-  });
+const webhook = github().event("push", async (payload) => {
+  // payload is fully typed
+});
 
 const middleware: ExpressMiddleware = toExpress(webhook);
 ```

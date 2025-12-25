@@ -33,7 +33,7 @@ export type NextJSHandler = (request: Request) => Promise<Response>;
  */
 function jsonResponse(
   body: Record<string, unknown> | null,
-  status: number
+  status: number,
 ): Response {
   if (body === null) {
     return new Response(null, { status });
@@ -74,7 +74,7 @@ function jsonResponse(
  */
 export function toNextJS<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
-  options?: NextJSAdapterOptions
+  options?: NextJSAdapterOptions,
 ): NextJSHandler {
   return async (request: Request): Promise<Response> => {
     // Enforce POST method
@@ -90,7 +90,7 @@ export function toNextJS<EventMap extends Record<string, ZodSchema>>(
     } catch {
       return jsonResponse(
         { ok: false, error: "Failed to read request body" },
-        400
+        400,
       );
     }
 
@@ -123,7 +123,7 @@ export function toNextJS<EventMap extends Record<string, ZodSchema>>(
 
     return jsonResponse(
       result.body || { ok: result.status === 200 },
-      result.status
+      result.status,
     );
   };
 }

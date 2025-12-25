@@ -145,7 +145,7 @@ describe("WebhookBuilder", () => {
         expect.objectContaining({
           eventType: "test.event",
           provider: "test",
-        })
+        }),
       );
     });
 
@@ -166,11 +166,11 @@ describe("WebhookBuilder", () => {
 
       expect(handler1).toHaveBeenCalledWith(
         validPayload,
-        expect.objectContaining({ eventType: "test.event" })
+        expect.objectContaining({ eventType: "test.event" }),
       );
       expect(handler2).toHaveBeenCalledWith(
         validPayload,
-        expect.objectContaining({ eventType: "test.event" })
+        expect.objectContaining({ eventType: "test.event" }),
       );
     });
 
@@ -206,7 +206,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -227,7 +227,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -248,7 +248,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -274,7 +274,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -297,7 +297,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -319,7 +319,7 @@ describe("WebhookBuilder", () => {
         "test.event",
         (_payload, context) => {
           receivedContext = context;
-        }
+        },
       );
 
       await webhook.process({
@@ -333,10 +333,10 @@ describe("WebhookBuilder", () => {
       expect(receivedContext).toBeDefined();
       expect(receivedContext!.receivedAt).toBeInstanceOf(Date);
       expect(receivedContext!.receivedAt.getTime()).toBeGreaterThanOrEqual(
-        beforeProcess.getTime()
+        beforeProcess.getTime(),
       );
       expect(receivedContext!.receivedAt.getTime()).toBeLessThanOrEqual(
-        afterProcess.getTime()
+        afterProcess.getTime(),
       );
     });
 
@@ -364,8 +364,8 @@ describe("WebhookBuilder", () => {
       expect(receivedContexts.length).toBe(2);
       // Both handlers should receive the same context object
       expect(receivedContexts[0]).toBe(receivedContexts[1]);
-      expect(receivedContexts[0].headers["x-custom-header"]).toBe(
-        "custom-value"
+      expect(receivedContexts[0]!.headers["x-custom-header"]).toBe(
+        "custom-value",
       );
     });
 
@@ -378,7 +378,7 @@ describe("WebhookBuilder", () => {
         (_payload, context) => {
           // Handler that only uses context
           loggedProvider = context.provider;
-        }
+        },
       );
 
       await webhook.process({
@@ -539,7 +539,7 @@ describe("WebhookBuilder", () => {
         expect.objectContaining({
           eventType: "test.event",
           payload: validPayload,
-        })
+        }),
       );
     });
 
@@ -576,7 +576,7 @@ describe("WebhookBuilder", () => {
 
       expect(onVerificationFailed).toHaveBeenCalledWith(
         "Signature verification failed",
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -602,7 +602,7 @@ describe("WebhookBuilder", () => {
       expect(verifyMock).toHaveBeenCalledWith(
         expect.any(String),
         expect.any(Object),
-        "options-secret"
+        "options-secret",
       );
     });
 
@@ -620,7 +620,7 @@ describe("WebhookBuilder", () => {
       expect(verifyMock).toHaveBeenCalledWith(
         expect.any(String),
         expect.any(Object),
-        "provider-secret"
+        "provider-secret",
       );
     });
 
@@ -640,7 +640,7 @@ describe("WebhookBuilder", () => {
       expect(verifyMock).toHaveBeenCalledWith(
         expect.any(String),
         expect.any(Object),
-        "env-secret"
+        "env-secret",
       );
     });
 
@@ -682,7 +682,7 @@ describe("verifyHmac", () => {
     algorithm: "sha1" | "sha256" | "sha384" | "sha512",
     body: string,
     secretKey: string,
-    encoding: "hex" | "base64" = "hex"
+    encoding: "hex" | "base64" = "hex",
   ): string {
     const hmac = createHmac(algorithm, secretKey);
     hmac.update(body, "utf-8");
@@ -1009,7 +1009,7 @@ describe("customWebhook", () => {
       expect.objectContaining({
         eventType: "payment.completed",
         provider: "payment-provider",
-      })
+      }),
     );
   });
 

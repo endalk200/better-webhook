@@ -10,4 +10,3 @@ export default defineConfig({
     minWorkers: 1,
   },
 });
-

@@ -152,7 +152,7 @@ describe("toNextJS", () => {
       const provider = createTestProvider();
       const processSpy = vi.spyOn(
         createWebhook(provider).event("test.event", () => {}),
-        "process"
+        "process",
       );
 
       const webhook = createWebhook(provider).event("test.event", () => {});
@@ -234,4 +234,3 @@ describe("toNextJS", () => {
     });
   });
 });
-
