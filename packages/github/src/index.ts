@@ -269,7 +269,7 @@ const IssueSchema = z.object({
       name: z.string(),
       /** Hex color code (without #) */
       color: z.string(),
-    })
+    }),
   ),
 });
 
@@ -392,7 +392,7 @@ export const GitHubInstallationEventSchema = z.object({
         full_name: z.string(),
         /** Whether the repository is private */
         private: z.boolean(),
-      })
+      }),
     )
     .optional(),
   /** User who triggered the event */
@@ -511,12 +511,18 @@ export interface GitHubOptions {
  * @see https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
  */
 function createGitHubProvider(
-  options?: GitHubOptions
+  options?: GitHubOptions,
 ): Provider<GitHubEventMap> {
+  // Normalize secret: strip "sha256=" prefix if accidentally included
+  let normalizedSecret = options?.secret;
+  if (normalizedSecret?.startsWith("sha256=")) {
+    normalizedSecret = normalizedSecret.slice("sha256=".length);
+  }
+
   return {
     name: "github",
     schemas: GitHubSchemas,
-    secret: options?.secret,
+    secret: normalizedSecret,
 
     /**
      * Extract the event type from the X-GitHub-Event header.
@@ -543,7 +549,7 @@ function createGitHubProvider(
     verify(
       rawBody: string | Buffer,
       headers: Headers,
-      secret: string
+      secret: string,
     ): boolean {
       const signature = headers["x-hub-signature-256"];
 
@@ -559,10 +565,17 @@ function createGitHubProvider(
 
       const expectedSignature = signature.slice(expectedPrefix.length);
 
+      // Normalize secret: strip "sha256=" prefix if accidentally included
+      // This handles cases where secret comes from env vars or adapter options
+      let normalizedSecret = secret;
+      if (secret.startsWith("sha256=")) {
+        normalizedSecret = secret.slice("sha256=".length);
+      }
+
       // Compute HMAC-SHA256
       const body =
         typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
-      const hmac = createHmac("sha256", secret);
+      const hmac = createHmac("sha256", normalizedSecret);
       hmac.update(body, "utf-8");
       const computedSignature = hmac.digest("hex");
 
@@ -624,7 +637,7 @@ function createGitHubProvider(
  * ```
  */
 export function github(
-  options?: GitHubOptions
+  options?: GitHubOptions,
 ): WebhookBuilder<GitHubEventMap> {
   const provider = createGitHubProvider(options);
   return createWebhook(provider);

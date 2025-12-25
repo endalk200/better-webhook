@@ -7,11 +7,12 @@ No more guessing payload shapes. No more manual signature verification. Just bea
 ```ts
 import { github } from "@better-webhook/github";
 
-const webhook = github()
-  .event("push", async (payload) => {
-    // ✨ Full autocomplete for payload.repository, payload.commits, etc.
-    console.log(`${payload.pusher.name} pushed ${payload.commits.length} commits`);
-  });
+const webhook = github().event("push", async (payload) => {
+  // ✨ Full autocomplete for payload.repository, payload.commits, etc.
+  console.log(
+    `${payload.pusher.name} pushed ${payload.commits.length} commits`,
+  );
+});
 ```
 
 ## Features
@@ -49,14 +50,13 @@ npm install @better-webhook/nestjs   # NestJS
 import { github } from "@better-webhook/github";
 import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github()
-  .event("push", async (payload) => {
-    console.log(`Push to ${payload.repository.full_name}`);
-    
-    for (const commit of payload.commits) {
-      console.log(`- ${commit.message} by ${commit.author.name}`);
-    }
-  });
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.full_name}`);
+
+  for (const commit of payload.commits) {
+    console.log(`- ${commit.message} by ${commit.author.name}`);
+  }
+});
 
 export const POST = toNextJS(webhook);
 ```
@@ -70,15 +70,14 @@ import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github()
-  .event("push", async (payload) => {
-    console.log(`Push to ${payload.repository.name}`);
-  });
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
 
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);
@@ -94,10 +93,9 @@ import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github()
-    .event("push", async (payload) => {
-      console.log(`Push to ${payload.repository.name}`);
-    });
+  private webhook = github().event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
 
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
@@ -109,11 +107,11 @@ export class WebhooksController {
 
 ## Supported Events
 
-| Event | Description |
-|-------|-------------|
-| `push` | Push to a repository |
+| Event          | Description                               |
+| -------------- | ----------------------------------------- |
+| `push`         | Push to a repository                      |
 | `pull_request` | Pull request opened, closed, merged, etc. |
-| `issues` | Issue opened, closed, labeled, etc. |
+| `issues`       | Issue opened, closed, labeled, etc.       |
 
 > More events coming soon! PRs welcome.
 
@@ -122,75 +120,74 @@ export class WebhooksController {
 ### Push Events
 
 ```ts
-github()
-  .event("push", async (payload) => {
-    // Branch info
-    const branch = payload.ref.replace("refs/heads/", "");
-    console.log(`Push to ${branch}`);
+github().event("push", async (payload) => {
+  // Branch info
+  const branch = payload.ref.replace("refs/heads/", "");
+  console.log(`Push to ${branch}`);
 
-    // Commit details
-    for (const commit of payload.commits) {
-      console.log(`${commit.id.slice(0, 7)}: ${commit.message}`);
-      console.log(`  Author: ${commit.author.name} <${commit.author.email}>`);
-      console.log(`  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`);
-    }
+  // Commit details
+  for (const commit of payload.commits) {
+    console.log(`${commit.id.slice(0, 7)}: ${commit.message}`);
+    console.log(`  Author: ${commit.author.name} <${commit.author.email}>`);
+    console.log(
+      `  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`,
+    );
+  }
 
-    // Force push detection
-    if (payload.forced) {
-      console.warn("⚠️ Force push detected!");
-    }
-  });
+  // Force push detection
+  if (payload.forced) {
+    console.warn("⚠️ Force push detected!");
+  }
+});
 ```
 
 ### Pull Request Events
 
 ```ts
-github()
-  .event("pull_request", async (payload) => {
-    const pr = payload.pull_request;
+github().event("pull_request", async (payload) => {
+  const pr = payload.pull_request;
 
-    switch (payload.action) {
-      case "opened":
-        console.log(`New PR #${pr.number}: ${pr.title}`);
-        console.log(`From: ${pr.head.ref} → ${pr.base.ref}`);
-        await notifySlack(`New PR: ${pr.title}`);
-        break;
+  switch (payload.action) {
+    case "opened":
+      console.log(`New PR #${pr.number}: ${pr.title}`);
+      console.log(`From: ${pr.head.ref} → ${pr.base.ref}`);
+      await notifySlack(`New PR: ${pr.title}`);
+      break;
 
-      case "closed":
-        if (pr.merged_at) {
-          console.log(`PR #${pr.number} merged!`);
-          await triggerDeployment(pr.base.ref);
-        } else {
-          console.log(`PR #${pr.number} closed without merging`);
-        }
-        break;
-    }
-  });
+    case "closed":
+      if (pr.merged_at) {
+        console.log(`PR #${pr.number} merged!`);
+        await triggerDeployment(pr.base.ref);
+      } else {
+        console.log(`PR #${pr.number} closed without merging`);
+      }
+      break;
+  }
+});
 ```
 
 ### Issue Events
 
 ```ts
-github()
-  .event("issues", async (payload) => {
-    const issue = payload.issue;
+github().event("issues", async (payload) => {
+  const issue = payload.issue;
 
-    if (payload.action === "opened") {
-      console.log(`New issue #${issue.number}: ${issue.title}`);
+  if (payload.action === "opened") {
+    console.log(`New issue #${issue.number}: ${issue.title}`);
 
-      // Auto-label based on title
-      if (issue.title.toLowerCase().includes("bug")) {
-        await addLabel(issue.number, "bug");
-      }
+    // Auto-label based on title
+    if (issue.title.toLowerCase().includes("bug")) {
+      await addLabel(issue.number, "bug");
     }
+  }
 
-    if (payload.action === "labeled") {
-      const labels = issue.labels.map(l => l.name);
-      if (labels.includes("urgent")) {
-        await notifyOnCall(issue);
-      }
+  if (payload.action === "labeled") {
+    const labels = issue.labels.map((l) => l.name);
+    if (labels.includes("urgent")) {
+      await notifyOnCall(issue);
     }
-  });
+  }
+});
 ```
 
 ## Error Handling
@@ -204,10 +201,10 @@ const webhook = github()
   })
   .onError((error, context) => {
     console.error(`Error handling ${context.eventType}:`, error);
-    
+
     // context.deliveryId is the X-GitHub-Delivery header
     console.error(`Delivery ID: ${context.deliveryId}`);
-    
+
     // Send to error tracking
     Sentry.captureException(error, {
       tags: { webhook: "github", event: context.eventType },
@@ -216,7 +213,7 @@ const webhook = github()
   })
   .onVerificationFailed((reason, headers) => {
     console.warn("Signature verification failed:", reason);
-    
+
     // Potential attack or misconfiguration
     alertSecurityTeam({
       reason,
@@ -239,8 +236,7 @@ Or pass it explicitly:
 
 ```ts
 // At provider level
-const webhook = github({ secret: "your-secret" })
-  .event("push", handler);
+const webhook = github({ secret: "your-secret" }).event("push", handler);
 
 // Or at adapter level
 export const POST = toNextJS(webhook, { secret: "your-secret" });

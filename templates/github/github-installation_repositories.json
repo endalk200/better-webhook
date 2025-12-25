@@ -15,7 +15,7 @@
     },
     {
       "key": "X-Hub-Signature-256",
-      "value": "sha256=placeholder"
+      "value": "placeholder"
     },
     {
       "key": "X-GitHub-Hook-ID",

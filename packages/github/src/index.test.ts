@@ -189,7 +189,7 @@ describe("GitHub Schemas", () => {
   describe("GitHubPullRequestEventSchema", () => {
     it("should validate a valid pull request event", () => {
       const result = GitHubPullRequestEventSchema.safeParse(
-        validPullRequestPayload
+        validPullRequestPayload,
       );
       expect(result.success).toBe(true);
     });
@@ -260,7 +260,7 @@ describe("github()", () => {
         expect.objectContaining({
           eventType: "push",
           provider: "github",
-        })
+        }),
       );
     });
 
@@ -289,7 +289,7 @@ describe("github()", () => {
         expect.objectContaining({
           eventType: "pull_request",
           provider: "github",
-        })
+        }),
       );
     });
 
@@ -318,7 +318,7 @@ describe("github()", () => {
         expect.objectContaining({
           eventType: "issues",
           provider: "github",
-        })
+        }),
       );
     });
   });
