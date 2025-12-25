@@ -60,4 +60,3 @@ nextjs-example/
 ├── package.json
 └── tsconfig.json
 ```
-

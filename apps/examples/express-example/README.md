@@ -40,6 +40,7 @@ curl -X POST http://localhost:3001/webhooks/github \
 ## Testing with Real GitHub Webhooks
 
 1. Use [ngrok](https://ngrok.com/) to expose your local server:
+
    ```bash
    ngrok http 3001
    ```
@@ -47,4 +48,3 @@ curl -X POST http://localhost:3001/webhooks/github \
 2. Configure a webhook in your GitHub repository settings with the ngrok URL + `/webhooks/github`
 
 3. Set the secret in both GitHub and your environment variable
-

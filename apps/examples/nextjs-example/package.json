@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/nextjs-example",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Next.js example for better-webhook",
   "scripts": {

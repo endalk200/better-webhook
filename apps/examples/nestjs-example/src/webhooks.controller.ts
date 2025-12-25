@@ -28,7 +28,7 @@ export class WebhooksController {
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Action: ${payload.action}`);
       console.log(
-        `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
+        `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
       );
       console.log(`   State: ${payload.pull_request.state}`);
     })
@@ -58,7 +58,7 @@ export class WebhooksController {
   @Post("webhooks/github")
   async handleGitHubWebhook(
     @Req() req: RawBodyRequest,
-    @Res() res: Response
+    @Res() res: Response,
   ): Promise<void> {
     const result = await this.handler({
       headers: req.headers as Record<string, string | string[] | undefined>,

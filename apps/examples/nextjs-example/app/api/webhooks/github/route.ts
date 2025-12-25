@@ -19,7 +19,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
     console.log(
-      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
+      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
     );
     console.log(`   State: ${payload.pull_request.state}`);
   })
@@ -34,8 +34,11 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
     console.error("❌ Webhook error:", error.message);
     console.error("   Event type:", context.eventType);
   })
-  .onVerificationFailed(async (reason) => {
+  .onVerificationFailed(async (reason, headers) => {
     console.error("🔐 Verification failed:", reason);
+    console.log("Headers: ", headers);
+    console.log("Received signature header: ", headers["x-hub-signature-256"]);
+    console.log("Note: The secret should not include the 'sha256=' prefix");
   });
 
 // Export the POST handler
@@ -56,6 +59,6 @@ export async function GET() {
     }),
     {
       headers: { "Content-Type": "application/json" },
-    }
+    },
   );
 }
