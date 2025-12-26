@@ -29,6 +29,7 @@ Working with webhooks during development is still unnecessarily painful. You usu
 📥 **Community Templates** - Access curated webhook templates for popular services  
 🎯 **Flexible Override** - Override URLs, methods, and headers on the fly  
 📁 **Local-First** - All data stored locally, no external dependencies
+🧭 **Dashboard** - Run a local dashboard UI from the CLI to inspect, replay, and run templates
 
 ## 🛠️ Installation
 
@@ -50,6 +51,9 @@ better-webhook --version
 ```bash
 # Start capturing webhooks
 better-webhook capture --port 3001
+
+# Start the dashboard (UI + API + WS + in-process capture server by default)
+better-webhook dashboard
 
 # List captured webhooks
 better-webhook capture list
