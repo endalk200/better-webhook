@@ -88,7 +88,7 @@ export class TemplateManager {
       this.indexCache = index;
       writeFileSync(
         this.cacheFile,
-        JSON.stringify({ index, cachedAt: Date.now() }, null, 2),
+        JSON.stringify({ index, cachedAt: Date.now() }, null, 2)
       );
 
       return index;
@@ -112,8 +112,13 @@ export class TemplateManager {
   /**
    * List all remote templates
    */
-  async listRemoteTemplates(): Promise<RemoteTemplate[]> {
-    const index = await this.fetchRemoteIndex();
+  async listRemoteTemplates(options?: {
+    /**
+     * Bypass the on-disk/in-memory cache and fetch the latest index from remote.
+     */
+    forceRefresh?: boolean;
+  }): Promise<RemoteTemplate[]> {
+    const index = await this.fetchRemoteIndex(!!options?.forceRefresh);
     const localIds = new Set(this.listLocalTemplates().map((t) => t.id));
 
     return index.templates.map((metadata) => ({
@@ -177,7 +182,7 @@ export class TemplateManager {
       return localTemplate;
     } catch (error: any) {
       throw new Error(
-        `Failed to download template ${templateId}: ${error.message}`,
+        `Failed to download template ${templateId}: ${error.message}`
       );
     }
   }

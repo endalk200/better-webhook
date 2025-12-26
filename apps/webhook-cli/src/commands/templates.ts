@@ -13,7 +13,7 @@ const listCommand = new Command()
   .description("List available remote templates from the repository")
   .option(
     "-p, --provider <provider>",
-    "Filter by provider (stripe, github, etc.)",
+    "Filter by provider (stripe, github, etc.)"
   )
   .option("-r, --refresh", "Force refresh the template index cache")
   .action(async (options: { provider?: string; refresh?: boolean }) => {
@@ -21,7 +21,9 @@ const listCommand = new Command()
 
     try {
       const manager = getTemplateManager();
-      const templates = await manager.listRemoteTemplates();
+      const templates = await manager.listRemoteTemplates({
+        forceRefresh: !!options.refresh,
+      });
       spinner.stop();
 
       if (templates.length === 0) {
@@ -35,15 +37,15 @@ const listCommand = new Command()
         filtered = templates.filter(
           (t) =>
             t.metadata.provider.toLowerCase() ===
-            options.provider?.toLowerCase(),
+            options.provider?.toLowerCase()
         );
       }
 
       if (filtered.length === 0) {
         console.log(
           chalk.yellow(
-            `📭 No templates found for provider: ${options.provider}`,
-          ),
+            `📭 No templates found for provider: ${options.provider}`
+          )
         );
         return;
       }
@@ -77,7 +79,7 @@ const listCommand = new Command()
 
       console.log(chalk.gray(`  Total: ${filtered.length} templates`));
       console.log(
-        chalk.gray(`  Download: better-webhook templates download <id>\n`),
+        chalk.gray(`  Download: better-webhook templates download <id>\n`)
       );
     } catch (error: any) {
       spinner.fail("Failed to fetch templates");
@@ -95,99 +97,115 @@ const downloadCommand = new Command()
   .argument("[templateId]", "Template ID to download")
   .description("Download a template to local storage")
   .option("-a, --all", "Download all available templates")
-  .action(async (templateId?: string, options?: { all?: boolean }) => {
-    const manager = getTemplateManager();
+  .option("-r, --refresh", "Force refresh the template index cache")
+  .action(
+    async (
+      templateId?: string,
+      options?: { all?: boolean; refresh?: boolean }
+    ) => {
+      const manager = getTemplateManager();
 
-    if (options?.all) {
-      const spinner = ora("Fetching template list...").start();
-      try {
-        const templates = await manager.listRemoteTemplates();
-        const toDownload = templates.filter((t) => !t.isDownloaded);
-        spinner.stop();
+      if (options?.all) {
+        const spinner = ora("Fetching template list...").start();
+        try {
+          // If the user is trying to "download all", we should strongly prefer the
+          // latest remote index; otherwise you can miss newly added templates.
+          const templates = await manager.listRemoteTemplates({
+            forceRefresh: true,
+          });
+          const toDownload = templates.filter((t) => !t.isDownloaded);
+          spinner.stop();
 
-        if (toDownload.length === 0) {
-          console.log(chalk.green("✓ All templates already downloaded"));
-          return;
-        }
-
-        console.log(
-          chalk.bold(`\nDownloading ${toDownload.length} templates...\n`),
-        );
-
-        for (const t of toDownload) {
-          const downloadSpinner = ora(
-            `Downloading ${t.metadata.id}...`,
-          ).start();
-          try {
-            await manager.downloadTemplate(t.metadata.id);
-            downloadSpinner.succeed(`Downloaded ${t.metadata.id}`);
-          } catch (error: any) {
-            downloadSpinner.fail(`Failed: ${t.metadata.id} - ${error.message}`);
+          if (toDownload.length === 0) {
+            console.log(chalk.green("✓ All templates already downloaded"));
+            return;
           }
+
+          console.log(
+            chalk.bold(`\nDownloading ${toDownload.length} templates...\n`)
+          );
+
+          for (const t of toDownload) {
+            const downloadSpinner = ora(
+              `Downloading ${t.metadata.id}...`
+            ).start();
+            try {
+              await manager.downloadTemplate(t.metadata.id);
+              downloadSpinner.succeed(`Downloaded ${t.metadata.id}`);
+            } catch (error: any) {
+              downloadSpinner.fail(
+                `Failed: ${t.metadata.id} - ${error.message}`
+              );
+            }
+          }
+
+          console.log(chalk.green("\n✓ Download complete\n"));
+        } catch (error: any) {
+          spinner.fail("Failed to fetch templates");
+          console.error(chalk.red(error.message));
+          process.exitCode = 1;
         }
-
-        console.log(chalk.green("\n✓ Download complete\n"));
-      } catch (error: any) {
-        spinner.fail("Failed to fetch templates");
-        console.error(chalk.red(error.message));
-        process.exitCode = 1;
-      }
-      return;
-    }
-
-    // Interactive selection if no templateId provided
-    if (!templateId) {
-      const spinner = ora("Fetching templates...").start();
-      try {
-        const templates = await manager.listRemoteTemplates();
-        spinner.stop();
-
-        const notDownloaded = templates.filter((t) => !t.isDownloaded);
-        if (notDownloaded.length === 0) {
-          console.log(chalk.green("✓ All templates already downloaded"));
-          return;
-        }
-
-        const choices = notDownloaded.map((t) => ({
-          title: t.metadata.id,
-          description: `${t.metadata.provider} - ${t.metadata.event}`,
-          value: t.metadata.id,
-        }));
-
-        const response = await prompts({
-          type: "select",
-          name: "templateId",
-          message: "Select a template to download:",
-          choices,
-        });
-
-        if (!response.templateId) {
-          console.log(chalk.yellow("Cancelled"));
-          return;
-        }
-
-        templateId = response.templateId;
-      } catch (error: any) {
-        spinner.fail("Failed to fetch templates");
-        console.error(chalk.red(error.message));
-        process.exitCode = 1;
         return;
       }
-    }
 
-    // Download the template
-    const spinner = ora(`Downloading ${templateId}...`).start();
-    try {
-      const template = await manager.downloadTemplate(templateId!);
-      spinner.succeed(`Downloaded ${templateId}`);
-      console.log(chalk.gray(`  Saved to: ${template.filePath}`));
-      console.log(chalk.gray(`  Run with: better-webhook run ${templateId}\n`));
-    } catch (error: any) {
-      spinner.fail(`Failed to download ${templateId}`);
-      console.error(chalk.red(error.message));
-      process.exitCode = 1;
+      // Interactive selection if no templateId provided
+      if (!templateId) {
+        const spinner = ora("Fetching templates...").start();
+        try {
+          const templates = await manager.listRemoteTemplates({
+            forceRefresh: !!options?.refresh,
+          });
+          spinner.stop();
+
+          const notDownloaded = templates.filter((t) => !t.isDownloaded);
+          if (notDownloaded.length === 0) {
+            console.log(chalk.green("✓ All templates already downloaded"));
+            return;
+          }
+
+          const choices = notDownloaded.map((t) => ({
+            title: t.metadata.id,
+            description: `${t.metadata.provider} - ${t.metadata.event}`,
+            value: t.metadata.id,
+          }));
+
+          const response = await prompts({
+            type: "select",
+            name: "templateId",
+            message: "Select a template to download:",
+            choices,
+          });
+
+          if (!response.templateId) {
+            console.log(chalk.yellow("Cancelled"));
+            return;
+          }
+
+          templateId = response.templateId;
+        } catch (error: any) {
+          spinner.fail("Failed to fetch templates");
+          console.error(chalk.red(error.message));
+          process.exitCode = 1;
+          return;
+        }
+      }
+
+      // Download the template
+      const spinner = ora(`Downloading ${templateId}...`).start();
+      try {
+        const template = await manager.downloadTemplate(templateId!);
+        spinner.succeed(`Downloaded ${templateId}`);
+        console.log(chalk.gray(`  Saved to: ${template.filePath}`));
+        console.log(
+          chalk.gray(`  Run with: better-webhook run ${templateId}\n`)
+        );
+      } catch (error: any) {
+        spinner.fail(`Failed to download ${templateId}`);
+        console.error(chalk.red(error.message));
+        process.exitCode = 1;
+      }
     }
-  });
+  );
 
 /**
  * List local/downloaded templates
@@ -203,7 +221,7 @@ const localCommand = new Command()
     if (options.provider) {
       templates = templates.filter(
         (t) =>
-          t.metadata.provider.toLowerCase() === options.provider?.toLowerCase(),
+          t.metadata.provider.toLowerCase() === options.provider?.toLowerCase()
       );
     }
 
@@ -211,8 +229,8 @@ const localCommand = new Command()
       console.log(chalk.yellow("\n📭 No local templates found."));
       console.log(
         chalk.gray(
-          "   Download templates with: better-webhook templates download\n",
-        ),
+          "   Download templates with: better-webhook templates download\n"
+        )
       );
       return;
     }
@@ -237,8 +255,8 @@ const localCommand = new Command()
         console.log(chalk.gray(`      Event: ${t.metadata.event}`));
         console.log(
           chalk.gray(
-            `      Downloaded: ${new Date(t.downloadedAt).toLocaleDateString()}`,
-          ),
+            `      Downloaded: ${new Date(t.downloadedAt).toLocaleDateString()}`
+          )
         );
       }
       console.log();
@@ -276,7 +294,7 @@ const searchCommand = new Command()
         console.log(chalk.cyan.bold("  LOCAL TEMPLATES"));
         for (const t of results.local) {
           console.log(
-            `    ${chalk.green("✓")} ${t.id} (${t.metadata.provider})`,
+            `    ${chalk.green("✓")} ${t.id} (${t.metadata.provider})`
           );
         }
         console.log();
@@ -287,7 +305,7 @@ const searchCommand = new Command()
         for (const t of results.remote) {
           const status = t.isDownloaded ? chalk.green("✓") : chalk.gray("○");
           console.log(
-            `    ${status} ${t.metadata.id} (${t.metadata.provider})`,
+            `    ${status} ${t.metadata.id} (${t.metadata.provider})`
           );
         }
         console.log();
@@ -336,7 +354,7 @@ const cleanCommand = new Command()
     }
 
     console.log(
-      chalk.bold(`\n🗑️  Found ${templates.length} downloaded template(s)\n`),
+      chalk.bold(`\n🗑️  Found ${templates.length} downloaded template(s)\n`)
     );
 
     // Show what will be deleted
