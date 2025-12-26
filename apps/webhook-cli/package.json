@@ -17,12 +17,12 @@
   },
   "scripts": {
     "build:cli": "tsup --format cjs,esm --dts",
-    "build": "npm run build:cli",
+    "build": "pnpm --filter @better-webhook/dashboard build && pnpm run build:cli && node ./scripts/copy-dashboard.mjs",
     "dev": "tsup --watch",
     "start": "tsx src/index.ts",
     "lint": "tsc",
     "prepublishOnly": "pnpm run build",
-    "prepare": "pnpm run build"
+    "prepare": "pnpm run build:cli"
   },
   "files": [
     "dist",

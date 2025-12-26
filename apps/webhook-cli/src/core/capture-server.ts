@@ -11,6 +11,7 @@ import {
   existsSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
 } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -22,16 +23,38 @@ import type {
   WebSocketMessage,
 } from "../types/index.js";
 
+export interface CaptureServerOptions {
+  capturesDir?: string;
+  /**
+   * Whether to run a WebSocket server on the same port.
+   * The dashboard (Option A) owns WebSocket at :4000/ws, so this can be disabled.
+   */
+  enableWebSocket?: boolean;
+  /**
+   * Callback invoked after a capture is saved to disk.
+   */
+  onCapture?: (args: { file: string; capture: CapturedWebhook }) => void;
+}
+
 export class CaptureServer {
   private server: Server | null = null;
   private wss: WebSocketServer | null = null;
   private capturesDir: string;
   private clients: Set<WebSocket> = new Set();
   private captureCount = 0;
+  private enableWebSocket: boolean;
+  private onCapture?: CaptureServerOptions["onCapture"];
 
-  constructor(capturesDir?: string) {
+  constructor(options?: string | CaptureServerOptions) {
+    const capturesDir =
+      typeof options === "string" ? options : options?.capturesDir;
+
     this.capturesDir =
       capturesDir || join(homedir(), ".better-webhook", "captures");
+    this.enableWebSocket =
+      typeof options === "object" ? options?.enableWebSocket !== false : true;
+    this.onCapture =
+      typeof options === "object" ? options?.onCapture : undefined;
 
     // Ensure captures directory exists
     if (!existsSync(this.capturesDir)) {
@@ -53,32 +76,34 @@ export class CaptureServer {
     return new Promise((resolve, reject) => {
       this.server = createServer((req, res) => this.handleRequest(req, res));
 
-      // Create WebSocket server on the same port
-      this.wss = new WebSocketServer({ server: this.server });
+      if (this.enableWebSocket) {
+        // Create WebSocket server on the same port
+        this.wss = new WebSocketServer({ server: this.server });
 
-      this.wss.on("connection", (ws) => {
-        this.clients.add(ws);
-        console.log("📡 Dashboard connected via WebSocket");
+        this.wss.on("connection", (ws) => {
+          this.clients.add(ws);
+          console.log("📡 Dashboard connected via WebSocket");
 
-        ws.on("close", () => {
-          this.clients.delete(ws);
-          console.log("📡 Dashboard disconnected");
+          ws.on("close", () => {
+            this.clients.delete(ws);
+            console.log("📡 Dashboard disconnected");
+          });
+
+          ws.on("error", (error) => {
+            console.error("WebSocket error:", error);
+            this.clients.delete(ws);
+          });
+
+          // Send current state on connection
+          this.sendToClient(ws, {
+            type: "captures_updated",
+            payload: {
+              captures: this.listCaptures(),
+              count: this.captureCount,
+            },
+          });
         });
-
-        ws.on("error", (error) => {
-          console.error("WebSocket error:", error);
-          this.clients.delete(ws);
-        });
-
-        // Send current state on connection
-        this.sendToClient(ws, {
-          type: "captures_updated",
-          payload: {
-            captures: this.listCaptures(),
-            count: this.captureCount,
-          },
-        });
-      });
+      }
 
       this.server.on("error", (err: NodeJS.ErrnoException) => {
         if (err.code === "EADDRINUSE") {
@@ -94,11 +119,13 @@ export class CaptureServer {
           typeof address === "object" ? address?.port || port : port;
         console.log(`\n🎣 Webhook Capture Server`);
         console.log(
-          `   Listening on http://${host === "0.0.0.0" ? "localhost" : host}:${actualPort}`,
+          `   Listening on http://${host === "0.0.0.0" ? "localhost" : host}:${actualPort}`
         );
         console.log(`   📁 Captures saved to: ${this.capturesDir}`);
         console.log(`   💡 Send webhooks to any path to capture them`);
-        console.log(`   🌐 WebSocket available for real-time updates`);
+        if (this.enableWebSocket) {
+          console.log(`   🌐 WebSocket available for real-time updates`);
+        }
         console.log(`   ⏹️  Press Ctrl+C to stop\n`);
         resolve(actualPort);
       });
@@ -137,7 +164,7 @@ export class CaptureServer {
    */
   private async handleRequest(
     req: IncomingMessage,
-    res: ServerResponse,
+    res: ServerResponse
   ): Promise<void> {
     // Skip WebSocket upgrade requests
     if (req.headers.upgrade?.toLowerCase() === "websocket") {
@@ -226,17 +253,21 @@ export class CaptureServer {
 
       const providerStr = provider ? ` [${provider}]` : "";
       console.log(
-        `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`,
+        `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`
       );
 
-      // Broadcast to connected clients
-      this.broadcast({
-        type: "capture",
-        payload: {
-          file: filename,
-          capture: captured,
-        },
-      });
+      this.onCapture?.({ file: filename, capture: captured });
+
+      // Broadcast to connected clients (if enabled)
+      if (this.enableWebSocket) {
+        this.broadcast({
+          type: "capture",
+          payload: {
+            file: filename,
+            capture: captured,
+          },
+        });
+      }
     } catch (error) {
       console.error(`❌ Failed to save capture:`, error);
     }
@@ -252,7 +283,7 @@ export class CaptureServer {
         id,
         timestamp,
         file: filename,
-      }),
+      })
     );
   }
 
@@ -260,7 +291,7 @@ export class CaptureServer {
    * Detect webhook provider from headers
    */
   private detectProvider(
-    headers: Record<string, string | string[] | undefined>,
+    headers: Record<string, string | string[] | undefined>
   ): WebhookProvider | undefined {
     // Stripe
     if (headers["stripe-signature"]) {
@@ -270,6 +301,11 @@ export class CaptureServer {
     // GitHub
     if (headers["x-github-event"] || headers["x-hub-signature-256"]) {
       return "github";
+    }
+
+    // Ragie
+    if (headers["x-ragie-delivery"]) {
+      return "ragie";
     }
 
     // Shopify
@@ -368,7 +404,7 @@ export class CaptureServer {
     const captures = this.listCaptures(1000);
     return (
       captures.find(
-        (c) => c.capture.id === captureId || c.file.includes(captureId),
+        (c) => c.capture.id === captureId || c.file.includes(captureId)
       ) || null
     );
   }
@@ -383,8 +419,7 @@ export class CaptureServer {
     }
 
     try {
-      const fs = require("fs");
-      fs.unlinkSync(join(this.capturesDir, capture.file));
+      unlinkSync(join(this.capturesDir, capture.file));
       return true;
     } catch {
       return false;

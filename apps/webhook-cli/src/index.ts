@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { templates, run, capture, captures, replay } from "./commands/index.js";
+import {
+  templates,
+  run,
+  capture,
+  captures,
+  replay,
+  dashboard,
+} from "./commands/index.js";
 
 const program = new Command()
   .name("better-webhook")
@@ -16,7 +23,8 @@ program
   .addCommand(run)
   .addCommand(capture)
   .addCommand(captures)
-  .addCommand(replay);
+  .addCommand(replay)
+  .addCommand(dashboard);
 
 // Parse and execute
 program.parseAsync(process.argv);

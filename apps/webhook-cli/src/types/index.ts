@@ -32,6 +32,7 @@ export const WebhookProviderSchema = z.enum([
   "github",
   "shopify",
   "twilio",
+  "ragie",
   "sendgrid",
   "slack",
   "discord",

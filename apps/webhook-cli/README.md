@@ -364,6 +364,36 @@ better-webhook replay abc123 http://localhost:3000/webhooks \
 
 ---
 
+### `better-webhook dashboard`
+
+Start the local **dashboard UI + API + WebSocket** server.
+
+By default, this command starts:
+
+- **Dashboard UI**: `http://localhost:4000/`
+- **API**: `http://localhost:4000/api/*`
+- **WebSocket**: `ws://localhost:4000/ws`
+- **Capture server** (in-process): `http://localhost:3001/*`
+
+```bash
+better-webhook dashboard [options]
+```
+
+| Option                    | Description                     | Default     |
+| ------------------------- | ------------------------------- | ----------- |
+| `-p, --port <port>`       | Dashboard server port           | `4000`      |
+| `-h, --host <host>`       | Dashboard server host           | `localhost` |
+| `--capture-port <port>`   | Capture server port             | `3001`      |
+| `--capture-host <host>`   | Capture server host             | `0.0.0.0`   |
+| `--no-capture`            | Do not start capture server     | —           |
+| `--captures-dir <dir>`    | Override captures directory     | —           |
+| `--templates-dir <dir>`   | Override templates base dir     | —           |
+
+**Security note:**
+Keep the dashboard bound to `localhost` unless you trust your network. The API includes endpoints that can send HTTP requests to arbitrary URLs (run/replay).
+
+---
+
 ## Environment Variables
 
 The CLI automatically reads webhook secrets from environment variables based on the provider:
