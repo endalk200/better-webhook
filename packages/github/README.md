@@ -1,5 +1,8 @@
 # @better-webhook/github
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/github?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/github)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/github?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/github)
+
 **Handle GitHub webhooks with full type safety.**
 
 No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers.
@@ -10,7 +13,7 @@ import { github } from "@better-webhook/github";
 const webhook = github().event("push", async (payload) => {
   // ✨ Full autocomplete for payload.repository, payload.commits, etc.
   console.log(
-    `${payload.pusher.name} pushed ${payload.commits.length} commits`
+    `${payload.pusher.name} pushed ${payload.commits.length} commits`,
   );
 });
 ```
@@ -77,7 +80,7 @@ const webhook = github().event("push", async (payload) => {
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);
@@ -132,7 +135,7 @@ github().event("push", async (payload) => {
     console.log(`${commit.id.slice(0, 7)}: ${commit.message}`);
     console.log(`  Author: ${commit.author.name} <${commit.author.email}>`);
     console.log(
-      `  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`
+      `  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`,
     );
   }
 
@@ -230,7 +233,7 @@ github().event("installation_repositories", async (payload) => {
   if (payload.action === "added") {
     console.log(
       `Repos added to installation ${installation.id}:`,
-      payload.repositories_added.map((r) => r.full_name)
+      payload.repositories_added.map((r) => r.full_name),
     );
     // Index the new repositories
     for (const repo of payload.repositories_added) {
@@ -241,7 +244,7 @@ github().event("installation_repositories", async (payload) => {
   if (payload.action === "removed") {
     console.log(
       `Repos removed from installation ${installation.id}:`,
-      payload.repositories_removed.map((r) => r.full_name)
+      payload.repositories_removed.map((r) => r.full_name),
     );
     // Clean up removed repositories
     for (const repo of payload.repositories_removed) {

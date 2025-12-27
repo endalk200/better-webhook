@@ -1,5 +1,8 @@
 # @better-webhook/ragie
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/ragie?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/ragie)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/ragie?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/ragie)
+
 **Handle Ragie webhooks with full type safety.**
 
 No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers for your Ragie RAG workflows.
@@ -52,7 +55,7 @@ import { toNextJS } from "@better-webhook/nextjs";
 const webhook = ragie()
   .event("document_status_updated", async (payload) => {
     console.log(`Document ${payload.document_id} is ${payload.status}`);
-    
+
     if (payload.status === "ready") {
       // Document is fully indexed and ready for retrieval
       await notifyDocumentReady(payload.document_id);
@@ -82,7 +85,9 @@ const webhook = ragie()
     console.log(`Document ${payload.document_id} status: ${payload.status}`);
   })
   .event("connection_sync_started", async (payload) => {
-    console.log(`Sync ${payload.sync_id} started for connection ${payload.connection_id}`);
+    console.log(
+      `Sync ${payload.sync_id} started for connection ${payload.connection_id}`,
+    );
   });
 
 app.post(
@@ -122,16 +127,16 @@ export class WebhooksController {
 
 ## Supported Events
 
-| Event                          | Description                                    |
-| ------------------------------ | ---------------------------------------------- |
-| `document_status_updated`      | Document enters indexed, ready, or failed state|
-| `document_deleted`             | Document is deleted                            |
-| `entity_extracted`             | Entity extraction completes                    |
-| `connection_sync_started`      | Connection sync begins                         |
-| `connection_sync_progress`     | Periodic sync progress updates                 |
-| `connection_sync_finished`     | Connection sync completes                      |
-| `connection_limit_exceeded`    | Connection page limit exceeded                 |
-| `partition_limit_exceeded`     | Partition document limit exceeded              |
+| Event                       | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| `document_status_updated`   | Document enters indexed, ready, or failed state |
+| `document_deleted`          | Document is deleted                             |
+| `entity_extracted`          | Entity extraction completes                     |
+| `connection_sync_started`   | Connection sync begins                          |
+| `connection_sync_progress`  | Periodic sync progress updates                  |
+| `connection_sync_finished`  | Connection sync completes                       |
+| `connection_limit_exceeded` | Connection page limit exceeded                  |
+| `partition_limit_exceeded`  | Partition document limit exceeded               |
 
 ## Event Examples
 
@@ -140,34 +145,34 @@ export class WebhooksController {
 ```ts
 ragie().event("document_status_updated", async (payload) => {
   const { document_id, status, external_id, partition, nonce } = payload;
-  
+
   // Use nonce for idempotency
   if (await isProcessed(nonce)) {
     console.log("Already processed this webhook");
     return;
   }
-  
+
   switch (status) {
     case "indexed":
       console.log(`Document ${document_id} indexed (semantic search ready)`);
       break;
-      
+
     case "keyword_indexed":
       console.log(`Document ${document_id} keyword indexed`);
       break;
-      
+
     case "ready":
       console.log(`Document ${document_id} fully ready`);
       // All retrieval features are now functional
       await notifyUserDocumentReady(external_id);
       break;
-      
+
     case "failed":
       console.error(`Document ${document_id} failed to index`);
       await alertTeam(document_id);
       break;
   }
-  
+
   await markProcessed(nonce);
 });
 ```
@@ -180,7 +185,7 @@ ragie()
     console.log(`📥 Sync started for connection ${payload.connection_id}`);
     console.log(`Sync ID: ${payload.sync_id}`);
     console.log(`Partition: ${payload.partition}`);
-    
+
     // Store sync start time
     await db.syncs.create({
       id: payload.sync_id,
@@ -191,10 +196,16 @@ ragie()
   })
   .event("connection_sync_progress", async (payload) => {
     console.log(`📊 Sync progress for ${payload.sync_id}`);
-    console.log(`  Created: ${payload.total_creates_count} (+${payload.created_count})`);
-    console.log(`  Updated: ${payload.total_contents_updates_count} (+${payload.contents_updated_count})`);
-    console.log(`  Deleted: ${payload.total_deletes_count} (+${payload.deleted_count})`);
-    
+    console.log(
+      `  Created: ${payload.total_creates_count} (+${payload.created_count})`,
+    );
+    console.log(
+      `  Updated: ${payload.total_contents_updates_count} (+${payload.contents_updated_count})`,
+    );
+    console.log(
+      `  Deleted: ${payload.total_deletes_count} (+${payload.deleted_count})`,
+    );
+
     // Update progress in database
     await db.syncs.update(payload.sync_id, {
       createdCount: payload.total_creates_count,
@@ -209,7 +220,7 @@ ragie()
     console.log(`  - ${payload.total_contents_updates_count} contents updated`);
     console.log(`  - ${payload.total_metadata_updates_count} metadata updated`);
     console.log(`  - ${payload.total_deletes_count} documents deleted`);
-    
+
     // Mark sync as complete
     await db.syncs.update(payload.sync_id, {
       completedAt: new Date(),
@@ -219,7 +230,7 @@ ragie()
         deleted: payload.total_deletes_count,
       },
     });
-    
+
     // Notify users
     await notifyUsersOfSyncCompletion(payload.connection_id);
   });
@@ -230,10 +241,10 @@ ragie()
 ```ts
 ragie().event("entity_extracted", async (payload) => {
   console.log(`Entities extracted from document ${payload.document_id}`);
-  
+
   // Fetch the extracted entities via Ragie API
   const entities = await ragieClient.getEntities(payload.document_id);
-  
+
   // Process entities
   for (const entity of entities) {
     await processEntity(entity);
@@ -247,7 +258,7 @@ ragie().event("entity_extracted", async (payload) => {
 ragie()
   .event("connection_limit_exceeded", async (payload) => {
     console.warn(`⚠️ Connection ${payload.connection_id} exceeded page limit`);
-    
+
     // Alert team about limit
     await alertTeam({
       type: "connection_limit",
@@ -257,7 +268,7 @@ ragie()
   })
   .event("partition_limit_exceeded", async (payload) => {
     console.warn(`⚠️ Partition ${payload.partition} exceeded document limit`);
-    
+
     // Take action
     await createNewPartition(payload.partition);
   });
@@ -276,13 +287,13 @@ ragie().event("document_status_updated", async (payload) => {
     console.log("Duplicate webhook, skipping");
     return;
   }
-  
+
   // Process the webhook
   await processDocument(payload);
-  
+
   // Mark as processed
   processedNonces.add(payload.nonce);
-  
+
   // In production, store nonces in a database with TTL
   await redis.setex(`webhook:${payload.nonce}`, 86400, "1");
 });
@@ -300,7 +311,7 @@ const webhook = ragie()
   .onError((error, context) => {
     console.error(`Error handling ${context.eventType}:`, error);
     console.error(`Delivery ID: ${context.deliveryId}`);
-    
+
     // Send to error tracking
     Sentry.captureException(error, {
       tags: { webhook: "ragie", event: context.eventType },
@@ -309,7 +320,7 @@ const webhook = ragie()
   })
   .onVerificationFailed((reason, headers) => {
     console.warn("Signature verification failed:", reason);
-    
+
     // Alert security team
     alertSecurityTeam({
       reason,
@@ -334,8 +345,10 @@ Or pass it explicitly:
 
 ```ts
 // At provider level
-const webhook = ragie({ secret: "your-signing-secret" })
-  .event("document_status_updated", handler);
+const webhook = ragie({ secret: "your-signing-secret" }).event(
+  "document_status_updated",
+  handler,
+);
 
 // Or at adapter level
 export const POST = toNextJS(webhook, { secret: "your-signing-secret" });
@@ -415,4 +428,3 @@ You can simulate webhooks in the Ragie app by clicking "Test endpoint" on any we
 ## License
 
 MIT
-

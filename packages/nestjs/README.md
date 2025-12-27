@@ -1,5 +1,8 @@
 # @better-webhook/nestjs
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/nestjs?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/nestjs)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/nestjs?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/nestjs)
+
 **Type-safe webhooks for NestJS.**
 
 Seamlessly integrate `better-webhook` into your NestJS application with full decorator and DI support.

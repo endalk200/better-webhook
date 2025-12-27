@@ -1,9 +1,7 @@
 # @better-webhook/cli
 
 [![npm](https://img.shields.io/npm/v/@better-webhook/cli?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/cli)
-[![GitHub](https://img.shields.io/github/stars/endalk200/better-webhook?style=for-the-badge&logo=github)](https://github.com/endalk200/better-webhook)
-[![License](https://img.shields.io/github/license/endalk200/better-webhook?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/node/v/@better-webhook/cli?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/cli?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/cli)
 
 A modern CLI tool for webhook development, testing, and debugging. Capture incoming webhooks, replay them against your local server, manage reusable templates, and generate provider-specific signatures automatically.
 

@@ -1,5 +1,8 @@
 # @better-webhook/core
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/core?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/core)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/core?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/core)
+
 **Type-safe webhooks in TypeScript. Verified. Validated. Delightful.**
 
 Stop wrestling with raw webhook payloads. `better-webhook` gives you fully-typed event handlers, automatic signature verification, and schema validation—all with a beautiful, chainable API.
@@ -336,7 +339,7 @@ const webhook = paymentGateway({ secret: "sk_..." }).event(
   async (payload) => {
     await fulfillOrder(payload.id);
     await sendReceipt(payload.customer_email);
-  }
+  },
 );
 ```
 
@@ -380,14 +383,14 @@ import { verifyHmac } from "@better-webhook/core";
 function stripeVerify(
   rawBody: string | Buffer,
   headers: Headers,
-  secret: string
+  secret: string,
 ): boolean {
   const signatureHeader = headers["stripe-signature"];
   if (!signatureHeader) return false;
 
   // Parse Stripe's format: t=1234567890,v1=abc123...
   const parts = Object.fromEntries(
-    signatureHeader.split(",").map((part) => part.split("="))
+    signatureHeader.split(",").map((part) => part.split("=")),
   );
 
   const timestamp = parts["t"];
@@ -445,7 +448,7 @@ interface ProviderConfig<EventMap> {
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string
+    secret: string,
   ) => boolean;
 }
 
@@ -474,7 +477,7 @@ interface ErrorContext {
 // Event handler signature
 type EventHandler<T> = (
   payload: T,
-  context: HandlerContext
+  context: HandlerContext,
 ) => Promise<void> | void;
 ```
 

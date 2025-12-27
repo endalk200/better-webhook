@@ -1,17 +1,8 @@
 # better-webhook
 
-<div align="center">
-
-[![npm](https://img.shields.io/npm/v/@better-webhook/cli?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/cli)
-[![GitHub](https://img.shields.io/github/stars/endalk200/better-webhook?style=for-the-badge&logo=github)](https://github.com/endalk200/better-webhook)
-[![License](https://img.shields.io/github/license/endalk200/better-webhook?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/node/v/@better-webhook/cli?style=for-the-badge&logo=node.js)](https://nodejs.org/)
-
 **Local-first toolkit for webhook development without the pain.**
 
 [Install](#installation) • [Documentation](#documentation) • [Examples](#examples) • [Contributing](#contributing)
-
-</div>
 
 ---
 
@@ -175,7 +166,7 @@ const webhook = github()
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);

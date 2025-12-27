@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.6.1
+
+### Patch Changes
+
+- Format readme and add badges
+
 ## 0.6.0
 
 ### Minor Changes

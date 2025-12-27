@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.4.1
+
+### Patch Changes
+
+- Format readme and add badges
+
 ## 3.4.0
 
 ### Minor Changes
