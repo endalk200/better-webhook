@@ -1,0 +1,777 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* ============================================================================
+   LYRA STYLE SYSTEM
+   Boxy, sharp, mono-inspired aesthetic
+   ============================================================================ */
+
+/* ============================================================================
+   CSS Variables
+   ============================================================================ */
+
+:root {
+  /* Typography */
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
+    monospace;
+  --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
+
+  /* Lyra Light Mode */
+  --lyra-bg: #fafafa;
+  --lyra-bg-secondary: #f0f0f0;
+  --lyra-surface: #ffffff;
+  --lyra-border: #e0e0e0;
+  --lyra-border-strong: #c0c0c0;
+
+  /* Primary - Electric Cyan */
+  --lyra-primary: #00d4ff;
+  --lyra-primary-dark: #00b8e6;
+
+  /* Accent - Electric Green */
+  --lyra-accent: #00ff88;
+  --lyra-accent-dark: #00e67a;
+
+  /* Warning - Amber */
+  --lyra-warning: #ffb800;
+
+  /* Text */
+  --lyra-text: #0a0a0a;
+  --lyra-text-secondary: #404040;
+  --lyra-text-muted: #707070;
+
+  /* Code Block */
+  --code-bg: #1a1a1a;
+  --code-border: #2a2a2a;
+  --code-header: #141414;
+
+  /* Fumadocs overrides */
+  --color-primary: var(--lyra-primary);
+  --color-primary-foreground: #0a0a0a;
+}
+
+.dark {
+  /* Lyra Dark Mode - The primary aesthetic */
+  --lyra-bg: #0a0a0a;
+  --lyra-bg-secondary: #0f0f0f;
+  --lyra-surface: #141414;
+  --lyra-border: #2a2a2a;
+  --lyra-border-strong: #3a3a3a;
+
+  /* Primary - Electric Cyan */
+  --lyra-primary: #00d4ff;
+  --lyra-primary-dark: #00b8e6;
+
+  /* Accent - Electric Green */
+  --lyra-accent: #00ff88;
+  --lyra-accent-dark: #00e67a;
+
+  /* Warning - Amber */
+  --lyra-warning: #ffb800;
+
+  /* Text */
+  --lyra-text: #ffffff;
+  --lyra-text-secondary: #b0b0b0;
+  --lyra-text-muted: #707070;
+
+  /* Code Block */
+  --code-bg: #0f0f0f;
+  --code-border: #2a2a2a;
+  --code-header: #141414;
+
+  /* Fumadocs overrides */
+  --color-primary: var(--lyra-primary);
+  --color-primary-foreground: #0a0a0a;
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--lyra-bg);
+  color: var(--lyra-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Gradient text - Cyan to Green */
+.gradient-text {
+  background: linear-gradient(135deg, var(--lyra-primary), var(--lyra-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient text - Amber accent */
+.gradient-text-warm {
+  background: linear-gradient(135deg, var(--lyra-warning), #ff8800);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================================================
+   Lyra Components
+   ============================================================================ */
+
+/* Boxy Card */
+.lyra-card {
+  background: var(--lyra-surface);
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.lyra-card:hover {
+  border-color: var(--lyra-primary);
+  box-shadow: 0 0 0 1px var(--lyra-primary);
+}
+
+/* Boxy Card with glow */
+.lyra-card-glow {
+  background: var(--lyra-surface);
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.lyra-card-glow:hover {
+  border-color: var(--lyra-primary);
+  box-shadow:
+    0 0 0 1px var(--lyra-primary),
+    0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+/* Sharp Button - Primary */
+.lyra-btn {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lyra-btn-primary {
+  background: var(--lyra-primary);
+  color: #0a0a0a;
+  border: 1px solid var(--lyra-primary);
+}
+
+.lyra-btn-primary:hover {
+  background: var(--lyra-primary-dark);
+  border-color: var(--lyra-primary-dark);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* Sharp Button - Secondary */
+.lyra-btn-secondary {
+  background: transparent;
+  color: var(--lyra-text);
+  border: 1px solid var(--lyra-border-strong);
+}
+
+.lyra-btn-secondary:hover {
+  border-color: var(--lyra-primary);
+  color: var(--lyra-primary);
+}
+
+/* Sharp Button - Ghost */
+.lyra-btn-ghost {
+  background: transparent;
+  color: var(--lyra-text-secondary);
+  border: 1px solid transparent;
+}
+
+.lyra-btn-ghost:hover {
+  color: var(--lyra-primary);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+/* ============================================================================
+   Code Block - Terminal Style
+   ============================================================================ */
+
+.lyra-code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 2px;
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+
+.lyra-code-header {
+  background: var(--code-header);
+  border-bottom: 1px solid var(--code-border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lyra-code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.lyra-code-dot-red {
+  background: #ff5f57;
+}
+.lyra-code-dot-yellow {
+  background: #ffbd2e;
+}
+.lyra-code-dot-green {
+  background: #28c840;
+}
+
+.lyra-code-body {
+  padding: 1.25rem;
+  overflow-x: auto;
+}
+
+/* ============================================================================
+   Terminal
+   ============================================================================ */
+
+.lyra-terminal {
+  background: #0a0a0a;
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+.lyra-terminal-header {
+  background: #141414;
+  border-bottom: 1px solid var(--lyra-border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lyra-terminal-title {
+  color: var(--lyra-text-muted);
+  font-size: 0.75rem;
+  margin-left: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.lyra-terminal-body {
+  padding: 1.25rem;
+  min-height: 200px;
+  color: #e0e0e0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.lyra-terminal-prompt {
+  color: var(--lyra-accent);
+}
+
+.lyra-terminal-command {
+  color: #ffffff;
+}
+
+.lyra-terminal-output {
+  color: #808080;
+}
+
+.lyra-terminal-success {
+  color: var(--lyra-accent);
+}
+
+.lyra-terminal-info {
+  color: var(--lyra-primary);
+}
+
+/* ============================================================================
+   Grid Background
+   ============================================================================ */
+
+.lyra-grid-bg {
+  background-color: var(--lyra-bg);
+  background-image:
+    linear-gradient(var(--lyra-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lyra-border) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .lyra-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* ============================================================================
+   Section Styles
+   ============================================================================ */
+
+.lyra-section {
+  position: relative;
+  padding: 6rem 1rem;
+}
+
+.lyra-section-alt {
+  background: var(--lyra-bg-secondary);
+}
+
+.lyra-section-dark {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Section divider */
+.lyra-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--lyra-border-strong),
+    transparent
+  );
+}
+
+/* ============================================================================
+   Badge / Tag
+   ============================================================================ */
+
+.lyra-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+  border: 1px solid var(--lyra-border);
+  background: var(--lyra-surface);
+}
+
+.lyra-badge-primary {
+  border-color: var(--lyra-primary);
+  color: var(--lyra-primary);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.lyra-badge-accent {
+  border-color: var(--lyra-accent);
+  color: var(--lyra-accent);
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.lyra-badge-warning {
+  border-color: var(--lyra-warning);
+  color: var(--lyra-warning);
+  background: rgba(255, 184, 0, 0.1);
+}
+
+/* ============================================================================
+   Feature Card
+   ============================================================================ */
+
+.lyra-feature-card {
+  background: var(--lyra-surface);
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  padding: 1.5rem;
+  transition: all 0.15s ease;
+}
+
+.lyra-feature-card:hover {
+  border-color: var(--lyra-primary);
+  transform: translateY(-2px);
+}
+
+.lyra-feature-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  margin-bottom: 1rem;
+  color: var(--lyra-primary);
+}
+
+/* ============================================================================
+   Provider Card
+   ============================================================================ */
+
+.lyra-provider-card {
+  background: var(--lyra-surface);
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.lyra-provider-card:hover {
+  border-color: var(--lyra-primary);
+}
+
+.lyra-provider-card.available {
+  border-color: var(--lyra-accent);
+}
+
+.lyra-provider-card.coming-soon {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+/* ============================================================================
+   Tab Navigation
+   ============================================================================ */
+
+.lyra-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.lyra-tab {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--lyra-text-secondary);
+  border: none;
+  border-right: 1px solid var(--lyra-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lyra-tab:last-child {
+  border-right: none;
+}
+
+.lyra-tab:hover {
+  background: rgba(0, 212, 255, 0.05);
+  color: var(--lyra-text);
+}
+
+.lyra-tab.active {
+  background: var(--lyra-primary);
+  color: #0a0a0a;
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes lyra-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lyra-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lyra-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.4);
+  }
+}
+
+@keyframes lyra-border-glow {
+  0%,
+  100% {
+    border-color: var(--lyra-primary);
+  }
+  50% {
+    border-color: var(--lyra-accent);
+  }
+}
+
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.lyra-animate-fade-in {
+  animation: lyra-fade-in 0.5s ease-out forwards;
+}
+
+.lyra-animate-slide-up {
+  animation: lyra-slide-up 0.6s ease-out forwards;
+}
+
+.lyra-animate-glow {
+  animation: lyra-glow-pulse 3s ease-in-out infinite;
+}
+
+.lyra-animate-border-glow {
+  animation: lyra-border-glow 2s ease-in-out infinite;
+}
+
+.lyra-cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Animation delays */
+.lyra-delay-100 {
+  animation-delay: 100ms;
+}
+.lyra-delay-200 {
+  animation-delay: 200ms;
+}
+.lyra-delay-300 {
+  animation-delay: 300ms;
+}
+.lyra-delay-400 {
+  animation-delay: 400ms;
+}
+.lyra-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+.lyra-border-glow {
+  box-shadow:
+    0 0 0 1px var(--lyra-primary),
+    0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.lyra-text-primary {
+  color: var(--lyra-primary);
+}
+
+.lyra-text-accent {
+  color: var(--lyra-accent);
+}
+
+.lyra-text-warning {
+  color: var(--lyra-warning);
+}
+
+.lyra-text-muted {
+  color: var(--lyra-text-muted);
+}
+
+.lyra-bg-surface {
+  background: var(--lyra-surface);
+}
+
+/* ============================================================================
+   Scrollbar
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lyra-border-strong);
+  border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--lyra-text-muted);
+}
+
+/* ============================================================================
+   Selection
+   ============================================================================ */
+
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+/* ============================================================================
+   Focus States
+   ============================================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--lyra-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Legacy Compatibility (for existing components)
+   ============================================================================ */
+
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.code-header {
+  background: var(--code-header);
+  border-bottom: 1px solid var(--code-border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.code-dot-red {
+  background: #ff5f57;
+}
+.code-dot-yellow {
+  background: #ffbd2e;
+}
+.code-dot-green {
+  background: #28c840;
+}
+
+.terminal {
+  background: #0a0a0a;
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+}
+
+.terminal-header {
+  background: #141414;
+  border-bottom: 1px solid var(--lyra-border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.terminal-body {
+  padding: 1.25rem;
+  color: #e0e0e0;
+}
+
+.terminal-prompt {
+  color: var(--lyra-accent);
+}
+
+.terminal-command {
+  color: #ffffff;
+}
+
+.terminal-output {
+  color: #808080;
+}
+
+.btn-primary {
+  background: var(--lyra-primary);
+  color: #0a0a0a;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--lyra-primary-dark);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--lyra-border-strong);
+  color: var(--lyra-text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--lyra-primary);
+  color: var(--lyra-primary);
+}
+
+.feature-card {
+  background: var(--lyra-surface);
+  border: 1px solid var(--lyra-border);
+  border-radius: 2px;
+  padding: 1.5rem;
+  transition: all 0.15s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--lyra-primary);
+  transform: translateY(-2px);
+}
+
+/* Remove all rounded corners for Lyra aesthetic */
+.rounded-full {
+  border-radius: 2px !important;
+}
+
+.rounded-xl,
+.rounded-lg,
+.rounded-md {
+  border-radius: 2px !important;
+}
