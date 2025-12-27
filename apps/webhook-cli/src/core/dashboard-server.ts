@@ -17,10 +17,10 @@ function resolveDashboardDistDir(runtimeDir: string): {
   distDir: string;
   indexHtml: string;
 } {
-  // When running from a published/built CLI, runtimeDir is typically:
-  //   .../apps/webhook-cli/dist/core
+  // When running from a published/bundled CLI, runtimeDir is typically:
+  //   .../node_modules/@better-webhook/cli/dist
   // and dashboard assets are at:
-  //   .../apps/webhook-cli/dist/dashboard
+  //   .../node_modules/@better-webhook/cli/dist/dashboard
   //
   // When running from source via tsx, runtimeDir is typically:
   //   .../apps/webhook-cli/src/core
@@ -28,8 +28,13 @@ function resolveDashboardDistDir(runtimeDir: string): {
   //   .../apps/webhook-cli/dist/dashboard (if CLI was built), OR
   //   .../apps/dashboard/dist (if dashboard was built)
   const candidates = [
+    // Bundled CLI: dist/index.js -> dist/dashboard
+    path.resolve(runtimeDir, "dashboard"),
+    // Legacy/unbundled: dist/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "dashboard"),
+    // Dev from src/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "..", "dist", "dashboard"),
+    // Dev from src/core -> apps/dashboard/dist
     path.resolve(runtimeDir, "..", "..", "..", "dashboard", "dist"),
   ];
 
@@ -46,7 +51,7 @@ function resolveDashboardDistDir(runtimeDir: string): {
       `Looked in:\n${details}\n\n` +
       `Build it with:\n` +
       `- pnpm --filter @better-webhook/dashboard build\n` +
-      `- pnpm --filter @better-webhook/cli build\n`
+      `- pnpm --filter @better-webhook/cli build\n`,
   );
 }
 
@@ -62,7 +67,7 @@ export interface DashboardServerOptions extends DashboardApiOptions {
 }
 
 export async function startDashboardServer(
-  options: DashboardServerOptions = {}
+  options: DashboardServerOptions = {},
 ): Promise<{
   app: express.Express;
   server: Server;
@@ -91,7 +96,7 @@ export async function startDashboardServer(
       capturesDir: options.capturesDir,
       templatesBaseDir: options.templatesBaseDir,
       broadcast,
-    })
+    }),
   );
 
   const host = options.host || "localhost";
@@ -137,7 +142,7 @@ export async function startDashboardServer(
       JSON.stringify({
         type: "captures_updated",
         payload: { captures, count: captures.length },
-      } satisfies WebSocketMessage)
+      } satisfies WebSocketMessage),
     );
 
     const local = templateManager.listLocalTemplates();
@@ -159,7 +164,7 @@ export async function startDashboardServer(
       JSON.stringify({
         type: "templates_updated",
         payload: { local, remote },
-      } satisfies WebSocketMessage)
+      } satisfies WebSocketMessage),
     );
   });
 

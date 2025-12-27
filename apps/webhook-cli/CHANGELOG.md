@@ -1,5 +1,23 @@
 # @better-webhook/cli
 
+## 3.3.0
+
+### Minor Changes
+
+- Fix build asset resolution issue
+
+## 3.2.0
+
+### Minor Changes
+
+- Include dashboard assets in main bundle
+
+## 3.1.0
+
+### Minor Changes
+
+- Adds ragie provider and dashboard UI
+
 ## 3.0.0
 
 ### Major Changes

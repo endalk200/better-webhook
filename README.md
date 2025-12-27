@@ -25,11 +25,11 @@ Working with webhooks during development is still unnecessarily painful. You usu
 
 🎣 **Live Capture** - Capture incoming webhooks with a local server  
 🔄 **Smart Replay** - Replay captured webhooks to any endpoint  
-📋 **Template Generation** - Generate reusable templates from real webhook data  
-📥 **Community Templates** - Access curated webhook templates for popular services  
+📋 **Curated Templates** - Access webhook templates for GitHub and Ragie  
 🎯 **Flexible Override** - Override URLs, methods, and headers on the fly  
-📁 **Local-First** - All data stored locally, no external dependencies
-🧭 **Dashboard** - Run a local dashboard UI from the CLI to inspect, replay, and run templates
+📁 **Local-First** - All data stored locally, no external dependencies  
+🧭 **Dashboard** - Run a local dashboard UI from the CLI to inspect, replay, and run templates  
+🔐 **Type-Safe SDK** - Handle webhooks with full TypeScript support and schema validation
 
 ## 🛠️ Installation
 
@@ -46,23 +46,65 @@ npx @better-webhook/cli --help
 better-webhook --version
 ```
 
-### Quick Start
+### SDK Packages
+
+```bash
+# Core package
+npm install @better-webhook/core
+
+# Provider packages
+npm install @better-webhook/github
+npm install @better-webhook/ragie
+
+# Framework adapters
+npm install @better-webhook/nextjs
+npm install @better-webhook/express
+npm install @better-webhook/nestjs
+```
+
+## 🚀 Quick Start
+
+### CLI: Capture & Replay Webhooks
 
 ```bash
 # Start capturing webhooks
 better-webhook capture --port 3001
 
-# Start the dashboard (UI + API + WS + in-process capture server by default)
+# Start the dashboard (UI + API + WS + in-process capture server)
 better-webhook dashboard
 
 # List captured webhooks
-better-webhook capture list
+better-webhook captures list
 
-# Generate template from capture
-better-webhook capture template abc123 my-webhook-template
+# Replay a captured webhook
+better-webhook replay <captureId> http://localhost:3000/webhooks
 
-# Run webhook
-better-webhook webhooks run my-webhook-template --url https://example.com/hook
+# List available templates
+better-webhook templates list
+
+# Run a template against your endpoint
+better-webhook run github-push --url http://localhost:3000/webhooks/github
+```
+
+### SDK: Type-Safe Webhook Handlers
+
+```ts
+// app/api/webhooks/github/route.ts
+import { github } from "@better-webhook/github";
+import { toNextJS } from "@better-webhook/nextjs";
+
+const webhook = github()
+  .event("push", async (payload) => {
+    // ✨ Full autocomplete for payload.repository, payload.commits, etc.
+    console.log(`${payload.pusher.name} pushed to ${payload.repository.name}`);
+  })
+  .event("pull_request", async (payload) => {
+    if (payload.action === "opened") {
+      console.log(`New PR #${payload.number}: ${payload.pull_request.title}`);
+    }
+  });
+
+export const POST = toNextJS(webhook);
 ```
 
 ## 🎯 Core Problems We Solve
@@ -71,60 +113,101 @@ better-webhook webhooks run my-webhook-template --url https://example.com/hook
 ✅ **Fast Feedback Loops** - No tunneling or public URLs needed  
 ✅ **Signature Debugging** - Inspect and modify headers easily  
 ✅ **Historical Testing** - Replay old events against new code  
-✅ **Edge Case Simulation** - Tweak payloads to test edge cases
+✅ **Edge Case Simulation** - Tweak payloads to test edge cases  
+✅ **Type Safety** - Full TypeScript support with validated payloads
 
 ## 📚 Documentation
 
 - **[CLI Documentation](apps/webhook-cli/README.md)** - Complete command reference
+- **[SDK Documentation](packages/core/README.md)** - Core SDK usage
+- **[GitHub Provider](packages/github/README.md)** - Handle GitHub webhooks
+- **[Ragie Provider](packages/ragie/README.md)** - Handle Ragie webhooks
 - **[Examples](#examples)** - Real-world usage examples
-- **[Contributing Guide](#contributing)** - Help improve better-webhook
 
 ## 💡 Examples
 
-### Stripe Payment Testing
+### Capture & Replay GitHub Webhooks
 
 ```bash
-# Capture Stripe webhook
+# Start capture server
 better-webhook capture --port 4000
-# Configure Stripe to send webhooks to http://localhost:4000
-
-# Generate template from captured data
-better-webhook capture template stripe123 stripe-payment
-
-# Test against your local app
-better-webhook webhooks run stripe-payment --url http://localhost:3000/webhooks/stripe
-```
-
-### GitHub Integration Testing
-
-```bash
-# Download GitHub webhook template
-better-webhook webhooks download github-push
-
-# Test push webhook against development server
-better-webhook webhooks run github-push --url https://dev-api.example.com/github
-```
-
-### Debugging & Development
-
-```bash
-# Replay captured webhook with modified method
-better-webhook replay abc123 http://localhost:8080/debug --method PUT
+# Configure GitHub to send webhooks to http://localhost:4000 (use ngrok for public URL)
 
 # List all captured webhooks
-better-webhook capture list --limit 50
+better-webhook captures list
 
-# Generate multiple templates from different captures
-better-webhook capture template user123 user-signup
-better-webhook capture template order456 order-complete
+# Show details of a specific capture
+better-webhook captures show <captureId> --body
+
+# Replay to your local development server
+better-webhook replay <captureId> http://localhost:3000/api/webhooks/github
+```
+
+### Run Templates with Signatures
+
+```bash
+# Download a GitHub webhook template
+better-webhook templates download github-push
+
+# Run with automatic signature generation
+better-webhook run github-push \
+  --url http://localhost:3000/webhooks/github \
+  --secret "$GITHUB_WEBHOOK_SECRET"
+```
+
+### SDK Integration with Express
+
+```ts
+import express from "express";
+import { github } from "@better-webhook/github";
+import { toExpress } from "@better-webhook/express";
+
+const app = express();
+
+const webhook = github()
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  })
+  .onError((error, context) => {
+    console.error(`Error handling ${context.eventType}:`, error);
+  });
+
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(webhook)
+);
+
+app.listen(3000);
 ```
 
 ## 🏗️ Architecture
 
 This monorepo contains:
 
-- **[@better-webhook/cli](apps/webhook-cli/)** - Main CLI tool for webhook management
-- **[packages/](packages/)** - Shared TypeScript configurations and ESLint rules
+### CLI
+
+- **[@better-webhook/cli](apps/webhook-cli/)** - CLI tool for capturing, replaying, and running webhooks
+
+### SDK Packages
+
+- **[@better-webhook/core](packages/core/)** - Core webhook handling with type safety and signature verification
+- **[@better-webhook/github](packages/github/)** - GitHub webhook provider
+- **[@better-webhook/ragie](packages/ragie/)** - Ragie webhook provider
+- **[@better-webhook/nextjs](packages/nextjs/)** - Next.js adapter
+- **[@better-webhook/express](packages/express/)** - Express adapter
+- **[@better-webhook/nestjs](packages/nestjs/)** - NestJS adapter
+
+### Configuration
+
+- **[@better-webhook/typescript-config](packages/typescript-config/)** - Shared TypeScript configuration
+- **[@better-webhook/eslint-config](packages/eslint-config/)** - Shared ESLint configuration
+
+### Apps
+
+- **[docs](apps/docs/)** - Documentation site
+- **[dashboard](apps/dashboard/)** - Dashboard UI for the CLI
+- **[examples](apps/examples/)** - Example integrations
 
 ## 🤝 Contributing
 
@@ -140,9 +223,9 @@ We welcome contributions! Here's how to get started:
    ```bash
    pnpm install
    ```
-4. **Build the CLI**
+4. **Build all packages**
    ```bash
-   pnpm --filter @better-webhook/cli build
+   pnpm build
    ```
 5. **Make your changes and test**
 6. **Submit a pull request**
@@ -155,6 +238,9 @@ pnpm build
 
 # Run CLI in development mode
 pnpm --filter @better-webhook/cli dev
+
+# Run tests
+pnpm test
 
 # Lint and format
 pnpm lint

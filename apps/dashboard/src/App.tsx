@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
-// import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -76,16 +76,16 @@ export function App() {
           <ModeToggle />
         </div>
 
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[220px_1fr]">
+        <div className="mx-auto grid max-w-screen-2xl grid-cols-1 gap-4 p-4 lg:grid-cols-[220px_1fr]">
           <Card className="h-fit">
             <div className="px-4">
-              {/* <div className="flex items-center justify-between pt-1"> */}
-              {/*   <div className="text-sm font-medium">better-webhook</div> */}
-              {/*   <div className="flex items-center gap-2"> */}
-              {/*     <Badge variant={apiOk ? "secondary" : "outline"}>api</Badge> */}
-              {/*     <Badge variant={wsOk ? "secondary" : "outline"}>ws</Badge> */}
-              {/*   </div> */}
-              {/* </div> */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="text-sm font-medium">better-webhook</div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={apiOk ? "secondary" : "outline"}>api</Badge>
+                  <Badge variant={wsOk ? "secondary" : "outline"}>ws</Badge>
+                </div>
+              </div>
               <div className="text-muted-foreground text-xs">
                 Local dashboard
               </div>

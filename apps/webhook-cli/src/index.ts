@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import { createRequire } from "node:module";
 import {
   templates,
   run,
@@ -10,12 +11,16 @@ import {
   dashboard,
 } from "./commands/index.js";
 
+// Dynamically read version from package.json to keep it in sync
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json");
+
 const program = new Command()
   .name("better-webhook")
   .description(
-    "Modern CLI for developing, capturing, and replaying webhooks locally",
+    "Modern CLI for developing, capturing, and replaying webhooks locally"
   )
-  .version("2.0.0");
+  .version(packageJson.version);
 
 // Add all commands
 program

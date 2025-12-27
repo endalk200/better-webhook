@@ -18,6 +18,10 @@ A modern CLI tool for webhook development, testing, and debugging. Capture incom
 
 ## Supported Providers
 
+### Signature Generation Support
+
+The CLI can automatically generate signatures for the following providers when you provide a `--secret`:
+
 | Provider     | Signature Algorithm             | Auto-Detection |
 | ------------ | ------------------------------- | -------------- |
 | Stripe       | HMAC-SHA256 (`t={ts},v1={sig}`) | ✅             |
@@ -28,8 +32,16 @@ A modern CLI tool for webhook development, testing, and debugging. Capture incom
 | SendGrid     | HMAC-SHA256 (Base64)            | ✅             |
 | Linear       | HMAC-SHA256 (Hex)               | ✅             |
 | Clerk (Svix) | HMAC-SHA256 (`v1,{sig}`)        | ✅             |
-| Discord      | Ed25519                         | ✅             |
-| Custom       | —                               | —              |
+| Ragie        | HMAC-SHA256 (Hex)               | ✅             |
+
+### Detection Only (No Signature Generation)
+
+These providers are auto-detected from headers but signature generation is not yet implemented:
+
+| Provider | Notes                                                 |
+| -------- | ----------------------------------------------------- |
+| Discord  | Detected from headers; uses Ed25519 (not implemented) |
+| Custom   | Generic detection; no signature generation            |
 
 ## Installation
 
@@ -51,7 +63,6 @@ npx @better-webhook/cli --help
 
 ```bash
 better-webhook --version
-# 2.0.0
 ```
 
 ## Quick Start
@@ -379,15 +390,15 @@ By default, this command starts:
 better-webhook dashboard [options]
 ```
 
-| Option                    | Description                     | Default     |
-| ------------------------- | ------------------------------- | ----------- |
-| `-p, --port <port>`       | Dashboard server port           | `4000`      |
-| `-h, --host <host>`       | Dashboard server host           | `localhost` |
-| `--capture-port <port>`   | Capture server port             | `3001`      |
-| `--capture-host <host>`   | Capture server host             | `0.0.0.0`   |
-| `--no-capture`            | Do not start capture server     | —           |
-| `--captures-dir <dir>`    | Override captures directory     | —           |
-| `--templates-dir <dir>`   | Override templates base dir     | —           |
+| Option                  | Description                 | Default     |
+| ----------------------- | --------------------------- | ----------- |
+| `-p, --port <port>`     | Dashboard server port       | `4000`      |
+| `-h, --host <host>`     | Dashboard server host       | `localhost` |
+| `--capture-port <port>` | Capture server port         | `3001`      |
+| `--capture-host <host>` | Capture server host         | `0.0.0.0`   |
+| `--no-capture`          | Do not start capture server | —           |
+| `--captures-dir <dir>`  | Override captures directory | —           |
+| `--templates-dir <dir>` | Override templates base dir | —           |
 
 **Security note:**
 Keep the dashboard bound to `localhost` unless you trust your network. The API includes endpoints that can send HTTP requests to arbitrary URLs (run/replay).
@@ -408,6 +419,7 @@ The CLI automatically reads webhook secrets from environment variables based on 
 | Linear   | `LINEAR_WEBHOOK_SECRET`   |
 | Clerk    | `CLERK_WEBHOOK_SECRET`    |
 | SendGrid | `SENDGRID_WEBHOOK_SECRET` |
+| Ragie    | `RAGIE_WEBHOOK_SECRET`    |
 | Discord  | `DISCORD_WEBHOOK_SECRET`  |
 | Custom   | `WEBHOOK_SECRET`          |
 
