@@ -104,11 +104,11 @@ const webhook = github().event("push", async (payload, context) => {
   // Access the event type
   console.log(`Event: ${context.eventType}`); // "push"
 
+  // Access the delivery ID (extracted from provider-specific headers)
+  console.log(`Delivery ID: ${context.deliveryId}`);
+
   // Get all request headers (normalized to lowercase)
   console.log(`User-Agent: ${context.headers["user-agent"]}`);
-
-  // Access provider-specific headers (e.g., GitHub's delivery ID)
-  console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
 
   // Access the raw body for advanced use cases
   console.log(`Raw body length: ${context.rawBody.length}`);
@@ -122,34 +122,32 @@ const webhook = github().event("push", async (payload, context) => {
 
 ### HandlerContext Properties
 
-| Property     | Type                                | Description                                    |
-| ------------ | ----------------------------------- | ---------------------------------------------- |
-| `eventType`  | `string`                            | The event type (e.g., "push", "order.created") |
-| `provider`   | `string`                            | Provider name (e.g., "github", "stripe")       |
-| `headers`    | `Record<string, string\|undefined>` | Normalized request headers (lowercase keys)    |
-| `rawBody`    | `string`                            | The raw request body as a string               |
-| `receivedAt` | `Date`                              | Timestamp when the webhook was received        |
+| Property     | Type                                | Description                                                     |
+| ------------ | ----------------------------------- | --------------------------------------------------------------- |
+| `eventType`  | `string`                            | The event type (e.g., "push", "order.created")                  |
+| `provider`   | `string`                            | Provider name (e.g., "github", "stripe")                        |
+| `deliveryId` | `string \| undefined`               | Unique delivery ID from provider headers (for logging/deduping) |
+| `headers`    | `Record<string, string\|undefined>` | Normalized request headers (lowercase keys)                     |
+| `rawBody`    | `string`                            | The raw request body as a string                                |
+| `receivedAt` | `Date`                              | Timestamp when the webhook was received                         |
 
 ### Using Context for Deduplication
 
-Provider-specific delivery IDs can be accessed from headers:
+The `deliveryId` is extracted from provider-specific headers (e.g., `X-GitHub-Delivery` for GitHub):
 
 ```ts
 const processedIds = new Set<string>();
 
 const webhook = github().event("push", async (payload, context) => {
-  // GitHub sends delivery ID in x-github-delivery header
-  const deliveryId = context.headers["x-github-delivery"];
-
   // Skip if we've already processed this webhook
-  if (deliveryId && processedIds.has(deliveryId)) {
-    console.log(`Skipping duplicate delivery: ${deliveryId}`);
+  if (context.deliveryId && processedIds.has(context.deliveryId)) {
+    console.log(`Skipping duplicate delivery: ${context.deliveryId}`);
     return;
   }
 
   // Mark as processed
-  if (deliveryId) {
-    processedIds.add(deliveryId);
+  if (context.deliveryId) {
+    processedIds.add(context.deliveryId);
   }
 
   await processWebhook(payload);
@@ -338,7 +336,7 @@ const webhook = paymentGateway({ secret: "sk_..." }).event(
   async (payload) => {
     await fulfillOrder(payload.id);
     await sendReceipt(payload.customer_email);
-  },
+  }
 );
 ```
 
@@ -382,14 +380,14 @@ import { verifyHmac } from "@better-webhook/core";
 function stripeVerify(
   rawBody: string | Buffer,
   headers: Headers,
-  secret: string,
+  secret: string
 ): boolean {
   const signatureHeader = headers["stripe-signature"];
   if (!signatureHeader) return false;
 
   // Parse Stripe's format: t=1234567890,v1=abc123...
   const parts = Object.fromEntries(
-    signatureHeader.split(",").map((part) => part.split("=")),
+    signatureHeader.split(",").map((part) => part.split("="))
   );
 
   const timestamp = parts["t"];
@@ -447,7 +445,7 @@ interface ProviderConfig<EventMap> {
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string,
+    secret: string
   ) => boolean;
 }
 
@@ -461,6 +459,7 @@ interface HmacVerifyOptions {
 interface HandlerContext {
   eventType: string;
   provider: string;
+  deliveryId?: string;
   headers: Record<string, string | undefined>;
   rawBody: string;
   receivedAt: Date;
@@ -475,7 +474,7 @@ interface ErrorContext {
 // Event handler signature
 type EventHandler<T> = (
   payload: T,
-  context: HandlerContext,
+  context: HandlerContext
 ) => Promise<void> | void;
 ```
 

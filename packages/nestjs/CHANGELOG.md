@@ -1,5 +1,27 @@
 # @better-webhook/nestjs
 
+## 0.6.0
+
+### Minor Changes
+
+- Add deliveryId in context, fix dashboard UI issues and improve version inconsistencies
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.6.0
+
+## 0.5.0
+
+### Minor Changes
+
+- Adds ragie provider and dashboard UI
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

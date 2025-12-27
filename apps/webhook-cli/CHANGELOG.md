@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.4.0
+
+### Minor Changes
+
+- Add deliveryId in context, fix dashboard UI issues and improve version inconsistencies
+
 ## 3.3.0
 
 ### Minor Changes

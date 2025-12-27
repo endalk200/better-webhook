@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/github",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "GitHub module for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",

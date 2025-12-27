@@ -10,7 +10,7 @@ import { github } from "@better-webhook/github";
 const webhook = github().event("push", async (payload) => {
   // ✨ Full autocomplete for payload.repository, payload.commits, etc.
   console.log(
-    `${payload.pusher.name} pushed ${payload.commits.length} commits`,
+    `${payload.pusher.name} pushed ${payload.commits.length} commits`
   );
 });
 ```
@@ -77,7 +77,7 @@ const webhook = github().event("push", async (payload) => {
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook),
+  toExpress(webhook)
 );
 
 app.listen(3000);
@@ -107,11 +107,13 @@ export class WebhooksController {
 
 ## Supported Events
 
-| Event          | Description                               |
-| -------------- | ----------------------------------------- |
-| `push`         | Push to a repository                      |
-| `pull_request` | Pull request opened, closed, merged, etc. |
-| `issues`       | Issue opened, closed, labeled, etc.       |
+| Event                       | Description                                          |
+| --------------------------- | ---------------------------------------------------- |
+| `push`                      | Push to a repository                                 |
+| `pull_request`              | Pull request opened, closed, merged, etc.            |
+| `issues`                    | Issue opened, closed, labeled, etc.                  |
+| `installation`              | GitHub App installed, uninstalled, or suspended      |
+| `installation_repositories` | Repositories added/removed from a GitHub App install |
 
 > More events coming soon! PRs welcome.
 
@@ -130,7 +132,7 @@ github().event("push", async (payload) => {
     console.log(`${commit.id.slice(0, 7)}: ${commit.message}`);
     console.log(`  Author: ${commit.author.name} <${commit.author.email}>`);
     console.log(
-      `  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`,
+      `  Files: +${commit.added?.length || 0} ~${commit.modified?.length || 0} -${commit.removed?.length || 0}`
     );
   }
 
@@ -190,6 +192,65 @@ github().event("issues", async (payload) => {
 });
 ```
 
+### Installation Events (GitHub Apps)
+
+```ts
+github().event("installation", async (payload) => {
+  const installation = payload.installation;
+
+  switch (payload.action) {
+    case "created":
+      console.log(`App installed on ${installation.account.login}`);
+      // Store installation ID for API access
+      await db.installations.insert({
+        id: installation.id,
+        account: installation.account.login,
+        targetType: installation.target_type,
+      });
+      break;
+
+    case "deleted":
+      console.log(`App uninstalled from ${installation.account.login}`);
+      await db.installations.delete(installation.id);
+      break;
+
+    case "suspend":
+      console.log(`App suspended on ${installation.account.login}`);
+      break;
+  }
+});
+```
+
+### Installation Repositories Events
+
+```ts
+github().event("installation_repositories", async (payload) => {
+  const installation = payload.installation;
+
+  if (payload.action === "added") {
+    console.log(
+      `Repos added to installation ${installation.id}:`,
+      payload.repositories_added.map((r) => r.full_name)
+    );
+    // Index the new repositories
+    for (const repo of payload.repositories_added) {
+      await indexRepository(repo.full_name);
+    }
+  }
+
+  if (payload.action === "removed") {
+    console.log(
+      `Repos removed from installation ${installation.id}:`,
+      payload.repositories_removed.map((r) => r.full_name)
+    );
+    // Clean up removed repositories
+    for (const repo of payload.repositories_removed) {
+      await removeRepository(repo.full_name);
+    }
+  }
+});
+```
+
 ## Error Handling
 
 Handle errors gracefully with built-in hooks:
@@ -202,7 +263,7 @@ const webhook = github()
   .onError((error, context) => {
     console.error(`Error handling ${context.eventType}:`, error);
 
-    // context.deliveryId is the X-GitHub-Delivery header
+    // context.deliveryId is available in ErrorContext
     console.error(`Delivery ID: ${context.deliveryId}`);
 
     // Send to error tracking

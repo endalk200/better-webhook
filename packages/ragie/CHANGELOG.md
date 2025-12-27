@@ -1,5 +1,27 @@
 # @better-webhook/ragie
 
+## 0.3.0
+
+### Minor Changes
+
+- Add deliveryId in context, fix dashboard UI issues and improve version inconsistencies
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.6.0
+
+## 0.2.0
+
+### Minor Changes
+
+- Adds ragie provider and dashboard UI
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.5.0
+
 ## 0.1.0 - 2025-12-25
 
 ### Added
@@ -22,4 +44,3 @@
 - Examples for Express, NestJS, and Next.js
 - Complete test suite with 100% coverage
 - Detailed README with examples and best practices
-

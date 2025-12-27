@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/ragie",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Ragie module for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
@@ -66,4 +66,3 @@
     "vitest": "^4.0.16"
   }
 }
-
