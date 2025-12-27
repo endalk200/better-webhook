@@ -1,0 +1,113 @@
+---
+title: CLI Getting Started
+description: Install the Better Webhook CLI and start capturing, replaying, and testing webhooks locally in minutes.
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# CLI Getting Started
+
+The Better Webhook CLI is a local development tool for capturing, replaying, and testing webhooks without exposing your localhost to the internet.
+
+## Installation
+
+Install the CLI globally:
+
+```bash
+npm install -g @better-webhook/cli
+```
+
+Verify the installation:
+
+```bash
+better-webhook --version
+```
+
+## Quick Start
+
+The fastest way to get started is with the dashboard command, which starts both the UI and a capture server:
+
+<Steps>
+  <Step>
+    ### Start the Dashboard
+
+    ```bash
+    better-webhook dashboard
+    ```
+
+    This starts:
+    - **Dashboard UI** at `http://localhost:4000`
+    - **Capture Server** at `http://localhost:3001`
+  </Step>
+
+  <Step>
+    ### Point Webhooks to the Capture Server
+
+    Configure your webhook source (GitHub, Ragie, etc.) to send webhooks to:
+
+    ```
+    http://localhost:3001/webhooks/your-provider
+    ```
+
+    <Callout type="info">
+      Use a tunnel service like ngrok or cloudflared to expose the capture server if your webhook source can't reach localhost.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Trigger a Webhook
+
+    Perform an action that triggers a webhook (push code, create an issue, etc.). The webhook will be captured and appear in the dashboard.
+  </Step>
+
+  <Step>
+    ### Replay to Your Local Server
+
+    From the dashboard, select a captured webhook and replay it to your local development server:
+
+    ```
+    http://localhost:3000/api/webhooks/github
+    ```
+
+    You can replay the same webhook as many times as needed while debugging.
+  </Step>
+</Steps>
+
+## Alternative: CLI-Only Workflow
+
+If you prefer working entirely in the terminal:
+
+```bash
+# Start the capture server
+better-webhook capture --port 3001
+
+# In another terminal, list captured webhooks
+better-webhook captures list
+
+# Replay a captured webhook
+better-webhook replay abc12345 http://localhost:3000/api/webhooks/github
+```
+
+## Using Templates
+
+Don't have real webhooks to test with? Use pre-built templates:
+
+```bash
+# List available templates
+better-webhook templates list
+
+# Download a template
+better-webhook templates download github-push
+
+# Run a template against your endpoint
+better-webhook run github-push --url http://localhost:3000/api/webhooks/github
+```
+
+Templates include proper headers and can generate valid signatures when you provide a secret.
+
+## Next Steps
+
+- [Command Reference](/docs/cli/commands) — Full documentation for all CLI commands
+- [Templates](/docs/cli/templates) — Learn about available templates and how to use them
+

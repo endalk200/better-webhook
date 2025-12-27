@@ -1,0 +1,167 @@
+---
+title: Templates
+description: Use pre-built webhook templates to test your handlers without triggering real events.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Templates
+
+Templates are pre-built webhook payloads that you can use to test your handlers without triggering real events. They include proper headers and can generate valid signatures.
+
+## Available Templates
+
+### GitHub
+
+| Template ID | Event | Description |
+|-------------|-------|-------------|
+| `github-push` | `push` | Commits pushed to a repository |
+| `github-pull_request` | `pull_request` | Pull request opened, closed, merged, etc. |
+| `github-issues` | `issues` | Issue opened, closed, edited, etc. |
+| `github-installation` | `installation` | GitHub App installed or uninstalled |
+| `github-installation_repositories` | `installation_repositories` | Repos added/removed from app |
+
+### Ragie
+
+| Template ID | Event | Description |
+|-------------|-------|-------------|
+| `ragie-document_status_updated` | `document_status_updated` | Document enters indexed, ready, or failed state |
+| `ragie-document_deleted` | `document_deleted` | Document is deleted |
+| `ragie-entity_extracted` | `entity_extracted` | Entity extraction completes |
+| `ragie-connection_sync_started` | `connection_sync_started` | Connection sync begins |
+| `ragie-connection_sync_progress` | `connection_sync_progress` | Periodic sync progress updates |
+| `ragie-connection_sync_finished` | `connection_sync_finished` | Connection sync completes |
+| `ragie-connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded |
+| `ragie-partition_limit_exceeded` | `partition_limit_exceeded` | Partition document limit exceeded |
+
+## Commands
+
+### List Remote Templates
+
+View all templates available from the repository:
+
+```bash
+better-webhook templates list
+```
+
+Filter by provider:
+
+```bash
+better-webhook templates list --provider github
+```
+
+### Download Templates
+
+Download a specific template:
+
+```bash
+better-webhook templates download github-push
+```
+
+Download all available templates:
+
+```bash
+better-webhook templates download --all
+```
+
+### List Local Templates
+
+View templates you've downloaded:
+
+```bash
+better-webhook templates local
+```
+
+### Search Templates
+
+Search by name, provider, or event:
+
+```bash
+better-webhook templates search push
+better-webhook templates search github
+```
+
+### Clean Up
+
+Remove all downloaded templates:
+
+```bash
+better-webhook templates clean
+```
+
+Clear the template cache (forces re-fetch of the index):
+
+```bash
+better-webhook templates cache --clear
+```
+
+## Running Templates
+
+Use the `run` command to execute a template against your endpoint:
+
+```bash
+better-webhook run github-push --url http://localhost:3000/api/webhooks/github
+```
+
+### With Signature Generation
+
+To generate a valid signature, provide the webhook secret:
+
+```bash
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret "your-webhook-secret"
+```
+
+<Callout type="info">
+  The CLI will automatically look for provider-specific environment variables if you don't pass `--secret`:
+  - `GITHUB_WEBHOOK_SECRET`
+  - `RAGIE_WEBHOOK_SECRET`
+</Callout>
+
+### With Custom Headers
+
+Add or override headers:
+
+```bash
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  -H "X-Custom-Header:value"
+```
+
+### Verbose Output
+
+See detailed request and response information:
+
+```bash
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --verbose
+```
+
+## Workflow Example
+
+A typical development workflow with templates:
+
+```bash
+# 1. Download templates you need
+better-webhook templates download github-push
+better-webhook templates download github-pull_request
+
+# 2. Start your development server
+# (in another terminal)
+npm run dev
+
+# 3. Test your webhook handler
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret $GITHUB_WEBHOOK_SECRET
+
+# 4. Iterate - run the same template while fixing issues
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret $GITHUB_WEBHOOK_SECRET
+```
+
+Templates give you repeatable, consistent webhook payloads for testing without needing to trigger real events.
+

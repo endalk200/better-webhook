@@ -1,0 +1,248 @@
+---
+title: Framework Adapters
+description: Integrate Better Webhook with Next.js, Express, and NestJS.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Framework Adapters
+
+Adapters convert the webhook builder into framework-specific handlers. Each adapter handles the request/response lifecycle and passes the raw body for signature verification.
+
+## Next.js
+
+```bash
+npm install @better-webhook/nextjs
+```
+
+The Next.js adapter works with the App Router's route handlers.
+
+### Basic Usage
+
+```ts title="app/api/webhooks/github/route.ts"
+import { github } from "@better-webhook/github";
+import { toNextJS } from "@better-webhook/nextjs";
+
+const webhook = github()
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
+
+export const POST = toNextJS(webhook);
+```
+
+### With Options
+
+```ts
+export const POST = toNextJS(webhook, {
+  // Override the secret (instead of using provider or env var)
+  secret: process.env.GITHUB_WEBHOOK_SECRET,
+  
+  // Callback after successful processing
+  onSuccess: async (eventType) => {
+    console.log(`Successfully processed ${eventType}`);
+  },
+});
+```
+
+### Response Behavior
+
+| Status | Condition |
+|--------|-----------|
+| `200` | Handler executed successfully |
+| `204` | No handler registered for this event type |
+| `400` | Invalid JSON body or schema validation failed |
+| `401` | Signature verification failed |
+| `405` | Request method is not POST |
+| `500` | Handler threw an error |
+
+---
+
+## Express
+
+```bash
+npm install @better-webhook/express
+```
+
+The Express adapter returns a middleware function.
+
+### Basic Usage
+
+```ts title="src/webhooks.ts"
+import express from "express";
+import { github } from "@better-webhook/github";
+import { toExpress } from "@better-webhook/express";
+
+const app = express();
+
+const webhook = github()
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
+
+// Important: use express.raw() for this route
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(webhook)
+);
+
+app.listen(3000);
+```
+
+<Callout type="warn">
+  **Important:** You must use `express.raw({ type: "application/json" })` before the webhook middleware. Without the raw body, signature verification will fail.
+</Callout>
+
+### With Options
+
+```ts
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(webhook, {
+    secret: process.env.GITHUB_WEBHOOK_SECRET,
+    onSuccess: async (eventType) => {
+      console.log(`Processed ${eventType}`);
+    },
+  })
+);
+```
+
+### Multiple Providers
+
+```ts
+import { github } from "@better-webhook/github";
+import { ragie } from "@better-webhook/ragie";
+import { toExpress } from "@better-webhook/express";
+
+const githubWebhook = github().event("push", async (payload) => {
+  // Handle GitHub
+});
+
+const ragieWebhook = ragie().event("document_status_updated", async (payload) => {
+  // Handle Ragie
+});
+
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(githubWebhook)
+);
+
+app.post(
+  "/webhooks/ragie",
+  express.raw({ type: "application/json" }),
+  toExpress(ragieWebhook)
+);
+```
+
+---
+
+## NestJS
+
+```bash
+npm install @better-webhook/nestjs
+```
+
+The NestJS adapter returns an async function that processes the request and returns a result object.
+
+### Basic Usage
+
+```ts title="src/webhooks.controller.ts"
+import { Controller, Post, Req, Res } from "@nestjs/common";
+import { Request, Response } from "express";
+import { github } from "@better-webhook/github";
+import { toNestJS } from "@better-webhook/nestjs";
+
+@Controller("webhooks")
+export class WebhooksController {
+  private webhook = github()
+    .event("push", async (payload) => {
+      console.log(`Push to ${payload.repository.name}`);
+    });
+
+  @Post("github")
+  async handleGitHub(@Req() req: Request, @Res() res: Response) {
+    const result = await toNestJS(this.webhook)(req);
+    return res.status(result.statusCode).json(result.body);
+  }
+}
+```
+
+### Raw Body Configuration
+
+For signature verification to work, NestJS must preserve the raw request body. Enable this in your `main.ts`:
+
+```ts title="src/main.ts"
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,  // Enable raw body
+  });
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+<Callout type="warn">
+  Without `rawBody: true`, the adapter will attempt to re-serialize the parsed body, which may not match the original and cause signature verification to fail.
+</Callout>
+
+### With Options
+
+```ts
+@Post("github")
+async handleGitHub(@Req() req: Request, @Res() res: Response) {
+  const handler = toNestJS(this.webhook, {
+    secret: process.env.GITHUB_WEBHOOK_SECRET,
+    onSuccess: async (eventType) => {
+      console.log(`Processed ${eventType}`);
+    },
+  });
+  
+  const result = await handler(req);
+  return res.status(result.statusCode).json(result.body);
+}
+```
+
+### Result Object
+
+The NestJS adapter returns a result object instead of directly sending a response:
+
+```ts
+interface NestJSResult {
+  statusCode: number;
+  body?: Record<string, unknown>;
+}
+```
+
+This gives you control over the response, allowing you to add headers, transform the body, or perform additional logic before responding.
+
+---
+
+## Adapter Options
+
+All adapters accept the same options:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `secret` | `string` | Webhook secret for signature verification. Overrides provider secret and environment variables. |
+| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored. |
+
+### Secret Resolution Order
+
+When verifying signatures, the SDK looks for a secret in this order:
+
+1. **Adapter options** — `toNextJS(webhook, { secret: "..." })`
+2. **Provider options** — `github({ secret: "..." })`
+3. **Environment variables** — `GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, or `WEBHOOK_SECRET`
+
+If no secret is found, signature verification is skipped.
+
+<Callout type="warn">
+  Always configure a secret in production. Without signature verification, anyone can send fake webhooks to your endpoint.
+</Callout>
+

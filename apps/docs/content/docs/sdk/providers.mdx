@@ -1,0 +1,280 @@
+---
+title: Providers
+description: Documentation for GitHub and Ragie webhook providers with all supported events.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Providers
+
+Providers define the webhook source, including event types, payload schemas, and signature verification.
+
+## GitHub
+
+```bash
+npm install @better-webhook/github
+```
+
+```ts
+import { github } from "@better-webhook/github";
+
+const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.full_name}`);
+  });
+```
+
+### Events
+
+#### push
+
+Triggered when commits are pushed to a repository branch or tag.
+
+```ts
+.event("push", async (payload) => {
+  console.log(payload.ref);              // "refs/heads/main"
+  console.log(payload.repository.name);  // "my-repo"
+  console.log(payload.commits.length);   // Number of commits
+  console.log(payload.pusher.name);      // Who pushed
+  
+  for (const commit of payload.commits) {
+    console.log(commit.message);
+    console.log(commit.author.email);
+  }
+})
+```
+
+**Key payload fields:**
+- `ref` — Full git ref (e.g., `refs/heads/main`)
+- `before` / `after` — Commit SHAs before and after push
+- `commits` — Array of commit objects
+- `repository` — Repository information
+- `pusher` — User who pushed
+
+#### pull_request
+
+Triggered when a pull request is opened, closed, merged, edited, etc.
+
+```ts
+.event("pull_request", async (payload) => {
+  console.log(payload.action);                    // "opened", "closed", etc.
+  console.log(payload.number);                    // PR number
+  console.log(payload.pull_request.title);        // PR title
+  console.log(payload.pull_request.state);        // "open" or "closed"
+  console.log(payload.pull_request.merged_at);    // Merge timestamp (if merged)
+  
+  if (payload.action === "opened") {
+    // New PR opened
+  }
+})
+```
+
+**Key payload fields:**
+- `action` — What happened (`opened`, `closed`, `synchronize`, `labeled`, etc.)
+- `number` — Pull request number
+- `pull_request` — Full PR object with `title`, `body`, `state`, `head`, `base`
+- `repository` — Repository information
+- `sender` — User who triggered the event
+
+#### issues
+
+Triggered when an issue is opened, closed, edited, labeled, etc.
+
+```ts
+.event("issues", async (payload) => {
+  console.log(payload.action);           // "opened", "closed", etc.
+  console.log(payload.issue.number);     // Issue number
+  console.log(payload.issue.title);      // Issue title
+  console.log(payload.issue.state);      // "open" or "closed"
+  console.log(payload.issue.labels);     // Array of labels
+})
+```
+
+**Key payload fields:**
+- `action` — What happened (`opened`, `closed`, `edited`, `labeled`, etc.)
+- `issue` — Full issue object with `number`, `title`, `body`, `state`, `labels`
+- `repository` — Repository information
+- `sender` — User who triggered the event
+
+#### installation
+
+Triggered when a GitHub App is installed, uninstalled, or has permissions changed.
+
+```ts
+.event("installation", async (payload) => {
+  console.log(payload.action);                      // "created", "deleted", etc.
+  console.log(payload.installation.id);             // Installation ID
+  console.log(payload.installation.account.login);  // Account name
+  console.log(payload.repositories);                // Repos (for "created" action)
+})
+```
+
+**Key payload fields:**
+- `action` — `created`, `deleted`, `suspend`, `unsuspend`, `new_permissions_accepted`
+- `installation` — Installation details with `id`, `account`, `permissions`
+- `repositories` — Array of accessible repos (only for `created` action)
+
+#### installation_repositories
+
+Triggered when repositories are added to or removed from an installation.
+
+```ts
+.event("installation_repositories", async (payload) => {
+  console.log(payload.action);                // "added" or "removed"
+  console.log(payload.repositories_added);    // Repos added
+  console.log(payload.repositories_removed);  // Repos removed
+})
+```
+
+### Signature Verification
+
+GitHub uses HMAC-SHA256 signatures sent in the `X-Hub-Signature-256` header. The SDK verifies this automatically when a secret is configured.
+
+---
+
+## Ragie
+
+```bash
+npm install @better-webhook/ragie
+```
+
+```ts
+import { ragie } from "@better-webhook/ragie";
+
+const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
+  .event("document_status_updated", async (payload) => {
+    console.log(`Document ${payload.document_id} is now ${payload.status}`);
+  });
+```
+
+### Events
+
+#### document_status_updated
+
+Triggered when a document enters `indexed`, `keyword_indexed`, `ready`, or `failed` state.
+
+```ts
+.event("document_status_updated", async (payload) => {
+  console.log(payload.document_id);   // Document ID
+  console.log(payload.status);        // "indexed", "ready", "failed", etc.
+  console.log(payload.external_id);   // Your external ID (if provided)
+  console.log(payload.nonce);         // Idempotency key
+})
+```
+
+#### document_deleted
+
+Triggered when a document is deleted.
+
+```ts
+.event("document_deleted", async (payload) => {
+  console.log(payload.document_id);
+  console.log(payload.external_id);
+})
+```
+
+#### entity_extracted
+
+Triggered when entity extraction completes for a document.
+
+```ts
+.event("entity_extracted", async (payload) => {
+  console.log(payload.document_id);
+})
+```
+
+#### connection_sync_started
+
+Triggered when a connection sync begins.
+
+```ts
+.event("connection_sync_started", async (payload) => {
+  console.log(payload.connection_id);
+  console.log(payload.sync_id);
+  console.log(payload.partition);
+})
+```
+
+#### connection_sync_progress
+
+Triggered periodically during a sync to report progress.
+
+```ts
+.event("connection_sync_progress", async (payload) => {
+  console.log(`Created: ${payload.total_creates_count}`);
+  console.log(`Deleted: ${payload.total_deletes_count}`);
+  console.log(`Updated: ${payload.total_contents_updates_count}`);
+})
+```
+
+#### connection_sync_finished
+
+Triggered when a connection sync completes.
+
+```ts
+.event("connection_sync_finished", async (payload) => {
+  console.log(`Sync ${payload.sync_id} finished`);
+  console.log(`Total created: ${payload.total_creates_count}`);
+})
+```
+
+#### connection_limit_exceeded
+
+Triggered when a connection exceeds its page limit.
+
+```ts
+.event("connection_limit_exceeded", async (payload) => {
+  console.log(`Connection ${payload.connection_id} hit limit`);
+})
+```
+
+#### partition_limit_exceeded
+
+Triggered when a partition exceeds its document limit.
+
+```ts
+.event("partition_limit_exceeded", async (payload) => {
+  console.log(`Partition ${payload.partition} hit limit`);
+})
+```
+
+### Signature Verification
+
+Ragie uses HMAC-SHA256 signatures sent in the `X-Signature` header.
+
+---
+
+## Custom Providers
+
+For webhook sources not covered by built-in providers, you can create custom providers using `@better-webhook/core`:
+
+```ts
+import { createProvider, createHmacVerifier, z } from "@better-webhook/core";
+
+const OrderSchema = z.object({
+  orderId: z.string(),
+  status: z.enum(["pending", "completed", "cancelled"]),
+  amount: z.number(),
+});
+
+const myProvider = createProvider({
+  name: "my-ecommerce",
+  schemas: {
+    "order.created": OrderSchema,
+    "order.updated": OrderSchema,
+  },
+  getEventType: (headers) => headers["x-event-type"],
+  getDeliveryId: (headers) => headers["x-delivery-id"],
+  verify: createHmacVerifier({
+    algorithm: "sha256",
+    signatureHeader: "x-signature",
+    signaturePrefix: "sha256=",
+  }),
+});
+```
+
+<Callout type="info">
+  The `createHmacVerifier` helper supports common signature formats. For custom verification logic, provide your own `verify` function.
+</Callout>
+

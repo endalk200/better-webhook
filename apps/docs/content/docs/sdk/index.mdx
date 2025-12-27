@@ -1,0 +1,211 @@
+---
+title: SDK Getting Started
+description: Build type-safe webhook handlers with automatic signature verification using Better Webhook SDK packages.
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# SDK Getting Started
+
+The Better Webhook SDK provides type-safe webhook handlers with automatic signature verification. It consists of:
+
+- **Provider packages** — Type definitions and schemas for webhook sources (GitHub, Ragie)
+- **Adapter packages** — Framework integrations (Next.js, Express, NestJS)
+- **Core package** — Base functionality for custom providers
+
+## Installation
+
+Install a provider and an adapter for your framework:
+
+<Tabs items={['Next.js', 'Express', 'NestJS']}>
+  <Tab value="Next.js">
+    ```bash
+    npm install @better-webhook/github @better-webhook/nextjs
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```bash
+    npm install @better-webhook/github @better-webhook/express
+    ```
+  </Tab>
+  <Tab value="NestJS">
+    ```bash
+    npm install @better-webhook/github @better-webhook/nestjs
+    ```
+  </Tab>
+</Tabs>
+
+## Quick Example
+
+<Tabs items={['Next.js', 'Express', 'NestJS']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/webhooks/github/route.ts"
+    import { github } from "@better-webhook/github";
+    import { toNextJS } from "@better-webhook/nextjs";
+
+    const webhook = github()
+      .event("push", async (payload) => {
+        // payload is fully typed!
+        console.log(`Push to ${payload.repository.name}`);
+        console.log(`${payload.commits.length} commits`);
+      })
+      .event("pull_request", async (payload) => {
+        if (payload.action === "opened") {
+          console.log(`New PR: ${payload.pull_request.title}`);
+        }
+      });
+
+    export const POST = toNextJS(webhook);
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="src/webhooks.ts"
+    import express from "express";
+    import { github } from "@better-webhook/github";
+    import { toExpress } from "@better-webhook/express";
+
+    const app = express();
+
+    const webhook = github()
+      .event("push", async (payload) => {
+        console.log(`Push to ${payload.repository.name}`);
+      });
+
+    // Important: use express.raw() for signature verification
+    app.post(
+      "/webhooks/github",
+      express.raw({ type: "application/json" }),
+      toExpress(webhook)
+    );
+
+    app.listen(3000);
+    ```
+  </Tab>
+  <Tab value="NestJS">
+    ```ts title="src/webhooks.controller.ts"
+    import { Controller, Post, Req, Res } from "@nestjs/common";
+    import { Request, Response } from "express";
+    import { github } from "@better-webhook/github";
+    import { toNestJS } from "@better-webhook/nestjs";
+
+    @Controller("webhooks")
+    export class WebhooksController {
+      private webhook = github()
+        .event("push", async (payload) => {
+          console.log(`Push to ${payload.repository.name}`);
+        });
+
+      @Post("github")
+      async handleGitHub(@Req() req: Request, @Res() res: Response) {
+        const result = await toNestJS(this.webhook)(req);
+        return res.status(result.statusCode).json(result.body);
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## How It Works
+
+<Steps>
+  <Step>
+    ### Create a Webhook Builder
+
+    Use a provider function (like `github()`) to create a webhook builder:
+
+    ```ts
+    import { github } from "@better-webhook/github";
+
+    const webhook = github();
+    ```
+  </Step>
+
+  <Step>
+    ### Register Event Handlers
+
+    Chain `.event()` calls to register handlers for specific event types:
+
+    ```ts
+    const webhook = github()
+      .event("push", async (payload) => {
+        // Handle push events
+      })
+      .event("issues", async (payload) => {
+        // Handle issues events
+      });
+    ```
+
+    Each handler receives a fully typed payload with autocomplete support.
+  </Step>
+
+  <Step>
+    ### Convert to Framework Handler
+
+    Use an adapter to convert the webhook builder to your framework's handler format:
+
+    ```ts
+    // Next.js
+    export const POST = toNextJS(webhook);
+
+    // Express
+    app.post("/webhooks/github", express.raw({ type: "application/json" }), toExpress(webhook));
+
+    // NestJS
+    const result = await toNestJS(this.webhook)(req);
+    ```
+  </Step>
+</Steps>
+
+## Signature Verification
+
+Signature verification happens automatically when you provide a secret. The SDK looks for secrets in this order:
+
+1. **Adapter options** — Pass `secret` to the adapter function
+2. **Provider options** — Pass `secret` when creating the provider
+3. **Environment variables** — Automatically checks `GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, etc.
+
+```ts
+// Option 1: Adapter options
+export const POST = toNextJS(webhook, { 
+  secret: process.env.GITHUB_WEBHOOK_SECRET 
+});
+
+// Option 2: Provider options
+const webhook = github({ 
+  secret: process.env.GITHUB_WEBHOOK_SECRET 
+});
+
+// Option 3: Environment variable (automatic)
+// Just set GITHUB_WEBHOOK_SECRET in your environment
+```
+
+<Callout type="warn">
+  Always configure signature verification in production. Without it, anyone can send fake webhooks to your endpoint.
+</Callout>
+
+## Error Handling
+
+Register error handlers to catch validation and handler errors:
+
+```ts
+const webhook = github()
+  .event("push", async (payload) => {
+    // Your handler
+  })
+  .onError((error, context) => {
+    console.error(`Error in ${context.eventType}:`, error);
+    // Log to monitoring service, etc.
+  })
+  .onVerificationFailed((reason, headers) => {
+    console.warn("Signature verification failed:", reason);
+    // Alert on potential attacks
+  });
+```
+
+## Next Steps
+
+- [Providers](/docs/sdk/providers) — GitHub and Ragie provider documentation with all supported events
+- [Adapters](/docs/sdk/adapters) — Framework-specific setup and configuration
+

@@ -1,0 +1,259 @@
+---
+title: Command Reference
+description: Complete reference for all Better Webhook CLI commands.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Command Reference
+
+## dashboard
+
+Start the full dashboard with UI, API, and integrated capture server.
+
+```bash
+better-webhook dashboard [options]
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-p, --port <port>` | `4000` | Dashboard server port |
+| `-h, --host <host>` | `localhost` | Dashboard host |
+| `--capture-port <port>` | `3001` | Capture server port |
+| `--capture-host <host>` | `0.0.0.0` | Capture server host |
+| `--no-capture` | — | Don't start the capture server |
+| `--captures-dir <dir>` | — | Override captures storage directory |
+| `--templates-dir <dir>` | — | Override templates directory |
+
+**Example:**
+
+```bash
+# Start with custom ports
+better-webhook dashboard --port 8080 --capture-port 9000
+
+# Dashboard only (no capture server)
+better-webhook dashboard --no-capture
+```
+
+---
+
+## capture
+
+Start a standalone server to capture incoming webhooks.
+
+```bash
+better-webhook capture [options]
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-p, --port <port>` | `3001` | Port to listen on |
+| `-h, --host <host>` | `0.0.0.0` | Host to bind to |
+
+**Example:**
+
+```bash
+better-webhook capture --port 3001
+```
+
+Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `replay`.
+
+---
+
+## captures
+
+Manage captured webhooks. This command has several subcommands.
+
+### captures list
+
+List captured webhooks.
+
+```bash
+better-webhook captures list [options]
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-l, --limit <limit>` | `20` | Maximum captures to show |
+| `-p, --provider <provider>` | — | Filter by provider |
+
+**Example:**
+
+```bash
+# List recent captures
+better-webhook captures list
+
+# Filter by provider
+better-webhook captures list --provider github
+```
+
+### captures show
+
+Show detailed information about a capture.
+
+```bash
+better-webhook captures show <captureId> [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-b, --body` | Show full body content |
+
+**Example:**
+
+```bash
+better-webhook captures show abc12345 --body
+```
+
+### captures search
+
+Search captures by path, method, or provider.
+
+```bash
+better-webhook captures search <query>
+```
+
+**Example:**
+
+```bash
+better-webhook captures search github
+better-webhook captures search /webhooks
+```
+
+### captures delete
+
+Delete a specific capture.
+
+```bash
+better-webhook captures delete <captureId> [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-f, --force` | Skip confirmation prompt |
+
+### captures clean
+
+Remove all captured webhooks.
+
+```bash
+better-webhook captures clean [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-f, --force` | Skip confirmation prompt |
+
+---
+
+## replay
+
+Replay a captured webhook to a target URL.
+
+```bash
+better-webhook replay [captureId] [targetUrl] [options]
+```
+
+If `captureId` or `targetUrl` are not provided, you'll be prompted to select interactively.
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-m, --method <method>` | Override HTTP method |
+| `-H, --header <header>` | Add/override header (format: `key:value`) |
+| `-v, --verbose` | Show detailed request/response info |
+
+**Example:**
+
+```bash
+# Interactive mode
+better-webhook replay
+
+# Direct mode
+better-webhook replay abc12345 http://localhost:3000/api/webhooks/github
+
+# With options
+better-webhook replay abc12345 http://localhost:3000/api/webhooks/github \
+  -H "X-Custom-Header:value" \
+  --verbose
+```
+
+---
+
+## run
+
+Execute a webhook template against a target URL.
+
+```bash
+better-webhook run [templateId] --url <url> [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-u, --url <url>` | Target URL (required) |
+| `-s, --secret <secret>` | Secret for signature generation |
+| `-H, --header <header>` | Add custom header (format: `key:value`) |
+| `-v, --verbose` | Show detailed request/response info |
+
+**Example:**
+
+```bash
+# Run a GitHub push template
+better-webhook run github-push --url http://localhost:3000/api/webhooks/github
+
+# With signature generation
+better-webhook run github-push \
+  --url http://localhost:3000/api/webhooks/github \
+  --secret "your-webhook-secret"
+```
+
+<Callout type="info">
+  If no `--secret` is provided, the CLI will look for provider-specific environment variables like `GITHUB_WEBHOOK_SECRET` or `RAGIE_WEBHOOK_SECRET`.
+</Callout>
+
+---
+
+## templates
+
+Manage webhook templates. See [Templates](/docs/cli/templates) for detailed documentation.
+
+### Quick Reference
+
+```bash
+# List remote templates
+better-webhook templates list
+
+# Download a template
+better-webhook templates download github-push
+
+# Download all templates
+better-webhook templates download --all
+
+# List local templates
+better-webhook templates local
+
+# Search templates
+better-webhook templates search github
+
+# Clear template cache
+better-webhook templates cache --clear
+
+# Remove all downloaded templates
+better-webhook templates clean
+```
+

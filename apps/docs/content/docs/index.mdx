@@ -1,0 +1,61 @@
+---
+title: Better Webhook
+description: A complete toolkit for webhook development - CLI for local testing, SDK for type-safe handlers.
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Terminal, Code2 } from 'lucide-react';
+
+# Better Webhook
+
+Two tools, one goal: make webhook development delightful.
+
+## The Problem
+
+Building webhook handlers is painful:
+
+- **No local testing** — You need to expose localhost with ngrok or similar tools just to receive webhooks during development
+- **Trial and error** — Testing requires triggering real events (pushing code, creating issues) repeatedly
+- **No type safety** — Webhook payloads are untyped `any` objects, leading to runtime errors
+- **Manual verification** — Implementing HMAC signature verification correctly is error-prone and tedious
+- **No replay** — When something breaks, you can't easily re-test with the same payload
+
+## The Solution
+
+Better Webhook provides two independent tools that solve these problems:
+
+<Cards>
+  <Card
+    icon={<Terminal />}
+    title="CLI Tool"
+    description="Capture real webhooks, replay them locally, and test with pre-built templates. No ngrok required."
+    href="/docs/cli"
+  />
+  <Card
+    icon={<Code2 />}
+    title="SDK Packages"
+    description="Type-safe webhook handlers with automatic signature verification. Works with Next.js, Express, and NestJS."
+    href="/docs/sdk"
+  />
+</Cards>
+
+## Quick Comparison
+
+| Need | Tool |
+|------|------|
+| Test webhooks locally without exposing ports | CLI |
+| Replay captured webhooks during debugging | CLI |
+| Use pre-built webhook templates | CLI |
+| Visual dashboard for webhook management | CLI |
+| Type-safe webhook handlers in production | SDK |
+| Automatic signature verification | SDK |
+| Zod schema validation for payloads | SDK |
+
+## Choose Your Path
+
+**Starting local development?** → [Get started with the CLI](/docs/cli)
+
+**Building webhook handlers?** → [Get started with the SDK](/docs/sdk)
+
+Both tools work great together but are completely independent. Use whichever fits your needs.
+
