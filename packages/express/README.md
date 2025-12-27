@@ -1,5 +1,9 @@
 # @better-webhook/express
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/express?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/express)
+[![npm downloads](https://img.shields.io/npm/dt/@better-webhook/express?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/express)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/express?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/express)
+
 **Express middleware for type-safe webhooks.**
 
 Drop-in middleware that handles signature verification, payload parsing, and type-safe event routing.

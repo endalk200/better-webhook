@@ -1,5 +1,9 @@
 # @better-webhook/nextjs
 
+[![npm](https://img.shields.io/npm/v/@better-webhook/nextjs?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/nextjs)
+[![npm downloads](https://img.shields.io/npm/dt/@better-webhook/nextjs?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/nextjs)
+[![npm monthly](https://img.shields.io/npm/dm/@better-webhook/nextjs?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/nextjs)
+
 **Next.js App Router webhooks in one line.**
 
 Turn any `better-webhook` handler into a Next.js route handler. Zero configuration required.
