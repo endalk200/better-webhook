@@ -23,7 +23,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
   "push",
   async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
-  },
+  }
 );
 ```
 
@@ -152,9 +152,15 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
   "document_status_updated",
   async (payload) => {
     console.log(`Document ${payload.document_id} is now ${payload.status}`);
-  },
+  }
 );
 ```
+
+<Callout type="info">
+  Ragie webhooks use an envelope structure where the event type is in
+  `body.type` and the actual payload is in `body.payload`. The SDK handles this
+  automatically — your handlers receive the unwrapped payload directly.
+</Callout>
 
 ### Events
 
@@ -166,10 +172,23 @@ Triggered when a document enters `indexed`, `keyword_indexed`, `ready`, or `fail
 .event("document_status_updated", async (payload) => {
   console.log(payload.document_id);   // Document ID
   console.log(payload.status);        // "indexed", "ready", "failed", etc.
+  console.log(payload.name);          // Document name
   console.log(payload.external_id);   // Your external ID (if provided)
-  console.log(payload.nonce);         // Idempotency key
+  console.log(payload.error);         // Error message (if status is "failed")
 })
 ```
+
+**Key payload fields:**
+
+- `document_id` — Unique document identifier
+- `status` — `indexed`, `keyword_indexed`, `ready`, or `failed`
+- `name` — Document name
+- `partition` — Partition key
+- `metadata` — User-defined metadata (nullable)
+- `external_id` — Your external ID (nullable)
+- `connection_id` — Connection ID if created via connection (nullable)
+- `sync_id` — Sync ID if part of a sync (nullable)
+- `error` — Error message if status is `failed` (nullable)
 
 #### document_deleted
 
@@ -178,9 +197,20 @@ Triggered when a document is deleted.
 ```ts
 .event("document_deleted", async (payload) => {
   console.log(payload.document_id);
+  console.log(payload.name);
   console.log(payload.external_id);
 })
 ```
+
+**Key payload fields:**
+
+- `document_id` — Unique document identifier
+- `name` — Document name
+- `partition` — Partition key
+- `metadata` — User-defined metadata (nullable)
+- `external_id` — Your external ID (nullable)
+- `connection_id` — Connection ID (nullable)
+- `sync_id` — Sync ID (nullable)
 
 #### entity_extracted
 
@@ -188,9 +218,25 @@ Triggered when entity extraction completes for a document.
 
 ```ts
 .event("entity_extracted", async (payload) => {
-  console.log(payload.document_id);
+  console.log(payload.entity_id);           // Extracted entity ID
+  console.log(payload.document_id);         // Source document ID
+  console.log(payload.document_name);       // Source document name
+  console.log(payload.instruction_id);      // Extraction instruction ID
+  console.log(payload.data);                // Extracted entity data
 })
 ```
+
+**Key payload fields:**
+
+- `entity_id` — Unique identifier for the extracted entity
+- `document_id` — Source document ID
+- `instruction_id` — Instruction ID used for extraction
+- `document_name` — Source document name
+- `document_external_id` — External ID of source document
+- `document_metadata` — Metadata from source document
+- `partition` — Partition key
+- `sync_id` — Sync ID (nullable)
+- `data` — The extracted entity data object
 
 #### connection_sync_started
 
@@ -201,8 +247,20 @@ Triggered when a connection sync begins.
   console.log(payload.connection_id);
   console.log(payload.sync_id);
   console.log(payload.partition);
+  console.log(`Will create ${payload.create_count} documents`);
+  console.log(`Will delete ${payload.delete_count} documents`);
 })
 ```
+
+**Key payload fields:**
+
+- `connection_id` — Connection identifier
+- `sync_id` — Sync identifier
+- `partition` — Partition key
+- `create_count` — Number of documents to be created
+- `update_content_count` — Number of documents with content updates
+- `update_metadata_count` — Number of documents with metadata updates
+- `delete_count` — Number of documents to be deleted
 
 #### connection_sync_progress
 
@@ -210,11 +268,22 @@ Triggered periodically during a sync to report progress.
 
 ```ts
 .event("connection_sync_progress", async (payload) => {
-  console.log(`Created: ${payload.total_creates_count}`);
-  console.log(`Deleted: ${payload.total_deletes_count}`);
-  console.log(`Updated: ${payload.total_contents_updates_count}`);
+  console.log(`Created: ${payload.created_count}/${payload.create_count}`);
+  console.log(`Deleted: ${payload.deleted_count}/${payload.delete_count}`);
+  console.log(`Errors: ${payload.errored_count}`);
 })
 ```
+
+**Key payload fields:**
+
+- `connection_id` — Connection identifier
+- `sync_id` — Sync identifier
+- `partition` — Partition key
+- `create_count` / `created_count` — Total to create / created so far
+- `update_content_count` / `updated_content_count` — Content updates total / completed
+- `update_metadata_count` / `updated_metadata_count` — Metadata updates total / completed
+- `delete_count` / `deleted_count` — Total to delete / deleted so far
+- `errored_count` — Number of documents with errors
 
 #### connection_sync_finished
 
@@ -223,9 +292,15 @@ Triggered when a connection sync completes.
 ```ts
 .event("connection_sync_finished", async (payload) => {
   console.log(`Sync ${payload.sync_id} finished`);
-  console.log(`Total created: ${payload.total_creates_count}`);
+  console.log(`Connection: ${payload.connection_id}`);
 })
 ```
+
+**Key payload fields:**
+
+- `connection_id` — Connection identifier
+- `sync_id` — Sync identifier
+- `partition` — Partition key
 
 #### connection_limit_exceeded
 
@@ -233,9 +308,15 @@ Triggered when a connection exceeds its page limit.
 
 ```ts
 .event("connection_limit_exceeded", async (payload) => {
-  console.log(`Connection ${payload.connection_id} hit limit`);
+  console.log(`Connection ${payload.connection_id} hit ${payload.limit_type} limit`);
 })
 ```
+
+**Key payload fields:**
+
+- `connection_id` — Connection identifier
+- `partition` — Partition key
+- `limit_type` — Type of limit exceeded (e.g., `"page_limit"`)
 
 #### partition_limit_exceeded
 
@@ -286,3 +367,47 @@ const myProvider = createProvider({
   The `createHmacVerifier` helper supports common signature formats. For custom
   verification logic, provide your own `verify` function.
 </Callout>
+
+### Envelope Payloads
+
+Some webhook providers wrap the actual payload in an envelope structure. For example, a provider might send:
+
+```json
+{
+  "type": "order.created",
+  "payload": { "orderId": "123", "status": "pending", "amount": 99.99 },
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+Use `getEventType` with the optional `body` parameter and `getPayload` to handle this:
+
+```ts
+const envelopeProvider = createProvider({
+  name: "my-envelope-provider",
+  schemas: {
+    "order.created": OrderSchema,
+    "order.updated": OrderSchema,
+  },
+  // Extract event type from body instead of headers
+  getEventType: (headers, body) => {
+    if (body && typeof body === "object" && "type" in body) {
+      return (body as { type: string }).type;
+    }
+    return undefined;
+  },
+  // Extract the actual payload from the envelope
+  getPayload: (body) => {
+    if (body && typeof body === "object" && "payload" in body) {
+      return (body as { payload: unknown }).payload;
+    }
+    return body;
+  },
+  verify: createHmacVerifier({
+    algorithm: "sha256",
+    signatureHeader: "x-signature",
+  }),
+});
+```
+
+With this configuration, your event handlers receive the unwrapped payload directly, and schema validation applies to the inner payload object.
