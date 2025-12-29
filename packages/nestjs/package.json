@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/nestjs",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "NestJS module for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",

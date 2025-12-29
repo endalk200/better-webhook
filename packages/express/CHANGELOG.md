@@ -1,5 +1,13 @@
 # @better-webhook/express
 
+## 0.7.2
+
+### Patch Changes
+
+- add body as additional argument to getEventType and fix ragie webhook payload issues
+- Updated dependencies
+  - @better-webhook/core@0.6.2
+
 ## 0.7.1
 
 ### Patch Changes
