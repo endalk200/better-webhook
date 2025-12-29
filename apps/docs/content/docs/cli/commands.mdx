@@ -3,7 +3,7 @@ title: Command Reference
 description: Complete reference for all Better Webhook CLI commands.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Command Reference
 
@@ -17,15 +17,15 @@ better-webhook dashboard [options]
 
 **Options:**
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-p, --port <port>` | `4000` | Dashboard server port |
-| `-h, --host <host>` | `localhost` | Dashboard host |
-| `--capture-port <port>` | `3001` | Capture server port |
-| `--capture-host <host>` | `0.0.0.0` | Capture server host |
-| `--no-capture` | — | Don't start the capture server |
-| `--captures-dir <dir>` | — | Override captures storage directory |
-| `--templates-dir <dir>` | — | Override templates directory |
+| Option                  | Default     | Description                         |
+| ----------------------- | ----------- | ----------------------------------- |
+| `-p, --port <port>`     | `4000`      | Dashboard server port               |
+| `-h, --host <host>`     | `localhost` | Dashboard host                      |
+| `--capture-port <port>` | `3001`      | Capture server port                 |
+| `--capture-host <host>` | `0.0.0.0`   | Capture server host                 |
+| `--no-capture`          | —           | Don't start the capture server      |
+| `--captures-dir <dir>`  | —           | Override captures storage directory |
+| `--templates-dir <dir>` | —           | Override templates directory        |
 
 **Example:**
 
@@ -49,10 +49,10 @@ better-webhook capture [options]
 
 **Options:**
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-p, --port <port>` | `3001` | Port to listen on |
-| `-h, --host <host>` | `0.0.0.0` | Host to bind to |
+| Option              | Default   | Description       |
+| ------------------- | --------- | ----------------- |
+| `-p, --port <port>` | `3001`    | Port to listen on |
+| `-h, --host <host>` | `0.0.0.0` | Host to bind to   |
 
 **Example:**
 
@@ -78,10 +78,10 @@ better-webhook captures list [options]
 
 **Options:**
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-l, --limit <limit>` | `20` | Maximum captures to show |
-| `-p, --provider <provider>` | — | Filter by provider |
+| Option                      | Default | Description              |
+| --------------------------- | ------- | ------------------------ |
+| `-l, --limit <limit>`       | `20`    | Maximum captures to show |
+| `-p, --provider <provider>` | —       | Filter by provider       |
 
 **Example:**
 
@@ -103,8 +103,8 @@ better-webhook captures show <captureId> [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option       | Description            |
+| ------------ | ---------------------- |
 | `-b, --body` | Show full body content |
 
 **Example:**
@@ -138,8 +138,8 @@ better-webhook captures delete <captureId> [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option        | Description              |
+| ------------- | ------------------------ |
 | `-f, --force` | Skip confirmation prompt |
 
 ### captures clean
@@ -152,8 +152,8 @@ better-webhook captures clean [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option        | Description              |
+| ------------- | ------------------------ |
 | `-f, --force` | Skip confirmation prompt |
 
 ---
@@ -170,11 +170,11 @@ If `captureId` or `targetUrl` are not provided, you'll be prompted to select int
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `-m, --method <method>` | Override HTTP method |
+| Option                  | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `-m, --method <method>` | Override HTTP method                      |
 | `-H, --header <header>` | Add/override header (format: `key:value`) |
-| `-v, --verbose` | Show detailed request/response info |
+| `-v, --verbose`         | Show detailed request/response info       |
 
 **Example:**
 
@@ -203,12 +203,12 @@ better-webhook run [templateId] --url <url> [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `-u, --url <url>` | Target URL (required) |
-| `-s, --secret <secret>` | Secret for signature generation |
+| Option                  | Description                             |
+| ----------------------- | --------------------------------------- |
+| `-u, --url <url>`       | Target URL (required)                   |
+| `-s, --secret <secret>` | Secret for signature generation         |
 | `-H, --header <header>` | Add custom header (format: `key:value`) |
-| `-v, --verbose` | Show detailed request/response info |
+| `-v, --verbose`         | Show detailed request/response info     |
 
 **Example:**
 
@@ -223,7 +223,8 @@ better-webhook run github-push \
 ```
 
 <Callout type="info">
-  If no `--secret` is provided, the CLI will look for provider-specific environment variables like `GITHUB_WEBHOOK_SECRET` or `RAGIE_WEBHOOK_SECRET`.
+  If no `--secret` is provided, the CLI will look for provider-specific
+  environment variables like `GITHUB_WEBHOOK_SECRET` or `RAGIE_WEBHOOK_SECRET`.
 </Callout>
 
 ---
@@ -256,4 +257,3 @@ better-webhook templates cache --clear
 # Remove all downloaded templates
 better-webhook templates clean
 ```
-

@@ -195,7 +195,8 @@ describe("Ragie Schemas", () => {
     });
 
     it("should accept optional connection_metadata", () => {
-      const { connection_metadata, ...rest } = validConnectionSyncStartedPayload;
+      const { connection_metadata, ...rest } =
+        validConnectionSyncStartedPayload;
       const result = RagieConnectionSyncStartedEventSchema.safeParse(rest);
       expect(result.success).toBe(true);
     });
@@ -634,10 +635,9 @@ describe("ragie()", () => {
 
     it("should not call handler for unregistered event types", async () => {
       // Create envelope for partition_limit_exceeded but register handler for document_status_updated
-      const envelope = createEnvelope(
-        "partition_limit_exceeded",
-        { partition: "default" },
-      );
+      const envelope = createEnvelope("partition_limit_exceeded", {
+        partition: "default",
+      });
       const body = JSON.stringify(envelope);
       const documentHandler = vi.fn();
       const partitionHandler = vi.fn();

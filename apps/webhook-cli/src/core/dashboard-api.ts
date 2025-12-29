@@ -57,7 +57,7 @@ export interface DashboardApiOptions {
 }
 
 export function createDashboardApiRouter(
-  options: DashboardApiOptions = {}
+  options: DashboardApiOptions = {},
 ): express.Router {
   const router = express.Router();
 
@@ -117,7 +117,7 @@ export function createDashboardApiRouter(
     if (provider) {
       captures = captures.filter(
         (c) =>
-          (c.capture.provider || "").toLowerCase() === provider.toLowerCase()
+          (c.capture.provider || "").toLowerCase() === provider.toLowerCase(),
       );
     }
 
@@ -166,7 +166,7 @@ export function createDashboardApiRouter(
       return jsonError(
         res,
         400,
-        parsed.error.issues[0]?.message || "Invalid body"
+        parsed.error.issues[0]?.message || "Invalid body",
       );
     }
 
@@ -209,7 +209,7 @@ export function createDashboardApiRouter(
     try {
       const index = await templateManager.fetchRemoteIndex(refresh);
       const localIds = new Set(
-        templateManager.listLocalTemplates().map((t) => t.id)
+        templateManager.listLocalTemplates().map((t) => t.id),
       );
       const remote = index.templates.map((metadata) => ({
         metadata,
@@ -220,7 +220,7 @@ export function createDashboardApiRouter(
       return jsonError(
         res,
         500,
-        error?.message || "Failed to fetch remote templates"
+        error?.message || "Failed to fetch remote templates",
       );
     }
   });
@@ -234,7 +234,7 @@ export function createDashboardApiRouter(
         return jsonError(
           res,
           400,
-          parsed.error.issues[0]?.message || "Invalid body"
+          parsed.error.issues[0]?.message || "Invalid body",
         );
       }
 
@@ -246,7 +246,7 @@ export function createDashboardApiRouter(
       } catch (error: any) {
         return jsonError(res, 400, error?.message || "Download failed");
       }
-    }
+    },
   );
 
   router.post(
@@ -258,7 +258,7 @@ export function createDashboardApiRouter(
         // you can miss newly-added templates until cache expiry.
         const index = await templateManager.fetchRemoteIndex(true);
         const localIds = new Set(
-          templateManager.listLocalTemplates().map((t) => t.id)
+          templateManager.listLocalTemplates().map((t) => t.id),
         );
         const toDownload = index.templates.filter((t) => !localIds.has(t.id));
 
@@ -283,7 +283,7 @@ export function createDashboardApiRouter(
       } catch (error: any) {
         return jsonError(res, 500, error?.message || "Download-all failed");
       }
-    }
+    },
   );
 
   router.post("/run", express.json({ limit: "10mb" }), async (req, res) => {
@@ -292,7 +292,7 @@ export function createDashboardApiRouter(
       return jsonError(
         res,
         400,
-        parsed.error.issues[0]?.message || "Invalid body"
+        parsed.error.issues[0]?.message || "Invalid body",
       );
     }
 
@@ -312,7 +312,7 @@ export function createDashboardApiRouter(
         return jsonError(
           res,
           400,
-          error?.message || "Failed to download template"
+          error?.message || "Failed to download template",
         );
       }
     }

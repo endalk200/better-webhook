@@ -18,7 +18,7 @@ const packageJson = require("../package.json");
 const program = new Command()
   .name("better-webhook")
   .description(
-    "Modern CLI for developing, capturing, and replaying webhooks locally"
+    "Modern CLI for developing, capturing, and replaying webhooks locally",
   )
   .version(packageJson.version);
 

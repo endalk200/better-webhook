@@ -12,4 +12,3 @@ export default defineConfig({
   splitting: false,
   external: ["@nestjs/common", "@nestjs/core", "reflect-metadata"],
 });
-

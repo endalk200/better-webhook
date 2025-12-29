@@ -24,7 +24,7 @@ const githubWebhook = github()
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
     console.log(
-      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`
+      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
     );
     console.log(`   State: ${payload.pull_request.state}`);
   })
@@ -83,7 +83,7 @@ app.post(
     onSuccess: (eventType) => {
       console.log(`✅ Successfully processed GitHub ${eventType} event`);
     },
-  })
+  }),
 );
 
 app.post(
@@ -94,7 +94,7 @@ app.post(
     onSuccess: (eventType) => {
       console.log(`✅ Successfully processed Ragie ${eventType} event`);
     },
-  })
+  }),
 );
 
 // Health check endpoint

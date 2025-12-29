@@ -3,8 +3,8 @@ title: Providers
 description: Documentation for GitHub and Ragie webhook providers with all supported events.
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Providers
 
@@ -19,10 +19,12 @@ npm install @better-webhook/github
 ```ts
 import { github } from "@better-webhook/github";
 
-const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
-  .event("push", async (payload) => {
+const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
+  "push",
+  async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
-  });
+  },
+);
 ```
 
 ### Events
@@ -37,7 +39,7 @@ Triggered when commits are pushed to a repository branch or tag.
   console.log(payload.repository.name);  // "my-repo"
   console.log(payload.commits.length);   // Number of commits
   console.log(payload.pusher.name);      // Who pushed
-  
+
   for (const commit of payload.commits) {
     console.log(commit.message);
     console.log(commit.author.email);
@@ -46,6 +48,7 @@ Triggered when commits are pushed to a repository branch or tag.
 ```
 
 **Key payload fields:**
+
 - `ref` — Full git ref (e.g., `refs/heads/main`)
 - `before` / `after` — Commit SHAs before and after push
 - `commits` — Array of commit objects
@@ -63,7 +66,7 @@ Triggered when a pull request is opened, closed, merged, edited, etc.
   console.log(payload.pull_request.title);        // PR title
   console.log(payload.pull_request.state);        // "open" or "closed"
   console.log(payload.pull_request.merged_at);    // Merge timestamp (if merged)
-  
+
   if (payload.action === "opened") {
     // New PR opened
   }
@@ -71,6 +74,7 @@ Triggered when a pull request is opened, closed, merged, edited, etc.
 ```
 
 **Key payload fields:**
+
 - `action` — What happened (`opened`, `closed`, `synchronize`, `labeled`, etc.)
 - `number` — Pull request number
 - `pull_request` — Full PR object with `title`, `body`, `state`, `head`, `base`
@@ -92,6 +96,7 @@ Triggered when an issue is opened, closed, edited, labeled, etc.
 ```
 
 **Key payload fields:**
+
 - `action` — What happened (`opened`, `closed`, `edited`, `labeled`, etc.)
 - `issue` — Full issue object with `number`, `title`, `body`, `state`, `labels`
 - `repository` — Repository information
@@ -111,6 +116,7 @@ Triggered when a GitHub App is installed, uninstalled, or has permissions change
 ```
 
 **Key payload fields:**
+
 - `action` — `created`, `deleted`, `suspend`, `unsuspend`, `new_permissions_accepted`
 - `installation` — Installation details with `id`, `account`, `permissions`
 - `repositories` — Array of accessible repos (only for `created` action)
@@ -142,10 +148,12 @@ npm install @better-webhook/ragie
 ```ts
 import { ragie } from "@better-webhook/ragie";
 
-const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
-  .event("document_status_updated", async (payload) => {
+const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
+  "document_status_updated",
+  async (payload) => {
     console.log(`Document ${payload.document_id} is now ${payload.status}`);
-  });
+  },
+);
 ```
 
 ### Events
@@ -275,6 +283,6 @@ const myProvider = createProvider({
 ```
 
 <Callout type="info">
-  The `createHmacVerifier` helper supports common signature formats. For custom verification logic, provide your own `verify` function.
+  The `createHmacVerifier` helper supports common signature formats. For custom
+  verification logic, provide your own `verify` function.
 </Callout>
-

@@ -1,79 +1,87 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, Radio, RotateCcw, FileCode, LayoutDashboard } from 'lucide-react';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Radio,
+  RotateCcw,
+  FileCode,
+  LayoutDashboard,
+} from "lucide-react";
 
 const commands = [
   {
-    prompt: '$ ',
-    command: 'better-webhook dashboard',
+    prompt: "$ ",
+    command: "better-webhook dashboard",
     output: [
-      '',
-      '🧭 Dashboard Server',
-      '',
-      '   Dashboard: http://localhost:4000/',
-      '   API Base: http://localhost:4000/api',
-      '   WebSocket: ws://localhost:4000/ws',
-      '',
-      '🎣 Capture Server',
-      '   Capture: http://localhost:3001',
-      '',
+      "",
+      "🧭 Dashboard Server",
+      "",
+      "   Dashboard: http://localhost:4000/",
+      "   API Base: http://localhost:4000/api",
+      "   WebSocket: ws://localhost:4000/ws",
+      "",
+      "🎣 Capture Server",
+      "   Capture: http://localhost:3001",
+      "",
     ],
     delay: 1200,
   },
   {
-    prompt: '$ ',
-    command: 'better-webhook capture --port 3001',
+    prompt: "$ ",
+    command: "better-webhook capture --port 3001",
     output: [
-      '',
-      '🎣 Webhook capture server started',
-      '   Listening on http://localhost:3001',
-      '',
-      '📥 Captured webhook from github',
-      '   ID: abc12345',
-      '   Event: push',
-      '   Size: 2.4 KB',
+      "",
+      "🎣 Webhook capture server started",
+      "   Listening on http://localhost:3001",
+      "",
+      "📥 Captured webhook from github",
+      "   ID: abc12345",
+      "   Event: push",
+      "   Size: 2.4 KB",
     ],
     delay: 1500,
   },
   {
-    prompt: '$ ',
-    command: 'better-webhook replay abc12345 http://localhost:3000/api/webhooks/github',
+    prompt: "$ ",
+    command:
+      "better-webhook replay abc12345 http://localhost:3000/api/webhooks/github",
     output: [
-      '',
-      '🔄 Replaying Webhook',
-      '',
-      '   Capture ID: abc12345',
-      '   Target: http://localhost:3000/api/webhooks/github',
-      '',
-      '📥 Response',
-      '',
-      '   Status: 200 OK',
-      '   Duration: 45ms',
-      '',
-      '✓ Replay completed successfully',
+      "",
+      "🔄 Replaying Webhook",
+      "",
+      "   Capture ID: abc12345",
+      "   Target: http://localhost:3000/api/webhooks/github",
+      "",
+      "📥 Response",
+      "",
+      "   Status: 200 OK",
+      "   Duration: 45ms",
+      "",
+      "✓ Replay completed successfully",
     ],
     delay: 1200,
   },
   {
-    prompt: '$ ',
-    command: 'better-webhook run github-push --url http://localhost:3000/api/webhooks/github',
+    prompt: "$ ",
+    command:
+      "better-webhook run github-push --url http://localhost:3000/api/webhooks/github",
     output: [
-      '',
-      '🚀 Executing Webhook',
-      '',
-      '   Template: github-push',
-      '   Provider: github',
-      '   Event: push',
-      '   Signature: Will be generated',
-      '',
-      '📥 Response',
-      '',
-      '   Status: 200 OK',
-      '   Duration: 38ms',
-      '',
-      '✓ Webhook delivered successfully',
+      "",
+      "🚀 Executing Webhook",
+      "",
+      "   Template: github-push",
+      "   Provider: github",
+      "   Event: push",
+      "   Signature: Will be generated",
+      "",
+      "📥 Response",
+      "",
+      "   Status: 200 OK",
+      "   Duration: 38ms",
+      "",
+      "✓ Webhook delivered successfully",
     ],
     delay: 1000,
   },
@@ -82,27 +90,29 @@ const commands = [
 const cliFeatures = [
   {
     icon: Radio,
-    title: 'Capture',
-    description: 'Start a local server to intercept and store incoming webhooks',
-    command: 'better-webhook capture',
+    title: "Capture",
+    description:
+      "Start a local server to intercept and store incoming webhooks",
+    command: "better-webhook capture",
   },
   {
     icon: RotateCcw,
-    title: 'Replay',
-    description: 'Re-send captured webhooks to any endpoint with full headers',
-    command: 'better-webhook replay <id> <url>',
+    title: "Replay",
+    description: "Re-send captured webhooks to any endpoint with full headers",
+    command: "better-webhook replay <id> <url>",
   },
   {
     icon: FileCode,
-    title: 'Templates',
-    description: 'Download and run community templates for GitHub, Ragie, and more',
-    command: 'better-webhook templates list',
+    title: "Templates",
+    description:
+      "Download and run community templates for GitHub, Ragie, and more",
+    command: "better-webhook templates list",
   },
   {
     icon: LayoutDashboard,
-    title: 'Dashboard',
-    description: 'Visual UI to manage captures, templates, and replay webhooks',
-    command: 'better-webhook dashboard',
+    title: "Dashboard",
+    description: "Visual UI to manage captures, templates, and replay webhooks",
+    command: "better-webhook dashboard",
   },
 ];
 
@@ -163,13 +173,14 @@ export function CLISection() {
             <span>CLI Tool</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            <span className="text-white">Capture.</span>{' '}
-            <span className="text-[var(--lyra-primary)]">Replay.</span>{' '}
+            <span className="text-white">Capture.</span>{" "}
+            <span className="text-[var(--lyra-primary)]">Replay.</span>{" "}
             <span className="text-[var(--lyra-accent)]">Test.</span>
           </h2>
           <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
             A powerful CLI for local webhook development. Capture real webhooks,
-            replay them on demand, and test your handlers without triggering external events.
+            replay them on demand, and test your handlers without triggering
+            external events.
           </p>
         </div>
 
@@ -187,16 +198,22 @@ export function CLISection() {
                 <div key={index} className="leading-relaxed">
                   {!line ? (
                     <span>&nbsp;</span>
-                  ) : line.startsWith('$ ') ? (
+                  ) : line.startsWith("$ ") ? (
                     <>
                       <span className="lyra-terminal-prompt">$ </span>
-                      <span className="lyra-terminal-command">{line.slice(2)}</span>
+                      <span className="lyra-terminal-command">
+                        {line.slice(2)}
+                      </span>
                     </>
-                  ) : line.startsWith('✓') || line.startsWith('✅') ? (
+                  ) : line.startsWith("✓") || line.startsWith("✅") ? (
                     <span className="lyra-terminal-success">{line}</span>
-                  ) : line.includes('http://') || line.includes('ws://') ? (
+                  ) : line.includes("http://") || line.includes("ws://") ? (
                     <span className="lyra-terminal-info">{line}</span>
-                  ) : line.startsWith('🎣') || line.startsWith('🧭') || line.startsWith('🔄') || line.startsWith('🚀') || line.startsWith('📥') ? (
+                  ) : line.startsWith("🎣") ||
+                    line.startsWith("🧭") ||
+                    line.startsWith("🔄") ||
+                    line.startsWith("🚀") ||
+                    line.startsWith("📥") ? (
                     <span className="text-white">{line}</span>
                   ) : (
                     <span className="lyra-terminal-output">{line}</span>
@@ -210,10 +227,7 @@ export function CLISection() {
           {/* Features List */}
           <div className="space-y-4">
             {cliFeatures.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="lyra-feature-card group"
-              >
+              <div key={feature.title} className="lyra-feature-card group">
                 <div className="flex items-start gap-4">
                   <div className="lyra-feature-icon">
                     <feature.icon className="w-5 h-5" />
@@ -252,12 +266,13 @@ export function CLISection() {
             Install globally with npm
           </p>
           <code className="inline-block px-6 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm">
-            <span className="text-[var(--lyra-accent)]">$</span>{' '}
-            <span className="text-white">npm install -g @better-webhook/cli</span>
+            <span className="text-[var(--lyra-accent)]">$</span>{" "}
+            <span className="text-white">
+              npm install -g @better-webhook/cli
+            </span>
           </code>
         </div>
       </div>
     </section>
   );
 }
-

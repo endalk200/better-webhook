@@ -22,7 +22,11 @@ export const dashboard = new Command()
 
     try {
       const capturePort = Number.parseInt(String(options.capturePort), 10);
-      if (!Number.isFinite(capturePort) || capturePort < 0 || capturePort > 65535) {
+      if (
+        !Number.isFinite(capturePort) ||
+        capturePort < 0 ||
+        capturePort > 65535
+      ) {
         console.error(chalk.red("Invalid capture port number"));
         process.exitCode = 1;
         return;
@@ -42,12 +46,18 @@ export const dashboard = new Command()
       console.log(chalk.gray(`   Dashboard: ${url}/`));
       console.log(chalk.gray(`   Health: ${url}/health`));
       console.log(chalk.gray(`   API Base: ${url}/api`));
-      console.log(chalk.gray(`   WebSocket: ${url.replace("http://", "ws://")}/ws`));
+      console.log(
+        chalk.gray(`   WebSocket: ${url.replace("http://", "ws://")}/ws`),
+      );
       if (capture) {
         console.log();
         console.log(chalk.bold("🎣 Capture Server"));
         console.log(chalk.gray(`   Capture: ${capture.url}`));
-        console.log(chalk.gray(`   Tip: Send webhooks to any path, e.g. ${capture.url}/webhooks/github`));
+        console.log(
+          chalk.gray(
+            `   Tip: Send webhooks to any path, e.g. ${capture.url}/webhooks/github`,
+          ),
+        );
       }
       console.log();
 
@@ -62,9 +72,11 @@ export const dashboard = new Command()
       process.on("SIGINT", shutdown);
       process.on("SIGTERM", shutdown);
     } catch (error: any) {
-      console.error(chalk.red(`Failed to start dashboard server: ${error?.message || error}`));
+      console.error(
+        chalk.red(
+          `Failed to start dashboard server: ${error?.message || error}`,
+        ),
+      );
       process.exitCode = 1;
     }
   });
-
-
