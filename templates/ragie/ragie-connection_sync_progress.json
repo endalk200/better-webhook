@@ -6,43 +6,38 @@
       "value": "application/json"
     },
     {
-      "key": "X-Ragie-Event",
-      "value": "connection_sync_progress"
-    },
-    {
-      "key": "X-Ragie-Delivery",
-      "value": "delivery-523e4567-e89b-12d3-a456-426614174004"
-    },
-    {
       "key": "X-Signature",
       "value": "placeholder"
     },
     {
       "key": "User-Agent",
-      "value": "Ragie-Webhook/1.0"
+      "value": "Python/3.12 aiohttp/3.12.15"
     }
   ],
   "body": {
-    "nonce": "nonce-523e4567-e89b-12d3-a456-426614174004",
-    "connection_id": "conn-abc123",
-    "sync_id": "sync-xyz789abc012",
-    "partition": "partition-default",
-    "connection_metadata": {
-      "source": "google-drive",
-      "folder_id": "1a2b3c4d5e6f7g8h9i",
-      "folder_name": "Documents"
+    "type": "connection_sync_progress",
+    "payload": {
+      "connection_id": "b6a2ff40-3919-4f4d-8c81-4288dcd030dc",
+      "sync_id": "559dda4b-a250-49ca-a5f3-f4fb7deb0b04",
+      "partition": "default",
+      "connection_metadata": {
+        "source": "google-drive",
+        "folder_id": "1a2b3c4d5e6f7g8h9i",
+        "folder_name": "Documents"
+      },
+      "create_count": 4,
+      "created_count": 2,
+      "update_content_count": 2,
+      "updated_content_count": 1,
+      "update_metadata_count": 1,
+      "updated_metadata_count": 0,
+      "delete_count": 1,
+      "deleted_count": 1,
+      "errored_count": 0
     },
-    "total_creates_count": 150,
-    "created_count": 25,
-    "total_contents_updates_count": 75,
-    "contents_updated_count": 15,
-    "total_metadata_updates_count": 30,
-    "metadata_updated_count": 5,
-    "total_deletes_count": 10,
-    "deleted_count": 2
+    "nonce": "DW970pDZAYI0x_mLZECtuQ"
   },
   "provider": "ragie",
   "event": "connection_sync_progress",
-  "description": "Ragie connection sync progress - 150 documents created, 75 updated"
+  "description": "Ragie connection sync progress - 2/4 created, 1/2 updated"
 }
-

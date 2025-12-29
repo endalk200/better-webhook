@@ -6,30 +6,34 @@
       "value": "application/json"
     },
     {
-      "key": "X-Ragie-Event",
-      "value": "entity_extracted"
-    },
-    {
-      "key": "X-Ragie-Delivery",
-      "value": "delivery-323e4567-e89b-12d3-a456-426614174002"
-    },
-    {
       "key": "X-Signature",
       "value": "placeholder"
     },
     {
       "key": "User-Agent",
-      "value": "Ragie-Webhook/1.0"
+      "value": "Python/3.12 aiohttp/3.12.15"
     }
   ],
   "body": {
-    "nonce": "nonce-323e4567-e89b-12d3-a456-426614174002",
-    "document_id": "doc-entity789",
-    "external_id": "user-document-003",
-    "partition": "partition-default"
+    "type": "entity_extracted",
+    "payload": {
+      "entity_id": "be49098d-7b17-462c-bfb7-379e985882f1",
+      "document_id": "7aa8841d-1d4a-41d0-8549-1c42db1ace42",
+      "instruction_id": "645ed2a7-67fb-4637-b12d-c4643d6d8706",
+      "document_metadata": {
+        "key": "value"
+      },
+      "document_external_id": "ext_123",
+      "document_name": "Test Document.pdf",
+      "partition": "default",
+      "sync_id": null,
+      "data": {
+        "key": "value"
+      }
+    },
+    "nonce": "Ztxdir9SsU_Xyt8biglcag"
   },
   "provider": "ragie",
   "event": "entity_extracted",
   "description": "Ragie entity extraction completed"
 }
-

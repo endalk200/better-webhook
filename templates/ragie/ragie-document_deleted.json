@@ -6,30 +6,30 @@
       "value": "application/json"
     },
     {
-      "key": "X-Ragie-Event",
-      "value": "document_deleted"
-    },
-    {
-      "key": "X-Ragie-Delivery",
-      "value": "delivery-223e4567-e89b-12d3-a456-426614174001"
-    },
-    {
       "key": "X-Signature",
       "value": "placeholder"
     },
     {
       "key": "User-Agent",
-      "value": "Ragie-Webhook/1.0"
+      "value": "Python/3.12 aiohttp/3.12.15"
     }
   ],
   "body": {
-    "nonce": "nonce-223e4567-e89b-12d3-a456-426614174001",
-    "document_id": "doc-deleted123",
-    "external_id": "user-document-002",
-    "partition": "partition-default"
+    "type": "document_deleted",
+    "payload": {
+      "document_id": "f16812e2-9159-4de7-be62-5c19010582a5",
+      "partition": "default",
+      "metadata": {
+        "key": "value"
+      },
+      "external_id": "ext_123",
+      "name": "Test Document.pdf",
+      "connection_id": null,
+      "sync_id": null
+    },
+    "nonce": "MPuABh9SZ-ua_qJooQ49Iw"
   },
   "provider": "ragie",
   "event": "document_deleted",
-  "description": "Ragie document deleted event"
+  "description": "Ragie document deleted"
 }
-
