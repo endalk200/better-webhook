@@ -61,10 +61,8 @@ export class WebhooksController {
       console.log("✅ Connection sync finished!");
       console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
       console.log(`   Connection ID: ${payload.connection_id}`);
-      console.log(`   Total creates: ${payload.total_creates_count}`);
-      console.log(`   Total content updates: ${payload.total_contents_updates_count}`);
-      console.log(`   Total metadata updates: ${payload.total_metadata_updates_count}`);
-      console.log(`   Total deletes: ${payload.total_deletes_count}`);
+      console.log(`   Sync ID: ${payload.sync_id}`);
+      console.log(`   Partition: ${payload.partition}`);
     })
     .event("entity_extracted", async (payload, context) => {
       console.log("🔍 Entity extraction completed!");

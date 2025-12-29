@@ -22,19 +22,19 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
     console.log("⏳ Connection sync progress!");
     console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
-    console.log(`   Total creates: ${payload.total_creates_count}`);
-    console.log(`   Total content updates: ${payload.total_contents_updates_count}`);
-    console.log(`   Total metadata updates: ${payload.total_metadata_updates_count}`);
-    console.log(`   Total deletes: ${payload.total_deletes_count}`);
+    console.log(`   Sync ID: ${payload.sync_id}`);
+    console.log(`   Creates: ${payload.created_count}/${payload.create_count}`);
+    console.log(`   Content updates: ${payload.updated_content_count}/${payload.update_content_count}`);
+    console.log(`   Metadata updates: ${payload.updated_metadata_count}/${payload.update_metadata_count}`);
+    console.log(`   Deletes: ${payload.deleted_count}/${payload.delete_count}`);
+    console.log(`   Errors: ${payload.errored_count}`);
   })
   .event("connection_sync_finished", async (payload, context) => {
     console.log("✅ Connection sync finished!");
     console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
-    console.log(`   Total creates: ${payload.total_creates_count}`);
-    console.log(`   Total content updates: ${payload.total_contents_updates_count}`);
-    console.log(`   Total metadata updates: ${payload.total_metadata_updates_count}`);
-    console.log(`   Total deletes: ${payload.total_deletes_count}`);
+    console.log(`   Sync ID: ${payload.sync_id}`);
+    console.log(`   Partition: ${payload.partition}`);
   })
   .event("entity_extracted", async (payload, context) => {
     console.log("🔍 Entity extraction completed!");
@@ -52,8 +52,8 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
     console.log("⚠️ Connection limit exceeded!");
     console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
-    console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Partition: ${payload.partition}`);
+    console.log(`   Limit type: ${payload.limit_type}`);
   })
   .event("partition_limit_exceeded", async (payload, context) => {
     console.log("⚠️ Partition limit exceeded!");
