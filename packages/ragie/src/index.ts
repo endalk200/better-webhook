@@ -11,23 +11,14 @@ import { z, type ZodSchema } from "zod";
 // Ragie Webhook Documentation
 // @see https://docs.ragie.ai/docs/webhooks
 // @see https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks
+//
+// Ragie webhooks use an envelope structure:
+// {
+//   "type": "event_type",
+//   "payload": { ...actual event data... },
+//   "nonce": "unique-id-for-idempotency"
+// }
 // ============================================================================
-
-// ============================================================================
-// Shared Schemas
-// ============================================================================
-
-/**
- * Base webhook event schema
- * All Ragie webhook events include these common fields
- */
-const BaseEventSchema = z.object({
-  /**
-   * A unique identifier for idempotency
-   * Use this to prevent processing the same event multiple times
-   */
-  nonce: z.string(),
-});
 
 // ============================================================================
 // Document Status Updated Event
@@ -39,18 +30,24 @@ const BaseEventSchema = z.object({
  * Triggered when a document enters indexed, keyword_indexed, ready, or failed state
  */
 export const RagieDocumentStatusUpdatedEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the document */
   document_id: z.string(),
-  /** External ID if provided when creating the document */
-  external_id: z.string().optional(),
   /** Current status of the document */
   status: z.enum(["indexed", "keyword_indexed", "ready", "failed"]),
-  /** Sync ID if the document was created as part of a sync */
-  sync_id: z.string().optional(),
   /** Partition key for the document */
-  partition: z.string().optional(),
+  partition: z.string(),
+  /** User-defined metadata for the document */
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  /** External ID if provided when creating the document */
+  external_id: z.string().nullable(),
+  /** Name of the document */
+  name: z.string(),
+  /** Connection ID if the document was created via a connection */
+  connection_id: z.string().nullable(),
+  /** Sync ID if the document was created as part of a sync */
+  sync_id: z.string().nullable(),
+  /** Error message if status is 'failed' */
+  error: z.string().nullable(),
 });
 
 // ============================================================================
@@ -63,14 +60,20 @@ export const RagieDocumentStatusUpdatedEventSchema = z.object({
  * Triggered when a document is deleted
  */
 export const RagieDocumentDeletedEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the deleted document */
   document_id: z.string(),
-  /** External ID if provided when creating the document */
-  external_id: z.string().optional(),
   /** Partition key for the document */
-  partition: z.string().optional(),
+  partition: z.string(),
+  /** User-defined metadata for the document */
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  /** External ID if provided when creating the document */
+  external_id: z.string().nullable(),
+  /** Name of the document */
+  name: z.string(),
+  /** Connection ID if the document was created via a connection */
+  connection_id: z.string().nullable(),
+  /** Sync ID if the document was created as part of a sync */
+  sync_id: z.string().nullable(),
 });
 
 // ============================================================================
@@ -83,14 +86,24 @@ export const RagieDocumentDeletedEventSchema = z.object({
  * Triggered when entity extraction completes for a document
  */
 export const RagieEntityExtractedEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
-  /** The unique identifier for the document */
+  /** The unique identifier for the extracted entity */
+  entity_id: z.string(),
+  /** The unique identifier for the source document */
   document_id: z.string(),
-  /** External ID if provided when creating the document */
-  external_id: z.string().optional(),
+  /** The instruction ID used for entity extraction */
+  instruction_id: z.string(),
+  /** User-defined metadata from the source document */
+  document_metadata: z.record(z.string(), z.unknown()),
+  /** External ID of the source document */
+  document_external_id: z.string(),
+  /** Name of the source document */
+  document_name: z.string(),
   /** Partition key for the document */
-  partition: z.string().optional(),
+  partition: z.string(),
+  /** Sync ID if the document was created as part of a sync */
+  sync_id: z.string().nullable(),
+  /** The extracted entity data */
+  data: z.record(z.string(), z.unknown()),
 });
 
 // ============================================================================
@@ -103,8 +116,6 @@ export const RagieEntityExtractedEventSchema = z.object({
  * Triggered when a connection sync begins
  */
 export const RagieConnectionSyncStartedEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** The unique identifier for this sync */
@@ -113,6 +124,14 @@ export const RagieConnectionSyncStartedEventSchema = z.object({
   partition: z.string(),
   /** Additional metadata about the connection */
   connection_metadata: z.record(z.string(), z.unknown()).optional(),
+  /** Number of documents to be created */
+  create_count: z.number(),
+  /** Number of documents with content updates */
+  update_content_count: z.number(),
+  /** Number of documents with metadata updates */
+  update_metadata_count: z.number(),
+  /** Number of documents to be deleted */
+  delete_count: z.number(),
 });
 
 // ============================================================================
@@ -125,8 +144,6 @@ export const RagieConnectionSyncStartedEventSchema = z.object({
  * Triggered periodically during a sync to report progress
  */
 export const RagieConnectionSyncProgressEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** The unique identifier for this sync */
@@ -135,22 +152,24 @@ export const RagieConnectionSyncProgressEventSchema = z.object({
   partition: z.string(),
   /** Additional metadata about the connection */
   connection_metadata: z.record(z.string(), z.unknown()).optional(),
-  /** Total number of items created so far */
-  total_creates_count: z.number(),
-  /** Number of items created in this progress update */
+  /** Total number of documents to be created */
+  create_count: z.number(),
+  /** Number of documents created so far */
   created_count: z.number(),
-  /** Total number of content updates so far */
-  total_contents_updates_count: z.number(),
-  /** Number of content updates in this progress update */
-  contents_updated_count: z.number(),
-  /** Total number of metadata updates so far */
-  total_metadata_updates_count: z.number(),
-  /** Number of metadata updates in this progress update */
-  metadata_updated_count: z.number(),
-  /** Total number of items deleted so far */
-  total_deletes_count: z.number(),
-  /** Number of items deleted in this progress update */
+  /** Total number of documents with content updates */
+  update_content_count: z.number(),
+  /** Number of content updates completed so far */
+  updated_content_count: z.number(),
+  /** Total number of documents with metadata updates */
+  update_metadata_count: z.number(),
+  /** Number of metadata updates completed so far */
+  updated_metadata_count: z.number(),
+  /** Total number of documents to be deleted */
+  delete_count: z.number(),
+  /** Number of documents deleted so far */
   deleted_count: z.number(),
+  /** Number of documents that encountered errors */
+  errored_count: z.number(),
 });
 
 // ============================================================================
@@ -163,8 +182,6 @@ export const RagieConnectionSyncProgressEventSchema = z.object({
  * Triggered when a connection sync completes
  */
 export const RagieConnectionSyncFinishedEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** The unique identifier for this sync */
@@ -173,22 +190,6 @@ export const RagieConnectionSyncFinishedEventSchema = z.object({
   partition: z.string(),
   /** Additional metadata about the connection */
   connection_metadata: z.record(z.string(), z.unknown()).optional(),
-  /** Total number of items created during the sync */
-  total_creates_count: z.number(),
-  /** Number of items created in the final update */
-  created_count: z.number(),
-  /** Total number of content updates during the sync */
-  total_contents_updates_count: z.number(),
-  /** Number of content updates in the final update */
-  contents_updated_count: z.number(),
-  /** Total number of metadata updates during the sync */
-  total_metadata_updates_count: z.number(),
-  /** Number of metadata updates in the final update */
-  metadata_updated_count: z.number(),
-  /** Total number of items deleted during the sync */
-  total_deletes_count: z.number(),
-  /** Number of items deleted in the final update */
-  deleted_count: z.number(),
 });
 
 // ============================================================================
@@ -201,16 +202,14 @@ export const RagieConnectionSyncFinishedEventSchema = z.object({
  * Triggered when a connection exceeds its page limit
  */
 export const RagieConnectionLimitExceededEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** The unique identifier for the connection */
   connection_id: z.string(),
-  /** The unique identifier for the sync */
-  sync_id: z.string(),
   /** Partition key for the sync */
   partition: z.string(),
   /** Additional metadata about the connection */
   connection_metadata: z.record(z.string(), z.unknown()).optional(),
+  /** The type of limit that was exceeded (e.g., "page_limit") */
+  limit_type: z.string(),
 });
 
 // ============================================================================
@@ -223,8 +222,6 @@ export const RagieConnectionLimitExceededEventSchema = z.object({
  * Triggered when a partition exceeds its document limit
  */
 export const RagiePartitionLimitExceededEventSchema = z.object({
-  /** A unique identifier for idempotency */
-  nonce: z.string(),
   /** Partition key that exceeded the limit */
   partition: z.string(),
 });
@@ -306,6 +303,12 @@ export interface RagieOptions {
 /**
  * Create a Ragie provider for webhook handling
  * Implements signature verification using HMAC-SHA256
+ *
+ * Ragie webhooks use an envelope structure where:
+ * - Event type is in body.type
+ * - Actual payload is in body.payload
+ * - Nonce for idempotency is in body.nonce
+ *
  * @see https://docs.ragie.ai/docs/webhooks
  */
 function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
@@ -315,19 +318,33 @@ function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
     secret: options?.secret,
 
     /**
-     * Extract the event type from the X-Ragie-Event header
-     * Ragie sends the event type in this custom header
+     * Extract the event type from the body
+     * Ragie sends the event type in body.type (not in headers)
      */
-    getEventType(headers: Headers): string | undefined {
-      return headers["x-ragie-event"];
+    getEventType(_headers: Headers, body?: unknown): string | undefined {
+      if (body && typeof body === "object" && "type" in body) {
+        return (body as { type: string }).type;
+      }
+      return undefined;
     },
 
     /**
-     * Extract the delivery ID from the X-Ragie-Delivery header
-     * This uniquely identifies the webhook delivery
+     * Extract delivery ID
+     * Ragie doesn't send a delivery ID header - use nonce from body for idempotency
      */
-    getDeliveryId(headers: Headers): string | undefined {
-      return headers["x-ragie-delivery"];
+    getDeliveryId(_headers: Headers): string | undefined {
+      return undefined;
+    },
+
+    /**
+     * Extract the actual payload from the envelope structure
+     * Ragie wraps the payload in { type, payload, nonce }
+     */
+    getPayload(body: unknown): unknown {
+      if (body && typeof body === "object" && "payload" in body) {
+        return (body as { payload: unknown }).payload;
+      }
+      return body;
     },
 
     /**
@@ -399,7 +416,7 @@ function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
  *     console.log(`Sync ${payload.sync_id} started for connection ${payload.connection_id}`);
  *   })
  *   .event('connection_sync_progress', async (payload) => {
- *     console.log(`Sync progress: ${payload.total_creates_count} created, ${payload.total_deletes_count} deleted`);
+ *     console.log(`Sync progress: ${payload.created_count}/${payload.create_count} created`);
  *   })
  *   .event('connection_sync_finished', async (payload) => {
  *     console.log(`Sync ${payload.sync_id} finished`);
@@ -413,4 +430,3 @@ export function ragie(options?: RagieOptions): WebhookBuilder<RagieEventMap> {
 
 // Re-export schemas for advanced use cases
 export { RagieSchemas };
-

@@ -6,34 +6,28 @@
       "value": "application/json"
     },
     {
-      "key": "X-Ragie-Event",
-      "value": "connection_limit_exceeded"
-    },
-    {
-      "key": "X-Ragie-Delivery",
-      "value": "delivery-723e4567-e89b-12d3-a456-426614174006"
-    },
-    {
       "key": "X-Signature",
       "value": "placeholder"
     },
     {
       "key": "User-Agent",
-      "value": "Ragie-Webhook/1.0"
+      "value": "Python/3.12 aiohttp/3.12.15"
     }
   ],
   "body": {
-    "nonce": "nonce-723e4567-e89b-12d3-a456-426614174006",
-    "connection_id": "conn-limit123",
-    "sync_id": "sync-limit789",
-    "partition": "partition-default",
-    "connection_metadata": {
-      "source": "notion",
-      "workspace_id": "workspace-abc123"
-    }
+    "type": "connection_limit_exceeded",
+    "payload": {
+      "connection_id": "fb283324-d6ad-4803-ba4b-3cb32e46e5ae",
+      "partition": "default",
+      "connection_metadata": {
+        "source": "notion",
+        "workspace_id": "workspace-abc123"
+      },
+      "limit_type": "page_limit"
+    },
+    "nonce": "a05K4SVYjEbq6n5KBZ2pxA"
   },
   "provider": "ragie",
   "event": "connection_limit_exceeded",
-  "description": "Ragie connection limit exceeded - connection page limit reached"
+  "description": "Ragie connection limit exceeded - page limit reached"
 }
-

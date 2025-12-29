@@ -6,32 +6,32 @@
       "value": "application/json"
     },
     {
-      "key": "X-Ragie-Event",
-      "value": "document_status_updated"
-    },
-    {
-      "key": "X-Ragie-Delivery",
-      "value": "delivery-123e4567-e89b-12d3-a456-426614174000"
-    },
-    {
       "key": "X-Signature",
       "value": "placeholder"
     },
     {
       "key": "User-Agent",
-      "value": "Ragie-Webhook/1.0"
+      "value": "Python/3.12 aiohttp/3.12.15"
     }
   ],
   "body": {
-    "nonce": "nonce-123e4567-e89b-12d3-a456-426614174000",
-    "document_id": "doc-abc123def456",
-    "external_id": "user-document-001",
-    "status": "ready",
-    "sync_id": "sync-xyz789abc012",
-    "partition": "partition-default"
+    "type": "document_status_updated",
+    "payload": {
+      "document_id": "aa9a87d5-fbfa-4b48-8db3-b88a0d5826d4",
+      "status": "ready",
+      "partition": "default",
+      "metadata": {
+        "key": "value"
+      },
+      "external_id": "ext_123",
+      "name": "Test Document.pdf",
+      "connection_id": null,
+      "sync_id": null,
+      "error": null
+    },
+    "nonce": "8YVyKf1vKqErhhaQ9U55uw"
   },
   "provider": "ragie",
   "event": "document_status_updated",
   "description": "Ragie document status updated - document is now ready for retrieval"
 }
-
