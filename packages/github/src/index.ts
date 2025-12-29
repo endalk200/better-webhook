@@ -528,7 +528,7 @@ function createGitHubProvider(
      * Extract the event type from the X-GitHub-Event header.
      * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#delivery-headers
      */
-    getEventType(headers: Headers): string | undefined {
+    getEventType(headers: Headers, _body?: unknown): string | undefined {
       return headers["x-github-event"];
     },
 
