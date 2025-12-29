@@ -24,8 +24,12 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Creates: ${payload.created_count}/${payload.create_count}`);
-    console.log(`   Content updates: ${payload.updated_content_count}/${payload.update_content_count}`);
-    console.log(`   Metadata updates: ${payload.updated_metadata_count}/${payload.update_metadata_count}`);
+    console.log(
+      `   Content updates: ${payload.updated_content_count}/${payload.update_content_count}`,
+    );
+    console.log(
+      `   Metadata updates: ${payload.updated_metadata_count}/${payload.update_metadata_count}`,
+    );
     console.log(`   Deletes: ${payload.deleted_count}/${payload.delete_count}`);
     console.log(`   Errors: ${payload.errored_count}`);
   })
@@ -100,4 +104,3 @@ export async function GET() {
     },
   );
 }
-

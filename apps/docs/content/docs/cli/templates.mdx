@@ -3,7 +3,7 @@ title: Templates
 description: Use pre-built webhook templates to test your handlers without triggering real events.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Templates
 
@@ -13,26 +13,26 @@ Templates are pre-built webhook payloads that you can use to test your handlers 
 
 ### GitHub
 
-| Template ID | Event | Description |
-|-------------|-------|-------------|
-| `github-push` | `push` | Commits pushed to a repository |
-| `github-pull_request` | `pull_request` | Pull request opened, closed, merged, etc. |
-| `github-issues` | `issues` | Issue opened, closed, edited, etc. |
-| `github-installation` | `installation` | GitHub App installed or uninstalled |
-| `github-installation_repositories` | `installation_repositories` | Repos added/removed from app |
+| Template ID                        | Event                       | Description                               |
+| ---------------------------------- | --------------------------- | ----------------------------------------- |
+| `github-push`                      | `push`                      | Commits pushed to a repository            |
+| `github-pull_request`              | `pull_request`              | Pull request opened, closed, merged, etc. |
+| `github-issues`                    | `issues`                    | Issue opened, closed, edited, etc.        |
+| `github-installation`              | `installation`              | GitHub App installed or uninstalled       |
+| `github-installation_repositories` | `installation_repositories` | Repos added/removed from app              |
 
 ### Ragie
 
-| Template ID | Event | Description |
-|-------------|-------|-------------|
-| `ragie-document_status_updated` | `document_status_updated` | Document enters indexed, ready, or failed state |
-| `ragie-document_deleted` | `document_deleted` | Document is deleted |
-| `ragie-entity_extracted` | `entity_extracted` | Entity extraction completes |
-| `ragie-connection_sync_started` | `connection_sync_started` | Connection sync begins |
-| `ragie-connection_sync_progress` | `connection_sync_progress` | Periodic sync progress updates |
-| `ragie-connection_sync_finished` | `connection_sync_finished` | Connection sync completes |
-| `ragie-connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded |
-| `ragie-partition_limit_exceeded` | `partition_limit_exceeded` | Partition document limit exceeded |
+| Template ID                       | Event                       | Description                                     |
+| --------------------------------- | --------------------------- | ----------------------------------------------- |
+| `ragie-document_status_updated`   | `document_status_updated`   | Document enters indexed, ready, or failed state |
+| `ragie-document_deleted`          | `document_deleted`          | Document is deleted                             |
+| `ragie-entity_extracted`          | `entity_extracted`          | Entity extraction completes                     |
+| `ragie-connection_sync_started`   | `connection_sync_started`   | Connection sync begins                          |
+| `ragie-connection_sync_progress`  | `connection_sync_progress`  | Periodic sync progress updates                  |
+| `ragie-connection_sync_finished`  | `connection_sync_finished`  | Connection sync completes                       |
+| `ragie-connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded                  |
+| `ragie-partition_limit_exceeded`  | `partition_limit_exceeded`  | Partition document limit exceeded               |
 
 ## Commands
 
@@ -114,9 +114,8 @@ better-webhook run github-push \
 ```
 
 <Callout type="info">
-  The CLI will automatically look for provider-specific environment variables if you don't pass `--secret`:
-  - `GITHUB_WEBHOOK_SECRET`
-  - `RAGIE_WEBHOOK_SECRET`
+  The CLI will automatically look for provider-specific environment variables if
+  you don't pass `--secret`: - `GITHUB_WEBHOOK_SECRET` - `RAGIE_WEBHOOK_SECRET`
 </Callout>
 
 ### With Custom Headers
@@ -164,4 +163,3 @@ better-webhook run github-push \
 ```
 
 Templates give you repeatable, consistent webhook payloads for testing without needing to trigger real events.
-

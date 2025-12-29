@@ -88,7 +88,7 @@ export class TemplateManager {
       this.indexCache = index;
       writeFileSync(
         this.cacheFile,
-        JSON.stringify({ index, cachedAt: Date.now() }, null, 2)
+        JSON.stringify({ index, cachedAt: Date.now() }, null, 2),
       );
 
       return index;
@@ -182,7 +182,7 @@ export class TemplateManager {
       return localTemplate;
     } catch (error: any) {
       throw new Error(
-        `Failed to download template ${templateId}: ${error.message}`
+        `Failed to download template ${templateId}: ${error.message}`,
       );
     }
   }

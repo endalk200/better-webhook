@@ -3,9 +3,9 @@ title: SDK Getting Started
 description: Build type-safe webhook handlers with automatic signature verification using Better Webhook SDK packages.
 ---
 
-import { Steps, Step } from 'fumadocs-ui/components/steps';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 # SDK Getting Started
 
@@ -19,21 +19,15 @@ The Better Webhook SDK provides type-safe webhook handlers with automatic signat
 
 Install a provider and an adapter for your framework:
 
-<Tabs items={['Next.js', 'Express', 'NestJS']}>
+<Tabs items={["Next.js", "Express", "NestJS"]}>
   <Tab value="Next.js">
-    ```bash
-    npm install @better-webhook/github @better-webhook/nextjs
-    ```
+    ```bash npm install @better-webhook/github @better-webhook/nextjs ```
   </Tab>
   <Tab value="Express">
-    ```bash
-    npm install @better-webhook/github @better-webhook/express
-    ```
+    ```bash npm install @better-webhook/github @better-webhook/express ```
   </Tab>
   <Tab value="NestJS">
-    ```bash
-    npm install @better-webhook/github @better-webhook/nestjs
-    ```
+    ```bash npm install @better-webhook/github @better-webhook/nestjs ```
   </Tab>
 </Tabs>
 
@@ -59,6 +53,7 @@ Install a provider and an adapter for your framework:
 
     export const POST = toNextJS(webhook);
     ```
+
   </Tab>
   <Tab value="Express">
     ```ts title="src/webhooks.ts"
@@ -82,6 +77,7 @@ Install a provider and an adapter for your framework:
 
     app.listen(3000);
     ```
+
   </Tab>
   <Tab value="NestJS">
     ```ts title="src/webhooks.controller.ts"
@@ -104,6 +100,7 @@ Install a provider and an adapter for your framework:
       }
     }
     ```
+
   </Tab>
 </Tabs>
 
@@ -120,6 +117,7 @@ Install a provider and an adapter for your framework:
 
     const webhook = github();
     ```
+
   </Step>
 
   <Step>
@@ -138,6 +136,7 @@ Install a provider and an adapter for your framework:
     ```
 
     Each handler receives a fully typed payload with autocomplete support.
+
   </Step>
 
   <Step>
@@ -155,6 +154,7 @@ Install a provider and an adapter for your framework:
     // NestJS
     const result = await toNestJS(this.webhook)(req);
     ```
+
   </Step>
 </Steps>
 
@@ -168,13 +168,13 @@ Signature verification happens automatically when you provide a secret. The SDK 
 
 ```ts
 // Option 1: Adapter options
-export const POST = toNextJS(webhook, { 
-  secret: process.env.GITHUB_WEBHOOK_SECRET 
+export const POST = toNextJS(webhook, {
+  secret: process.env.GITHUB_WEBHOOK_SECRET,
 });
 
 // Option 2: Provider options
-const webhook = github({ 
-  secret: process.env.GITHUB_WEBHOOK_SECRET 
+const webhook = github({
+  secret: process.env.GITHUB_WEBHOOK_SECRET,
 });
 
 // Option 3: Environment variable (automatic)
@@ -182,7 +182,8 @@ const webhook = github({
 ```
 
 <Callout type="warn">
-  Always configure signature verification in production. Without it, anyone can send fake webhooks to your endpoint.
+  Always configure signature verification in production. Without it, anyone can
+  send fake webhooks to your endpoint.
 </Callout>
 
 ## Error Handling
@@ -208,4 +209,3 @@ const webhook = github()
 
 - [Providers](/docs/sdk/providers) — GitHub and Ragie provider documentation with all supported events
 - [Adapters](/docs/sdk/adapters) — Framework-specific setup and configuration
-

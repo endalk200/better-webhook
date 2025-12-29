@@ -13,7 +13,7 @@ const listCommand = new Command()
   .description("List available remote templates from the repository")
   .option(
     "-p, --provider <provider>",
-    "Filter by provider (stripe, github, etc.)"
+    "Filter by provider (stripe, github, etc.)",
   )
   .option("-r, --refresh", "Force refresh the template index cache")
   .action(async (options: { provider?: string; refresh?: boolean }) => {
@@ -37,15 +37,15 @@ const listCommand = new Command()
         filtered = templates.filter(
           (t) =>
             t.metadata.provider.toLowerCase() ===
-            options.provider?.toLowerCase()
+            options.provider?.toLowerCase(),
         );
       }
 
       if (filtered.length === 0) {
         console.log(
           chalk.yellow(
-            `📭 No templates found for provider: ${options.provider}`
-          )
+            `📭 No templates found for provider: ${options.provider}`,
+          ),
         );
         return;
       }
@@ -79,7 +79,7 @@ const listCommand = new Command()
 
       console.log(chalk.gray(`  Total: ${filtered.length} templates`));
       console.log(
-        chalk.gray(`  Download: better-webhook templates download <id>\n`)
+        chalk.gray(`  Download: better-webhook templates download <id>\n`),
       );
     } catch (error: any) {
       spinner.fail("Failed to fetch templates");
@@ -101,7 +101,7 @@ const downloadCommand = new Command()
   .action(
     async (
       templateId?: string,
-      options?: { all?: boolean; refresh?: boolean }
+      options?: { all?: boolean; refresh?: boolean },
     ) => {
       const manager = getTemplateManager();
 
@@ -122,19 +122,19 @@ const downloadCommand = new Command()
           }
 
           console.log(
-            chalk.bold(`\nDownloading ${toDownload.length} templates...\n`)
+            chalk.bold(`\nDownloading ${toDownload.length} templates...\n`),
           );
 
           for (const t of toDownload) {
             const downloadSpinner = ora(
-              `Downloading ${t.metadata.id}...`
+              `Downloading ${t.metadata.id}...`,
             ).start();
             try {
               await manager.downloadTemplate(t.metadata.id);
               downloadSpinner.succeed(`Downloaded ${t.metadata.id}`);
             } catch (error: any) {
               downloadSpinner.fail(
-                `Failed: ${t.metadata.id} - ${error.message}`
+                `Failed: ${t.metadata.id} - ${error.message}`,
               );
             }
           }
@@ -197,14 +197,14 @@ const downloadCommand = new Command()
         spinner.succeed(`Downloaded ${templateId}`);
         console.log(chalk.gray(`  Saved to: ${template.filePath}`));
         console.log(
-          chalk.gray(`  Run with: better-webhook run ${templateId}\n`)
+          chalk.gray(`  Run with: better-webhook run ${templateId}\n`),
         );
       } catch (error: any) {
         spinner.fail(`Failed to download ${templateId}`);
         console.error(chalk.red(error.message));
         process.exitCode = 1;
       }
-    }
+    },
   );
 
 /**
@@ -221,7 +221,7 @@ const localCommand = new Command()
     if (options.provider) {
       templates = templates.filter(
         (t) =>
-          t.metadata.provider.toLowerCase() === options.provider?.toLowerCase()
+          t.metadata.provider.toLowerCase() === options.provider?.toLowerCase(),
       );
     }
 
@@ -229,8 +229,8 @@ const localCommand = new Command()
       console.log(chalk.yellow("\n📭 No local templates found."));
       console.log(
         chalk.gray(
-          "   Download templates with: better-webhook templates download\n"
-        )
+          "   Download templates with: better-webhook templates download\n",
+        ),
       );
       return;
     }
@@ -255,8 +255,8 @@ const localCommand = new Command()
         console.log(chalk.gray(`      Event: ${t.metadata.event}`));
         console.log(
           chalk.gray(
-            `      Downloaded: ${new Date(t.downloadedAt).toLocaleDateString()}`
-          )
+            `      Downloaded: ${new Date(t.downloadedAt).toLocaleDateString()}`,
+          ),
         );
       }
       console.log();
@@ -294,7 +294,7 @@ const searchCommand = new Command()
         console.log(chalk.cyan.bold("  LOCAL TEMPLATES"));
         for (const t of results.local) {
           console.log(
-            `    ${chalk.green("✓")} ${t.id} (${t.metadata.provider})`
+            `    ${chalk.green("✓")} ${t.id} (${t.metadata.provider})`,
           );
         }
         console.log();
@@ -305,7 +305,7 @@ const searchCommand = new Command()
         for (const t of results.remote) {
           const status = t.isDownloaded ? chalk.green("✓") : chalk.gray("○");
           console.log(
-            `    ${status} ${t.metadata.id} (${t.metadata.provider})`
+            `    ${status} ${t.metadata.id} (${t.metadata.provider})`,
           );
         }
         console.log();
@@ -354,7 +354,7 @@ const cleanCommand = new Command()
     }
 
     console.log(
-      chalk.bold(`\n🗑️  Found ${templates.length} downloaded template(s)\n`)
+      chalk.bold(`\n🗑️  Found ${templates.length} downloaded template(s)\n`),
     );
 
     // Show what will be deleted

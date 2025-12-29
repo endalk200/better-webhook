@@ -1,41 +1,78 @@
-import Link from 'next/link';
-import { Github, Package, BookOpen } from 'lucide-react';
+import Link from "next/link";
+import { Github, Package, BookOpen } from "lucide-react";
 
 const footerLinks = {
   cli: [
-    { name: 'CLI Overview', href: '/docs/cli' },
-    { name: 'Capture', href: '/docs/cli/capture' },
-    { name: 'Replay', href: '/docs/cli/replay' },
-    { name: 'Templates', href: '/docs/cli/templates' },
-    { name: 'Dashboard', href: '/docs/cli/dashboard' },
+    { name: "CLI Overview", href: "/docs/cli" },
+    { name: "Capture", href: "/docs/cli/capture" },
+    { name: "Replay", href: "/docs/cli/replay" },
+    { name: "Templates", href: "/docs/cli/templates" },
+    { name: "Dashboard", href: "/docs/cli/dashboard" },
   ],
   sdk: [
-    { name: 'SDK Overview', href: '/docs/sdk' },
-    { name: 'GitHub Provider', href: '/docs/providers/github' },
-    { name: 'Ragie Provider', href: '/docs/providers/ragie' },
-    { name: 'Custom Providers', href: '/docs/sdk/custom-providers' },
+    { name: "SDK Overview", href: "/docs/sdk" },
+    { name: "GitHub Provider", href: "/docs/providers/github" },
+    { name: "Ragie Provider", href: "/docs/providers/ragie" },
+    { name: "Custom Providers", href: "/docs/sdk/custom-providers" },
   ],
   frameworks: [
-    { name: 'Next.js', href: '/docs/frameworks/nextjs' },
-    { name: 'Express', href: '/docs/frameworks/express' },
-    { name: 'NestJS', href: '/docs/frameworks/nestjs' },
+    { name: "Next.js", href: "/docs/frameworks/nextjs" },
+    { name: "Express", href: "/docs/frameworks/express" },
+    { name: "NestJS", href: "/docs/frameworks/nestjs" },
   ],
   resources: [
-    { name: 'GitHub', href: 'https://github.com/endalk200/better-webhook', external: true },
-    { name: 'NPM', href: 'https://www.npmjs.com/package/@better-webhook/cli', external: true },
-    { name: 'Changelog', href: 'https://github.com/endalk200/better-webhook/releases', external: true },
-    { name: 'Issues', href: 'https://github.com/endalk200/better-webhook/issues', external: true },
+    {
+      name: "GitHub",
+      href: "https://github.com/endalk200/better-webhook",
+      external: true,
+    },
+    {
+      name: "NPM",
+      href: "https://www.npmjs.com/package/@better-webhook/cli",
+      external: true,
+    },
+    {
+      name: "Changelog",
+      href: "https://github.com/endalk200/better-webhook/releases",
+      external: true,
+    },
+    {
+      name: "Issues",
+      href: "https://github.com/endalk200/better-webhook/issues",
+      external: true,
+    },
   ],
 };
 
 const packages = [
-  { name: '@better-webhook/cli', href: 'https://www.npmjs.com/package/@better-webhook/cli' },
-  { name: '@better-webhook/core', href: 'https://www.npmjs.com/package/@better-webhook/core' },
-  { name: '@better-webhook/github', href: 'https://www.npmjs.com/package/@better-webhook/github' },
-  { name: '@better-webhook/ragie', href: 'https://www.npmjs.com/package/@better-webhook/ragie' },
-  { name: '@better-webhook/nextjs', href: 'https://www.npmjs.com/package/@better-webhook/nextjs' },
-  { name: '@better-webhook/express', href: 'https://www.npmjs.com/package/@better-webhook/express' },
-  { name: '@better-webhook/nestjs', href: 'https://www.npmjs.com/package/@better-webhook/nestjs' },
+  {
+    name: "@better-webhook/cli",
+    href: "https://www.npmjs.com/package/@better-webhook/cli",
+  },
+  {
+    name: "@better-webhook/core",
+    href: "https://www.npmjs.com/package/@better-webhook/core",
+  },
+  {
+    name: "@better-webhook/github",
+    href: "https://www.npmjs.com/package/@better-webhook/github",
+  },
+  {
+    name: "@better-webhook/ragie",
+    href: "https://www.npmjs.com/package/@better-webhook/ragie",
+  },
+  {
+    name: "@better-webhook/nextjs",
+    href: "https://www.npmjs.com/package/@better-webhook/nextjs",
+  },
+  {
+    name: "@better-webhook/express",
+    href: "https://www.npmjs.com/package/@better-webhook/express",
+  },
+  {
+    name: "@better-webhook/nestjs",
+    href: "https://www.npmjs.com/package/@better-webhook/nestjs",
+  },
 ];
 
 export function Footer() {
@@ -148,13 +185,19 @@ export function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    target={link.external ? '_blank' : undefined}
-                    rel={link.external ? 'noopener noreferrer' : undefined}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noopener noreferrer" : undefined}
                     className="text-sm text-[var(--lyra-text-secondary)] hover:text-[var(--lyra-text)] transition-colors inline-flex items-center gap-1"
                   >
                     {link.name}
                     {link.external && (
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        className="w-3 h-3"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                         <polyline points="15 3 21 3 21 9" />
                         <line x1="10" y1="14" x2="21" y2="3" />
@@ -190,7 +233,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="border-t border-[var(--lyra-border)] pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[var(--lyra-text-muted)] font-mono">
-            MIT License © {new Date().getFullYear()}{' '}
+            MIT License © {new Date().getFullYear()}{" "}
             <a
               href="https://github.com/endalk200"
               target="_blank"

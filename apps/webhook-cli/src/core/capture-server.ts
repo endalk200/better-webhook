@@ -119,7 +119,7 @@ export class CaptureServer {
           typeof address === "object" ? address?.port || port : port;
         console.log(`\n🎣 Webhook Capture Server`);
         console.log(
-          `   Listening on http://${host === "0.0.0.0" ? "localhost" : host}:${actualPort}`
+          `   Listening on http://${host === "0.0.0.0" ? "localhost" : host}:${actualPort}`,
         );
         console.log(`   📁 Captures saved to: ${this.capturesDir}`);
         console.log(`   💡 Send webhooks to any path to capture them`);
@@ -164,7 +164,7 @@ export class CaptureServer {
    */
   private async handleRequest(
     req: IncomingMessage,
-    res: ServerResponse
+    res: ServerResponse,
   ): Promise<void> {
     // Skip WebSocket upgrade requests
     if (req.headers.upgrade?.toLowerCase() === "websocket") {
@@ -253,7 +253,7 @@ export class CaptureServer {
 
       const providerStr = provider ? ` [${provider}]` : "";
       console.log(
-        `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`
+        `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`,
       );
 
       this.onCapture?.({ file: filename, capture: captured });
@@ -283,7 +283,7 @@ export class CaptureServer {
         id,
         timestamp,
         file: filename,
-      })
+      }),
     );
   }
 
@@ -291,7 +291,7 @@ export class CaptureServer {
    * Detect webhook provider from headers
    */
   private detectProvider(
-    headers: Record<string, string | string[] | undefined>
+    headers: Record<string, string | string[] | undefined>,
   ): WebhookProvider | undefined {
     // Stripe
     if (headers["stripe-signature"]) {
@@ -404,7 +404,7 @@ export class CaptureServer {
     const captures = this.listCaptures(1000);
     return (
       captures.find(
-        (c) => c.capture.id === captureId || c.file.includes(captureId)
+        (c) => c.capture.id === captureId || c.file.includes(captureId),
       ) || null
     );
   }

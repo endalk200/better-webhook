@@ -98,5 +98,3 @@ export type WsMessage =
     }
   | { type: "replay_result"; payload: unknown }
   | { type: "error"; payload: unknown };
-
-

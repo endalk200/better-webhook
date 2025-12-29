@@ -1,42 +1,46 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Copy, Check, ArrowRight, Terminal, Code2 } from 'lucide-react';
-import Link from 'next/link';
+import { useState } from "react";
+import { Copy, Check, ArrowRight, Terminal, Code2 } from "lucide-react";
+import Link from "next/link";
 
-type Tab = 'cli' | 'sdk';
-type Framework = 'nextjs' | 'express' | 'nestjs';
+type Tab = "cli" | "sdk";
+type Framework = "nextjs" | "express" | "nestjs";
 
 const cliSteps = [
   {
     step: 1,
-    title: 'Install the CLI',
-    command: 'npm install -g @better-webhook/cli',
+    title: "Install the CLI",
+    command: "npm install -g @better-webhook/cli",
   },
   {
     step: 2,
-    title: 'Start the dashboard',
-    command: 'better-webhook dashboard',
-    note: 'Opens a local UI at http://localhost:4000 with capture server at port 3001',
+    title: "Start the dashboard",
+    command: "better-webhook dashboard",
+    note: "Opens a local UI at http://localhost:4000 with capture server at port 3001",
   },
   {
     step: 3,
-    title: 'Point webhooks to capture server',
-    command: 'http://localhost:3001/webhooks/github',
-    note: 'Use this URL in your webhook provider settings (e.g., GitHub webhook URL)',
+    title: "Point webhooks to capture server",
+    command: "http://localhost:3001/webhooks/github",
+    note: "Use this URL in your webhook provider settings (e.g., GitHub webhook URL)",
   },
   {
     step: 4,
-    title: 'Replay captured webhooks',
-    command: 'better-webhook replay <capture-id> http://localhost:3000/api/webhooks/github',
-    note: 'Replay to your local development server',
+    title: "Replay captured webhooks",
+    command:
+      "better-webhook replay <capture-id> http://localhost:3000/api/webhooks/github",
+    note: "Replay to your local development server",
   },
 ];
 
-const sdkCode: Record<Framework, { install: string; code: string; filename: string }> = {
+const sdkCode: Record<
+  Framework,
+  { install: string; code: string; filename: string }
+> = {
   nextjs: {
-    install: 'npm install @better-webhook/github @better-webhook/nextjs',
-    filename: 'app/api/webhooks/github/route.ts',
+    install: "npm install @better-webhook/github @better-webhook/nextjs",
+    filename: "app/api/webhooks/github/route.ts",
     code: `import { github } from "@better-webhook/github";
 import { toNextJS } from "@better-webhook/nextjs";
 
@@ -53,8 +57,8 @@ const webhook = github()
 export const POST = toNextJS(webhook);`,
   },
   express: {
-    install: 'npm install @better-webhook/github @better-webhook/express',
-    filename: 'src/webhooks.ts',
+    install: "npm install @better-webhook/github @better-webhook/express",
+    filename: "src/webhooks.ts",
     code: `import express from "express";
 import { github } from "@better-webhook/github";
 import { toExpress } from "@better-webhook/express";
@@ -73,8 +77,8 @@ app.post(
 );`,
   },
   nestjs: {
-    install: 'npm install @better-webhook/github @better-webhook/nestjs',
-    filename: 'src/webhooks.controller.ts',
+    install: "npm install @better-webhook/github @better-webhook/nestjs",
+    filename: "src/webhooks.controller.ts",
     code: `import { Controller, Post, Req, Res } from "@nestjs/common";
 import { github } from "@better-webhook/github";
 import { toNestJS } from "@better-webhook/nestjs";
@@ -96,14 +100,14 @@ export class WebhooksController {
 };
 
 const frameworks: { id: Framework; name: string }[] = [
-  { id: 'nextjs', name: 'Next.js' },
-  { id: 'express', name: 'Express' },
-  { id: 'nestjs', name: 'NestJS' },
+  { id: "nextjs", name: "Next.js" },
+  { id: "express", name: "Express" },
+  { id: "nestjs", name: "NestJS" },
 ];
 
 export function QuickStart() {
-  const [activeTab, setActiveTab] = useState<Tab>('cli');
-  const [activeFramework, setActiveFramework] = useState<Framework>('nextjs');
+  const [activeTab, setActiveTab] = useState<Tab>("cli");
+  const [activeFramework, setActiveFramework] = useState<Framework>("nextjs");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const copyToClipboard = async (text: string, index: number) => {
@@ -123,8 +127,8 @@ export function QuickStart() {
             Get started in <span className="gradient-text">minutes</span>
           </h2>
           <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
-            Choose how you want to work with webhooks - capture and replay with the CLI,
-            or build type-safe handlers with the SDK.
+            Choose how you want to work with webhooks - capture and replay with
+            the CLI, or build type-safe handlers with the SDK.
           </p>
         </div>
 
@@ -132,15 +136,15 @@ export function QuickStart() {
         <div className="flex justify-center mb-12">
           <div className="lyra-tabs">
             <button
-              onClick={() => setActiveTab('cli')}
-              className={`lyra-tab ${activeTab === 'cli' ? 'active' : ''}`}
+              onClick={() => setActiveTab("cli")}
+              className={`lyra-tab ${activeTab === "cli" ? "active" : ""}`}
             >
               <Terminal className="w-3.5 h-3.5 inline-block mr-2" />
               CLI
             </button>
             <button
-              onClick={() => setActiveTab('sdk')}
-              className={`lyra-tab ${activeTab === 'sdk' ? 'active' : ''}`}
+              onClick={() => setActiveTab("sdk")}
+              className={`lyra-tab ${activeTab === "sdk" ? "active" : ""}`}
             >
               <Code2 className="w-3.5 h-3.5 inline-block mr-2" />
               SDK
@@ -148,7 +152,7 @@ export function QuickStart() {
           </div>
         </div>
 
-        {activeTab === 'cli' ? (
+        {activeTab === "cli" ? (
           /* CLI Steps */
           <div className="space-y-6">
             {cliSteps.map((item, index) => (
@@ -157,10 +161,12 @@ export function QuickStart() {
                   {item.step}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold font-mono mb-2 text-white">{item.title}</h3>
+                  <h3 className="font-semibold font-mono mb-2 text-white">
+                    {item.title}
+                  </h3>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
-                      <span className="text-[var(--lyra-accent)]">$</span>{' '}
+                      <span className="text-[var(--lyra-accent)]">$</span>{" "}
                       <span className="text-white">{item.command}</span>
                     </code>
                     <button
@@ -176,7 +182,9 @@ export function QuickStart() {
                     </button>
                   </div>
                   {item.note && (
-                    <p className="mt-2 text-sm text-[var(--lyra-text-muted)]">{item.note}</p>
+                    <p className="mt-2 text-sm text-[var(--lyra-text-muted)]">
+                      {item.note}
+                    </p>
                   )}
                 </div>
               </div>
@@ -202,7 +210,7 @@ export function QuickStart() {
                   <button
                     key={framework.id}
                     onClick={() => setActiveFramework(framework.id)}
-                    className={`lyra-tab ${activeFramework === framework.id ? 'active' : ''}`}
+                    className={`lyra-tab ${activeFramework === framework.id ? "active" : ""}`}
                   >
                     {framework.name}
                   </button>
@@ -216,10 +224,12 @@ export function QuickStart() {
                 1
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">Install packages</h3>
+                <h3 className="font-semibold font-mono mb-2 text-white">
+                  Install packages
+                </h3>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
-                    <span className="text-[var(--lyra-accent)]">$</span>{' '}
+                    <span className="text-[var(--lyra-accent)]">$</span>{" "}
                     <span className="text-white">{current.install}</span>
                   </code>
                   <button
@@ -243,7 +253,9 @@ export function QuickStart() {
                 2
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">Create webhook handler</h3>
+                <h3 className="font-semibold font-mono mb-2 text-white">
+                  Create webhook handler
+                </h3>
                 <div className="lyra-code-block">
                   <div className="lyra-code-header">
                     <div className="lyra-code-dot lyra-code-dot-red" />
@@ -266,7 +278,11 @@ export function QuickStart() {
                   </div>
                   <div className="lyra-code-body overflow-x-auto max-h-[400px]">
                     <pre className="font-mono text-sm leading-relaxed">
-                      <code dangerouslySetInnerHTML={{ __html: highlightCode(current.code) }} />
+                      <code
+                        dangerouslySetInnerHTML={{
+                          __html: highlightCode(current.code),
+                        }}
+                      />
                     </pre>
                   </div>
                 </div>
@@ -279,15 +295,19 @@ export function QuickStart() {
                 3
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">Set webhook secret</h3>
+                <h3 className="font-semibold font-mono mb-2 text-white">
+                  Set webhook secret
+                </h3>
                 <code className="block px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm">
                   <span className="text-[var(--lyra-text-muted)]"># .env</span>
                   <br />
-                  <span className="text-white">GITHUB_WEBHOOK_SECRET=your_webhook_secret</span>
+                  <span className="text-white">
+                    GITHUB_WEBHOOK_SECRET=your_webhook_secret
+                  </span>
                 </code>
                 <p className="mt-3 text-sm text-[var(--lyra-text-secondary)]">
-                  Done! Your webhook endpoint has automatic signature verification
-                  and full TypeScript support.
+                  Done! Your webhook endpoint has automatic signature
+                  verification and full TypeScript support.
                 </p>
               </div>
             </div>
@@ -310,36 +330,45 @@ export function QuickStart() {
 
 function highlightCode(code: string): string {
   let result = code
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
   // Strings
   result = result.replace(
     /("[^"]*"|'[^']*'|`[^`]*`)/g,
-    '<span style="color: var(--lyra-warning)">$1</span>'
+    '<span style="color: var(--lyra-warning)">$1</span>',
   );
 
   // Comments
   result = result.replace(
     /(\/\/.*$)/gm,
-    '<span style="color: var(--lyra-text-muted)">$1</span>'
+    '<span style="color: var(--lyra-text-muted)">$1</span>',
   );
 
   // Keywords
-  const keywords = ['import', 'from', 'const', 'async', 'await', 'if', 'export', 'return'];
+  const keywords = [
+    "import",
+    "from",
+    "const",
+    "async",
+    "await",
+    "if",
+    "export",
+    "return",
+  ];
   keywords.forEach((kw) => {
-    const regex = new RegExp(`\\b(${kw})\\b`, 'g');
+    const regex = new RegExp(`\\b(${kw})\\b`, "g");
     result = result.replace(
       regex,
-      '<span style="color: var(--lyra-primary)">$1</span>'
+      '<span style="color: var(--lyra-primary)">$1</span>',
     );
   });
 
   // Decorators (NestJS)
   result = result.replace(
     /(@\w+)/g,
-    '<span style="color: var(--lyra-accent)">$1</span>'
+    '<span style="color: var(--lyra-accent)">$1</span>',
   );
 
   return result;

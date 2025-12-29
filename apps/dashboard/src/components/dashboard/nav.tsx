@@ -20,5 +20,3 @@ export const navItems: NavItem[] = [
   { key: "run", label: "Run", icon: <PaperPlaneTiltIcon /> },
   { key: "settings", label: "Settings", icon: <GearIcon /> },
 ];
-
-

@@ -27,5 +27,3 @@ export function connectDashboardWs(args: {
 
   return ws;
 }
-
-

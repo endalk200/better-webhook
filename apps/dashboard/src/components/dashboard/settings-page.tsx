@@ -1,8 +1,19 @@
 import * as React from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export function SettingsPage(props: {
@@ -48,7 +59,8 @@ export function SettingsPage(props: {
               <Field>
                 <FieldLabel>Capture server</FieldLabel>
                 <div className="text-muted-foreground text-xs">
-                  Send webhooks to: <span className="text-foreground">{props.captureUrl}</span>
+                  Send webhooks to:{" "}
+                  <span className="text-foreground">{props.captureUrl}</span>
                 </div>
               </Field>
             )}
@@ -68,20 +80,27 @@ export function SettingsPage(props: {
             <Field>
               <FieldLabel>Same-origin API</FieldLabel>
               <FieldDescription>
-                The dashboard UI uses relative paths (e.g. <span className="text-foreground">/api/captures</span>) so it works when served from the CLI.
+                The dashboard UI uses relative paths (e.g.{" "}
+                <span className="text-foreground">/api/captures</span>) so it
+                works when served from the CLI.
               </FieldDescription>
             </Field>
             <Field>
               <FieldLabel>Security</FieldLabel>
               <FieldDescription>
-                Keep the dashboard on <span className="text-foreground">localhost</span> unless you trust your network. The API can send requests to arbitrary URLs (run/replay).
+                Keep the dashboard on{" "}
+                <span className="text-foreground">localhost</span> unless you
+                trust your network. The API can send requests to arbitrary URLs
+                (run/replay).
               </FieldDescription>
             </Field>
             <Field>
               <FieldLabel>Default app target</FieldLabel>
               <Input disabled value="http://localhost:3000" />
               <FieldDescription>
-                Replay defaults to <span className="text-foreground">localhost:3000</span> + captured path.
+                Replay defaults to{" "}
+                <span className="text-foreground">localhost:3000</span> +
+                captured path.
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -90,5 +109,3 @@ export function SettingsPage(props: {
     </div>
   );
 }
-
-

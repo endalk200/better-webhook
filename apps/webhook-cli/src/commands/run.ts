@@ -45,7 +45,7 @@ export const run = new Command()
         { key: key.trim(), value: headerValue.trim() },
       ]);
     },
-    [] as HeaderEntry[]
+    [] as HeaderEntry[],
   )
   .option("-v, --verbose", "Show detailed request/response information")
   .action(
@@ -56,7 +56,7 @@ export const run = new Command()
         secret?: string;
         header?: HeaderEntry[];
         verbose?: boolean;
-      }
+      },
     ) => {
       const manager = getTemplateManager();
 
@@ -73,8 +73,8 @@ export const run = new Command()
             console.log(chalk.yellow("\n📭 No templates available."));
             console.log(
               chalk.gray(
-                "   Download templates with: better-webhook templates download\n"
-              )
+                "   Download templates with: better-webhook templates download\n",
+              ),
             );
             return;
           }
@@ -150,8 +150,8 @@ export const run = new Command()
           chalk.gray(
             "   Download it with: better-webhook templates download " +
               templateId +
-              "\n"
-          )
+              "\n",
+          ),
         );
         process.exitCode = 1;
         return;
@@ -172,7 +172,7 @@ export const run = new Command()
       console.log(chalk.bold("\n🚀 Executing Webhook\n"));
       console.log(chalk.gray(`   Template: ${templateId}`));
       console.log(
-        chalk.gray(`   Provider: ${localTemplate.metadata.provider}`)
+        chalk.gray(`   Provider: ${localTemplate.metadata.provider}`),
       );
       console.log(chalk.gray(`   Event: ${localTemplate.metadata.event}`));
       console.log(chalk.gray(`   Target: ${targetUrl}`));
@@ -181,8 +181,8 @@ export const run = new Command()
       } else {
         console.log(
           chalk.yellow(
-            `   ⚠️  No secret provided - signature will not be generated`
-          )
+            `   ⚠️  No secret provided - signature will not be generated`,
+          ),
         );
       }
       console.log();
@@ -209,7 +209,7 @@ export const run = new Command()
 
         console.log(chalk.bold("📥 Response\n"));
         console.log(
-          `   Status: ${statusColor(`${result.status} ${result.statusText}`)}`
+          `   Status: ${statusColor(`${result.status} ${result.statusText}`)}`,
         );
         console.log(`   Duration: ${chalk.cyan(`${result.duration}ms`)}`);
 
@@ -228,8 +228,8 @@ export const run = new Command()
               JSON.stringify(result.json, null, 2)
                 .split("\n")
                 .map((l) => `     ${l}`)
-                .join("\n")
-            )
+                .join("\n"),
+            ),
           );
         } else if (result.bodyText) {
           console.log(chalk.bold("\n   Body:"));
@@ -246,7 +246,7 @@ export const run = new Command()
           console.log(chalk.green("✓ Webhook delivered successfully\n"));
         } else {
           console.log(
-            chalk.yellow(`⚠ Webhook delivered with status ${result.status}\n`)
+            chalk.yellow(`⚠ Webhook delivered with status ${result.status}\n`),
           );
         }
       } catch (error: any) {
@@ -254,5 +254,5 @@ export const run = new Command()
         console.error(chalk.red(`\n❌ ${error.message}\n`));
         process.exitCode = 1;
       }
-    }
+    },
   );

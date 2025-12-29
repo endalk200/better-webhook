@@ -13,7 +13,7 @@ import type {
 export function generateStripeSignature(
   payload: string,
   secret: string,
-  timestamp?: number
+  timestamp?: number,
 ): GeneratedSignature {
   const ts = timestamp || Math.floor(Date.now() / 1000);
   const signedPayload = `${ts}.${payload}`;
@@ -34,7 +34,7 @@ export function generateStripeSignature(
  */
 export function generateGitHubSignature(
   payload: string,
-  secret: string
+  secret: string,
 ): GeneratedSignature {
   const signature = createHmac("sha256", secret).update(payload).digest("hex");
 
@@ -50,7 +50,7 @@ export function generateGitHubSignature(
  */
 export function generateShopifySignature(
   payload: string,
-  secret: string
+  secret: string,
 ): GeneratedSignature {
   const signature = createHmac("sha256", secret)
     .update(payload)
@@ -69,7 +69,7 @@ export function generateShopifySignature(
 export function generateTwilioSignature(
   payload: string,
   secret: string,
-  url: string
+  url: string,
 ): GeneratedSignature {
   // Twilio signature is based on URL + sorted POST params
   const signatureInput = url + payload;
@@ -91,7 +91,7 @@ export function generateTwilioSignature(
 export function generateSlackSignature(
   payload: string,
   secret: string,
-  timestamp?: number
+  timestamp?: number,
 ): GeneratedSignature {
   const ts = timestamp || Math.floor(Date.now() / 1000);
   const signatureBaseString = `v0:${ts}:${payload}`;
@@ -111,7 +111,7 @@ export function generateSlackSignature(
  */
 export function generateLinearSignature(
   payload: string,
-  secret: string
+  secret: string,
 ): GeneratedSignature {
   const signature = createHmac("sha256", secret).update(payload).digest("hex");
 
@@ -129,7 +129,7 @@ export function generateClerkSignature(
   payload: string,
   secret: string,
   timestamp?: number,
-  webhookId?: string
+  webhookId?: string,
 ): GeneratedSignature {
   const ts = timestamp || Math.floor(Date.now() / 1000);
   const msgId = webhookId || `msg_${Date.now()}`;
@@ -152,7 +152,7 @@ export function generateClerkSignature(
 export function generateSendGridSignature(
   payload: string,
   secret: string,
-  timestamp?: number
+  timestamp?: number,
 ): GeneratedSignature {
   const ts = timestamp || Math.floor(Date.now() / 1000);
   const signedPayload = `${ts}${payload}`;
@@ -173,7 +173,7 @@ export function generateSendGridSignature(
  */
 export function generateRagieSignature(
   payload: string,
-  secret: string
+  secret: string,
 ): GeneratedSignature {
   const signature = createHmac("sha256", secret).update(payload).digest("hex");
 
@@ -190,7 +190,7 @@ export function generateSignature(
   provider: WebhookProvider,
   payload: string,
   secret: string,
-  options?: { timestamp?: number; url?: string; webhookId?: string }
+  options?: { timestamp?: number; url?: string; webhookId?: string },
 ): GeneratedSignature | null {
   const timestamp = options?.timestamp;
 
@@ -215,7 +215,7 @@ export function generateSignature(
         payload,
         secret,
         timestamp,
-        options?.webhookId
+        options?.webhookId,
       );
     case "sendgrid":
       return generateSendGridSignature(payload, secret, timestamp);
@@ -233,7 +233,7 @@ export function generateSignature(
  */
 export function getProviderHeaders(
   provider: WebhookProvider,
-  options?: { timestamp?: number; webhookId?: string; event?: string }
+  options?: { timestamp?: number; webhookId?: string; event?: string },
 ): HeaderEntry[] {
   const headers: HeaderEntry[] = [];
   const timestamp = options?.timestamp || Math.floor(Date.now() / 1000);
@@ -245,7 +245,7 @@ export function getProviderHeaders(
         {
           key: "User-Agent",
           value: "Stripe/1.0 (+https://stripe.com/docs/webhooks)",
-        }
+        },
       );
       break;
 
@@ -257,7 +257,7 @@ export function getProviderHeaders(
         {
           key: "X-GitHub-Delivery",
           value: options?.webhookId || generateDeliveryId(),
-        }
+        },
       );
       break;
 
@@ -266,14 +266,14 @@ export function getProviderHeaders(
         { key: "Content-Type", value: "application/json" },
         { key: "X-Shopify-Topic", value: options?.event || "orders/create" },
         { key: "X-Shopify-Shop-Domain", value: "example.myshopify.com" },
-        { key: "X-Shopify-API-Version", value: "2024-01" }
+        { key: "X-Shopify-API-Version", value: "2024-01" },
       );
       break;
 
     case "slack":
       headers.push(
         { key: "Content-Type", value: "application/json" },
-        { key: "X-Slack-Request-Timestamp", value: String(timestamp) }
+        { key: "X-Slack-Request-Timestamp", value: String(timestamp) },
       );
       break;
 
@@ -281,7 +281,7 @@ export function getProviderHeaders(
       headers.push(
         { key: "Content-Type", value: "application/json" },
         { key: "Svix-Id", value: options?.webhookId || `msg_${Date.now()}` },
-        { key: "Svix-Timestamp", value: String(timestamp) }
+        { key: "Svix-Timestamp", value: String(timestamp) },
       );
       break;
 
@@ -291,7 +291,7 @@ export function getProviderHeaders(
         {
           key: "X-Twilio-Email-Event-Webhook-Timestamp",
           value: String(timestamp),
-        }
+        },
       );
       break;
 
@@ -308,14 +308,14 @@ export function getProviderHeaders(
         {
           key: "Linear-Delivery",
           value: options?.webhookId || generateDeliveryId(),
-        }
+        },
       );
       break;
 
     case "discord":
       headers.push(
         { key: "Content-Type", value: "application/json" },
-        { key: "User-Agent", value: "Discord-Webhook/1.0" }
+        { key: "User-Agent", value: "Discord-Webhook/1.0" },
       );
       break;
 
@@ -329,7 +329,7 @@ export function getProviderHeaders(
         {
           key: "X-Ragie-Delivery",
           value: options?.webhookId || generateDeliveryId(),
-        }
+        },
       );
       break;
 
@@ -364,7 +364,7 @@ export function verifySignature(
   payload: string,
   signature: string,
   secret: string,
-  options?: { timestamp?: number; url?: string }
+  options?: { timestamp?: number; url?: string },
 ): boolean {
   const generated = generateSignature(provider, payload, secret, options);
   if (!generated) {
