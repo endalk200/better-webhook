@@ -61,14 +61,26 @@ export interface Provider<
   /** Optional default secret (can be overridden by adapters) */
   readonly secret?: string;
 
-  /** Extract event type from headers */
-  getEventType(headers: Headers): string | undefined;
+  /**
+   * Extract event type from headers or body
+   * @param headers - Normalized headers from the webhook request
+   * @param body - Optional parsed JSON body (for providers that include event type in body)
+   */
+  getEventType(headers: Headers, body?: unknown): string | undefined;
 
   /** Extract delivery ID from headers */
   getDeliveryId(headers: Headers): string | undefined;
 
   /** Verify signature of the payload */
   verify(rawBody: string | Buffer, headers: Headers, secret: string): boolean;
+
+  /**
+   * Optional: Extract the actual payload from the body
+   * Useful for providers that wrap payloads in an envelope structure
+   * (e.g., Ragie's {type, payload, nonce} format)
+   * If not provided, the entire body is used as the payload
+   */
+  getPayload?(body: unknown): unknown;
 }
 
 // ============================================================================
@@ -95,8 +107,12 @@ export interface ProviderConfig<
   /** Optional default secret */
   secret?: string;
 
-  /** Extract event type from headers */
-  getEventType: (headers: Headers) => string | undefined;
+  /**
+   * Extract event type from headers or body
+   * @param headers - Normalized headers from the webhook request
+   * @param body - Optional parsed JSON body (for providers that include event type in body)
+   */
+  getEventType: (headers: Headers, body?: unknown) => string | undefined;
 
   /** Extract delivery ID from headers (optional, defaults to undefined) */
   getDeliveryId?: (headers: Headers) => string | undefined;
@@ -110,6 +126,14 @@ export interface ProviderConfig<
     headers: Headers,
     secret: string
   ) => boolean;
+
+  /**
+   * Optional: Extract the actual payload from the body
+   * Useful for providers that wrap payloads in an envelope structure
+   * (e.g., Ragie's {type, payload, nonce} format)
+   * If not provided, the entire body is used as the payload
+   */
+  getPayload?: (body: unknown) => unknown;
 }
 
 /**
@@ -388,6 +412,7 @@ export function createProvider<
     getEventType,
     getDeliveryId = () => undefined,
     verify = () => true, // Skip verification if not provided
+    getPayload,
   } = config;
 
   return {
@@ -397,6 +422,7 @@ export function createProvider<
     getEventType,
     getDeliveryId,
     verify,
+    getPayload,
   };
 }
 
@@ -539,8 +565,23 @@ export class WebhookBuilder<
     // Normalize headers to lowercase
     const headers = normalizeHeaders(options.headers);
 
-    // Get event type
-    const eventType = this.provider.getEventType(headers);
+    // Convert raw body to string for consistent handling
+    const bodyString =
+      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
+
+    // Parse JSON body early (needed for getEventType and getPayload)
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(bodyString);
+    } catch {
+      return {
+        status: 400,
+        body: { ok: false, error: "Invalid JSON body" },
+      };
+    }
+
+    // Get event type (pass parsed body for providers that extract type from body)
+    const eventType = this.provider.getEventType(headers, parsedBody);
     const deliveryId = this.provider.getDeliveryId(headers);
 
     // No event type or no handlers for this event → 204
@@ -574,25 +615,18 @@ export class WebhookBuilder<
       }
     }
 
-    // Parse JSON body
-    let parsedBody: unknown;
-    try {
-      const bodyString =
-        typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
-      parsedBody = JSON.parse(bodyString);
-    } catch {
-      return {
-        status: 400,
-        body: { ok: false, error: "Invalid JSON body" },
-      };
-    }
+    // Extract payload from body (for providers with envelope structures like Ragie)
+    // If getPayload is not defined, use the entire parsed body
+    const payloadToValidate = this.provider.getPayload
+      ? this.provider.getPayload(parsedBody)
+      : parsedBody;
 
     // Validate against schema
     const schema = this.provider.schemas[eventType];
     let payload: unknown;
 
     if (schema) {
-      const result = schema.safeParse(parsedBody);
+      const result = schema.safeParse(payloadToValidate);
       if (!result.success) {
         const zodError = result.error as ZodError;
 
@@ -601,7 +635,7 @@ export class WebhookBuilder<
             await this.errorHandler(zodError, {
               eventType,
               deliveryId,
-              payload: parsedBody,
+              payload: payloadToValidate,
             });
           } catch {
             // Ignore errors from error handler
@@ -615,13 +649,10 @@ export class WebhookBuilder<
       }
       payload = result.data;
     } else {
-      payload = parsedBody;
+      payload = payloadToValidate;
     }
 
     // Build handler context
-    const bodyString =
-      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
-
     const handlerContext: HandlerContext = {
       eventType,
       provider: this.provider.name,
