@@ -11,7 +11,7 @@ import {
   Check,
 } from "lucide-react";
 
-type Framework = "nextjs" | "express" | "nestjs";
+type Framework = "nextjs" | "express" | "nestjs" | "gcp-functions";
 type Provider = "github" | "ragie";
 
 const frameworkCode: Record<
@@ -92,6 +92,31 @@ export class WebhooksController {
   }
 }`,
   },
+  "gcp-functions": {
+    install: "npm install @better-webhook/ragie @better-webhook/gcp-functions",
+    filename: "index.ts",
+    code: `import { http } from "@google-cloud/functions-framework";
+import { ragie } from "@better-webhook/ragie";
+import { toGCPFunction } from "@better-webhook/gcp-functions";
+
+const webhook = ragie()
+  .event("document_status_updated", async (payload) => {
+    // Fully typed - payload.document_id, payload.status, etc.
+    console.log(\`Document \${payload.document_id} is now \${payload.status}\`);
+    
+    if (payload.status === "ready") {
+      await notifyDocumentReady(payload.document_id);
+    }
+  })
+  .event("connection_sync_finished", async (payload) => {
+    console.log(\`Sync \${payload.sync_id} completed\`);
+  })
+  .onError((error, context) => {
+    console.error(\`Error in \${context.eventType}\`, error);
+  });
+
+http("webhookHandler", toGCPFunction(webhook));`,
+  },
 };
 
 const providerInfo: Record<
@@ -140,7 +165,7 @@ const sdkFeatures = [
     icon: Layers,
     title: "Framework Adapters",
     description:
-      "First-class support for Next.js App Router, Express middleware, and NestJS controllers.",
+      "First-class support for Next.js, Express, NestJS, and GCP Cloud Functions.",
   },
 ];
 
@@ -202,7 +227,9 @@ export function SDKSection() {
         {/* Framework Tabs */}
         <div className="flex justify-center mb-8">
           <div className="lyra-tabs">
-            {(["nextjs", "express", "nestjs"] as Framework[]).map((fw) => (
+            {(
+              ["nextjs", "express", "nestjs", "gcp-functions"] as Framework[]
+            ).map((fw) => (
               <button
                 key={fw}
                 onClick={() => setActiveFramework(fw)}
@@ -212,7 +239,9 @@ export function SDKSection() {
                   ? "Next.js"
                   : fw === "express"
                     ? "Express"
-                    : "NestJS"}
+                    : fw === "nestjs"
+                      ? "NestJS"
+                      : "GCP Functions"}
               </button>
             ))}
           </div>

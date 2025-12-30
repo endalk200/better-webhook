@@ -51,7 +51,7 @@ const features = [
     icon: Layers,
     title: "Framework Adapters",
     description:
-      "First-class integrations for Next.js App Router, Express middleware, and NestJS controllers.",
+      "First-class integrations for Next.js, Express, NestJS, and GCP Cloud Functions.",
     badge: "SDK",
   },
   {
