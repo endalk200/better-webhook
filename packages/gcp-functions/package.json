@@ -1,0 +1,72 @@
+{
+  "name": "@better-webhook/gcp-functions",
+  "version": "0.2.0",
+  "description": "GCP Cloud Functions integration for better-webhook",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo",
+    "prepublishOnly": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "webhook",
+    "gcp",
+    "google-cloud",
+    "cloud-functions",
+    "serverless",
+    "webhook-handler",
+    "http"
+  ],
+  "license": "MIT",
+  "author": "Endalk <endalk200>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git",
+    "directory": "packages/gcp-functions"
+  },
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@better-webhook/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@google-cloud/functions-framework": "^3.0.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@better-webhook/typescript-config": "workspace:*",
+    "@google-cloud/functions-framework": "^4.0.1",
+    "@types/node": "^24.3.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16",
+    "zod": "^4.0.0"
+  }
+}
