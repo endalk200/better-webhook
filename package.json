@@ -2,8 +2,9 @@
   "name": "better-webhook",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:docs": "turbo run dev --filter=@better-webhook/docs",
+    "build": "turbo run build",
     "lint": "turbo run lint",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx,md}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx,md}\" --cache",
