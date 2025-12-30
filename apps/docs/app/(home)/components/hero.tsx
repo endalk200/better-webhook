@@ -171,7 +171,7 @@ export function Hero() {
               </div>
               <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
                 <div className="text-2xl font-bold font-mono text-[var(--lyra-accent)]">
-                  3
+                  4
                 </div>
                 <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
                   Adapters

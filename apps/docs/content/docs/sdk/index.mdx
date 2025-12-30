@@ -12,28 +12,72 @@ import { Callout } from "fumadocs-ui/components/callout";
 The Better Webhook SDK provides type-safe webhook handlers with automatic signature verification. It consists of:
 
 - **Provider packages** — Type definitions and schemas for webhook sources (GitHub, Ragie)
-- **Adapter packages** — Framework integrations (Next.js, Express, NestJS)
+- **Adapter packages** — Framework integrations (Next.js, Express, NestJS, GCP Cloud Functions)
 - **Core package** — Base functionality for custom providers
 
 ## Installation
 
 Install a provider and an adapter for your framework:
 
-<Tabs items={["Next.js", "Express", "NestJS"]}>
+<Tabs items={["Next.js", "Express", "NestJS", "GCP Cloud Functions"]}>
   <Tab value="Next.js">
-    ```bash npm install @better-webhook/github @better-webhook/nextjs ```
+    <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+      <Tab value="npm">
+        ```bash npm install @better-webhook/github @better-webhook/nextjs ```
+      </Tab>
+      <Tab value="pnpm">
+        ```bash pnpm add @better-webhook/github @better-webhook/nextjs ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash yarn add @better-webhook/github @better-webhook/nextjs ```
+      </Tab>
+    </Tabs>
   </Tab>
   <Tab value="Express">
-    ```bash npm install @better-webhook/github @better-webhook/express ```
+    <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+      <Tab value="npm">
+        ```bash npm install @better-webhook/github @better-webhook/express ```
+      </Tab>
+      <Tab value="pnpm">
+        ```bash pnpm add @better-webhook/github @better-webhook/express ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash yarn add @better-webhook/github @better-webhook/express ```
+      </Tab>
+    </Tabs>
   </Tab>
   <Tab value="NestJS">
-    ```bash npm install @better-webhook/github @better-webhook/nestjs ```
+    <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+      <Tab value="npm">
+        ```bash npm install @better-webhook/github @better-webhook/nestjs ```
+      </Tab>
+      <Tab value="pnpm">
+        ```bash pnpm add @better-webhook/github @better-webhook/nestjs ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash yarn add @better-webhook/github @better-webhook/nestjs ```
+      </Tab>
+    </Tabs>
+  </Tab>
+  <Tab value="GCP Cloud Functions">
+    <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+      <Tab value="npm">
+        ```bash npm install @better-webhook/ragie @better-webhook/gcp-functions
+        ```
+      </Tab>
+      <Tab value="pnpm">
+        ```bash pnpm add @better-webhook/ragie @better-webhook/gcp-functions ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash yarn add @better-webhook/ragie @better-webhook/gcp-functions ```
+      </Tab>
+    </Tabs>
   </Tab>
 </Tabs>
 
 ## Quick Example
 
-<Tabs items={['Next.js', 'Express', 'NestJS']}>
+<Tabs items={['Next.js', 'Express', 'NestJS', 'GCP Cloud Functions']}>
   <Tab value="Next.js">
     ```ts title="app/api/webhooks/github/route.ts"
     import { github } from "@better-webhook/github";
@@ -102,6 +146,25 @@ Install a provider and an adapter for your framework:
     ```
 
   </Tab>
+  <Tab value="GCP Cloud Functions">
+    ```ts title="index.ts"
+    import { http } from "@google-cloud/functions-framework";
+    import { ragie } from "@better-webhook/ragie";
+    import { toGCPFunction } from "@better-webhook/gcp-functions";
+
+    const webhook = ragie()
+      .event("document_status_updated", async (payload) => {
+        // payload is fully typed!
+        console.log(`Document ${payload.document_id} is now ${payload.status}`);
+      })
+      .event("connection_sync_finished", async (payload) => {
+        console.log(`Sync ${payload.sync_id} completed`);
+      });
+
+    http("webhookHandler", toGCPFunction(webhook));
+    ```
+
+  </Tab>
 </Tabs>
 
 ## How It Works
@@ -153,6 +216,9 @@ Install a provider and an adapter for your framework:
 
     // NestJS
     const result = await toNestJS(this.webhook)(req);
+
+    // GCP Cloud Functions
+    http("webhookHandler", toGCPFunction(webhook));
     ```
 
   </Step>

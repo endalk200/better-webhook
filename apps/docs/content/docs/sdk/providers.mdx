@@ -12,9 +12,11 @@ Providers define the webhook source, including event types, payload schemas, and
 
 ## GitHub
 
-```bash
-npm install @better-webhook/github
-```
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">```bash npm install @better-webhook/github ```</Tab>
+  <Tab value="pnpm">```bash pnpm add @better-webhook/github ```</Tab>
+  <Tab value="yarn">```bash yarn add @better-webhook/github ```</Tab>
+</Tabs>
 
 ```ts
 import { github } from "@better-webhook/github";
@@ -23,7 +25,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
   "push",
   async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
-  }
+  },
 );
 ```
 
@@ -141,9 +143,11 @@ GitHub uses HMAC-SHA256 signatures sent in the `X-Hub-Signature-256` header. The
 
 ## Ragie
 
-```bash
-npm install @better-webhook/ragie
-```
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">```bash npm install @better-webhook/ragie ```</Tab>
+  <Tab value="pnpm">```bash pnpm add @better-webhook/ragie ```</Tab>
+  <Tab value="yarn">```bash yarn add @better-webhook/ragie ```</Tab>
+</Tabs>
 
 ```ts
 import { ragie } from "@better-webhook/ragie";
@@ -152,7 +156,7 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
   "document_status_updated",
   async (payload) => {
     console.log(`Document ${payload.document_id} is now ${payload.status}`);
-  }
+  },
 );
 ```
 

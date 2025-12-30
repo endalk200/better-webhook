@@ -4,6 +4,7 @@ description: Install the Better Webhook CLI and start capturing, replaying, and 
 ---
 
 import { Steps, Step } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
 # CLI Getting Started
@@ -14,9 +15,11 @@ The Better Webhook CLI is a local development tool for capturing, replaying, and
 
 Install the CLI globally:
 
-```bash
-npm install -g @better-webhook/cli
-```
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">```bash npm install -g @better-webhook/cli ```</Tab>
+  <Tab value="pnpm">```bash pnpm add -g @better-webhook/cli ```</Tab>
+  <Tab value="yarn">```bash yarn global add @better-webhook/cli ```</Tab>
+</Tabs>
 
 Verify the installation:
 
