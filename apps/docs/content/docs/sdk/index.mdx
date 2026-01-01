@@ -271,6 +271,66 @@ const webhook = github()
   });
 ```
 
+## Observability
+
+Add metrics, logging, and tracing to your webhook handlers with the built-in observer API:
+
+```ts
+import { github } from "@better-webhook/github";
+import { createWebhookStats } from "@better-webhook/core";
+import { toNextJS } from "@better-webhook/nextjs";
+
+// Built-in stats collector
+const stats = createWebhookStats();
+
+const webhook = github()
+  .observe(stats.observer)
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
+
+export const POST = toNextJS(webhook);
+
+// Access stats anytime
+console.log(stats.snapshot());
+// { totalRequests: 150, successCount: 145, errorCount: 5, ... }
+```
+
+### Custom Observers
+
+Create custom observers to integrate with your metrics infrastructure:
+
+```ts
+import { type WebhookObserver } from "@better-webhook/core";
+
+const metricsObserver: WebhookObserver = {
+  onCompleted: (event) => {
+    metrics.histogram("webhook_duration_ms", event.durationMs, {
+      provider: event.provider,
+      eventType: event.eventType,
+      status: String(event.status),
+    });
+  },
+  onHandlerFailed: (event) => {
+    logger.error("Webhook handler failed", {
+      error: event.error.message,
+      provider: event.provider,
+      eventType: event.eventType,
+    });
+  },
+};
+
+const webhook = github().observe(metricsObserver).event("push", handler);
+```
+
+You can also add observers at the adapter level:
+
+```ts
+export const POST = toNextJS(webhook, {
+  observer: metricsObserver,
+});
+```
+
 ## Next Steps
 
 - [Providers](/docs/sdk/providers) — GitHub and Ragie provider documentation with all supported events
