@@ -63,9 +63,9 @@ const webhook = ragie()
   })
   .event("connection_sync_finished", async (payload) => {
     console.log(`Sync ${payload.sync_id} complete!`);
-    console.log(`Created: ${payload.total_creates_count}`);
-    console.log(`Updated: ${payload.total_contents_updates_count}`);
-    console.log(`Deleted: ${payload.total_deletes_count}`);
+    console.log(`Connection: ${payload.connection_id}`);
+    console.log(`Partition: ${payload.partition}`);
+    console.log(`Nonce: ${payload.nonce}`);
   });
 
 export const POST = toNextJS(webhook);
@@ -86,14 +86,14 @@ const webhook = ragie()
   })
   .event("connection_sync_started", async (payload) => {
     console.log(
-      `Sync ${payload.sync_id} started for connection ${payload.connection_id}`,
+      `Sync ${payload.sync_id} started for connection ${payload.connection_id}`
     );
   });
 
 app.post(
   "/webhooks/ragie",
   express.raw({ type: "application/json" }),
-  toExpress(webhook),
+  toExpress(webhook)
 );
 
 app.listen(3000);
@@ -185,6 +185,7 @@ ragie()
     console.log(`📥 Sync started for connection ${payload.connection_id}`);
     console.log(`Sync ID: ${payload.sync_id}`);
     console.log(`Partition: ${payload.partition}`);
+    console.log(`Nonce: ${payload.nonce}`);
 
     // Store sync start time
     await db.syncs.create({
@@ -193,42 +194,44 @@ ragie()
       startedAt: new Date(),
       metadata: payload.connection_metadata,
     });
+
+    console.log(`Planned changes:`);
+    console.log(`  - create: ${payload.create_count}`);
+    console.log(`  - update content: ${payload.update_content_count}`);
+    console.log(`  - update metadata: ${payload.update_metadata_count}`);
+    console.log(`  - delete: ${payload.delete_count}`);
   })
   .event("connection_sync_progress", async (payload) => {
     console.log(`📊 Sync progress for ${payload.sync_id}`);
+    console.log(`  Created: ${payload.created_count}/${payload.create_count}`);
     console.log(
-      `  Created: ${payload.total_creates_count} (+${payload.created_count})`,
+      `  Content updated: ${payload.updated_content_count}/${payload.update_content_count}`
     );
     console.log(
-      `  Updated: ${payload.total_contents_updates_count} (+${payload.contents_updated_count})`,
+      `  Metadata updated: ${payload.updated_metadata_count}/${payload.update_metadata_count}`
     );
-    console.log(
-      `  Deleted: ${payload.total_deletes_count} (+${payload.deleted_count})`,
-    );
+    console.log(`  Deleted: ${payload.deleted_count}/${payload.delete_count}`);
+    console.log(`  Errors: ${payload.errored_count}`);
+    console.log(`Nonce: ${payload.nonce}`);
 
     // Update progress in database
     await db.syncs.update(payload.sync_id, {
-      createdCount: payload.total_creates_count,
-      updatedCount: payload.total_contents_updates_count,
-      deletedCount: payload.total_deletes_count,
+      createdCount: payload.created_count,
+      updatedContentCount: payload.updated_content_count,
+      updatedMetadataCount: payload.updated_metadata_count,
+      deletedCount: payload.deleted_count,
+      erroredCount: payload.errored_count,
     });
   })
   .event("connection_sync_finished", async (payload) => {
     console.log(`✅ Sync completed: ${payload.sync_id}`);
-    console.log(`Final stats:`);
-    console.log(`  - ${payload.total_creates_count} documents created`);
-    console.log(`  - ${payload.total_contents_updates_count} contents updated`);
-    console.log(`  - ${payload.total_metadata_updates_count} metadata updated`);
-    console.log(`  - ${payload.total_deletes_count} documents deleted`);
+    console.log(`Connection: ${payload.connection_id}`);
+    console.log(`Partition: ${payload.partition}`);
+    console.log(`Nonce: ${payload.nonce}`);
 
     // Mark sync as complete
     await db.syncs.update(payload.sync_id, {
       completedAt: new Date(),
-      finalCounts: {
-        created: payload.total_creates_count,
-        updated: payload.total_contents_updates_count,
-        deleted: payload.total_deletes_count,
-      },
     });
 
     // Notify users
@@ -258,16 +261,18 @@ ragie().event("entity_extracted", async (payload) => {
 ragie()
   .event("connection_limit_exceeded", async (payload) => {
     console.warn(`⚠️ Connection ${payload.connection_id} exceeded page limit`);
+    console.warn(`Nonce: ${payload.nonce}`);
 
     // Alert team about limit
     await alertTeam({
       type: "connection_limit",
       connectionId: payload.connection_id,
-      syncId: payload.sync_id,
+      partition: payload.partition,
     });
   })
   .event("partition_limit_exceeded", async (payload) => {
     console.warn(`⚠️ Partition ${payload.partition} exceeded document limit`);
+    console.warn(`Nonce: ${payload.nonce}`);
 
     // Take action
     await createNewPartition(payload.partition);
@@ -310,12 +315,11 @@ const webhook = ragie()
   })
   .onError((error, context) => {
     console.error(`Error handling ${context.eventType}:`, error);
-    console.error(`Delivery ID: ${context.deliveryId}`);
 
     // Send to error tracking
     Sentry.captureException(error, {
       tags: { webhook: "ragie", event: context.eventType },
-      extra: { deliveryId: context.deliveryId },
+      extra: { eventType: context.eventType },
     });
   })
   .onVerificationFailed((reason, headers) => {
@@ -324,7 +328,7 @@ const webhook = ragie()
     // Alert security team
     alertSecurityTeam({
       reason,
-      deliveryId: headers["x-ragie-delivery"],
+      signature: headers["x-signature"],
     });
   });
 ```
@@ -347,7 +351,7 @@ Or pass it explicitly:
 // At provider level
 const webhook = ragie({ secret: "your-signing-secret" }).event(
   "document_status_updated",
-  handler,
+  handler
 );
 
 // Or at adapter level

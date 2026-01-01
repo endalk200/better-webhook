@@ -32,6 +32,8 @@ import { z, type ZodSchema } from "zod";
 export const RagieDocumentStatusUpdatedEventSchema = z.object({
   /** The unique identifier for the document */
   document_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** Current status of the document */
   status: z.enum(["indexed", "keyword_indexed", "ready", "failed"]),
   /** Partition key for the document */
@@ -62,6 +64,8 @@ export const RagieDocumentStatusUpdatedEventSchema = z.object({
 export const RagieDocumentDeletedEventSchema = z.object({
   /** The unique identifier for the deleted document */
   document_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** Partition key for the document */
   partition: z.string(),
   /** User-defined metadata for the document */
@@ -88,6 +92,8 @@ export const RagieDocumentDeletedEventSchema = z.object({
 export const RagieEntityExtractedEventSchema = z.object({
   /** The unique identifier for the extracted entity */
   entity_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** The unique identifier for the source document */
   document_id: z.string(),
   /** The instruction ID used for entity extraction */
@@ -118,6 +124,8 @@ export const RagieEntityExtractedEventSchema = z.object({
 export const RagieConnectionSyncStartedEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -146,6 +154,8 @@ export const RagieConnectionSyncStartedEventSchema = z.object({
 export const RagieConnectionSyncProgressEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -184,6 +194,8 @@ export const RagieConnectionSyncProgressEventSchema = z.object({
 export const RagieConnectionSyncFinishedEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -204,6 +216,8 @@ export const RagieConnectionSyncFinishedEventSchema = z.object({
 export const RagieConnectionLimitExceededEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
   /** Partition key for the sync */
   partition: z.string(),
   /** Additional metadata about the connection */
@@ -224,6 +238,10 @@ export const RagieConnectionLimitExceededEventSchema = z.object({
 export const RagiePartitionLimitExceededEventSchema = z.object({
   /** Partition key that exceeded the limit */
   partition: z.string(),
+  /** The type of limit that was exceeded (if provided) */
+  limit_type: z.string().optional(),
+  /** Unique nonce for idempotency (from the webhook envelope) */
+  nonce: z.string().optional(),
 });
 
 // ============================================================================
@@ -330,7 +348,8 @@ function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
 
     /**
      * Extract delivery ID
-     * Ragie doesn't send a delivery ID header - use nonce from body for idempotency
+     * Ragie doesn't send a delivery ID header.
+     * For idempotency, use the `nonce` from the body envelope (exposed as `payload.nonce`).
      */
     getDeliveryId(_headers: Headers): string | undefined {
       return undefined;
@@ -338,11 +357,24 @@ function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
 
     /**
      * Extract the actual payload from the envelope structure
-     * Ragie wraps the payload in { type, payload, nonce }
+     * Ragie wraps the payload in { type, payload, nonce }.
+     * The SDK unwraps `payload` and attaches `nonce` onto the payload as `payload.nonce`.
      */
     getPayload(body: unknown): unknown {
       if (body && typeof body === "object" && "payload" in body) {
-        return (body as { payload: unknown }).payload;
+        const payload = (body as { payload: unknown }).payload;
+        const nonce =
+          "nonce" in body && typeof (body as { nonce: unknown }).nonce === "string"
+            ? (body as { nonce: string }).nonce
+            : undefined;
+
+        // For convenience, attach nonce onto the unwrapped payload when possible.
+        // This enables idempotency using `payload.nonce` while still validating the inner payload.
+        if (payload && typeof payload === "object" && nonce) {
+          return { ...(payload as Record<string, unknown>), nonce };
+        }
+
+        return payload;
       }
       return body;
     },
