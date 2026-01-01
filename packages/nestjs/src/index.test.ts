@@ -290,7 +290,10 @@ describe("toNestJS", () => {
       const onCompleted1 = vi.fn();
       const onCompleted2 = vi.fn();
       const handler = toNestJS(webhook, {
-        observer: [{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }],
+        observer: [
+          { onCompleted: onCompleted1 },
+          { onCompleted: onCompleted2 },
+        ],
       });
 
       const req = createMockRequest({

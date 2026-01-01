@@ -86,14 +86,14 @@ const webhook = ragie()
   })
   .event("connection_sync_started", async (payload) => {
     console.log(
-      `Sync ${payload.sync_id} started for connection ${payload.connection_id}`
+      `Sync ${payload.sync_id} started for connection ${payload.connection_id}`,
     );
   });
 
 app.post(
   "/webhooks/ragie",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);
@@ -205,10 +205,10 @@ ragie()
     console.log(`📊 Sync progress for ${payload.sync_id}`);
     console.log(`  Created: ${payload.created_count}/${payload.create_count}`);
     console.log(
-      `  Content updated: ${payload.updated_content_count}/${payload.update_content_count}`
+      `  Content updated: ${payload.updated_content_count}/${payload.update_content_count}`,
     );
     console.log(
-      `  Metadata updated: ${payload.updated_metadata_count}/${payload.update_metadata_count}`
+      `  Metadata updated: ${payload.updated_metadata_count}/${payload.update_metadata_count}`,
     );
     console.log(`  Deleted: ${payload.deleted_count}/${payload.delete_count}`);
     console.log(`  Errors: ${payload.errored_count}`);
@@ -351,7 +351,7 @@ Or pass it explicitly:
 // At provider level
 const webhook = ragie({ secret: "your-signing-secret" }).event(
   "document_status_updated",
-  handler
+  handler,
 );
 
 // Or at adapter level

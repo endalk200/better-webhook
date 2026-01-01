@@ -375,7 +375,10 @@ describe("toExpress", () => {
       const onCompleted1 = vi.fn();
       const onCompleted2 = vi.fn();
       const middleware = toExpress(webhook, {
-        observer: [{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }],
+        observer: [
+          { onCompleted: onCompleted1 },
+          { onCompleted: onCompleted2 },
+        ],
       });
 
       const req = createMockRequest({
