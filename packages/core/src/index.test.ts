@@ -1318,7 +1318,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(onVerificationSucceeded).toHaveBeenCalledTimes(1);
-      const event = onVerificationSucceeded.mock.calls[0]![0] as VerificationSucceededEvent;
+      const event = onVerificationSucceeded.mock
+        .calls[0]![0] as VerificationSucceededEvent;
       expect(event.type).toBe("verification_succeeded");
       expect(event.verifyDurationMs).toBeGreaterThanOrEqual(0);
     });
@@ -1361,7 +1362,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(onVerificationFailed).toHaveBeenCalledTimes(1);
-      const event = onVerificationFailed.mock.calls[0]![0] as VerificationFailedEvent;
+      const event = onVerificationFailed.mock
+        .calls[0]![0] as VerificationFailedEvent;
       expect(event.type).toBe("verification_failed");
       expect(event.reason).toBe("Signature verification failed");
 
@@ -1384,7 +1386,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
-      const event = onSchemaValidationSucceeded.mock.calls[0]![0] as SchemaValidationSucceededEvent;
+      const event = onSchemaValidationSucceeded.mock
+        .calls[0]![0] as SchemaValidationSucceededEvent;
       expect(event.type).toBe("schema_validation_succeeded");
       expect(event.validateDurationMs).toBeGreaterThanOrEqual(0);
     });
@@ -1404,7 +1407,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(onSchemaValidationFailed).toHaveBeenCalledTimes(1);
-      const event = onSchemaValidationFailed.mock.calls[0]![0] as SchemaValidationFailedEvent;
+      const event = onSchemaValidationFailed.mock
+        .calls[0]![0] as SchemaValidationFailedEvent;
       expect(event.type).toBe("schema_validation_failed");
       expect(event.error).toBeDefined();
 
@@ -1473,16 +1477,19 @@ describe("WebhookBuilder observability", () => {
       expect(onHandlerSucceeded).toHaveBeenCalledTimes(2);
 
       // Check first handler
-      const startEvent1 = onHandlerStarted.mock.calls[0]![0] as HandlerStartedEvent;
+      const startEvent1 = onHandlerStarted.mock
+        .calls[0]![0] as HandlerStartedEvent;
       expect(startEvent1.handlerIndex).toBe(0);
       expect(startEvent1.handlerCount).toBe(2);
 
-      const successEvent1 = onHandlerSucceeded.mock.calls[0]![0] as HandlerSucceededEvent;
+      const successEvent1 = onHandlerSucceeded.mock
+        .calls[0]![0] as HandlerSucceededEvent;
       expect(successEvent1.handlerIndex).toBe(0);
       expect(successEvent1.handlerDurationMs).toBeGreaterThanOrEqual(0);
 
       // Check second handler
-      const startEvent2 = onHandlerStarted.mock.calls[1]![0] as HandlerStartedEvent;
+      const startEvent2 = onHandlerStarted.mock
+        .calls[1]![0] as HandlerStartedEvent;
       expect(startEvent2.handlerIndex).toBe(1);
     });
 

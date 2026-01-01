@@ -103,7 +103,7 @@ describe("toGCPFunction", () => {
 
       expect(state.statusCode).toBe(405);
       expect((state.jsonBody as { error: string }).error).toBe(
-        "Method not allowed"
+        "Method not allowed",
       );
     });
 
@@ -207,7 +207,7 @@ describe("toGCPFunction", () => {
 
       expect(state.statusCode).toBe(400);
       expect((state.jsonBody as { error: string }).error).toBe(
-        "Request body is required"
+        "Request body is required",
       );
     });
   });
@@ -428,7 +428,7 @@ describe("toGCPFunction", () => {
           status: 200,
           success: true,
           eventType: "test.event",
-        })
+        }),
       );
     });
 
@@ -478,7 +478,7 @@ describe("toGCPFunction", () => {
           type: "completed",
           status: 204,
           success: false,
-        })
+        }),
       );
     });
 

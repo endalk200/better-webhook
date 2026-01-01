@@ -364,7 +364,8 @@ function createRagieProvider(options?: RagieOptions): Provider<RagieEventMap> {
       if (body && typeof body === "object" && "payload" in body) {
         const payload = (body as { payload: unknown }).payload;
         const nonce =
-          "nonce" in body && typeof (body as { nonce: unknown }).nonce === "string"
+          "nonce" in body &&
+          typeof (body as { nonce: unknown }).nonce === "string"
             ? (body as { nonce: string }).nonce
             : undefined;
 
