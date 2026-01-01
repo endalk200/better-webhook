@@ -162,8 +162,9 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
 
 <Callout type="info">
   Ragie webhooks use an envelope structure where the event type is in
-  `body.type` and the actual payload is in `body.payload`. The SDK handles this
-  automatically — your handlers receive the unwrapped payload directly.
+  `body.type` and the actual payload is in `body.payload`. Ragie also includes a
+  `body.nonce` for idempotency — the SDK attaches this onto the unwrapped
+  payload as `payload.nonce` for convenience.
 </Callout>
 
 ### Events
@@ -185,6 +186,7 @@ Triggered when a document enters `indexed`, `keyword_indexed`, `ready`, or `fail
 **Key payload fields:**
 
 - `document_id` — Unique document identifier
+- `nonce` — Unique idempotency key for this webhook delivery
 - `status` — `indexed`, `keyword_indexed`, `ready`, or `failed`
 - `name` — Document name
 - `partition` — Partition key
@@ -331,6 +333,12 @@ Triggered when a partition exceeds its document limit.
   console.log(`Partition ${payload.partition} hit limit`);
 })
 ```
+
+**Key payload fields:**
+
+- `partition` — Partition key
+- `limit_type` — Type of limit exceeded (if provided)
+- `nonce` — Unique idempotency key for this webhook delivery
 
 ### Signature Verification
 

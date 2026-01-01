@@ -317,10 +317,11 @@ gcloud functions deploy webhookHandler \
 
 All adapters accept the same options:
 
-| Option      | Type                                           | Description                                                                                     |
-| ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `secret`    | `string`                                       | Webhook secret for signature verification. Overrides provider secret and environment variables. |
-| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored.    |
+| Option      | Type                                           | Description                                                                                                       |
+| ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `secret`    | `string`                                       | Webhook secret for signature verification. Overrides provider secret and environment variables.                   |
+| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored.                      |
+| `observer`  | `WebhookObserver \| WebhookObserver[]`         | Observer(s) for webhook lifecycle events. Add metrics, logging, or tracing without modifying the webhook builder. |
 
 ### Secret Resolution Order
 
@@ -336,3 +337,40 @@ If no secret is found, signature verification is skipped.
   Always configure a secret in production. Without signature verification,
   anyone can send fake webhooks to your endpoint.
 </Callout>
+
+### Adding Observability via Adapters
+
+You can add observers at the adapter level to track metrics without modifying your webhook builder:
+
+```ts
+import { createWebhookStats } from "@better-webhook/core";
+
+const stats = createWebhookStats();
+
+// Next.js
+export const POST = toNextJS(webhook, {
+  observer: stats.observer,
+});
+
+// Express
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(webhook, { observer: stats.observer }),
+);
+
+// NestJS
+const result = await toNestJS(this.webhook, {
+  observer: stats.observer,
+})(req);
+
+// GCP Cloud Functions
+http(
+  "webhookHandler",
+  toGCPFunction(webhook, {
+    observer: stats.observer,
+  }),
+);
+```
+
+See the [SDK Getting Started](/docs/sdk) page for more details on observability.
