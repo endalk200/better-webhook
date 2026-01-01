@@ -1077,3 +1077,617 @@ describe("customWebhook", () => {
     expect(result.status).toBe(401);
   });
 });
+
+// ============================================================================
+// Observer Tests
+// ============================================================================
+
+import {
+  type WebhookObserver,
+  type RequestReceivedEvent,
+  type CompletedEvent,
+  type JsonParseFailedEvent,
+  type EventUnhandledEvent,
+  type VerificationSucceededEvent,
+  type VerificationFailedEvent,
+  type SchemaValidationSucceededEvent,
+  type SchemaValidationFailedEvent,
+  type HandlerStartedEvent,
+  type HandlerSucceededEvent,
+  type HandlerFailedEvent,
+  createWebhookStats,
+} from "./index.js";
+
+describe("WebhookBuilder observability", () => {
+  describe("observe()", () => {
+    it("should return a new builder instance", () => {
+      const provider = createTestProvider();
+      const builder1 = createWebhook(provider);
+      const builder2 = builder1.observe({});
+
+      expect(builder1).not.toBe(builder2);
+    });
+
+    it("should accept a single observer", async () => {
+      const provider = createTestProvider();
+      const onCompleted = vi.fn();
+      const observer: WebhookObserver = { onCompleted };
+
+      const webhook = createWebhook(provider)
+        .observe(observer)
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it("should accept an array of observers", async () => {
+      const provider = createTestProvider();
+      const onCompleted1 = vi.fn();
+      const onCompleted2 = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onCompleted1).toHaveBeenCalledTimes(1);
+      expect(onCompleted2).toHaveBeenCalledTimes(1);
+    });
+
+    it("should chain multiple observe() calls", async () => {
+      const provider = createTestProvider();
+      const onCompleted1 = vi.fn();
+      const onCompleted2 = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onCompleted: onCompleted1 })
+        .observe({ onCompleted: onCompleted2 })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onCompleted1).toHaveBeenCalledTimes(1);
+      expect(onCompleted2).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("lifecycle events", () => {
+    it("should emit onRequestReceived at start of processing", async () => {
+      const provider = createTestProvider();
+      const onRequestReceived = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onRequestReceived })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onRequestReceived).toHaveBeenCalledTimes(1);
+      const event = onRequestReceived.mock.calls[0]![0] as RequestReceivedEvent;
+      expect(event.type).toBe("request_received");
+      expect(event.provider).toBe("test");
+      expect(event.rawBodyBytes).toBeGreaterThan(0);
+      expect(event.receivedAt).toBeInstanceOf(Date);
+    });
+
+    it("should emit onCompleted with success for 200 response", async () => {
+      const provider = createTestProvider();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(event.type).toBe("completed");
+      expect(event.status).toBe(200);
+      expect(event.success).toBe(true);
+      expect(event.eventType).toBe("test.event");
+      expect(event.durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should include deliveryId in observation events when available", async () => {
+      const provider = createTestProvider();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-123",
+        },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(event.deliveryId).toBe("delivery-123");
+      expect(event.eventType).toBe("test.event");
+    });
+
+    it("should emit onJsonParseFailed for invalid JSON", async () => {
+      const provider = createTestProvider();
+      const onJsonParseFailed = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onJsonParseFailed, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: "not valid json",
+      });
+
+      expect(onJsonParseFailed).toHaveBeenCalledTimes(1);
+      const event = onJsonParseFailed.mock.calls[0]![0] as JsonParseFailedEvent;
+      expect(event.type).toBe("json_parse_failed");
+      expect(event.error).toBeDefined();
+
+      // Should also emit completed
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(400);
+      expect(completedEvent.success).toBe(false);
+    });
+
+    it("should emit onEventUnhandled for 204 response", async () => {
+      const provider = createTestProvider();
+      const onEventUnhandled = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onEventUnhandled, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
+      const event = onEventUnhandled.mock.calls[0]![0] as EventUnhandledEvent;
+      expect(event.type).toBe("event_unhandled");
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(204);
+    });
+
+    it("should emit onEventUnhandled when no event type is found", async () => {
+      const provider = createTestProvider();
+      const onEventUnhandled = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onEventUnhandled, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: {},
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
+      const event = onEventUnhandled.mock.calls[0]![0] as EventUnhandledEvent;
+      expect(event.type).toBe("event_unhandled");
+      expect(event.eventType).toBeUndefined();
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(204);
+      expect(completedEvent.eventType).toBeUndefined();
+    });
+
+    it("should emit onVerificationSucceeded when verification passes", async () => {
+      const provider = createTestProvider({ verifyResult: true });
+      const onVerificationSucceeded = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onVerificationSucceeded })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onVerificationSucceeded).toHaveBeenCalledTimes(1);
+      const event = onVerificationSucceeded.mock.calls[0]![0] as VerificationSucceededEvent;
+      expect(event.type).toBe("verification_succeeded");
+      expect(event.verifyDurationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should not emit verification events when verification is skipped (no secret)", async () => {
+      const provider = createTestProvider();
+      const onVerificationSucceeded = vi.fn();
+      const onVerificationFailed = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onVerificationSucceeded, onVerificationFailed, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onVerificationSucceeded).not.toHaveBeenCalled();
+      expect(onVerificationFailed).not.toHaveBeenCalled();
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(200);
+    });
+
+    it("should emit onVerificationFailed when verification fails", async () => {
+      const provider = createTestProvider({ verifyResult: false });
+      const onVerificationFailed = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onVerificationFailed, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onVerificationFailed).toHaveBeenCalledTimes(1);
+      const event = onVerificationFailed.mock.calls[0]![0] as VerificationFailedEvent;
+      expect(event.type).toBe("verification_failed");
+      expect(event.reason).toBe("Signature verification failed");
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(401);
+    });
+
+    it("should emit onSchemaValidationSucceeded when validation passes", async () => {
+      const provider = createTestProvider();
+      const onSchemaValidationSucceeded = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onSchemaValidationSucceeded })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
+      const event = onSchemaValidationSucceeded.mock.calls[0]![0] as SchemaValidationSucceededEvent;
+      expect(event.type).toBe("schema_validation_succeeded");
+      expect(event.validateDurationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should emit onSchemaValidationFailed when validation fails", async () => {
+      const provider = createTestProvider();
+      const onSchemaValidationFailed = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onSchemaValidationFailed, onCompleted })
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify({ invalid: "payload" }),
+      });
+
+      expect(onSchemaValidationFailed).toHaveBeenCalledTimes(1);
+      const event = onSchemaValidationFailed.mock.calls[0]![0] as SchemaValidationFailedEvent;
+      expect(event.type).toBe("schema_validation_failed");
+      expect(event.error).toBeDefined();
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(400);
+    });
+
+    it("should not emit schema validation events when no schema is registered for the event", async () => {
+      const provider: Provider<Record<string, any>> = {
+        name: "test",
+        schemas: {}, // no schema for test.event
+        getEventType(headers: Headers) {
+          return headers["x-test-event"];
+        },
+        getDeliveryId(headers: Headers) {
+          return headers["x-test-delivery-id"];
+        },
+        verify() {
+          return true;
+        },
+      };
+
+      const onSchemaValidationSucceeded = vi.fn();
+      const onSchemaValidationFailed = vi.fn();
+      const onCompleted = vi.fn();
+      const handler = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({
+          onSchemaValidationSucceeded,
+          onSchemaValidationFailed,
+          onCompleted,
+        })
+        .event("test.event" as any, handler);
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(onSchemaValidationSucceeded).not.toHaveBeenCalled();
+      expect(onSchemaValidationFailed).not.toHaveBeenCalled();
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(200);
+    });
+
+    it("should emit onHandlerStarted and onHandlerSucceeded for each handler", async () => {
+      const provider = createTestProvider();
+      const onHandlerStarted = vi.fn();
+      const onHandlerSucceeded = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onHandlerStarted, onHandlerSucceeded })
+        .event("test.event", () => {})
+        .event("test.event", () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onHandlerStarted).toHaveBeenCalledTimes(2);
+      expect(onHandlerSucceeded).toHaveBeenCalledTimes(2);
+
+      // Check first handler
+      const startEvent1 = onHandlerStarted.mock.calls[0]![0] as HandlerStartedEvent;
+      expect(startEvent1.handlerIndex).toBe(0);
+      expect(startEvent1.handlerCount).toBe(2);
+
+      const successEvent1 = onHandlerSucceeded.mock.calls[0]![0] as HandlerSucceededEvent;
+      expect(successEvent1.handlerIndex).toBe(0);
+      expect(successEvent1.handlerDurationMs).toBeGreaterThanOrEqual(0);
+
+      // Check second handler
+      const startEvent2 = onHandlerStarted.mock.calls[1]![0] as HandlerStartedEvent;
+      expect(startEvent2.handlerIndex).toBe(1);
+    });
+
+    it("should emit onHandlerFailed when handler throws", async () => {
+      const provider = createTestProvider();
+      const onHandlerFailed = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onHandlerFailed, onCompleted })
+        .event("test.event", () => {
+          throw new Error("Handler error");
+        });
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(onHandlerFailed).toHaveBeenCalledTimes(1);
+      const event = onHandlerFailed.mock.calls[0]![0] as HandlerFailedEvent;
+      expect(event.type).toBe("handler_failed");
+      expect(event.error.message).toBe("Handler error");
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(500);
+    });
+  });
+
+  describe("observer error handling", () => {
+    it("should swallow observer errors and continue processing", async () => {
+      const provider = createTestProvider();
+      const onRequestReceived = vi.fn(() => {
+        throw new Error("Observer error");
+      });
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onRequestReceived, onCompleted })
+        .event("test.event", () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      // Processing should succeed despite observer error
+      expect(result.status).toBe(200);
+      expect(onRequestReceived).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it("should continue calling other observers if one throws", async () => {
+      const provider = createTestProvider();
+      const onCompleted1 = vi.fn(() => {
+        throw new Error("Observer 1 error");
+      });
+      const onCompleted2 = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
+        .event("test.event", () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(result.status).toBe(200);
+      expect(onCompleted1).toHaveBeenCalledTimes(1);
+      expect(onCompleted2).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+// ============================================================================
+// createWebhookStats Tests
+// ============================================================================
+
+describe("createWebhookStats", () => {
+  it("should track total requests and success/error counts", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider)
+      .observe(stats.observer)
+      .event("test.event", () => {});
+
+    // Successful request
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    let snapshot = stats.snapshot();
+    expect(snapshot.totalRequests).toBe(1);
+    expect(snapshot.successCount).toBe(1);
+    expect(snapshot.errorCount).toBe(0);
+
+    // Failed request (invalid JSON)
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: "invalid json",
+    });
+
+    snapshot = stats.snapshot();
+    expect(snapshot.totalRequests).toBe(2);
+    expect(snapshot.successCount).toBe(1);
+    expect(snapshot.errorCount).toBe(1);
+  });
+
+  it("should track by provider", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider)
+      .observe(stats.observer)
+      .event("test.event", () => {});
+
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.byProvider["test"]).toEqual({
+      total: 1,
+      success: 1,
+      error: 0,
+    });
+  });
+
+  it("should track by event type", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider)
+      .observe(stats.observer)
+      .event("test.event", () => {})
+      .event("another.event", () => {});
+
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    await webhook.process({
+      headers: { "x-test-event": "another.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.byEventType["test.event"]).toEqual({
+      total: 1,
+      success: 1,
+      error: 0,
+    });
+    expect(snapshot.byEventType["another.event"]).toEqual({
+      total: 1,
+      success: 1,
+      error: 0,
+    });
+  });
+
+  it("should calculate average duration", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider)
+      .observe(stats.observer)
+      .event("test.event", () => {});
+
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.avgDurationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("should reset stats", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider)
+      .observe(stats.observer)
+      .event("test.event", () => {});
+
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    expect(stats.snapshot().totalRequests).toBe(1);
+
+    stats.reset();
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.totalRequests).toBe(0);
+    expect(snapshot.successCount).toBe(0);
+    expect(snapshot.errorCount).toBe(0);
+    expect(snapshot.avgDurationMs).toBe(0);
+    expect(Object.keys(snapshot.byProvider)).toHaveLength(0);
+    expect(Object.keys(snapshot.byEventType)).toHaveLength(0);
+  });
+});
