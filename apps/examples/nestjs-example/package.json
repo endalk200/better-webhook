@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-webhook/core": "workspace:*",
     "@better-webhook/github": "workspace:*",
     "@better-webhook/nestjs": "workspace:*",
     "@better-webhook/ragie": "workspace:*",

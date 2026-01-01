@@ -5,7 +5,7 @@ import { toNextJS } from "@better-webhook/nextjs";
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
   .event("document_status_updated", async (payload, context) => {
     console.log("📄 Document status updated!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Received at: ${context.receivedAt.toISOString()}`);
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Status: ${payload.status}`);
@@ -13,14 +13,14 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
   })
   .event("connection_sync_started", async (payload, context) => {
     console.log("🚀 Connection sync started!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
   .event("connection_sync_progress", async (payload, context) => {
     console.log("⏳ Connection sync progress!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Creates: ${payload.created_count}/${payload.create_count}`);
@@ -35,33 +35,33 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
   })
   .event("connection_sync_finished", async (payload, context) => {
     console.log("✅ Connection sync finished!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
   .event("entity_extracted", async (payload, context) => {
     console.log("🔍 Entity extraction completed!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Partition: ${payload.partition || "default"}`);
   })
   .event("document_deleted", async (payload, context) => {
     console.log("🗑️ Document deleted!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
   .event("connection_limit_exceeded", async (payload, context) => {
     console.log("⚠️ Connection limit exceeded!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Partition: ${payload.partition}`);
     console.log(`   Limit type: ${payload.limit_type}`);
   })
   .event("partition_limit_exceeded", async (payload, context) => {
     console.log("⚠️ Partition limit exceeded!");
-    console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+    console.log(`   Nonce: ${payload.nonce}`);
     console.log(`   Partition: ${payload.partition}`);
   })
   .onError(async (error, context) => {

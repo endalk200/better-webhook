@@ -3,16 +3,47 @@ import type { Request, Response } from "express";
 import { github } from "@better-webhook/github";
 import { ragie } from "@better-webhook/ragie";
 import { toNestJS } from "@better-webhook/nestjs";
+import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
 
 // Extend Request type to include rawBody
 interface RawBodyRequest extends Request {
   rawBody?: Buffer;
 }
 
+// Create stats collectors for observability
+const githubStats = createWebhookStats();
+const ragieStats = createWebhookStats();
+
+// Custom observer for logging webhook lifecycle events
+const loggingObserver: WebhookObserver = {
+  onRequestReceived: (event) => {
+    console.log(
+      `📥 [${event.provider}] Webhook received (${event.rawBodyBytes} bytes)`,
+    );
+  },
+  onCompleted: (event) => {
+    const status = event.success ? "✓" : "✗";
+    console.log(
+      `📊 [${event.provider}] ${status} Completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
+    );
+  },
+  onVerificationFailed: (event) => {
+    console.warn(`🔐 [${event.provider}] Verification failed: ${event.reason}`);
+  },
+  onHandlerFailed: (event) => {
+    console.error(
+      `💥 [${event.provider}] Handler ${event.handlerIndex} failed:`,
+      event.error.message,
+    );
+  },
+};
+
 @Controller()
 export class WebhooksController {
-  // Create a GitHub webhook handler
+  // Create a GitHub webhook handler with observability
   private githubWebhook = github()
+    .observe(githubStats.observer)
+    .observe(loggingObserver)
     .event("push", async (payload, context) => {
       console.log("📦 Push event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
@@ -48,25 +79,27 @@ export class WebhooksController {
       console.error("🔐 Verification failed:", reason);
     });
 
-  // Create a Ragie webhook handler
+  // Create a Ragie webhook handler with observability
   private ragieWebhook = ragie()
+    .observe(ragieStats.observer)
+    .observe(loggingObserver)
     .event("document_status_updated", async (payload, context) => {
       console.log("📄 Document status updated!");
-      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Status: ${payload.status}`);
       console.log(`   Partition: ${payload.partition}`);
     })
     .event("connection_sync_finished", async (payload, context) => {
       console.log("✅ Connection sync finished!");
-      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Connection ID: ${payload.connection_id}`);
       console.log(`   Sync ID: ${payload.sync_id}`);
       console.log(`   Partition: ${payload.partition}`);
     })
     .event("entity_extracted", async (payload, context) => {
       console.log("🔍 Entity extraction completed!");
-      console.log(`   Delivery ID: ${context.headers["x-ragie-delivery"]}`);
+      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Partition: ${payload.partition || "default"}`);
     })
@@ -160,6 +193,15 @@ export class WebhooksController {
   healthCheck(): object {
     return {
       status: "ok",
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get("stats")
+  getStats(): object {
+    return {
+      github: githubStats.snapshot(),
+      ragie: ragieStats.snapshot(),
       timestamp: new Date().toISOString(),
     };
   }
