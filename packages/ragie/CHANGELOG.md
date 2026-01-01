@@ -1,5 +1,13 @@
 # @better-webhook/ragie
 
+## 0.3.3
+
+### Patch Changes
+
+- Add observability to the core package, resolve nonce parsing issue with ragie provider and update docs
+- Updated dependencies
+  - @better-webhook/core@0.7.0
+
 ## 0.3.2
 
 ### Patch Changes

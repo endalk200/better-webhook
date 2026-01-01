@@ -1,5 +1,16 @@
 # @better-webhook/express
 
+## 0.8.0
+
+### Minor Changes
+
+- Add observability to the core package, resolve nonce parsing issue with ragie provider and update docs
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.7.0
+
 ## 0.7.2
 
 ### Patch Changes
