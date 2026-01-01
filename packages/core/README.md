@@ -339,7 +339,7 @@ const webhook = paymentGateway({ secret: "sk_..." }).event(
   async (payload) => {
     await fulfillOrder(payload.id);
     await sendReceipt(payload.customer_email);
-  },
+  }
 );
 ```
 
@@ -383,14 +383,14 @@ import { verifyHmac } from "@better-webhook/core";
 function stripeVerify(
   rawBody: string | Buffer,
   headers: Headers,
-  secret: string,
+  secret: string
 ): boolean {
   const signatureHeader = headers["stripe-signature"];
   if (!signatureHeader) return false;
 
   // Parse Stripe's format: t=1234567890,v1=abc123...
   const parts = Object.fromEntries(
-    signatureHeader.split(",").map((part) => part.split("=")),
+    signatureHeader.split(",").map((part) => part.split("="))
   );
 
   const timestamp = parts["t"];
@@ -424,6 +424,176 @@ const webhook = customWebhook({
 });
 ```
 
+## Observability
+
+Add metrics, logging, and tracing to your webhook handlers with the built-in observability API. The observer pattern lets you subscribe to lifecycle events without modifying your handler code.
+
+### Quick Start with Stats
+
+Use the built-in `createWebhookStats()` helper to track webhook metrics:
+
+```ts
+import { github } from "@better-webhook/github";
+import { createWebhookStats } from "@better-webhook/core";
+import { toNextJS } from "@better-webhook/nextjs";
+
+const stats = createWebhookStats();
+
+const webhook = github()
+  .observe(stats.observer)
+  .event("push", async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
+
+export const POST = toNextJS(webhook);
+
+// Get stats snapshot anytime
+// stats.snapshot() returns:
+// {
+//   totalRequests: 150,
+//   successCount: 145,
+//   errorCount: 5,
+//   byProvider: { github: { total: 150, success: 145, error: 5 } },
+//   byEventType: { push: { total: 100, success: 98, error: 2 }, ... },
+//   avgDurationMs: 23.5,
+// }
+```
+
+### Custom Observers
+
+Create custom observers to integrate with your metrics/logging infrastructure:
+
+```ts
+import { github } from "@better-webhook/github";
+import { type WebhookObserver } from "@better-webhook/core";
+
+const metricsObserver: WebhookObserver = {
+  onRequestReceived: (event) => {
+    console.log(`[${event.provider}] Webhook received`);
+  },
+
+  onCompleted: (event) => {
+    // Send to your metrics system (Prometheus, Datadog, etc.)
+    metrics.histogram("webhook_duration_ms", event.durationMs, {
+      provider: event.provider,
+      eventType: event.eventType || "unknown",
+      status: String(event.status),
+      success: String(event.success),
+    });
+
+    metrics.increment("webhook_requests_total", {
+      provider: event.provider,
+      eventType: event.eventType || "unknown",
+      status: String(event.status),
+    });
+  },
+
+  onHandlerFailed: (event) => {
+    // Log errors with context
+    logger.error("Webhook handler failed", {
+      provider: event.provider,
+      eventType: event.eventType,
+      handlerIndex: event.handlerIndex,
+      error: event.error.message,
+      durationMs: event.handlerDurationMs,
+    });
+  },
+
+  onVerificationFailed: (event) => {
+    // Alert on potential attacks
+    alertSecurityTeam({
+      reason: event.reason,
+      provider: event.provider,
+    });
+  },
+};
+
+const webhook = github().observe(metricsObserver).event("push", handler);
+```
+
+### Observer via Adapter Options
+
+You can also add observers at the adapter level without modifying the webhook builder:
+
+```ts
+import { toNextJS } from "@better-webhook/nextjs";
+import { createWebhookStats } from "@better-webhook/core";
+
+const stats = createWebhookStats();
+
+// Observer added at adapter level
+export const POST = toNextJS(webhook, {
+  observer: stats.observer,
+});
+```
+
+### Multiple Observers
+
+Chain multiple observers for different purposes:
+
+```ts
+const webhook = github()
+  .observe(stats.observer) // Track metrics
+  .observe(loggingObserver) // Log events
+  .observe(tracingObserver) // Add traces
+  .event("push", handler);
+
+// Or pass an array
+const webhook = github()
+  .observe([stats.observer, loggingObserver])
+  .event("push", handler);
+```
+
+### Lifecycle Events
+
+Observers can subscribe to these lifecycle events:
+
+| Event                         | Description                         | Key Fields                                   |
+| ----------------------------- | ----------------------------------- | -------------------------------------------- |
+| `onRequestReceived`           | Webhook request starts processing   | `provider`, `rawBodyBytes`                   |
+| `onJsonParseFailed`           | JSON parsing failed                 | `error`, `durationMs`                        |
+| `onEventUnhandled`            | No handler for event type (204)     | `eventType`, `durationMs`                    |
+| `onVerificationSucceeded`     | Signature verification passed       | `verifyDurationMs`                           |
+| `onVerificationFailed`        | Signature verification failed       | `reason`, `verifyDurationMs`                 |
+| `onSchemaValidationSucceeded` | Zod schema validation passed        | `validateDurationMs`                         |
+| `onSchemaValidationFailed`    | Zod schema validation failed        | `error`, `validateDurationMs`                |
+| `onHandlerStarted`            | Handler execution begins            | `handlerIndex`, `handlerCount`               |
+| `onHandlerSucceeded`          | Handler completed successfully      | `handlerIndex`, `handlerDurationMs`          |
+| `onHandlerFailed`             | Handler threw an error              | `error`, `handlerIndex`, `handlerDurationMs` |
+| `onCompleted`                 | Processing complete (always called) | `status`, `success`, `durationMs`            |
+
+All events include common fields: `provider`, `eventType`, `deliveryId`, `rawBodyBytes`, `startTime`, `receivedAt`.
+
+### Recommended Metric Names
+
+When integrating with metrics systems, we recommend these metric names:
+
+```ts
+// Counters
+webhook_requests_total; // Labels: provider, eventType, status
+webhook_errors_total; // Labels: provider, eventType, error_type
+
+// Histograms
+webhook_duration_ms; // Labels: provider, eventType, status
+webhook_handler_duration_ms; // Labels: provider, eventType, handler_index
+webhook_body_bytes; // Labels: provider
+```
+
+### Error Handling
+
+Observer errors are automatically caught and swallowed—they will never break your webhook processing:
+
+```ts
+const faultyObserver: WebhookObserver = {
+  onCompleted: () => {
+    throw new Error("Observer error"); // This won't break anything
+  },
+};
+
+// Webhook still processes successfully even if observer throws
+const webhook = github().observe(faultyObserver).event("push", handler);
+```
+
 ## API Reference
 
 ### Functions
@@ -435,6 +605,7 @@ const webhook = customWebhook({
 | `createWebhook(provider)`     | Create a webhook builder from a provider           |
 | `createHmacVerifier(options)` | Create an HMAC verification function               |
 | `verifyHmac(options)`         | Low-level HMAC verification                        |
+| `createWebhookStats()`        | Create an in-memory stats collector with observer  |
 
 ### Types
 
@@ -448,7 +619,7 @@ interface ProviderConfig<EventMap> {
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string,
+    secret: string
   ) => boolean;
 }
 
@@ -477,8 +648,36 @@ interface ErrorContext {
 // Event handler signature
 type EventHandler<T> = (
   payload: T,
-  context: HandlerContext,
+  context: HandlerContext
 ) => Promise<void> | void;
+
+// Observer interface for webhook lifecycle events
+interface WebhookObserver {
+  onRequestReceived?: (event: RequestReceivedEvent) => void;
+  onJsonParseFailed?: (event: JsonParseFailedEvent) => void;
+  onEventUnhandled?: (event: EventUnhandledEvent) => void;
+  onVerificationSucceeded?: (event: VerificationSucceededEvent) => void;
+  onVerificationFailed?: (event: VerificationFailedEvent) => void;
+  onSchemaValidationSucceeded?: (event: SchemaValidationSucceededEvent) => void;
+  onSchemaValidationFailed?: (event: SchemaValidationFailedEvent) => void;
+  onHandlerStarted?: (event: HandlerStartedEvent) => void;
+  onHandlerSucceeded?: (event: HandlerSucceededEvent) => void;
+  onHandlerFailed?: (event: HandlerFailedEvent) => void;
+  onCompleted?: (event: CompletedEvent) => void;
+}
+
+// Stats snapshot returned by createWebhookStats().snapshot()
+interface WebhookStatsSnapshot {
+  totalRequests: number;
+  successCount: number;
+  errorCount: number;
+  byProvider: Record<string, { total: number; success: number; error: number }>;
+  byEventType: Record<
+    string,
+    { total: number; success: number; error: number }
+  >;
+  avgDurationMs: number;
+}
 ```
 
 ## License

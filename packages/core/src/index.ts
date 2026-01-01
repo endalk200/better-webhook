@@ -32,7 +32,7 @@ export interface HandlerContext {
 
   /**
    * The delivery ID extracted from provider-specific headers
-   * (e.g., X-GitHub-Delivery for GitHub, X-Ragie-Delivery for Ragie)
+   * (e.g., X-GitHub-Delivery for GitHub)
    */
   deliveryId?: string;
 
@@ -124,7 +124,7 @@ export interface ProviderConfig<
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string,
+    secret: string
   ) => boolean;
 
   /**
@@ -181,7 +181,7 @@ export interface HmacVerifyOptions {
  */
 export type EventHandler<T> = (
   payload: T,
-  context: HandlerContext,
+  context: HandlerContext
 ) => Promise<void> | void;
 
 /**
@@ -189,7 +189,7 @@ export type EventHandler<T> = (
  */
 export type ErrorHandler = (
   error: Error,
-  context: ErrorContext,
+  context: ErrorContext
 ) => Promise<void> | void;
 
 /**
@@ -197,7 +197,7 @@ export type ErrorHandler = (
  */
 export type VerificationFailedHandler = (
   reason: string,
-  headers: Headers,
+  headers: Headers
 ) => Promise<void> | void;
 
 /**
@@ -219,6 +219,349 @@ export interface ProcessOptions {
 }
 
 // ============================================================================
+// Observability Types
+// ============================================================================
+
+/**
+ * Common fields included in all observation events
+ */
+export interface ObservationBase {
+  /** Provider name (e.g., "github", "stripe") - always present */
+  provider: string;
+
+  /** Event type (e.g., "push", "order.created") - present when known */
+  eventType?: string;
+
+  /** Delivery ID from provider headers - present when available */
+  deliveryId?: string;
+
+  /** Size of the raw request body in bytes */
+  rawBodyBytes: number;
+
+  /** High-resolution timestamp when processing started (from performance.now()) */
+  startTime: number;
+
+  /** Timestamp when the webhook was received */
+  receivedAt: Date;
+}
+
+/**
+ * Emitted when a webhook request is first received
+ */
+export interface RequestReceivedEvent extends ObservationBase {
+  type: "request_received";
+}
+
+/**
+ * Emitted when JSON parsing fails
+ */
+export interface JsonParseFailedEvent extends ObservationBase {
+  type: "json_parse_failed";
+  /** Duration in milliseconds */
+  durationMs: number;
+  /** The parse error message */
+  error: string;
+}
+
+/**
+ * Emitted when no handler is registered for the event type (204 response)
+ */
+export interface EventUnhandledEvent extends ObservationBase {
+  type: "event_unhandled";
+  /** Duration in milliseconds */
+  durationMs: number;
+}
+
+/**
+ * Emitted when signature verification succeeds
+ */
+export interface VerificationSucceededEvent extends ObservationBase {
+  type: "verification_succeeded";
+  /** Duration of verification in milliseconds */
+  verifyDurationMs: number;
+}
+
+/**
+ * Emitted when signature verification fails
+ */
+export interface VerificationFailedEvent extends ObservationBase {
+  type: "verification_failed";
+  /** Duration of verification in milliseconds */
+  verifyDurationMs: number;
+  /** Reason for failure */
+  reason: string;
+}
+
+/**
+ * Emitted when schema validation succeeds
+ */
+export interface SchemaValidationSucceededEvent extends ObservationBase {
+  type: "schema_validation_succeeded";
+  /** Duration of validation in milliseconds */
+  validateDurationMs: number;
+}
+
+/**
+ * Emitted when schema validation fails
+ */
+export interface SchemaValidationFailedEvent extends ObservationBase {
+  type: "schema_validation_failed";
+  /** Duration of validation in milliseconds */
+  validateDurationMs: number;
+  /** Validation error message */
+  error: string;
+}
+
+/**
+ * Emitted when a handler starts execution
+ */
+export interface HandlerStartedEvent extends ObservationBase {
+  type: "handler_started";
+  /** Zero-based index of the handler in the chain */
+  handlerIndex: number;
+  /** Total number of handlers registered for this event */
+  handlerCount: number;
+}
+
+/**
+ * Emitted when a handler completes successfully
+ */
+export interface HandlerSucceededEvent extends ObservationBase {
+  type: "handler_succeeded";
+  /** Zero-based index of the handler in the chain */
+  handlerIndex: number;
+  /** Total number of handlers registered for this event */
+  handlerCount: number;
+  /** Duration of this handler in milliseconds */
+  handlerDurationMs: number;
+}
+
+/**
+ * Emitted when a handler throws an error
+ */
+export interface HandlerFailedEvent extends ObservationBase {
+  type: "handler_failed";
+  /** Zero-based index of the handler in the chain */
+  handlerIndex: number;
+  /** Total number of handlers registered for this event */
+  handlerCount: number;
+  /** Duration of this handler in milliseconds */
+  handlerDurationMs: number;
+  /** The error that was thrown */
+  error: Error;
+}
+
+/**
+ * Emitted when webhook processing completes (always emitted)
+ */
+export interface CompletedEvent extends ObservationBase {
+  type: "completed";
+  /** Final HTTP status code */
+  status: number;
+  /** Total duration in milliseconds */
+  durationMs: number;
+  /** Whether processing was successful (status 200) */
+  success: boolean;
+}
+
+/**
+ * Union of all observation event types
+ */
+export type ObservationEvent =
+  | RequestReceivedEvent
+  | JsonParseFailedEvent
+  | EventUnhandledEvent
+  | VerificationSucceededEvent
+  | VerificationFailedEvent
+  | SchemaValidationSucceededEvent
+  | SchemaValidationFailedEvent
+  | HandlerStartedEvent
+  | HandlerSucceededEvent
+  | HandlerFailedEvent
+  | CompletedEvent;
+
+/**
+ * Observer interface for webhook lifecycle events.
+ * All methods are optional - implement only the ones you need.
+ *
+ * @example
+ * ```ts
+ * const observer: WebhookObserver = {
+ *   onRequestReceived: (event) => {
+ *     console.log(`Received webhook from ${event.provider}`);
+ *   },
+ *   onCompleted: (event) => {
+ *     metrics.histogram('webhook_duration_ms', event.durationMs, {
+ *       provider: event.provider,
+ *       eventType: event.eventType,
+ *       status: event.status,
+ *     });
+ *   },
+ * };
+ *
+ * const webhook = github()
+ *   .observe(observer)
+ *   .event('push', handler);
+ * ```
+ */
+export interface WebhookObserver {
+  /** Called when a webhook request is first received */
+  onRequestReceived?: (event: RequestReceivedEvent) => void;
+
+  /** Called when JSON parsing fails */
+  onJsonParseFailed?: (event: JsonParseFailedEvent) => void;
+
+  /** Called when no handler is registered for the event type */
+  onEventUnhandled?: (event: EventUnhandledEvent) => void;
+
+  /** Called when signature verification succeeds */
+  onVerificationSucceeded?: (event: VerificationSucceededEvent) => void;
+
+  /** Called when signature verification fails */
+  onVerificationFailed?: (event: VerificationFailedEvent) => void;
+
+  /** Called when schema validation succeeds */
+  onSchemaValidationSucceeded?: (event: SchemaValidationSucceededEvent) => void;
+
+  /** Called when schema validation fails */
+  onSchemaValidationFailed?: (event: SchemaValidationFailedEvent) => void;
+
+  /** Called when a handler starts execution */
+  onHandlerStarted?: (event: HandlerStartedEvent) => void;
+
+  /** Called when a handler completes successfully */
+  onHandlerSucceeded?: (event: HandlerSucceededEvent) => void;
+
+  /** Called when a handler throws an error */
+  onHandlerFailed?: (event: HandlerFailedEvent) => void;
+
+  /** Called when webhook processing completes (always called) */
+  onCompleted?: (event: CompletedEvent) => void;
+}
+
+/**
+ * Helper to create a simple in-memory stats collector
+ *
+ * @example
+ * ```ts
+ * const stats = createWebhookStats();
+ *
+ * const webhook = github()
+ *   .observe(stats.observer)
+ *   .event('push', handler);
+ *
+ * // Later, get stats
+ * console.log(stats.snapshot());
+ * // {
+ * //   totalRequests: 150,
+ * //   successCount: 145,
+ * //   errorCount: 5,
+ * //   byProvider: { github: { total: 150, success: 145, error: 5 } },
+ * //   byEventType: { push: { total: 100, success: 98, error: 2 }, ... },
+ * //   avgDurationMs: 23.5,
+ * // }
+ * ```
+ */
+export function createWebhookStats(): {
+  observer: WebhookObserver;
+  snapshot: () => WebhookStatsSnapshot;
+  reset: () => void;
+} {
+  let totalRequests = 0;
+  let successCount = 0;
+  let errorCount = 0;
+  let totalDurationMs = 0;
+  const byProvider: Record<
+    string,
+    { total: number; success: number; error: number }
+  > = {};
+  const byEventType: Record<
+    string,
+    { total: number; success: number; error: number }
+  > = {};
+
+  const observer: WebhookObserver = {
+    onCompleted: (event) => {
+      totalRequests++;
+      totalDurationMs += event.durationMs;
+
+      if (event.success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+
+      // Track by provider
+      let providerStats = byProvider[event.provider];
+      if (!providerStats) {
+        providerStats = { total: 0, success: 0, error: 0 };
+        byProvider[event.provider] = providerStats;
+      }
+      providerStats.total++;
+      if (event.success) {
+        providerStats.success++;
+      } else {
+        providerStats.error++;
+      }
+
+      // Track by event type (if known)
+      if (event.eventType) {
+        let eventStats = byEventType[event.eventType];
+        if (!eventStats) {
+          eventStats = { total: 0, success: 0, error: 0 };
+          byEventType[event.eventType] = eventStats;
+        }
+        eventStats.total++;
+        if (event.success) {
+          eventStats.success++;
+        } else {
+          eventStats.error++;
+        }
+      }
+    },
+  };
+
+  const snapshot = (): WebhookStatsSnapshot => ({
+    totalRequests,
+    successCount,
+    errorCount,
+    byProvider: { ...byProvider },
+    byEventType: { ...byEventType },
+    avgDurationMs: totalRequests > 0 ? totalDurationMs / totalRequests : 0,
+  });
+
+  const reset = () => {
+    totalRequests = 0;
+    successCount = 0;
+    errorCount = 0;
+    totalDurationMs = 0;
+    for (const key of Object.keys(byProvider)) {
+      delete byProvider[key];
+    }
+    for (const key of Object.keys(byEventType)) {
+      delete byEventType[key];
+    }
+  };
+
+  return { observer, snapshot, reset };
+}
+
+/**
+ * Snapshot of webhook statistics
+ */
+export interface WebhookStatsSnapshot {
+  totalRequests: number;
+  successCount: number;
+  errorCount: number;
+  byProvider: Record<string, { total: number; success: number; error: number }>;
+  byEventType: Record<
+    string,
+    { total: number; success: number; error: number }
+  >;
+  avgDurationMs: number;
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
@@ -226,7 +569,7 @@ export interface ProcessOptions {
  * Normalize headers to lowercase keys with string values
  */
 export function normalizeHeaders(
-  headers: Record<string, string | string[] | undefined>,
+  headers: Record<string, string | string[] | undefined>
 ): Headers {
   const normalized: Headers = {};
   for (const [key, value] of Object.entries(headers)) {
@@ -341,7 +684,7 @@ export function verifyHmac(options: {
  * ```
  */
 export function createHmacVerifier(
-  options: HmacVerifyOptions,
+  options: HmacVerifyOptions
 ): (rawBody: string | Buffer, headers: Headers, secret: string) => boolean {
   const {
     algorithm,
@@ -353,7 +696,7 @@ export function createHmacVerifier(
   return (
     rawBody: string | Buffer,
     headers: Headers,
-    secret: string,
+    secret: string
   ): boolean => {
     const signature = headers[signatureHeader.toLowerCase()];
 
@@ -491,9 +834,46 @@ export class WebhookBuilder<
   > = new Map();
   private errorHandler?: ErrorHandler;
   private verificationFailedHandler?: VerificationFailedHandler;
+  private readonly observers: WebhookObserver[] = [];
 
   constructor(provider: Provider<EventMap>) {
     this.provider = provider;
+  }
+
+  /**
+   * Register an observer for webhook lifecycle events
+   * Returns a new builder instance for immutable chaining
+   *
+   * @param observer - The observer to register (or array of observers)
+   *
+   * @example
+   * ```ts
+   * const stats = createWebhookStats();
+   *
+   * const webhook = github()
+   *   .observe(stats.observer)
+   *   .event('push', handler);
+   *
+   * // Custom observer
+   * const webhook = github()
+   *   .observe({
+   *     onCompleted: (event) => {
+   *       metrics.histogram('webhook_duration_ms', event.durationMs, {
+   *         provider: event.provider,
+   *         eventType: event.eventType,
+   *       });
+   *     },
+   *   })
+   *   .event('push', handler);
+   * ```
+   */
+  observe(
+    observer: WebhookObserver | WebhookObserver[]
+  ): WebhookBuilder<EventMap> {
+    const newBuilder = this.clone();
+    const observersToAdd = Array.isArray(observer) ? observer : [observer];
+    newBuilder.observers.push(...observersToAdd);
+    return newBuilder;
   }
 
   /**
@@ -519,15 +899,15 @@ export class WebhookBuilder<
    */
   event<E extends keyof EventMap & string>(
     eventType: E,
-    handler: EventHandler<InferPayload<EventMap[E]>>,
+    handler: EventHandler<InferPayload<EventMap[E]>>
   ): WebhookBuilder<EventMap> {
     const newBuilder = this.clone();
     const existing = newBuilder.handlers.get(eventType) || [];
     existing.push(
       handler as (
         payload: unknown,
-        context: HandlerContext,
-      ) => Promise<void> | void,
+        context: HandlerContext
+      ) => Promise<void> | void
     );
     newBuilder.handlers.set(eventType, existing);
     return newBuilder;
@@ -548,7 +928,7 @@ export class WebhookBuilder<
    * Returns a new builder instance for immutable chaining
    */
   onVerificationFailed(
-    handler: VerificationFailedHandler,
+    handler: VerificationFailedHandler
   ): WebhookBuilder<EventMap> {
     const newBuilder = this.clone();
     newBuilder.verificationFailedHandler = handler;
@@ -561,6 +941,8 @@ export class WebhookBuilder<
    */
   async process(options: ProcessOptions): Promise<ProcessResult> {
     const { rawBody, secret } = options;
+    const startTime = performance.now();
+    const receivedAt = new Date();
 
     // Normalize headers to lowercase
     const headers = normalizeHeaders(options.headers);
@@ -568,16 +950,63 @@ export class WebhookBuilder<
     // Convert raw body to string for consistent handling
     const bodyString =
       typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
+    const rawBodyBytes = Buffer.byteLength(bodyString, "utf-8");
+
+    // Helper to create base observation fields
+    const createBase = (
+      eventType?: string,
+      deliveryId?: string
+    ): ObservationBase => ({
+      provider: this.provider.name,
+      eventType,
+      deliveryId,
+      rawBodyBytes,
+      startTime,
+      receivedAt,
+    });
+
+    // Helper to emit completed event and return result
+    const complete = (
+      status: number,
+      eventType?: string,
+      deliveryId?: string,
+      body?: { ok: boolean; error?: string }
+    ): ProcessResult => {
+      const durationMs = performance.now() - startTime;
+      this.emit("onCompleted", {
+        ...createBase(eventType, deliveryId),
+        type: "completed",
+        status,
+        durationMs,
+        success: status === 200,
+      });
+      return { status, eventType, body };
+    };
+
+    // Emit request received
+    this.emit("onRequestReceived", {
+      ...createBase(),
+      type: "request_received",
+    });
 
     // Parse JSON body early (needed for getEventType and getPayload)
     let parsedBody: unknown;
+    const parseStartTime = performance.now();
     try {
       parsedBody = JSON.parse(bodyString);
-    } catch {
-      return {
-        status: 400,
-        body: { ok: false, error: "Invalid JSON body" },
-      };
+    } catch (e) {
+      const durationMs = performance.now() - parseStartTime;
+      const error = e instanceof Error ? e.message : "Invalid JSON";
+      this.emit("onJsonParseFailed", {
+        ...createBase(),
+        type: "json_parse_failed",
+        durationMs,
+        error,
+      });
+      return complete(400, undefined, undefined, {
+        ok: false,
+        error: "Invalid JSON body",
+      });
     }
 
     // Get event type (pass parsed body for providers that extract type from body)
@@ -586,7 +1015,13 @@ export class WebhookBuilder<
 
     // No event type or no handlers for this event → 204
     if (!eventType || !this.handlers.has(eventType)) {
-      return { status: 204 };
+      const durationMs = performance.now() - startTime;
+      this.emit("onEventUnhandled", {
+        ...createBase(eventType, deliveryId),
+        type: "event_unhandled",
+        durationMs,
+      });
+      return complete(204, eventType, deliveryId);
     }
 
     // Resolve secret: options.secret → provider.secret → env vars
@@ -595,10 +1030,19 @@ export class WebhookBuilder<
 
     // Verify signature if secret is available
     if (resolvedSecret) {
+      const verifyStartTime = performance.now();
       const isValid = this.provider.verify(rawBody, headers, resolvedSecret);
+      const verifyDurationMs = performance.now() - verifyStartTime;
 
       if (!isValid) {
         const reason = "Signature verification failed";
+
+        this.emit("onVerificationFailed", {
+          ...createBase(eventType, deliveryId),
+          type: "verification_failed",
+          verifyDurationMs,
+          reason,
+        });
 
         if (this.verificationFailedHandler) {
           try {
@@ -608,11 +1052,17 @@ export class WebhookBuilder<
           }
         }
 
-        return {
-          status: 401,
-          body: { ok: false, error: reason },
-        };
+        return complete(401, eventType, deliveryId, {
+          ok: false,
+          error: reason,
+        });
       }
+
+      this.emit("onVerificationSucceeded", {
+        ...createBase(eventType, deliveryId),
+        type: "verification_succeeded",
+        verifyDurationMs,
+      });
     }
 
     // Extract payload from body (for providers with envelope structures like Ragie)
@@ -626,9 +1076,19 @@ export class WebhookBuilder<
     let payload: unknown;
 
     if (schema) {
+      const validateStartTime = performance.now();
       const result = schema.safeParse(payloadToValidate);
+      const validateDurationMs = performance.now() - validateStartTime;
+
       if (!result.success) {
         const zodError = result.error as ZodError;
+
+        this.emit("onSchemaValidationFailed", {
+          ...createBase(eventType, deliveryId),
+          type: "schema_validation_failed",
+          validateDurationMs,
+          error: zodError.message,
+        });
 
         if (this.errorHandler) {
           try {
@@ -642,11 +1102,18 @@ export class WebhookBuilder<
           }
         }
 
-        return {
-          status: 400,
-          body: { ok: false, error: "Schema validation failed" },
-        };
+        return complete(400, eventType, deliveryId, {
+          ok: false,
+          error: "Schema validation failed",
+        });
       }
+
+      this.emit("onSchemaValidationSucceeded", {
+        ...createBase(eventType, deliveryId),
+        type: "schema_validation_succeeded",
+        validateDurationMs,
+      });
+
       payload = result.data;
     } else {
       payload = payloadToValidate;
@@ -659,17 +1126,51 @@ export class WebhookBuilder<
       deliveryId,
       headers,
       rawBody: bodyString,
-      receivedAt: new Date(),
+      receivedAt,
     };
 
     // Execute handlers sequentially
     const eventHandlers = this.handlers.get(eventType) || [];
+    const handlerCount = eventHandlers.length;
 
-    for (const handler of eventHandlers) {
+    for (
+      let handlerIndex = 0;
+      handlerIndex < eventHandlers.length;
+      handlerIndex++
+    ) {
+      const handler = eventHandlers[handlerIndex]!;
+
+      this.emit("onHandlerStarted", {
+        ...createBase(eventType, deliveryId),
+        type: "handler_started",
+        handlerIndex,
+        handlerCount,
+      });
+
+      const handlerStartTime = performance.now();
       try {
         await handler(payload, handlerContext);
+        const handlerDurationMs = performance.now() - handlerStartTime;
+
+        this.emit("onHandlerSucceeded", {
+          ...createBase(eventType, deliveryId),
+          type: "handler_succeeded",
+          handlerIndex,
+          handlerCount,
+          handlerDurationMs,
+        });
       } catch (error) {
+        const handlerDurationMs = performance.now() - handlerStartTime;
         const err = error instanceof Error ? error : new Error(String(error));
+
+        this.emit("onHandlerFailed", {
+          ...createBase(eventType, deliveryId),
+          type: "handler_failed",
+          handlerIndex,
+          handlerCount,
+          handlerDurationMs,
+          error: err,
+        });
 
         if (this.errorHandler) {
           try {
@@ -683,19 +1184,14 @@ export class WebhookBuilder<
           }
         }
 
-        return {
-          status: 500,
-          eventType,
-          body: { ok: false, error: "Handler execution failed" },
-        };
+        return complete(500, eventType, deliveryId, {
+          ok: false,
+          error: "Handler execution failed",
+        });
       }
     }
 
-    return {
-      status: 200,
-      eventType,
-      body: { ok: true },
-    };
+    return complete(200, eventType, deliveryId, { ok: true });
   }
 
   /**
@@ -720,7 +1216,31 @@ export class WebhookBuilder<
     newBuilder.errorHandler = this.errorHandler;
     newBuilder.verificationFailedHandler = this.verificationFailedHandler;
 
+    // Copy observers
+    newBuilder.observers.push(...this.observers);
+
     return newBuilder;
+  }
+
+  /**
+   * Safely emit an observation event to all observers
+   * Errors from observers are caught and ignored to prevent breaking webhook processing
+   */
+  private emit<K extends keyof WebhookObserver>(
+    method: K,
+    event: Parameters<NonNullable<WebhookObserver[K]>>[0]
+  ): void {
+    for (const observer of this.observers) {
+      try {
+        const handler = observer[method];
+        if (handler) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (handler as any)(event);
+        }
+      } catch {
+        // Swallow observer errors - they must never break webhook processing
+      }
+    }
   }
 
   /**
