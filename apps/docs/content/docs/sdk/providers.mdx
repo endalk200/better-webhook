@@ -25,7 +25,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
   "push",
   async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
-  },
+  }
 );
 ```
 
@@ -156,7 +156,7 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
   "document_status_updated",
   async (payload) => {
     console.log(`Document ${payload.document_id} is now ${payload.status}`);
-  },
+  }
 );
 ```
 
