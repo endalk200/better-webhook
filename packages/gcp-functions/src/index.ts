@@ -2,6 +2,7 @@ import {
   type WebhookBuilder,
   type ProcessResult,
   type ZodSchema,
+  type WebhookObserver,
 } from "@better-webhook/core";
 
 // ============================================================================
@@ -55,6 +56,23 @@ export interface GCPFunctionAdapterOptions {
 
   /** Callback invoked on successful webhook processing */
   onSuccess?: (eventType: string) => void | Promise<void>;
+
+  /**
+   * Observer(s) for webhook lifecycle events.
+   * Use this to add observability without modifying the webhook builder.
+   *
+   * @example
+   * ```ts
+   * import { createWebhookStats } from '@better-webhook/core';
+   *
+   * const stats = createWebhookStats();
+   *
+   * http('webhookHandler', toGCPFunction(webhook, {
+   *   observer: stats.observer,
+   * }));
+   * ```
+   */
+  observer?: WebhookObserver | WebhookObserver[];
 }
 
 /**
@@ -112,6 +130,11 @@ export function toGCPFunction<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
   options?: GCPFunctionAdapterOptions,
 ): GCPFunctionHandler {
+  // Apply observer(s) if provided
+  const instrumentedWebhook = options?.observer
+    ? webhook.observe(options.observer)
+    : webhook;
+
   return async (
     req: GCPFunctionRequest,
     res: GCPFunctionResponse,
@@ -159,7 +182,7 @@ export function toGCPFunction<EventMap extends Record<string, ZodSchema>>(
     }
 
     // Process the webhook
-    const result: ProcessResult = await webhook.process({
+    const result: ProcessResult = await instrumentedWebhook.process({
       headers: req.headers,
       rawBody,
       secret: options?.secret,

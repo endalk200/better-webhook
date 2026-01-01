@@ -223,7 +223,7 @@ describe("toExpress", () => {
   });
 
   describe("error handling", () => {
-    it("should call next() with error when provided", async () => {
+    it("should return 400 when body is missing (even if next is provided)", async () => {
       const provider = createTestProvider();
       // Create a webhook that will throw
       const webhook = createWebhook(provider).event("test.event", () => {});
@@ -261,6 +261,133 @@ describe("toExpress", () => {
       await middleware(req as Request, res as Response);
 
       expect(state.statusCode).toBe(500);
+    });
+  });
+
+  describe("observer option", () => {
+    it("should call observer callbacks when observer option is provided", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted = vi.fn();
+      const middleware = toExpress(webhook, {
+        observer: { onCompleted },
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(state.statusCode).toBe(200);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "completed",
+          status: 200,
+          success: true,
+          eventType: "test.event",
+        }),
+      );
+    });
+
+    it("should call observer callbacks for unhandled events (204)", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider); // no handlers
+      const onCompleted = vi.fn();
+      const middleware = toExpress(webhook, {
+        observer: { onCompleted },
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(state.statusCode).toBe(204);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "completed",
+          status: 204,
+          success: false,
+        }),
+      );
+    });
+
+    it("should call observer callbacks for verification failures (401)", async () => {
+      const provider = createTestProvider({ verifyResult: false });
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted = vi.fn();
+      const middleware = toExpress(webhook, {
+        secret: "test",
+        observer: { onCompleted },
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(state.statusCode).toBe(401);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "completed",
+          status: 401,
+          success: false,
+          eventType: "test.event",
+        }),
+      );
+    });
+
+    it("should not call observer when adapter rejects parsed JSON body (process not invoked)", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted = vi.fn();
+      const middleware = toExpress(webhook, {
+        observer: { onCompleted },
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: validPayload, // parsed object => adapter returns 400 before calling process()
+      });
+      const { res, state } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(state.statusCode).toBe(400);
+      expect(onCompleted).not.toHaveBeenCalled();
+    });
+
+    it("should accept an array of observers", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted1 = vi.fn();
+      const onCompleted2 = vi.fn();
+      const middleware = toExpress(webhook, {
+        observer: [{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }],
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(onCompleted1).toHaveBeenCalledTimes(1);
+      expect(onCompleted2).toHaveBeenCalledTimes(1);
     });
   });
 });
