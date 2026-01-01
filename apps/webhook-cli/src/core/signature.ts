@@ -322,14 +322,8 @@ export function getProviderHeaders(
     case "ragie":
       headers.push(
         { key: "Content-Type", value: "application/json" },
-        {
-          key: "X-Ragie-Event",
-          value: options?.event || "document_status_updated",
-        },
-        {
-          key: "X-Ragie-Delivery",
-          value: options?.webhookId || generateDeliveryId(),
-        },
+        // Ragie signs requests with an `X-Signature` header.
+        // Event type + nonce are included in the JSON body envelope.
       );
       break;
 

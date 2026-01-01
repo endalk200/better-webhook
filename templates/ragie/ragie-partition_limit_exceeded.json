@@ -17,7 +17,8 @@
   "body": {
     "type": "partition_limit_exceeded",
     "payload": {
-      "partition": "default"
+      "partition": "default",
+      "limit_type": "document_limit"
     },
     "nonce": "partition-limit-nonce-123"
   },

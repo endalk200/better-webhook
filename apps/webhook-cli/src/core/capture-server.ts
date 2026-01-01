@@ -217,8 +217,8 @@ export class CaptureServer {
       }
     }
 
-    // Detect provider from headers
-    const provider = this.detectProvider(req.headers);
+    // Detect provider from headers/body
+    const provider = this.detectProvider(req.headers, body);
 
     // Create captured webhook object
     const captured: CapturedWebhook = {
@@ -292,6 +292,7 @@ export class CaptureServer {
    */
   private detectProvider(
     headers: Record<string, string | string[] | undefined>,
+    body: unknown,
   ): WebhookProvider | undefined {
     // Stripe
     if (headers["stripe-signature"]) {
@@ -303,9 +304,17 @@ export class CaptureServer {
       return "github";
     }
 
-    // Ragie
-    if (headers["x-ragie-delivery"]) {
-      return "ragie";
+    // Ragie (envelope: { type, payload, nonce } + X-Signature header)
+    if (headers["x-signature"]) {
+      if (
+        body &&
+        typeof body === "object" &&
+        "type" in body &&
+        "payload" in body &&
+        "nonce" in body
+      ) {
+        return "ragie";
+      }
     }
 
     // Shopify
