@@ -1,5 +1,12 @@
 # @better-webhook/github
 
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.7.0
+
 ## 0.6.2
 
 ### Patch Changes

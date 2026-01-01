@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/nextjs",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Next.js integration for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
