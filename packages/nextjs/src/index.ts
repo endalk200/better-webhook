@@ -2,6 +2,7 @@ import {
   type WebhookBuilder,
   type ProcessResult,
   type ZodSchema,
+  type WebhookObserver,
 } from "@better-webhook/core";
 
 // ============================================================================
@@ -17,6 +18,23 @@ export interface NextJSAdapterOptions {
 
   /** Callback invoked on successful webhook processing */
   onSuccess?: (eventType: string) => void | Promise<void>;
+
+  /**
+   * Observer(s) for webhook lifecycle events.
+   * Use this to add observability without modifying the webhook builder.
+   *
+   * @example
+   * ```ts
+   * import { createWebhookStats } from '@better-webhook/core';
+   *
+   * const stats = createWebhookStats();
+   *
+   * export const POST = toNextJS(webhook, {
+   *   observer: stats.observer,
+   * });
+   * ```
+   */
+  observer?: WebhookObserver | WebhookObserver[];
 }
 
 /**
@@ -76,6 +94,11 @@ export function toNextJS<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
   options?: NextJSAdapterOptions,
 ): NextJSHandler {
+  // Apply observer(s) if provided
+  const instrumentedWebhook = options?.observer
+    ? webhook.observe(options.observer)
+    : webhook;
+
   return async (request: Request): Promise<Response> => {
     // Enforce POST method
     if (request.method !== "POST") {
@@ -101,7 +124,7 @@ export function toNextJS<EventMap extends Record<string, ZodSchema>>(
     });
 
     // Process the webhook
-    const result: ProcessResult = await webhook.process({
+    const result: ProcessResult = await instrumentedWebhook.process({
       headers,
       rawBody,
       secret: options?.secret,

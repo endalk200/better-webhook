@@ -103,7 +103,7 @@ describe("toGCPFunction", () => {
 
       expect(state.statusCode).toBe(405);
       expect((state.jsonBody as { error: string }).error).toBe(
-        "Method not allowed",
+        "Method not allowed"
       );
     });
 
@@ -207,7 +207,7 @@ describe("toGCPFunction", () => {
 
       expect(state.statusCode).toBe(400);
       expect((state.jsonBody as { error: string }).error).toBe(
-        "Request body is required",
+        "Request body is required"
       );
     });
   });
@@ -402,6 +402,102 @@ describe("toGCPFunction", () => {
       await handler(req, res);
 
       expect(state.statusCode).toBe(500);
+    });
+  });
+
+  describe("observer option", () => {
+    it("should call observer callbacks when observer option is provided", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted = vi.fn();
+      const handler = toGCPFunction(webhook, { observer: { onCompleted } });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(200);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "completed",
+          status: 200,
+          success: true,
+          eventType: "test.event",
+        })
+      );
+    });
+
+    it("should accept an array of observers", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted1 = vi.fn();
+      const onCompleted2 = vi.fn();
+      const handler = toGCPFunction(webhook, {
+        observer: [
+          { onCompleted: onCompleted1 },
+          { onCompleted: onCompleted2 },
+        ],
+      });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(200);
+      expect(onCompleted1).toHaveBeenCalledTimes(1);
+      expect(onCompleted2).toHaveBeenCalledTimes(1);
+    });
+
+    it("should call observer callbacks for unhandled events (204)", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider); // no handlers
+      const onCompleted = vi.fn();
+      const handler = toGCPFunction(webhook, { observer: { onCompleted } });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(204);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "completed",
+          status: 204,
+          success: false,
+        })
+      );
+    });
+
+    it("should not call observer when adapter rejects before processing (missing body)", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event("test.event", () => {});
+      const onCompleted = vi.fn();
+      const handler = toGCPFunction(webhook, { observer: { onCompleted } });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: undefined,
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(400);
+      expect(onCompleted).not.toHaveBeenCalled();
     });
   });
 

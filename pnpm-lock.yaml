@@ -157,6 +157,9 @@ importers:
 
   apps/examples/express-example:
     dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@better-webhook/express':
         specifier: workspace:*
         version: link:../../../packages/express
@@ -188,6 +191,9 @@ importers:
 
   apps/examples/nestjs-example:
     dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@better-webhook/github':
         specifier: workspace:*
         version: link:../../../packages/github
@@ -231,6 +237,9 @@ importers:
 
   apps/examples/nextjs-example:
     dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@better-webhook/github':
         specifier: workspace:*
         version: link:../../../packages/github

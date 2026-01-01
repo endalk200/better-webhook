@@ -3,6 +3,7 @@ import {
   type WebhookBuilder,
   type ProcessResult,
   type ZodSchema,
+  type WebhookObserver,
 } from "@better-webhook/core";
 
 // ============================================================================
@@ -18,6 +19,25 @@ export interface ExpressAdapterOptions {
 
   /** Callback invoked on successful webhook processing */
   onSuccess?: (eventType: string) => void | Promise<void>;
+
+  /**
+   * Observer(s) for webhook lifecycle events.
+   * Use this to add observability without modifying the webhook builder.
+   *
+   * @example
+   * ```ts
+   * import { createWebhookStats } from '@better-webhook/core';
+   *
+   * const stats = createWebhookStats();
+   *
+   * app.post('/webhooks/github', express.raw({ type: 'application/json' }),
+   *   toExpress(webhook, {
+   *     observer: stats.observer,
+   *   })
+   * );
+   * ```
+   */
+  observer?: WebhookObserver | WebhookObserver[];
 }
 
 /**
@@ -66,6 +86,11 @@ export function toExpress<EventMap extends Record<string, ZodSchema>>(
   webhook: WebhookBuilder<EventMap>,
   options?: ExpressAdapterOptions,
 ): ExpressMiddleware {
+  // Apply observer(s) if provided
+  const instrumentedWebhook = options?.observer
+    ? webhook.observe(options.observer)
+    : webhook;
+
   return async (
     req: Request,
     res: Response,
@@ -90,7 +115,7 @@ export function toExpress<EventMap extends Record<string, ZodSchema>>(
       }
 
       // Process the webhook
-      const result: ProcessResult = await webhook.process({
+      const result: ProcessResult = await instrumentedWebhook.process({
         headers: req.headers as Record<string, string | undefined>,
         rawBody,
         secret: options?.secret,
