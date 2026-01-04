@@ -87,7 +87,7 @@ const webhook = github().event("push", async (payload) => {
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook)
+  toExpress(webhook),
 );
 
 app.listen(3000);
@@ -108,7 +108,7 @@ app.post(
     onSuccess: async (eventType) => {
       console.log(`Processed ${eventType}`);
     },
-  })
+  }),
 );
 ```
 
@@ -127,19 +127,19 @@ const ragieWebhook = ragie().event(
   "document_status_updated",
   async (payload) => {
     // Handle Ragie
-  }
+  },
 );
 
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(githubWebhook)
+  toExpress(githubWebhook),
 );
 
 app.post(
   "/webhooks/ragie",
   express.raw({ type: "application/json" }),
-  toExpress(ragieWebhook)
+  toExpress(ragieWebhook),
 );
 ```
 
@@ -279,7 +279,7 @@ http(
     onSuccess: async (eventType) => {
       console.log(`Processed ${eventType}`);
     },
-  })
+  }),
 );
 ```
 
@@ -356,7 +356,7 @@ export const POST = toNextJS(webhook, {
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(webhook, { observer: stats.observer })
+  toExpress(webhook, { observer: stats.observer }),
 );
 
 // NestJS
@@ -369,7 +369,7 @@ http(
   "webhookHandler",
   toGCPFunction(webhook, {
     observer: stats.observer,
-  })
+  }),
 );
 ```
 
