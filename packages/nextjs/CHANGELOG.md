@@ -1,5 +1,11 @@
 # @better-webhook/nextjs
 
+## 0.7.1
+
+### Patch Changes
+
+- Expand nextjs peer dependencies
+
 ## 0.7.0
 
 ### Minor Changes
