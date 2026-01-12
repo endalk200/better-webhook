@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.4.3
+
+### Patch Changes
+
+- Make sure CLI dashboard style matches documentation site theme
+
 ## 3.4.2
 
 ### Patch Changes

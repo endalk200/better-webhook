@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/cli",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "description": "Modern CLI for developing, capturing, and replaying webhooks locally with dashboard UI.",
   "type": "module",
   "bin": {
@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build:cli": "tsup --format cjs,esm --dts",
+    "build:cli": "tsup --format cjs,esm --dts && node ./scripts/copy-dashboard.mjs",
     "build": "pnpm --filter @better-webhook/dashboard build && pnpm run build:cli && node ./scripts/copy-dashboard.mjs",
     "dev": "tsup --watch",
     "start": "tsx src/index.ts",
