@@ -18,11 +18,11 @@ async function existsDir(p) {
 }
 
 if (!(await existsDir(srcDir))) {
-  console.error(
+  console.warn(
     `[copy-dashboard] Dashboard build output not found at: ${srcDir}\n` +
-      `[copy-dashboard] Run: pnpm --filter @better-webhook/dashboard build`
+      `[copy-dashboard] Skipping copy. Run: pnpm --filter @better-webhook/dashboard build`,
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 await rm(destDir, { recursive: true, force: true });
