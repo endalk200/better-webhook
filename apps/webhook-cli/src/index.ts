@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   templates,
   run,
@@ -12,8 +13,12 @@ import {
 } from "./commands/index.js";
 
 // Dynamically read version from package.json to keep it in sync
-const require = createRequire(import.meta.url);
-const packageJson = require("../package.json");
+const packageJsonPath = fileURLToPath(
+  new URL("../package.json", import.meta.url),
+);
+const packageJson = JSON.parse(
+  readFileSync(packageJsonPath, { encoding: "utf8" }),
+);
 
 const program = new Command()
   .name("better-webhook")

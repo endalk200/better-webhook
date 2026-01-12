@@ -103,13 +103,14 @@ export async function startDashboardServer(
   const port = options.port ?? 4000;
 
   // Serve the bundled dashboard UI.
-  // Support both ESM (CLI runtime) and CJS (library consumers) builds.
+  // Prefer CJS `__dirname`, but fall back to ESM `import.meta.url`,
+  // while keeping esbuild happy for CJS output.
+  // eslint-disable-next-line no-undef
   const runtimeDir =
-    // eslint-disable-next-line no-undef
     typeof __dirname !== "undefined"
       ? // eslint-disable-next-line no-undef
         __dirname
-      : path.dirname(fileURLToPath(import.meta.url));
+      : path.dirname(fileURLToPath(new URL(".", import.meta.url)));
   const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
     resolveDashboardDistDir(runtimeDir);
 
