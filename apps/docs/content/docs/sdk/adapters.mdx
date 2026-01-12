@@ -13,9 +13,21 @@ Adapters convert the webhook builder into framework-specific handlers. Each adap
 ## Next.js
 
 <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
-  <Tab value="npm">```bash npm install @better-webhook/nextjs ```</Tab>
-  <Tab value="pnpm">```bash pnpm add @better-webhook/nextjs ```</Tab>
-  <Tab value="yarn">```bash yarn add @better-webhook/nextjs ```</Tab>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/nextjs
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/nextjs
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/nextjs
+  ```
+  </Tab>
 </Tabs>
 
 The Next.js adapter works with the App Router's route handlers.
@@ -63,9 +75,21 @@ export const POST = toNextJS(webhook, {
 ## Express
 
 <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
-  <Tab value="npm">```bash npm install @better-webhook/express ```</Tab>
-  <Tab value="pnpm">```bash pnpm add @better-webhook/express ```</Tab>
-  <Tab value="yarn">```bash yarn add @better-webhook/express ```</Tab>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/express
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/express
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/express
+  ```
+  </Tab>
 </Tabs>
 
 The Express adapter returns a middleware function.
@@ -148,9 +172,21 @@ app.post(
 ## NestJS
 
 <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
-  <Tab value="npm">```bash npm install @better-webhook/nestjs ```</Tab>
-  <Tab value="pnpm">```bash pnpm add @better-webhook/nestjs ```</Tab>
-  <Tab value="yarn">```bash yarn add @better-webhook/nestjs ```</Tab>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/nestjs
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/nestjs
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/nestjs
+  ```
+  </Tab>
 </Tabs>
 
 The NestJS adapter returns an async function that processes the request and returns a result object.
@@ -235,9 +271,21 @@ This gives you control over the response, allowing you to add headers, transform
 ## GCP Cloud Functions
 
 <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
-  <Tab value="npm">```bash npm install @better-webhook/gcp-functions ```</Tab>
-  <Tab value="pnpm">```bash pnpm add @better-webhook/gcp-functions ```</Tab>
-  <Tab value="yarn">```bash yarn add @better-webhook/gcp-functions ```</Tab>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/gcp-functions
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/gcp-functions
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/gcp-functions
+  ```
+  </Tab>
 </Tabs>
 
 The GCP Cloud Functions adapter works with both 1st and 2nd generation Cloud Functions.
