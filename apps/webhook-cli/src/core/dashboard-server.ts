@@ -110,7 +110,7 @@ export async function startDashboardServer(
     typeof __dirname !== "undefined"
       ? // eslint-disable-next-line no-undef
         __dirname
-      : path.dirname(fileURLToPath(new URL(".", import.meta.url)));
+      : path.dirname(fileURLToPath(import.meta.url));
   const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
     resolveDashboardDistDir(runtimeDir);
 
