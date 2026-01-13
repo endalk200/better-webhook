@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.4.4
+
+### Patch Changes
+
+- fix: resolve path resolution issue
+
 ## 3.4.3
 
 ### Patch Changes
