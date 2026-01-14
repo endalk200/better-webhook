@@ -1,4 +1,5 @@
 import { github } from "@better-webhook/github";
+import { push, pull_request, issues } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
 
@@ -30,7 +31,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
   // Add observers for metrics and logging
   .observe(stats.observer)
   .observe(loggingObserver)
-  .event("push", async (payload, context) => {
+  .event(push, async (payload, context) => {
     console.log("📦 Push event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Received at: ${context.receivedAt.toISOString()}`);
@@ -41,7 +42,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
       console.log(`   - ${commit.message} (${commit.id.slice(0, 7)})`);
     });
   })
-  .event("pull_request", async (payload, context) => {
+  .event(pull_request, async (payload, context) => {
     console.log("🔀 Pull request event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
@@ -50,7 +51,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
     );
     console.log(`   State: ${payload.pull_request.state}`);
   })
-  .event("issues", async (payload, context) => {
+  .event(issues, async (payload, context) => {
     console.log("🎫 Issue event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Action: ${payload.action}`);
