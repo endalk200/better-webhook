@@ -1,7 +1,10 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: {
+    index: "src/index.ts",
+    events: "src/events.ts",
+  },
   format: ["esm", "cjs"],
   dts: true,
   clean: true,
@@ -9,6 +12,7 @@ export default defineConfig({
   target: "node18",
   sourcemap: false,
   minify: false,
-  splitting: false,
+  splitting: true,
+  treeshake: true,
   external: ["@nestjs/common", "@nestjs/core", "reflect-metadata"],
 });

@@ -2,13 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createHmac } from "node:crypto";
 import {
   github,
-  GitHubPushEventSchema,
-  GitHubPullRequestEventSchema,
-  GitHubIssuesEventSchema,
   type GitHubPushEvent,
   type GitHubPullRequestEvent,
   type GitHubIssuesEvent,
 } from "./index.js";
+import { push, pull_request, issues } from "./events.js";
+import {
+  GitHubPushEventSchema,
+  GitHubPullRequestEventSchema,
+  GitHubIssuesEventSchema,
+} from "./schemas.js";
 
 // ============================================================================
 // Test Fixtures
@@ -240,7 +243,7 @@ describe("github()", () => {
       const body = JSON.stringify(validPushPayload);
       const handler = vi.fn();
 
-      const webhook = github({ secret }).event("push", handler);
+      const webhook = github({ secret }).event(push, handler);
 
       const result = await webhook.process({
         headers: {
@@ -269,7 +272,7 @@ describe("github()", () => {
       const body = JSON.stringify(validPullRequestPayload);
       const handler = vi.fn();
 
-      const webhook = github({ secret }).event("pull_request", handler);
+      const webhook = github({ secret }).event(pull_request, handler);
 
       const result = await webhook.process({
         headers: {
@@ -298,7 +301,7 @@ describe("github()", () => {
       const body = JSON.stringify(validIssuesPayload);
       const handler = vi.fn();
 
-      const webhook = github({ secret }).event("issues", handler);
+      const webhook = github({ secret }).event(issues, handler);
 
       const result = await webhook.process({
         headers: {
@@ -328,7 +331,7 @@ describe("github()", () => {
       const secret = "test-secret";
       const body = JSON.stringify(validPushPayload);
 
-      const webhook = github({ secret }).event("push", () => {});
+      const webhook = github({ secret }).event(push, () => {});
 
       const result = await webhook.process({
         headers: {
@@ -345,7 +348,7 @@ describe("github()", () => {
       const secret = "test-secret";
       const body = JSON.stringify(validPushPayload);
 
-      const webhook = github({ secret }).event("push", () => {});
+      const webhook = github({ secret }).event(push, () => {});
 
       const result = await webhook.process({
         headers: {
@@ -362,7 +365,7 @@ describe("github()", () => {
       const secret = "test-secret";
       const body = JSON.stringify(validPushPayload);
 
-      const webhook = github({ secret }).event("push", () => {});
+      const webhook = github({ secret }).event(push, () => {});
 
       const result = await webhook.process({
         headers: {
@@ -378,7 +381,7 @@ describe("github()", () => {
       const secret = "test-secret";
       const body = JSON.stringify(validPushPayload);
 
-      const webhook = github({ secret }).event("push", () => {});
+      const webhook = github({ secret }).event(push, () => {});
 
       const result = await webhook.process({
         headers: {
@@ -399,8 +402,8 @@ describe("github()", () => {
       const prHandler = vi.fn();
 
       const webhook = github({ secret })
-        .event("push", pushHandler)
-        .event("pull_request", prHandler);
+        .event(push, pushHandler)
+        .event(pull_request, prHandler);
 
       // Test push
       const pushBody = JSON.stringify(validPushPayload);
@@ -434,7 +437,7 @@ describe("github()", () => {
       const onError = vi.fn();
 
       const webhook = github({ secret })
-        .event("push", () => {
+        .event(push, () => {
           throw new Error("Test error");
         })
         .onError(onError);

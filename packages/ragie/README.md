@@ -3,26 +3,28 @@
 [![npm](https://img.shields.io/npm/v/@better-webhook/ragie?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/ragie)
 [![npm monthly](https://img.shields.io/npm/dm/@better-webhook/ragie?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/ragie)
 
-**Handle Ragie webhooks with full type safety.**
+**Handle Ragie webhooks with full type safety and tree-shaking support.**
 
-No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers for your Ragie RAG workflows.
+No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers for your Ragie RAG workflows with optimal bundle sizes.
 
 ```ts
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
-  // ✨ Full autocomplete for payload.document_id, payload.status, etc.
+const webhook = ragie().event(document_status_updated, async (payload) => {
+  // Full autocomplete for payload.document_id, payload.status, etc.
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 ```
 
 ## Features
 
-- **🔒 Automatic signature verification** — HMAC-SHA256 verification using `X-Signature` header
-- **📝 Fully typed payloads** — TypeScript knows every field on every event
-- **✅ Schema validated** — Malformed payloads are caught and rejected
-- **🎯 Multiple events** — Handle document updates, sync events, and more
-- **🔄 Idempotency support** — Built-in `nonce` field for preventing duplicate processing
+- **Tree-shakeable** — Only import the events you use for optimal bundle sizes
+- **Automatic signature verification** — HMAC-SHA256 verification using `X-Signature` header
+- **Fully typed payloads** — TypeScript knows every field on every event
+- **Schema validated** — Malformed payloads are caught and rejected
+- **Multiple events** — Handle document updates, sync events, and more
+- **Idempotency support** — Built-in `nonce` field for preventing duplicate processing
 
 ## Installation
 
@@ -50,10 +52,14 @@ npm install @better-webhook/nestjs   # NestJS
 ```ts
 // app/api/webhooks/ragie/route.ts
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = ragie()
-  .event("document_status_updated", async (payload) => {
+  .event(document_status_updated, async (payload) => {
     console.log(`Document ${payload.document_id} is ${payload.status}`);
 
     if (payload.status === "ready") {
@@ -61,7 +67,7 @@ const webhook = ragie()
       await notifyDocumentReady(payload.document_id);
     }
   })
-  .event("connection_sync_finished", async (payload) => {
+  .event(connection_sync_finished, async (payload) => {
     console.log(`Sync ${payload.sync_id} complete!`);
     console.log(`Connection: ${payload.connection_id}`);
     console.log(`Partition: ${payload.partition}`);
@@ -76,15 +82,19 @@ export const POST = toNextJS(webhook);
 ```ts
 import express from "express";
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_started,
+} from "@better-webhook/ragie/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
 const webhook = ragie()
-  .event("document_status_updated", async (payload) => {
+  .event(document_status_updated, async (payload) => {
     console.log(`Document ${payload.document_id} status: ${payload.status}`);
   })
-  .event("connection_sync_started", async (payload) => {
+  .event(connection_sync_started, async (payload) => {
     console.log(
       `Sync ${payload.sync_id} started for connection ${payload.connection_id}`,
     );
@@ -105,15 +115,19 @@ app.listen(3000);
 import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Response } from "express";
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
   private webhook = ragie()
-    .event("document_status_updated", async (payload) => {
+    .event(document_status_updated, async (payload) => {
       console.log(`Document ${payload.document_id} is ${payload.status}`);
     })
-    .event("connection_sync_finished", async (payload) => {
+    .event(connection_sync_finished, async (payload) => {
       console.log(`Sync completed: ${payload.sync_id}`);
     });
 
@@ -127,23 +141,27 @@ export class WebhooksController {
 
 ## Supported Events
 
-| Event                       | Description                                     |
-| --------------------------- | ----------------------------------------------- |
-| `document_status_updated`   | Document enters indexed, ready, or failed state |
-| `document_deleted`          | Document is deleted                             |
-| `entity_extracted`          | Entity extraction completes                     |
-| `connection_sync_started`   | Connection sync begins                          |
-| `connection_sync_progress`  | Periodic sync progress updates                  |
-| `connection_sync_finished`  | Connection sync completes                       |
-| `connection_limit_exceeded` | Connection page limit exceeded                  |
-| `partition_limit_exceeded`  | Partition document limit exceeded               |
+Import events from `@better-webhook/ragie/events`:
+
+| Event                       | Import                      | Description                                     |
+| --------------------------- | --------------------------- | ----------------------------------------------- |
+| `document_status_updated`   | `document_status_updated`   | Document enters indexed, ready, or failed state |
+| `document_deleted`          | `document_deleted`          | Document is deleted                             |
+| `entity_extracted`          | `entity_extracted`          | Entity extraction completes                     |
+| `connection_sync_started`   | `connection_sync_started`   | Connection sync begins                          |
+| `connection_sync_progress`  | `connection_sync_progress`  | Periodic sync progress updates                  |
+| `connection_sync_finished`  | `connection_sync_finished`  | Connection sync completes                       |
+| `connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded                  |
+| `partition_limit_exceeded`  | `partition_limit_exceeded`  | Partition document limit exceeded               |
 
 ## Event Examples
 
 ### Document Status Updates
 
 ```ts
-ragie().event("document_status_updated", async (payload) => {
+import { document_status_updated } from "@better-webhook/ragie/events";
+
+ragie().event(document_status_updated, async (payload) => {
   const { document_id, status, external_id, partition, nonce } = payload;
 
   // Use nonce for idempotency
@@ -180,9 +198,15 @@ ragie().event("document_status_updated", async (payload) => {
 ### Connection Sync Events
 
 ```ts
+import {
+  connection_sync_started,
+  connection_sync_progress,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
+
 ragie()
-  .event("connection_sync_started", async (payload) => {
-    console.log(`📥 Sync started for connection ${payload.connection_id}`);
+  .event(connection_sync_started, async (payload) => {
+    console.log(`Sync started for connection ${payload.connection_id}`);
     console.log(`Sync ID: ${payload.sync_id}`);
     console.log(`Partition: ${payload.partition}`);
     console.log(`Nonce: ${payload.nonce}`);
@@ -201,8 +225,8 @@ ragie()
     console.log(`  - update metadata: ${payload.update_metadata_count}`);
     console.log(`  - delete: ${payload.delete_count}`);
   })
-  .event("connection_sync_progress", async (payload) => {
-    console.log(`📊 Sync progress for ${payload.sync_id}`);
+  .event(connection_sync_progress, async (payload) => {
+    console.log(`Sync progress for ${payload.sync_id}`);
     console.log(`  Created: ${payload.created_count}/${payload.create_count}`);
     console.log(
       `  Content updated: ${payload.updated_content_count}/${payload.update_content_count}`,
@@ -223,8 +247,8 @@ ragie()
       erroredCount: payload.errored_count,
     });
   })
-  .event("connection_sync_finished", async (payload) => {
-    console.log(`✅ Sync completed: ${payload.sync_id}`);
+  .event(connection_sync_finished, async (payload) => {
+    console.log(`Sync completed: ${payload.sync_id}`);
     console.log(`Connection: ${payload.connection_id}`);
     console.log(`Partition: ${payload.partition}`);
     console.log(`Nonce: ${payload.nonce}`);
@@ -242,7 +266,9 @@ ragie()
 ### Entity Extraction
 
 ```ts
-ragie().event("entity_extracted", async (payload) => {
+import { entity_extracted } from "@better-webhook/ragie/events";
+
+ragie().event(entity_extracted, async (payload) => {
   console.log(`Entities extracted from document ${payload.document_id}`);
 
   // Fetch the extracted entities via Ragie API
@@ -258,9 +284,14 @@ ragie().event("entity_extracted", async (payload) => {
 ### Limit Exceeded Events
 
 ```ts
+import {
+  connection_limit_exceeded,
+  partition_limit_exceeded,
+} from "@better-webhook/ragie/events";
+
 ragie()
-  .event("connection_limit_exceeded", async (payload) => {
-    console.warn(`⚠️ Connection ${payload.connection_id} exceeded page limit`);
+  .event(connection_limit_exceeded, async (payload) => {
+    console.warn(`Connection ${payload.connection_id} exceeded page limit`);
     console.warn(`Nonce: ${payload.nonce}`);
 
     // Alert team about limit
@@ -270,8 +301,8 @@ ragie()
       partition: payload.partition,
     });
   })
-  .event("partition_limit_exceeded", async (payload) => {
-    console.warn(`⚠️ Partition ${payload.partition} exceeded document limit`);
+  .event(partition_limit_exceeded, async (payload) => {
+    console.warn(`Partition ${payload.partition} exceeded document limit`);
     console.warn(`Nonce: ${payload.nonce}`);
 
     // Take action
@@ -284,9 +315,11 @@ ragie()
 Ragie includes a `nonce` field in all webhook payloads to help you implement idempotency:
 
 ```ts
+import { document_status_updated } from "@better-webhook/ragie/events";
+
 const processedNonces = new Set<string>();
 
-ragie().event("document_status_updated", async (payload) => {
+ragie().event(document_status_updated, async (payload) => {
   // Check if we've already processed this webhook
   if (processedNonces.has(payload.nonce)) {
     console.log("Duplicate webhook, skipping");
@@ -309,8 +342,10 @@ ragie().event("document_status_updated", async (payload) => {
 Handle errors gracefully with built-in hooks:
 
 ```ts
+import { document_status_updated } from "@better-webhook/ragie/events";
+
 const webhook = ragie()
-  .event("document_status_updated", async (payload) => {
+  .event(document_status_updated, async (payload) => {
     await riskyOperation(payload);
   })
   .onError((error, context) => {
@@ -350,7 +385,7 @@ Or pass it explicitly:
 ```ts
 // At provider level
 const webhook = ragie({ secret: "your-signing-secret" }).event(
-  "document_status_updated",
+  document_status_updated,
   handler,
 );
 
@@ -391,17 +426,22 @@ function handleDocument(payload: RagieDocumentStatusUpdatedEvent) {
 }
 ```
 
-Schemas are also exported if you need them:
+## Tree-Shaking
+
+Events are exported separately from `@better-webhook/ragie/events`, allowing bundlers to tree-shake unused events from your production bundle:
 
 ```ts
-import {
-  RagieDocumentStatusUpdatedEventSchema,
-  RagieConnectionSyncFinishedEventSchema,
-} from "@better-webhook/ragie";
+// Only `document_status_updated` schema is included in your bundle
+import { document_status_updated } from "@better-webhook/ragie/events";
 
-// Use for custom validation
-const result = RagieDocumentStatusUpdatedEventSchema.safeParse(data);
+// Multiple events (only these schemas included)
+import {
+  document_status_updated,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
 ```
+
+This is particularly beneficial for serverless deployments where bundle size matters.
 
 ## Development Tips
 
