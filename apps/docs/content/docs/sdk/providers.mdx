@@ -32,9 +32,10 @@ Providers define the webhook source, including event types, payload schemas, and
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 
 const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
-  "push",
+  push,
   async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
   },
@@ -43,12 +44,20 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET }).event(
 
 ### Events
 
+Import events from `@better-webhook/github/events`:
+
+```ts
+import { push, pull_request, issues, installation, installation_repositories } from "@better-webhook/github/events";
+```
+
 #### push
 
 Triggered when commits are pushed to a repository branch or tag.
 
 ```ts
-.event("push", async (payload) => {
+import { push } from "@better-webhook/github/events";
+
+.event(push, async (payload) => {
   console.log(payload.ref);              // "refs/heads/main"
   console.log(payload.repository.name);  // "my-repo"
   console.log(payload.commits.length);   // Number of commits
@@ -74,7 +83,9 @@ Triggered when commits are pushed to a repository branch or tag.
 Triggered when a pull request is opened, closed, merged, edited, etc.
 
 ```ts
-.event("pull_request", async (payload) => {
+import { pull_request } from "@better-webhook/github/events";
+
+.event(pull_request, async (payload) => {
   console.log(payload.action);                    // "opened", "closed", etc.
   console.log(payload.number);                    // PR number
   console.log(payload.pull_request.title);        // PR title
@@ -100,7 +111,9 @@ Triggered when a pull request is opened, closed, merged, edited, etc.
 Triggered when an issue is opened, closed, edited, labeled, etc.
 
 ```ts
-.event("issues", async (payload) => {
+import { issues } from "@better-webhook/github/events";
+
+.event(issues, async (payload) => {
   console.log(payload.action);           // "opened", "closed", etc.
   console.log(payload.issue.number);     // Issue number
   console.log(payload.issue.title);      // Issue title
@@ -121,7 +134,9 @@ Triggered when an issue is opened, closed, edited, labeled, etc.
 Triggered when a GitHub App is installed, uninstalled, or has permissions changed.
 
 ```ts
-.event("installation", async (payload) => {
+import { installation } from "@better-webhook/github/events";
+
+.event(installation, async (payload) => {
   console.log(payload.action);                      // "created", "deleted", etc.
   console.log(payload.installation.id);             // Installation ID
   console.log(payload.installation.account.login);  // Account name
@@ -140,7 +155,9 @@ Triggered when a GitHub App is installed, uninstalled, or has permissions change
 Triggered when repositories are added to or removed from an installation.
 
 ```ts
-.event("installation_repositories", async (payload) => {
+import { installation_repositories } from "@better-webhook/github/events";
+
+.event(installation_repositories, async (payload) => {
   console.log(payload.action);                // "added" or "removed"
   console.log(payload.repositories_added);    // Repos added
   console.log(payload.repositories_removed);  // Repos removed
@@ -175,9 +192,10 @@ GitHub uses HMAC-SHA256 signatures sent in the `X-Hub-Signature-256` header. The
 
 ```ts
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
-  "document_status_updated",
+  document_status_updated,
   async (payload) => {
     console.log(`Document ${payload.document_id} is now ${payload.status}`);
   },
@@ -193,12 +211,29 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
 
 ### Events
 
+Import events from `@better-webhook/ragie/events`:
+
+```ts
+import {
+  document_status_updated,
+  document_deleted,
+  entity_extracted,
+  connection_sync_started,
+  connection_sync_progress,
+  connection_sync_finished,
+  connection_limit_exceeded,
+  partition_limit_exceeded,
+} from "@better-webhook/ragie/events";
+```
+
 #### document_status_updated
 
 Triggered when a document enters `indexed`, `keyword_indexed`, `ready`, or `failed` state.
 
 ```ts
-.event("document_status_updated", async (payload) => {
+import { document_status_updated } from "@better-webhook/ragie/events";
+
+.event(document_status_updated, async (payload) => {
   console.log(payload.document_id);   // Document ID
   console.log(payload.status);        // "indexed", "ready", "failed", etc.
   console.log(payload.name);          // Document name
@@ -225,7 +260,9 @@ Triggered when a document enters `indexed`, `keyword_indexed`, `ready`, or `fail
 Triggered when a document is deleted.
 
 ```ts
-.event("document_deleted", async (payload) => {
+import { document_deleted } from "@better-webhook/ragie/events";
+
+.event(document_deleted, async (payload) => {
   console.log(payload.document_id);
   console.log(payload.name);
   console.log(payload.external_id);
@@ -247,7 +284,9 @@ Triggered when a document is deleted.
 Triggered when entity extraction completes for a document.
 
 ```ts
-.event("entity_extracted", async (payload) => {
+import { entity_extracted } from "@better-webhook/ragie/events";
+
+.event(entity_extracted, async (payload) => {
   console.log(payload.entity_id);           // Extracted entity ID
   console.log(payload.document_id);         // Source document ID
   console.log(payload.document_name);       // Source document name
@@ -273,7 +312,9 @@ Triggered when entity extraction completes for a document.
 Triggered when a connection sync begins.
 
 ```ts
-.event("connection_sync_started", async (payload) => {
+import { connection_sync_started } from "@better-webhook/ragie/events";
+
+.event(connection_sync_started, async (payload) => {
   console.log(payload.connection_id);
   console.log(payload.sync_id);
   console.log(payload.partition);
@@ -297,7 +338,9 @@ Triggered when a connection sync begins.
 Triggered periodically during a sync to report progress.
 
 ```ts
-.event("connection_sync_progress", async (payload) => {
+import { connection_sync_progress } from "@better-webhook/ragie/events";
+
+.event(connection_sync_progress, async (payload) => {
   console.log(`Created: ${payload.created_count}/${payload.create_count}`);
   console.log(`Deleted: ${payload.deleted_count}/${payload.delete_count}`);
   console.log(`Errors: ${payload.errored_count}`);
@@ -320,7 +363,9 @@ Triggered periodically during a sync to report progress.
 Triggered when a connection sync completes.
 
 ```ts
-.event("connection_sync_finished", async (payload) => {
+import { connection_sync_finished } from "@better-webhook/ragie/events";
+
+.event(connection_sync_finished, async (payload) => {
   console.log(`Sync ${payload.sync_id} finished`);
   console.log(`Connection: ${payload.connection_id}`);
 })
@@ -337,7 +382,9 @@ Triggered when a connection sync completes.
 Triggered when a connection exceeds its page limit.
 
 ```ts
-.event("connection_limit_exceeded", async (payload) => {
+import { connection_limit_exceeded } from "@better-webhook/ragie/events";
+
+.event(connection_limit_exceeded, async (payload) => {
   console.log(`Connection ${payload.connection_id} hit ${payload.limit_type} limit`);
 })
 ```
@@ -353,7 +400,9 @@ Triggered when a connection exceeds its page limit.
 Triggered when a partition exceeds its document limit.
 
 ```ts
-.event("partition_limit_exceeded", async (payload) => {
+import { partition_limit_exceeded } from "@better-webhook/ragie/events";
+
+.event(partition_limit_exceeded, async (payload) => {
   console.log(`Partition ${payload.partition} hit limit`);
 })
 ```
@@ -375,7 +424,7 @@ Ragie uses HMAC-SHA256 signatures sent in the `X-Signature` header.
 For webhook sources not covered by built-in providers, you can create custom providers using `@better-webhook/core`:
 
 ```ts
-import { createProvider, createHmacVerifier, z } from "@better-webhook/core";
+import { createProvider, createHmacVerifier, z, defineEvent } from "@better-webhook/core";
 
 const OrderSchema = z.object({
   orderId: z.string(),
@@ -383,12 +432,22 @@ const OrderSchema = z.object({
   amount: z.number(),
 });
 
+// Define events for tree-shaking
+export const orderCreated = defineEvent({
+  name: "order.created",
+  schema: OrderSchema,
+  provider: "my-ecommerce" as const,
+});
+
+export const orderUpdated = defineEvent({
+  name: "order.updated",
+  schema: OrderSchema,
+  provider: "my-ecommerce" as const,
+});
+
+// Create the provider
 const myProvider = createProvider({
   name: "my-ecommerce",
-  schemas: {
-    "order.created": OrderSchema,
-    "order.updated": OrderSchema,
-  },
   getEventType: (headers) => headers["x-event-type"],
   getDeliveryId: (headers) => headers["x-delivery-id"],
   verify: createHmacVerifier({
@@ -421,10 +480,6 @@ Use `getEventType` with the optional `body` parameter and `getPayload` to handle
 ```ts
 const envelopeProvider = createProvider({
   name: "my-envelope-provider",
-  schemas: {
-    "order.created": OrderSchema,
-    "order.updated": OrderSchema,
-  },
   // Extract event type from body instead of headers
   getEventType: (headers, body) => {
     if (body && typeof body === "object" && "type" in body) {

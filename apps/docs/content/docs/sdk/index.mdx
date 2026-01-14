@@ -104,15 +104,16 @@ Install a provider and an adapter for your framework:
   <Tab value="Next.js">
     ```ts title="app/api/webhooks/github/route.ts"
     import { github } from "@better-webhook/github";
+    import { push, pull_request } from "@better-webhook/github/events";
     import { toNextJS } from "@better-webhook/nextjs";
 
     const webhook = github()
-      .event("push", async (payload) => {
+      .event(push, async (payload) => {
         // payload is fully typed!
         console.log(`Push to ${payload.repository.name}`);
         console.log(`${payload.commits.length} commits`);
       })
-      .event("pull_request", async (payload) => {
+      .event(pull_request, async (payload) => {
         if (payload.action === "opened") {
           console.log(`New PR: ${payload.pull_request.title}`);
         }
@@ -126,12 +127,13 @@ Install a provider and an adapter for your framework:
     ```ts title="src/webhooks.ts"
     import express from "express";
     import { github } from "@better-webhook/github";
+    import { push } from "@better-webhook/github/events";
     import { toExpress } from "@better-webhook/express";
 
     const app = express();
 
     const webhook = github()
-      .event("push", async (payload) => {
+      .event(push, async (payload) => {
         console.log(`Push to ${payload.repository.name}`);
       });
 
@@ -151,12 +153,13 @@ Install a provider and an adapter for your framework:
     import { Controller, Post, Req, Res } from "@nestjs/common";
     import { Request, Response } from "express";
     import { github } from "@better-webhook/github";
+    import { push } from "@better-webhook/github/events";
     import { toNestJS } from "@better-webhook/nestjs";
 
     @Controller("webhooks")
     export class WebhooksController {
       private webhook = github()
-        .event("push", async (payload) => {
+        .event(push, async (payload) => {
           console.log(`Push to ${payload.repository.name}`);
         });
 
@@ -173,14 +176,15 @@ Install a provider and an adapter for your framework:
     ```ts title="index.ts"
     import { http } from "@google-cloud/functions-framework";
     import { ragie } from "@better-webhook/ragie";
+    import { document_status_updated, connection_sync_finished } from "@better-webhook/ragie/events";
     import { toGCPFunction } from "@better-webhook/gcp-functions";
 
     const webhook = ragie()
-      .event("document_status_updated", async (payload) => {
+      .event(document_status_updated, async (payload) => {
         // payload is fully typed!
         console.log(`Document ${payload.document_id} is now ${payload.status}`);
       })
-      .event("connection_sync_finished", async (payload) => {
+      .event(connection_sync_finished, async (payload) => {
         console.log(`Sync ${payload.sync_id} completed`);
       });
 
@@ -189,6 +193,20 @@ Install a provider and an adapter for your framework:
 
   </Tab>
 </Tabs>
+
+## Tree-Shaking
+
+Events are exported separately from each provider's `/events` subpath, enabling bundlers to tree-shake unused events:
+
+```ts
+// Only the push schema is included in your bundle
+import { push } from "@better-webhook/github/events";
+
+// Multiple events - only these schemas are included
+import { push, pull_request } from "@better-webhook/github/events";
+```
+
+This is especially beneficial for serverless deployments where bundle size matters.
 
 ## How It Works
 
@@ -207,16 +225,27 @@ Install a provider and an adapter for your framework:
   </Step>
 
   <Step>
+    ### Import Events
+
+    Import the specific events you want to handle from the `/events` subpath:
+
+    ```ts
+    import { push, issues } from "@better-webhook/github/events";
+    ```
+
+  </Step>
+
+  <Step>
     ### Register Event Handlers
 
     Chain `.event()` calls to register handlers for specific event types:
 
     ```ts
     const webhook = github()
-      .event("push", async (payload) => {
+      .event(push, async (payload) => {
         // Handle push events
       })
-      .event("issues", async (payload) => {
+      .event(issues, async (payload) => {
         // Handle issues events
       });
     ```
@@ -280,8 +309,10 @@ const webhook = github({
 Register error handlers to catch validation and handler errors:
 
 ```ts
+import { push } from "@better-webhook/github/events";
+
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Your handler
   })
   .onError((error, context) => {
@@ -300,6 +331,7 @@ Add metrics, logging, and tracing to your webhook handlers with the built-in obs
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { createWebhookStats } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
 
@@ -308,7 +340,7 @@ const stats = createWebhookStats();
 
 const webhook = github()
   .observe(stats.observer)
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -343,7 +375,7 @@ const metricsObserver: WebhookObserver = {
   },
 };
 
-const webhook = github().observe(metricsObserver).event("push", handler);
+const webhook = github().observe(metricsObserver).event(push, handler);
 ```
 
 You can also add observers at the adapter level:
