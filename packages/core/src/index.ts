@@ -10,6 +10,93 @@ import { z, type ZodSchema, type ZodError } from "zod";
  */
 export type Headers = Record<string, string | undefined>;
 
+// ============================================================================
+// Tree-Shakeable Event Definitions
+// ============================================================================
+
+/**
+ * Event definition object that carries both runtime information
+ * and compile-time type information for tree-shakeable imports.
+ *
+ * @template TName - The event name literal type (e.g., "push")
+ * @template TSchema - The Zod schema type
+ * @template TProvider - The provider brand (e.g., "github")
+ *
+ * @example
+ * ```ts
+ * import { push, pull_request } from "@better-webhook/github/events";
+ *
+ * // Each event is a separate export that can be tree-shaken
+ * const webhook = github()
+ *   .event(push, handler)
+ *   .event(pull_request, handler);
+ * ```
+ */
+export interface WebhookEvent<
+  TName extends string = string,
+  TSchema extends ZodSchema = ZodSchema,
+  TProvider extends string = string,
+> {
+  /** Event name used for matching incoming webhooks */
+  readonly name: TName;
+
+  /** Zod schema for payload validation */
+  readonly schema: TSchema;
+
+  /**
+   * Provider brand - compile-time only, used to constrain
+   * which events can be registered with which provider.
+   * @internal
+   */
+  readonly _provider?: TProvider;
+
+  /**
+   * Phantom type for payload inference.
+   * @internal
+   */
+  readonly _output?: z.infer<TSchema>;
+}
+
+/**
+ * Extract the payload type from an event definition
+ */
+export type InferEventPayload<E> =
+  E extends WebhookEvent<string, infer S, string> ? z.infer<S> : never;
+
+/**
+ * Extract the provider brand from an event definition
+ */
+export type InferEventProvider<E> =
+  E extends WebhookEvent<string, ZodSchema, infer P> ? P : never;
+
+/**
+ * Create a type-safe event definition for tree-shakeable imports.
+ *
+ * @example
+ * ```ts
+ * // In provider package (e.g., @better-webhook/github/events)
+ * export const push = defineEvent({
+ *   name: "push",
+ *   schema: GitHubPushEventSchema,
+ *   provider: "github" as const,
+ * });
+ * ```
+ */
+export function defineEvent<
+  TName extends string,
+  TSchema extends ZodSchema,
+  TProvider extends string,
+>(config: {
+  name: TName;
+  schema: TSchema;
+  provider: TProvider;
+}): WebhookEvent<TName, TSchema, TProvider> {
+  return {
+    name: config.name,
+    schema: config.schema,
+  } as WebhookEvent<TName, TSchema, TProvider>;
+}
+
 /**
  * Context passed to error handlers
  */
@@ -47,16 +134,23 @@ export interface HandlerContext {
 }
 
 /**
- * Provider interface that webhook sources must implement
+ * Provider interface that webhook sources must implement.
+ *
+ * @template TProviderBrand - The provider brand type for type-safe event constraints
+ *
+ * Note: Schemas are no longer stored on the provider - they come from
+ * individual event definition objects passed to .event() for tree-shaking support.
  */
-export interface Provider<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
-> {
+export interface Provider<TProviderBrand extends string = string> {
   /** Provider name (e.g., "github", "stripe") */
   readonly name: string;
 
-  /** Schema map for event types */
-  readonly schemas: EventMap;
+  /**
+   * Provider brand for type-level constraint.
+   * This is a phantom type - never exists at runtime.
+   * @internal
+   */
+  readonly _brand?: TProviderBrand;
 
   /** Optional default secret (can be overridden by adapters) */
   readonly secret?: string;
@@ -93,16 +187,14 @@ export interface Provider<
 export type HmacAlgorithm = "sha1" | "sha256" | "sha384" | "sha512";
 
 /**
- * Configuration for creating a custom provider
+ * Configuration for creating a custom provider (for advanced users building their own providers)
  */
-export interface ProviderConfig<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
-> {
+export interface ProviderConfig<TProviderBrand extends string = string> {
   /** Provider name (e.g., "my-custom-webhook") */
   name: string;
 
-  /** Schema map for event types */
-  schemas: EventMap;
+  /** Provider brand for type-level constraint */
+  brand?: TProviderBrand;
 
   /** Optional default secret */
   secret?: string;
@@ -716,7 +808,7 @@ export function createHmacVerifier(
  *
  * @example
  * ```ts
- * import { createProvider, createHmacVerifier, z } from '@better-webhook/core';
+ * import { createProvider, createHmacVerifier, z, defineEvent } from '@better-webhook/core';
  *
  * const OrderEventSchema = z.object({
  *   orderId: z.string(),
@@ -724,12 +816,15 @@ export function createHmacVerifier(
  *   amount: z.number(),
  * });
  *
+ * // Define events separately for tree-shaking
+ * const orderCreated = defineEvent({
+ *   name: 'order.created',
+ *   schema: OrderEventSchema,
+ *   provider: 'my-ecommerce' as const,
+ * });
+ *
  * const myProvider = createProvider({
  *   name: 'my-ecommerce',
- *   schemas: {
- *     'order.created': OrderEventSchema,
- *     'order.updated': OrderEventSchema,
- *   },
  *   getEventType: (headers) => headers['x-event-type'],
  *   getDeliveryId: (headers) => headers['x-delivery-id'],
  *   verify: createHmacVerifier({
@@ -740,17 +835,16 @@ export function createHmacVerifier(
  *
  * // Use with createWebhook
  * const webhook = createWebhook(myProvider)
- *   .event('order.created', async (payload) => {
+ *   .event(orderCreated, async (payload) => {
  *     console.log('New order:', payload.orderId);
  *   });
  * ```
  */
-export function createProvider<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
->(config: ProviderConfig<EventMap>): Provider<EventMap> {
+export function createProvider<TProviderBrand extends string = string>(
+  config: ProviderConfig<TProviderBrand>,
+): Provider<TProviderBrand> {
   const {
     name,
-    schemas,
     secret,
     getEventType,
     getDeliveryId = () => undefined,
@@ -760,7 +854,6 @@ export function createProvider<
 
   return {
     name,
-    schemas,
     secret,
     getEventType,
     getDeliveryId,
@@ -776,7 +869,7 @@ export function createProvider<
  *
  * @example
  * ```ts
- * import { customWebhook, createHmacVerifier, z } from '@better-webhook/core';
+ * import { customWebhook, createHmacVerifier, z, defineEvent } from '@better-webhook/core';
  *
  * const PaymentEventSchema = z.object({
  *   paymentId: z.string(),
@@ -784,12 +877,15 @@ export function createProvider<
  *   currency: z.string(),
  * });
  *
+ * // Define events separately for tree-shaking
+ * const paymentCompleted = defineEvent({
+ *   name: 'payment.completed',
+ *   schema: PaymentEventSchema,
+ *   provider: 'payment-provider' as const,
+ * });
+ *
  * const webhook = customWebhook({
  *   name: 'payment-provider',
- *   schemas: {
- *     'payment.completed': PaymentEventSchema,
- *     'payment.failed': PaymentEventSchema,
- *   },
  *   getEventType: (headers) => headers['x-webhook-event'],
  *   verify: createHmacVerifier({
  *     algorithm: 'sha256',
@@ -797,17 +893,14 @@ export function createProvider<
  *     signaturePrefix: 'v1=',
  *   }),
  * })
- *   .event('payment.completed', async (payload) => {
+ *   .event(paymentCompleted, async (payload) => {
  *     console.log('Payment received:', payload.paymentId);
- *   })
- *   .event('payment.failed', async (payload) => {
- *     console.log('Payment failed:', payload.paymentId);
  *   });
  * ```
  */
-export function customWebhook<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
->(config: ProviderConfig<EventMap>): WebhookBuilder<EventMap> {
+export function customWebhook<TProviderBrand extends string = string>(
+  config: ProviderConfig<TProviderBrand>,
+): WebhookBuilder<TProviderBrand> {
   const provider = createProvider(config);
   return new WebhookBuilder(provider);
 }
@@ -817,26 +910,44 @@ export function customWebhook<
 // ============================================================================
 
 /**
- * Infer the payload type from a Zod schema
+ * Internal storage for registered handlers including their schemas
  */
-type InferPayload<S> = S extends ZodSchema<infer T> ? T : never;
+interface HandlerEntry {
+  schema: ZodSchema;
+  handlers: ((
+    payload: unknown,
+    context: HandlerContext,
+  ) => Promise<void> | void)[];
+}
 
 /**
- * Fluent webhook builder with type-safe event handling
+ * Fluent webhook builder with type-safe event handling.
+ *
+ * @template TProviderBrand - The provider brand type for constraining events
+ *
+ * @example
+ * ```ts
+ * import { github } from "@better-webhook/github";
+ * import { push, pull_request } from "@better-webhook/github/events";
+ *
+ * const webhook = github()
+ *   .event(push, async (payload) => {
+ *     // payload is fully typed as GitHubPushEvent
+ *     console.log(payload.repository.full_name);
+ *   })
+ *   .event(pull_request, async (payload) => {
+ *     console.log(`PR #${payload.number}: ${payload.pull_request.title}`);
+ *   });
+ * ```
  */
-export class WebhookBuilder<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
-> {
-  private readonly provider: Provider<EventMap>;
-  private readonly handlers: Map<
-    string,
-    ((payload: unknown, context: HandlerContext) => Promise<void> | void)[]
-  > = new Map();
+export class WebhookBuilder<TProviderBrand extends string = string> {
+  private readonly provider: Provider<TProviderBrand>;
+  private readonly handlerEntries: Map<string, HandlerEntry> = new Map();
   private errorHandler?: ErrorHandler;
   private verificationFailedHandler?: VerificationFailedHandler;
   private readonly observers: WebhookObserver[] = [];
 
-  constructor(provider: Provider<EventMap>) {
+  constructor(provider: Provider<TProviderBrand>) {
     this.provider = provider;
   }
 
@@ -852,7 +963,7 @@ export class WebhookBuilder<
    *
    * const webhook = github()
    *   .observe(stats.observer)
-   *   .event('push', handler);
+   *   .event(push, handler);
    *
    * // Custom observer
    * const webhook = github()
@@ -864,12 +975,12 @@ export class WebhookBuilder<
    *       });
    *     },
    *   })
-   *   .event('push', handler);
+   *   .event(push, handler);
    * ```
    */
   observe(
     observer: WebhookObserver | WebhookObserver[],
-  ): WebhookBuilder<EventMap> {
+  ): WebhookBuilder<TProviderBrand> {
     const newBuilder = this.clone();
     const observersToAdd = Array.isArray(observer) ? observer : [observer];
     newBuilder.observers.push(...observersToAdd);
@@ -877,39 +988,55 @@ export class WebhookBuilder<
   }
 
   /**
-   * Register a handler for a specific event type
-   * Returns a new builder instance for immutable chaining
+   * Register a handler for a specific event.
    *
-   * @param eventType - The event type to handle
-   * @param handler - The handler function that receives the typed payload and context
+   * The event object provides:
+   * - Runtime: name for matching, schema for validation
+   * - Compile-time: provider constraint, payload type inference
+   *
+   * @param event - Event definition object (e.g., `push`, `pull_request`)
+   * @param handler - Handler function with typed payload
    *
    * @example
    * ```ts
-   * // Simple handler
-   * .event('push', async (payload) => {
-   *   console.log(payload.repository.name);
-   * })
+   * import { github } from "@better-webhook/github";
+   * import { push, pull_request } from "@better-webhook/github/events";
    *
-   * // Handler with context
-   * .event('push', async (payload, context) => {
-   *   console.log(`[${context.deliveryId}] Push event`);
-   *   console.log(`Headers:`, context.headers);
-   * })
+   * const webhook = github()
+   *   .event(push, async (payload) => {
+   *     // payload is typed as GitHubPushEvent
+   *     console.log(payload.repository.full_name);
+   *   })
+   *   .event(pull_request, async (payload, ctx) => {
+   *     // payload is typed as GitHubPullRequestEvent
+   *     console.log(`PR #${payload.number}: ${payload.pull_request.title}`);
+   *   });
    * ```
    */
-  event<E extends keyof EventMap & string>(
-    eventType: E,
-    handler: EventHandler<InferPayload<EventMap[E]>>,
-  ): WebhookBuilder<EventMap> {
+  event<E extends WebhookEvent<string, ZodSchema, TProviderBrand>>(
+    event: E,
+    handler: EventHandler<InferEventPayload<E>>,
+  ): WebhookBuilder<TProviderBrand> {
     const newBuilder = this.clone();
-    const existing = newBuilder.handlers.get(eventType) || [];
-    existing.push(
+
+    const eventName = event.name;
+    let entry = newBuilder.handlerEntries.get(eventName);
+
+    if (!entry) {
+      entry = {
+        schema: event.schema,
+        handlers: [],
+      };
+      newBuilder.handlerEntries.set(eventName, entry);
+    }
+
+    entry.handlers.push(
       handler as (
         payload: unknown,
         context: HandlerContext,
       ) => Promise<void> | void,
     );
-    newBuilder.handlers.set(eventType, existing);
+
     return newBuilder;
   }
 
@@ -917,7 +1044,7 @@ export class WebhookBuilder<
    * Register an error handler
    * Returns a new builder instance for immutable chaining
    */
-  onError(handler: ErrorHandler): WebhookBuilder<EventMap> {
+  onError(handler: ErrorHandler): WebhookBuilder<TProviderBrand> {
     const newBuilder = this.clone();
     newBuilder.errorHandler = handler;
     return newBuilder;
@@ -929,7 +1056,7 @@ export class WebhookBuilder<
    */
   onVerificationFailed(
     handler: VerificationFailedHandler,
-  ): WebhookBuilder<EventMap> {
+  ): WebhookBuilder<TProviderBrand> {
     const newBuilder = this.clone();
     newBuilder.verificationFailedHandler = handler;
     return newBuilder;
@@ -1014,7 +1141,7 @@ export class WebhookBuilder<
     const deliveryId = this.provider.getDeliveryId(headers);
 
     // No event type or no handlers for this event → 204
-    if (!eventType || !this.handlers.has(eventType)) {
+    if (!eventType || !this.handlerEntries.has(eventType)) {
       const durationMs = performance.now() - startTime;
       this.emit("onEventUnhandled", {
         ...createBase(eventType, deliveryId),
@@ -1071,8 +1198,9 @@ export class WebhookBuilder<
       ? this.provider.getPayload(parsedBody)
       : parsedBody;
 
-    // Validate against schema
-    const schema = this.provider.schemas[eventType];
+    // Get the handler entry which contains both schema and handlers
+    const entry = this.handlerEntries.get(eventType)!;
+    const schema = entry.schema;
     let payload: unknown;
 
     if (schema) {
@@ -1130,7 +1258,7 @@ export class WebhookBuilder<
     };
 
     // Execute handlers sequentially
-    const eventHandlers = this.handlers.get(eventType) || [];
+    const eventHandlers = entry.handlers;
     const handlerCount = eventHandlers.length;
 
     for (
@@ -1197,19 +1325,22 @@ export class WebhookBuilder<
   /**
    * Get the provider instance (for adapters)
    */
-  getProvider(): Provider<EventMap> {
+  getProvider(): Provider<TProviderBrand> {
     return this.provider;
   }
 
   /**
    * Clone the builder for immutable operations
    */
-  private clone(): WebhookBuilder<EventMap> {
+  private clone(): WebhookBuilder<TProviderBrand> {
     const newBuilder = new WebhookBuilder(this.provider);
 
-    // Copy handlers
-    for (const [event, handlers] of this.handlers) {
-      newBuilder.handlers.set(event, [...handlers]);
+    // Copy handler entries (deep copy handlers array)
+    for (const [name, entry] of this.handlerEntries) {
+      newBuilder.handlerEntries.set(name, {
+        schema: entry.schema,
+        handlers: [...entry.handlers],
+      });
     }
 
     // Copy error handlers
@@ -1255,9 +1386,9 @@ export class WebhookBuilder<
 /**
  * Create a webhook builder with a provider
  */
-export function createWebhook<
-  EventMap extends Record<string, ZodSchema> = Record<string, ZodSchema>,
->(provider: Provider<EventMap>): WebhookBuilder<EventMap> {
+export function createWebhook<TProviderBrand extends string = string>(
+  provider: Provider<TProviderBrand>,
+): WebhookBuilder<TProviderBrand> {
   return new WebhookBuilder(provider);
 }
 

@@ -1,7 +1,6 @@
 import {
   type WebhookBuilder,
   type ProcessResult,
-  type ZodSchema,
   type WebhookObserver,
 } from "@better-webhook/core";
 
@@ -90,8 +89,8 @@ function jsonResponse(
  * @param options - Adapter options
  * @returns A Next.js route handler function
  */
-export function toNextJS<EventMap extends Record<string, ZodSchema>>(
-  webhook: WebhookBuilder<EventMap>,
+export function toNextJS<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
   options?: NextJSAdapterOptions,
 ): NextJSHandler {
   // Apply observer(s) if provided

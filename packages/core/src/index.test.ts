@@ -10,9 +10,11 @@ import {
   createHmacVerifier,
   createProvider,
   customWebhook,
+  defineEvent,
   type Provider,
   type Headers,
   type HandlerContext,
+  type WebhookEvent,
 } from "./index.js";
 
 // ============================================================================
@@ -27,21 +29,25 @@ const TestEventSchema = z.object({
   }),
 });
 
-type TestEventMap = {
-  "test.event": typeof TestEventSchema;
-  "another.event": typeof TestEventSchema;
-};
+// Define test events using the new pattern
+const testEvent = defineEvent({
+  name: "test.event",
+  schema: TestEventSchema,
+  provider: "test" as const,
+});
+
+const anotherEvent = defineEvent({
+  name: "another.event",
+  schema: TestEventSchema,
+  provider: "test" as const,
+});
 
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
-}): Provider<TestEventMap> {
+}): Provider<"test"> {
   return {
     name: "test",
-    schemas: {
-      "test.event": TestEventSchema,
-      "another.event": TestEventSchema,
-    },
     secret: options?.secret,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
@@ -131,7 +137,7 @@ describe("WebhookBuilder", () => {
       const provider = createTestProvider();
       const handler = vi.fn();
 
-      const webhook = createWebhook(provider).event("test.event", handler);
+      const webhook = createWebhook(provider).event(testEvent, handler);
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -155,8 +161,8 @@ describe("WebhookBuilder", () => {
       const handler2 = vi.fn();
 
       const webhook = createWebhook(provider)
-        .event("test.event", handler1)
-        .event("test.event", handler2);
+        .event(testEvent, handler1)
+        .event(testEvent, handler2);
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -179,11 +185,11 @@ describe("WebhookBuilder", () => {
       const order: number[] = [];
 
       const webhook = createWebhook(provider)
-        .event("test.event", async () => {
+        .event(testEvent, async () => {
           await new Promise((r) => setTimeout(r, 10));
           order.push(1);
         })
-        .event("test.event", () => {
+        .event(testEvent, () => {
           order.push(2);
         });
 
@@ -203,7 +209,7 @@ describe("WebhookBuilder", () => {
       let receivedContext: HandlerContext | undefined;
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -224,7 +230,7 @@ describe("WebhookBuilder", () => {
       let receivedContext: HandlerContext | undefined;
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -245,7 +251,7 @@ describe("WebhookBuilder", () => {
       let receivedContext: HandlerContext | undefined;
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -271,7 +277,7 @@ describe("WebhookBuilder", () => {
       const rawBodyString = JSON.stringify(validPayload);
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -294,7 +300,7 @@ describe("WebhookBuilder", () => {
       const rawBodyBuffer = Buffer.from(rawBodyString, "utf-8");
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -316,7 +322,7 @@ describe("WebhookBuilder", () => {
       const beforeProcess = new Date();
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           receivedContext = context;
         },
@@ -345,10 +351,10 @@ describe("WebhookBuilder", () => {
       const receivedContexts: HandlerContext[] = [];
 
       const webhook = createWebhook(provider)
-        .event("test.event", (_payload, context) => {
+        .event(testEvent, (_payload, context) => {
           receivedContexts.push(context);
         })
-        .event("test.event", (_payload, context) => {
+        .event(testEvent, (_payload, context) => {
           receivedContexts.push(context);
         });
 
@@ -374,7 +380,7 @@ describe("WebhookBuilder", () => {
       let loggedProvider: string | undefined;
 
       const webhook = createWebhook(provider).event(
-        "test.event",
+        testEvent,
         (_payload, context) => {
           // Handler that only uses context
           loggedProvider = context.provider;
@@ -395,7 +401,7 @@ describe("WebhookBuilder", () => {
     it("should return a new builder instance on .event()", () => {
       const provider = createTestProvider();
       const builder1 = createWebhook(provider);
-      const builder2 = builder1.event("test.event", () => {});
+      const builder2 = builder1.event(testEvent, () => {});
 
       expect(builder1).not.toBe(builder2);
     });
@@ -420,7 +426,7 @@ describe("WebhookBuilder", () => {
   describe("process - status codes", () => {
     it("should return 204 when no event type is found", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: {},
@@ -444,7 +450,7 @@ describe("WebhookBuilder", () => {
 
     it("should return 401 when verification fails", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -458,7 +464,7 @@ describe("WebhookBuilder", () => {
 
     it("should return 400 for invalid JSON", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -472,7 +478,7 @@ describe("WebhookBuilder", () => {
 
     it("should return 400 for schema validation failure", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -486,7 +492,7 @@ describe("WebhookBuilder", () => {
 
     it("should return 500 when handler throws", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {
+      const webhook = createWebhook(provider).event(testEvent, () => {
         throw new Error("Handler error");
       });
 
@@ -502,7 +508,7 @@ describe("WebhookBuilder", () => {
 
     it("should return 200 on success", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -523,7 +529,7 @@ describe("WebhookBuilder", () => {
       const error = new Error("Test error");
 
       const webhook = createWebhook(provider)
-        .event("test.event", () => {
+        .event(testEvent, () => {
           throw error;
         })
         .onError(onError);
@@ -548,7 +554,7 @@ describe("WebhookBuilder", () => {
       const onError = vi.fn();
 
       const webhook = createWebhook(provider)
-        .event("test.event", () => {})
+        .event(testEvent, () => {})
         .onError(onError);
 
       await webhook.process({
@@ -565,7 +571,7 @@ describe("WebhookBuilder", () => {
       const onVerificationFailed = vi.fn();
 
       const webhook = createWebhook(provider)
-        .event("test.event", () => {})
+        .event(testEvent, () => {})
         .onVerificationFailed(onVerificationFailed);
 
       await webhook.process({
@@ -591,7 +597,7 @@ describe("WebhookBuilder", () => {
       const provider = createTestProvider({ secret: "provider-secret" });
       const verifyMock = vi.spyOn(provider, "verify");
 
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -610,7 +616,7 @@ describe("WebhookBuilder", () => {
       const provider = createTestProvider({ secret: "provider-secret" });
       const verifyMock = vi.spyOn(provider, "verify");
 
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -630,7 +636,7 @@ describe("WebhookBuilder", () => {
       const provider = createTestProvider();
       const verifyMock = vi.spyOn(provider, "verify");
 
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -648,7 +654,7 @@ describe("WebhookBuilder", () => {
       const provider = createTestProvider();
       const verifyMock = vi.spyOn(provider, "verify");
 
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -879,22 +885,13 @@ describe("createHmacVerifier", () => {
 // ============================================================================
 
 describe("createProvider", () => {
-  const CustomEventSchema = z.object({
-    type: z.string(),
-    data: z.any(),
-  });
-
   it("should create a provider from config", () => {
     const provider = createProvider({
       name: "custom",
-      schemas: {
-        "custom.event": CustomEventSchema,
-      },
       getEventType: (headers) => headers["x-event-type"],
     });
 
     expect(provider.name).toBe("custom");
-    expect(provider.schemas["custom.event"]).toBe(CustomEventSchema);
     expect(typeof provider.getEventType).toBe("function");
     expect(typeof provider.getDeliveryId).toBe("function");
     expect(typeof provider.verify).toBe("function");
@@ -903,7 +900,6 @@ describe("createProvider", () => {
   it("should use provided secret", () => {
     const provider = createProvider({
       name: "custom",
-      schemas: {},
       secret: "my-secret",
       getEventType: (headers) => headers["x-event-type"],
     });
@@ -914,7 +910,6 @@ describe("createProvider", () => {
   it("should use provided getDeliveryId", () => {
     const provider = createProvider({
       name: "custom",
-      schemas: {},
       getEventType: (headers) => headers["x-event-type"],
       getDeliveryId: (headers) => headers["x-delivery-id"],
     });
@@ -926,7 +921,6 @@ describe("createProvider", () => {
   it("should default getDeliveryId to return undefined", () => {
     const provider = createProvider({
       name: "custom",
-      schemas: {},
       getEventType: (headers) => headers["x-event-type"],
     });
 
@@ -938,7 +932,6 @@ describe("createProvider", () => {
 
     const provider = createProvider({
       name: "custom",
-      schemas: {},
       getEventType: (headers) => headers["x-event-type"],
       verify: customVerify,
     });
@@ -952,7 +945,6 @@ describe("createProvider", () => {
   it("should default verify to return true (skip verification)", () => {
     const provider = createProvider({
       name: "custom",
-      schemas: {},
       getEventType: (headers) => headers["x-event-type"],
     });
 
@@ -972,12 +964,16 @@ describe("customWebhook", () => {
     currency: z.string(),
   });
 
+  // Define event for the payment provider
+  const paymentCompleted = defineEvent({
+    name: "payment.completed",
+    schema: PaymentSchema,
+    provider: "payment-provider" as const,
+  });
+
   it("should create a webhook builder with custom config", () => {
     const webhook = customWebhook({
       name: "payment-provider",
-      schemas: {
-        "payment.completed": PaymentSchema,
-      },
       getEventType: (headers) => headers["x-webhook-event"],
     });
 
@@ -990,11 +986,8 @@ describe("customWebhook", () => {
 
     const webhook = customWebhook({
       name: "payment-provider",
-      schemas: {
-        "payment.completed": PaymentSchema,
-      },
       getEventType: (headers) => headers["x-webhook-event"],
-    }).event("payment.completed", handler);
+    }).event(paymentCompleted, handler);
 
     const payload = { id: "pay_123", amount: 1000, currency: "USD" };
 
@@ -1029,15 +1022,12 @@ describe("customWebhook", () => {
 
     const webhook = customWebhook({
       name: "payment-provider",
-      schemas: {
-        "payment.completed": PaymentSchema,
-      },
       getEventType: (headers) => headers["x-webhook-event"],
       verify: createHmacVerifier({
         algorithm: "sha256",
         signatureHeader: "x-webhook-signature",
       }),
-    }).event("payment.completed", handler);
+    }).event(paymentCompleted, handler);
 
     const result = await webhook.process({
       headers: {
@@ -1055,15 +1045,12 @@ describe("customWebhook", () => {
   it("should reject invalid signature with HMAC verification", async () => {
     const webhook = customWebhook({
       name: "payment-provider",
-      schemas: {
-        "payment.completed": PaymentSchema,
-      },
       getEventType: (headers) => headers["x-webhook-event"],
       verify: createHmacVerifier({
         algorithm: "sha256",
         signatureHeader: "x-webhook-signature",
       }),
-    }).event("payment.completed", () => {});
+    }).event(paymentCompleted, () => {});
 
     const result = await webhook.process({
       headers: {
@@ -1115,7 +1102,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe(observer)
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1132,7 +1119,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1151,7 +1138,7 @@ describe("WebhookBuilder observability", () => {
       const webhook = createWebhook(provider)
         .observe({ onCompleted: onCompleted1 })
         .observe({ onCompleted: onCompleted2 })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1170,7 +1157,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onRequestReceived })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1191,7 +1178,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1213,7 +1200,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: {
@@ -1236,7 +1223,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onJsonParseFailed, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1262,7 +1249,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onEventUnhandled, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "unknown.event" },
@@ -1285,7 +1272,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onEventUnhandled, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: {},
@@ -1309,7 +1296,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onVerificationSucceeded })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1332,7 +1319,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onVerificationSucceeded, onVerificationFailed, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1353,7 +1340,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onVerificationFailed, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1378,7 +1365,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onSchemaValidationSucceeded })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1399,7 +1386,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onSchemaValidationFailed, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1418,9 +1405,9 @@ describe("WebhookBuilder observability", () => {
     });
 
     it("should not emit schema validation events when no schema is registered for the event", async () => {
-      const provider: Provider<Record<string, any>> = {
+      // Create a provider without using defineEvent (raw handler without schema)
+      const provider: Provider<"test-no-schema"> = {
         name: "test",
-        schemas: {}, // no schema for test.event
         getEventType(headers: Headers) {
           return headers["x-test-event"];
         },
@@ -1431,6 +1418,13 @@ describe("WebhookBuilder observability", () => {
           return true;
         },
       };
+
+      // Define an event without schema validation (using z.any())
+      const noSchemaEvent = defineEvent({
+        name: "test.event",
+        schema: z.any(),
+        provider: "test-no-schema" as const,
+      });
 
       const onSchemaValidationSucceeded = vi.fn();
       const onSchemaValidationFailed = vi.fn();
@@ -1443,7 +1437,7 @@ describe("WebhookBuilder observability", () => {
           onSchemaValidationFailed,
           onCompleted,
         })
-        .event("test.event" as any, handler);
+        .event(noSchemaEvent, handler);
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1451,7 +1445,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(onSchemaValidationSucceeded).not.toHaveBeenCalled();
+      // Schema validation still happens but with z.any() so it always succeeds
+      expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
       expect(onSchemaValidationFailed).not.toHaveBeenCalled();
       expect(onCompleted).toHaveBeenCalledTimes(1);
       const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
@@ -1465,8 +1460,8 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onHandlerStarted, onHandlerSucceeded })
-        .event("test.event", () => {})
-        .event("test.event", () => {});
+        .event(testEvent, () => {})
+        .event(testEvent, () => {});
 
       await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1500,7 +1495,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onHandlerFailed, onCompleted })
-        .event("test.event", () => {
+        .event(testEvent, () => {
           throw new Error("Handler error");
         });
 
@@ -1530,7 +1525,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe({ onRequestReceived, onCompleted })
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1552,7 +1547,7 @@ describe("WebhookBuilder observability", () => {
 
       const webhook = createWebhook(provider)
         .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
-        .event("test.event", () => {});
+        .event(testEvent, () => {});
 
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
@@ -1577,7 +1572,7 @@ describe("createWebhookStats", () => {
 
     const webhook = createWebhook(provider)
       .observe(stats.observer)
-      .event("test.event", () => {});
+      .event(testEvent, () => {});
 
     // Successful request
     await webhook.process({
@@ -1608,7 +1603,7 @@ describe("createWebhookStats", () => {
 
     const webhook = createWebhook(provider)
       .observe(stats.observer)
-      .event("test.event", () => {});
+      .event(testEvent, () => {});
 
     await webhook.process({
       headers: { "x-test-event": "test.event" },
@@ -1629,8 +1624,8 @@ describe("createWebhookStats", () => {
 
     const webhook = createWebhook(provider)
       .observe(stats.observer)
-      .event("test.event", () => {})
-      .event("another.event", () => {});
+      .event(testEvent, () => {})
+      .event(anotherEvent, () => {});
 
     await webhook.process({
       headers: { "x-test-event": "test.event" },
@@ -1661,7 +1656,7 @@ describe("createWebhookStats", () => {
 
     const webhook = createWebhook(provider)
       .observe(stats.observer)
-      .event("test.event", () => {});
+      .event(testEvent, () => {});
 
     await webhook.process({
       headers: { "x-test-event": "test.event" },
@@ -1678,7 +1673,7 @@ describe("createWebhookStats", () => {
 
     const webhook = createWebhook(provider)
       .observe(stats.observer)
-      .event("test.event", () => {});
+      .event(testEvent, () => {});
 
     await webhook.process({
       headers: { "x-test-event": "test.event" },

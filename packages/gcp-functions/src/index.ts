@@ -1,7 +1,6 @@
 import {
   type WebhookBuilder,
   type ProcessResult,
-  type ZodSchema,
   type WebhookObserver,
 } from "@better-webhook/core";
 
@@ -126,8 +125,8 @@ export type GCPFunctionHandler = (
  * @param options - Adapter options
  * @returns A GCP Cloud Functions handler function
  */
-export function toGCPFunction<EventMap extends Record<string, ZodSchema>>(
-  webhook: WebhookBuilder<EventMap>,
+export function toGCPFunction<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
   options?: GCPFunctionAdapterOptions,
 ): GCPFunctionHandler {
   // Apply observer(s) if provided

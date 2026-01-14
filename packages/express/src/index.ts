@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from "express";
 import {
   type WebhookBuilder,
   type ProcessResult,
-  type ZodSchema,
   type WebhookObserver,
 } from "@better-webhook/core";
 
@@ -82,8 +81,8 @@ export type ExpressMiddleware = (
  * @param options - Adapter options
  * @returns An Express middleware function
  */
-export function toExpress<EventMap extends Record<string, ZodSchema>>(
-  webhook: WebhookBuilder<EventMap>,
+export function toExpress<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
   options?: ExpressAdapterOptions,
 ): ExpressMiddleware {
   // Apply observer(s) if provided
