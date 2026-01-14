@@ -2,13 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createHmac } from "node:crypto";
 import {
   ragie,
-  RagieDocumentStatusUpdatedEventSchema,
-  RagieDocumentDeletedEventSchema,
-  RagieEntityExtractedEventSchema,
-  RagieConnectionSyncStartedEventSchema,
-  RagieConnectionSyncProgressEventSchema,
-  RagieConnectionSyncFinishedEventSchema,
-  RagieConnectionLimitExceededEventSchema,
   type RagieDocumentStatusUpdatedEvent,
   type RagieDocumentDeletedEvent,
   type RagieEntityExtractedEvent,
@@ -17,6 +10,25 @@ import {
   type RagieConnectionSyncFinishedEvent,
   type RagieConnectionLimitExceededEvent,
 } from "./index.js";
+import {
+  document_status_updated,
+  document_deleted,
+  entity_extracted,
+  connection_sync_started,
+  connection_sync_progress,
+  connection_sync_finished,
+  connection_limit_exceeded,
+  partition_limit_exceeded,
+} from "./events.js";
+import {
+  RagieDocumentStatusUpdatedEventSchema,
+  RagieDocumentDeletedEventSchema,
+  RagieEntityExtractedEventSchema,
+  RagieConnectionSyncStartedEventSchema,
+  RagieConnectionSyncProgressEventSchema,
+  RagieConnectionSyncFinishedEventSchema,
+  RagieConnectionLimitExceededEventSchema,
+} from "./schemas.js";
 
 // ============================================================================
 // Test Fixtures - Payloads (inside envelope)
@@ -282,10 +294,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie({ secret }).event(
-        "document_status_updated",
-        handler,
-      );
+      const webhook = ragie({ secret }).event(document_status_updated, handler);
 
       const result = await webhook.process({
         headers: {
@@ -318,7 +327,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie({ secret }).event("document_deleted", handler);
+      const webhook = ragie({ secret }).event(document_deleted, handler);
 
       const result = await webhook.process({
         headers: {
@@ -350,7 +359,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie({ secret }).event("entity_extracted", handler);
+      const webhook = ragie({ secret }).event(entity_extracted, handler);
 
       const result = await webhook.process({
         headers: {
@@ -383,10 +392,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie({ secret }).event(
-        "connection_sync_started",
-        handler,
-      );
+      const webhook = ragie({ secret }).event(connection_sync_started, handler);
 
       const result = await webhook.process({
         headers: {
@@ -421,7 +427,7 @@ describe("ragie()", () => {
       const handler = vi.fn();
 
       const webhook = ragie({ secret }).event(
-        "connection_sync_progress",
+        connection_sync_progress,
         handler,
       );
 
@@ -457,7 +463,7 @@ describe("ragie()", () => {
       const handler = vi.fn();
 
       const webhook = ragie({ secret }).event(
-        "connection_sync_finished",
+        connection_sync_finished,
         handler,
       );
 
@@ -491,7 +497,7 @@ describe("ragie()", () => {
       const handler = vi.fn();
 
       const webhook = ragie({ secret }).event(
-        "connection_limit_exceeded",
+        connection_limit_exceeded,
         handler,
       );
 
@@ -527,7 +533,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
 
       const webhook = ragie({ secret }).event(
-        "document_status_updated",
+        document_status_updated,
         () => {},
       );
 
@@ -551,7 +557,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
 
       const webhook = ragie({ secret }).event(
-        "document_status_updated",
+        document_status_updated,
         () => {},
       );
 
@@ -575,7 +581,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
 
       const webhook = ragie({ secret }).event(
-        "document_status_updated",
+        document_status_updated,
         () => {},
       );
 
@@ -597,7 +603,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie().event("document_status_updated", handler);
+      const webhook = ragie().event(document_status_updated, handler);
 
       const result = await webhook.process({
         headers: {
@@ -620,7 +626,7 @@ describe("ragie()", () => {
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
 
-      const webhook = ragie().event("document_status_updated", handler);
+      const webhook = ragie().event(document_status_updated, handler);
 
       const result = await webhook.process({
         headers: {
@@ -644,8 +650,8 @@ describe("ragie()", () => {
 
       // Register handlers for both events
       const webhook = ragie()
-        .event("document_status_updated", documentHandler)
-        .event("partition_limit_exceeded", partitionHandler);
+        .event(document_status_updated, documentHandler)
+        .event(partition_limit_exceeded, partitionHandler);
 
       // Send partition_limit_exceeded event
       const result = await webhook.process({
@@ -669,8 +675,8 @@ describe("ragie()", () => {
       const syncHandler = vi.fn();
 
       const webhook = ragie({ secret })
-        .event("document_status_updated", docHandler)
-        .event("connection_sync_started", syncHandler);
+        .event(document_status_updated, docHandler)
+        .event(connection_sync_started, syncHandler);
 
       // Test document event
       const docEnvelope = createEnvelope(
@@ -721,7 +727,7 @@ describe("ragie()", () => {
       const onError = vi.fn();
 
       const webhook = ragie({ secret })
-        .event("document_status_updated", () => {
+        .event(document_status_updated, () => {
           throw new Error("Test error");
         })
         .onError(onError);
@@ -747,7 +753,7 @@ describe("ragie()", () => {
       const onVerificationFailed = vi.fn();
 
       const webhook = ragie({ secret })
-        .event("document_status_updated", () => {})
+        .event(document_status_updated, () => {})
         .onVerificationFailed(onVerificationFailed);
 
       await webhook.process({

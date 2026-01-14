@@ -3,15 +3,16 @@
 [![npm](https://img.shields.io/npm/v/@better-webhook/github?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/github)
 [![npm monthly](https://img.shields.io/npm/dm/@better-webhook/github?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@better-webhook/github)
 
-**Handle GitHub webhooks with full type safety.**
+**Handle GitHub webhooks with full type safety and tree-shaking support.**
 
-No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers.
+No more guessing payload shapes. No more manual signature verification. Just beautiful, typed webhook handlers with optimal bundle sizes.
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 
-const webhook = github().event("push", async (payload) => {
-  // ✨ Full autocomplete for payload.repository, payload.commits, etc.
+const webhook = github().event(push, async (payload) => {
+  // Full autocomplete for payload.repository, payload.commits, etc.
   console.log(
     `${payload.pusher.name} pushed ${payload.commits.length} commits`,
   );
@@ -20,10 +21,11 @@ const webhook = github().event("push", async (payload) => {
 
 ## Features
 
-- **🔒 Automatic signature verification** — HMAC-SHA256 verification using `x-hub-signature-256`
-- **📝 Fully typed payloads** — TypeScript knows every field on every event
-- **✅ Schema validated** — Malformed payloads are caught and rejected
-- **🎯 Multiple events** — Handle `push`, `pull_request`, `issues`, and more
+- **Tree-shakeable** — Only import the events you use for optimal bundle sizes
+- **Automatic signature verification** — HMAC-SHA256 verification using `x-hub-signature-256`
+- **Fully typed payloads** — TypeScript knows every field on every event
+- **Schema validated** — Malformed payloads are caught and rejected
+- **Multiple events** — Handle `push`, `pull_request`, `issues`, and more
 
 ## Installation
 
@@ -51,15 +53,22 @@ npm install @better-webhook/nestjs   # NestJS
 ```ts
 // app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github().event("push", async (payload) => {
-  console.log(`Push to ${payload.repository.full_name}`);
+const webhook = github()
+  .event(push, async (payload) => {
+    console.log(`Push to ${payload.repository.full_name}`);
 
-  for (const commit of payload.commits) {
-    console.log(`- ${commit.message} by ${commit.author.name}`);
-  }
-});
+    for (const commit of payload.commits) {
+      console.log(`- ${commit.message} by ${commit.author.name}`);
+    }
+  })
+  .event(pull_request, async (payload) => {
+    if (payload.action === "opened") {
+      console.log(`New PR #${payload.number}: ${payload.pull_request.title}`);
+    }
+  });
 
 export const POST = toNextJS(webhook);
 ```
@@ -69,11 +78,12 @@ export const POST = toNextJS(webhook);
 ```ts
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -92,11 +102,12 @@ app.listen(3000);
 import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github().event("push", async (payload) => {
+  private webhook = github().event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -110,13 +121,15 @@ export class WebhooksController {
 
 ## Supported Events
 
-| Event                       | Description                                          |
-| --------------------------- | ---------------------------------------------------- |
-| `push`                      | Push to a repository                                 |
-| `pull_request`              | Pull request opened, closed, merged, etc.            |
-| `issues`                    | Issue opened, closed, labeled, etc.                  |
-| `installation`              | GitHub App installed, uninstalled, or suspended      |
-| `installation_repositories` | Repositories added/removed from a GitHub App install |
+Import events from `@better-webhook/github/events`:
+
+| Event                       | Import                      | Description                                          |
+| --------------------------- | --------------------------- | ---------------------------------------------------- |
+| `push`                      | `push`                      | Push to a repository                                 |
+| `pull_request`              | `pull_request`              | Pull request opened, closed, merged, etc.            |
+| `issues`                    | `issues`                    | Issue opened, closed, labeled, etc.                  |
+| `installation`              | `installation`              | GitHub App installed, uninstalled, or suspended      |
+| `installation_repositories` | `installation_repositories` | Repositories added/removed from a GitHub App install |
 
 > More events coming soon! PRs welcome.
 
@@ -125,7 +138,9 @@ export class WebhooksController {
 ### Push Events
 
 ```ts
-github().event("push", async (payload) => {
+import { push } from "@better-webhook/github/events";
+
+github().event(push, async (payload) => {
   // Branch info
   const branch = payload.ref.replace("refs/heads/", "");
   console.log(`Push to ${branch}`);
@@ -141,7 +156,7 @@ github().event("push", async (payload) => {
 
   // Force push detection
   if (payload.forced) {
-    console.warn("⚠️ Force push detected!");
+    console.warn("Force push detected!");
   }
 });
 ```
@@ -149,13 +164,15 @@ github().event("push", async (payload) => {
 ### Pull Request Events
 
 ```ts
-github().event("pull_request", async (payload) => {
+import { pull_request } from "@better-webhook/github/events";
+
+github().event(pull_request, async (payload) => {
   const pr = payload.pull_request;
 
   switch (payload.action) {
     case "opened":
       console.log(`New PR #${pr.number}: ${pr.title}`);
-      console.log(`From: ${pr.head.ref} → ${pr.base.ref}`);
+      console.log(`From: ${pr.head.ref} -> ${pr.base.ref}`);
       await notifySlack(`New PR: ${pr.title}`);
       break;
 
@@ -174,7 +191,9 @@ github().event("pull_request", async (payload) => {
 ### Issue Events
 
 ```ts
-github().event("issues", async (payload) => {
+import { issues } from "@better-webhook/github/events";
+
+github().event(issues, async (payload) => {
   const issue = payload.issue;
 
   if (payload.action === "opened") {
@@ -198,27 +217,29 @@ github().event("issues", async (payload) => {
 ### Installation Events (GitHub Apps)
 
 ```ts
-github().event("installation", async (payload) => {
-  const installation = payload.installation;
+import { installation } from "@better-webhook/github/events";
+
+github().event(installation, async (payload) => {
+  const inst = payload.installation;
 
   switch (payload.action) {
     case "created":
-      console.log(`App installed on ${installation.account.login}`);
+      console.log(`App installed on ${inst.account.login}`);
       // Store installation ID for API access
       await db.installations.insert({
-        id: installation.id,
-        account: installation.account.login,
-        targetType: installation.target_type,
+        id: inst.id,
+        account: inst.account.login,
+        targetType: inst.target_type,
       });
       break;
 
     case "deleted":
-      console.log(`App uninstalled from ${installation.account.login}`);
-      await db.installations.delete(installation.id);
+      console.log(`App uninstalled from ${inst.account.login}`);
+      await db.installations.delete(inst.id);
       break;
 
     case "suspend":
-      console.log(`App suspended on ${installation.account.login}`);
+      console.log(`App suspended on ${inst.account.login}`);
       break;
   }
 });
@@ -227,12 +248,14 @@ github().event("installation", async (payload) => {
 ### Installation Repositories Events
 
 ```ts
-github().event("installation_repositories", async (payload) => {
-  const installation = payload.installation;
+import { installation_repositories } from "@better-webhook/github/events";
+
+github().event(installation_repositories, async (payload) => {
+  const inst = payload.installation;
 
   if (payload.action === "added") {
     console.log(
-      `Repos added to installation ${installation.id}:`,
+      `Repos added to installation ${inst.id}:`,
       payload.repositories_added.map((r) => r.full_name),
     );
     // Index the new repositories
@@ -243,7 +266,7 @@ github().event("installation_repositories", async (payload) => {
 
   if (payload.action === "removed") {
     console.log(
-      `Repos removed from installation ${installation.id}:`,
+      `Repos removed from installation ${inst.id}:`,
       payload.repositories_removed.map((r) => r.full_name),
     );
     // Clean up removed repositories
@@ -259,8 +282,10 @@ github().event("installation_repositories", async (payload) => {
 Handle errors gracefully with built-in hooks:
 
 ```ts
+import { push } from "@better-webhook/github/events";
+
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     await riskyOperation(payload);
   })
   .onError((error, context) => {
@@ -300,7 +325,7 @@ Or pass it explicitly:
 
 ```ts
 // At provider level
-const webhook = github({ secret: "your-secret" }).event("push", handler);
+const webhook = github({ secret: "your-secret" }).event(push, handler);
 
 // Or at adapter level
 export const POST = toNextJS(webhook, { secret: "your-secret" });
@@ -334,18 +359,19 @@ function handlePush(payload: GitHubPushEvent) {
 }
 ```
 
-Schemas are also exported if you need them:
+## Tree-Shaking
+
+Events are exported separately from `@better-webhook/github/events`, allowing bundlers to tree-shake unused events from your production bundle:
 
 ```ts
-import {
-  GitHubPushEventSchema,
-  RepositorySchema,
-  CommitSchema,
-} from "@better-webhook/github";
+// Only `push` schema is included in your bundle
+import { push } from "@better-webhook/github/events";
 
-// Use for custom validation
-const result = GitHubPushEventSchema.safeParse(data);
+// All events included (use when you need multiple)
+import { push, pull_request, issues } from "@better-webhook/github/events";
 ```
+
+This is particularly beneficial for serverless deployments where bundle size matters.
 
 ## License
 
