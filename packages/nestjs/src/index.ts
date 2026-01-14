@@ -1,7 +1,6 @@
 import {
   type WebhookBuilder,
   type ProcessResult,
-  type ZodSchema,
   type WebhookObserver,
 } from "@better-webhook/core";
 
@@ -108,8 +107,8 @@ export type NestJSHandler = (req: NestJSRequest) => Promise<NestJSResult>;
  * @param options - Adapter options
  * @returns A function that processes the request and returns a result
  */
-export function toNestJS<EventMap extends Record<string, ZodSchema>>(
-  webhook: WebhookBuilder<EventMap>,
+export function toNestJS<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
   options?: NestJSAdapterOptions,
 ): NestJSHandler {
   // Apply observer(s) if provided

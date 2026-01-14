@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { toNestJS, type NestJSRequest } from "./index.js";
 import {
   createWebhook,
+  defineEvent,
   z,
   type Provider,
   type Headers,
@@ -16,17 +17,18 @@ const TestSchema = z.object({
   data: z.object({ id: z.number() }),
 });
 
-type TestEventMap = {
-  "test.event": typeof TestSchema;
-};
+const testEvent = defineEvent({
+  name: "test.event",
+  schema: TestSchema,
+  provider: "test" as const,
+});
 
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
-}): Provider<TestEventMap> {
+}): Provider<"test"> {
   return {
     name: "test",
-    schemas: { "test.event": TestSchema },
     secret: options?.secret,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
@@ -62,7 +64,7 @@ describe("toNestJS", () => {
   describe("body handling", () => {
     it("should prefer rawBody when available", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -78,7 +80,7 @@ describe("toNestJS", () => {
 
     it("should accept Buffer body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -93,7 +95,7 @@ describe("toNestJS", () => {
 
     it("should accept string body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -108,7 +110,7 @@ describe("toNestJS", () => {
 
     it("should stringify parsed object body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -125,7 +127,7 @@ describe("toNestJS", () => {
 
     it("should return 400 for missing body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -159,7 +161,7 @@ describe("toNestJS", () => {
 
     it("should return 401 when verification fails", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook, { secret: "test" });
 
       const req = createMockRequest({
@@ -174,7 +176,7 @@ describe("toNestJS", () => {
 
     it("should return 200 with body on success", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNestJS(webhook);
 
       const req = createMockRequest({
@@ -192,7 +194,7 @@ describe("toNestJS", () => {
   describe("options", () => {
     it("should call onSuccess callback on successful processing", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toNestJS(webhook, { onSuccess });
 
@@ -224,7 +226,7 @@ describe("toNestJS", () => {
 
     it("should not call onSuccess on error responses", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toNestJS(webhook, { secret: "test", onSuccess });
 
@@ -242,7 +244,7 @@ describe("toNestJS", () => {
   describe("handler execution", () => {
     it("should execute handlers and return 500 on error", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {
+      const webhook = createWebhook(provider).event(testEvent, () => {
         throw new Error("Handler error");
       });
       const handler = toNestJS(webhook);
@@ -261,7 +263,7 @@ describe("toNestJS", () => {
   describe("observer option", () => {
     it("should call observer callbacks when observer option is provided", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted = vi.fn();
       const handler = toNestJS(webhook, { observer: { onCompleted } });
 
@@ -286,7 +288,7 @@ describe("toNestJS", () => {
 
     it("should accept an array of observers", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted1 = vi.fn();
       const onCompleted2 = vi.fn();
       const handler = toNestJS(webhook, {
@@ -334,7 +336,7 @@ describe("toNestJS", () => {
 
     it("should not call observer when adapter rejects before processing (missing body)", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted = vi.fn();
       const handler = toNestJS(webhook, { observer: { onCompleted } });
 

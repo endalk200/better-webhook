@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { toNextJS } from "./index.js";
 import {
   createWebhook,
+  defineEvent,
   z,
   type Provider,
   type Headers,
@@ -16,17 +17,18 @@ const TestSchema = z.object({
   data: z.object({ id: z.number() }),
 });
 
-type TestEventMap = {
-  "test.event": typeof TestSchema;
-};
+const testEvent = defineEvent({
+  name: "test.event",
+  schema: TestSchema,
+  provider: "test" as const,
+});
 
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
-}): Provider<TestEventMap> {
+}): Provider<"test"> {
   return {
     name: "test",
-    schemas: { "test.event": TestSchema },
     secret: options?.secret,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
@@ -72,7 +74,7 @@ describe("toNextJS", () => {
   describe("method handling", () => {
     it("should reject non-POST requests with 405", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook);
 
       const request = createMockRequest({ method: "GET" });
@@ -85,7 +87,7 @@ describe("toNextJS", () => {
 
     it("should accept POST requests", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook);
 
       const request = createMockRequest({
@@ -116,7 +118,7 @@ describe("toNextJS", () => {
 
     it("should return 401 when verification fails", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook, { secret: "test" });
 
       const request = createMockRequest({
@@ -130,7 +132,7 @@ describe("toNextJS", () => {
 
     it("should return 200 with JSON body on success", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook);
 
       const request = createMockRequest({
@@ -151,11 +153,11 @@ describe("toNextJS", () => {
     it("should pass secret to webhook processor", async () => {
       const provider = createTestProvider();
       const processSpy = vi.spyOn(
-        createWebhook(provider).event("test.event", () => {}),
+        createWebhook(provider).event(testEvent, () => {}),
         "process",
       );
 
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook, { secret: "my-secret" });
 
       const request = createMockRequest({
@@ -170,7 +172,7 @@ describe("toNextJS", () => {
 
     it("should call onSuccess callback on successful processing", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toNextJS(webhook, { onSuccess });
 
@@ -200,7 +202,7 @@ describe("toNextJS", () => {
 
     it("should not call onSuccess on error responses", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toNextJS(webhook, { secret: "test", onSuccess });
 
@@ -217,7 +219,7 @@ describe("toNextJS", () => {
   describe("observer option", () => {
     it("should call observer callbacks when observer option is provided", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted = vi.fn();
       const handler = toNextJS(webhook, { observer: { onCompleted } });
 
@@ -241,7 +243,7 @@ describe("toNextJS", () => {
 
     it("should accept an array of observers", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted1 = vi.fn();
       const onCompleted2 = vi.fn();
       const handler = toNextJS(webhook, {
@@ -290,7 +292,7 @@ describe("toNextJS", () => {
     it("should normalize headers to lowercase", async () => {
       const provider = createTestProvider();
       const handler = vi.fn();
-      const webhook = createWebhook(provider).event("test.event", handler);
+      const webhook = createWebhook(provider).event(testEvent, handler);
       const nextHandler = toNextJS(webhook);
 
       const request = createMockRequest({

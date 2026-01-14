@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { toGCPFunction } from "./index.js";
 import {
   createWebhook,
+  defineEvent,
   z,
   type Provider,
   type Headers,
@@ -17,17 +18,19 @@ const TestSchema = z.object({
   data: z.object({ id: z.number() }),
 });
 
-type TestEventMap = {
-  "test.event": typeof TestSchema;
-};
+// Define test event using new pattern
+const testEvent = defineEvent({
+  name: "test.event",
+  schema: TestSchema,
+  provider: "test" as const,
+});
 
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
-}): Provider<TestEventMap> {
+}): Provider<"test"> {
   return {
     name: "test",
-    schemas: { "test.event": TestSchema },
     secret: options?.secret,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
@@ -93,7 +96,7 @@ describe("toGCPFunction", () => {
   describe("method handling", () => {
     it("should reject non-POST requests with 405", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({ method: "GET" });
@@ -109,7 +112,7 @@ describe("toGCPFunction", () => {
 
     it("should accept POST requests", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -128,7 +131,7 @@ describe("toGCPFunction", () => {
   describe("body handling", () => {
     it("should accept rawBody from Functions Framework", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -145,7 +148,7 @@ describe("toGCPFunction", () => {
 
     it("should accept Buffer body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -161,7 +164,7 @@ describe("toGCPFunction", () => {
 
     it("should accept string body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -177,7 +180,7 @@ describe("toGCPFunction", () => {
 
     it("should handle parsed JSON body by stringifying", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -194,7 +197,7 @@ describe("toGCPFunction", () => {
 
     it("should return 400 for missing body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -232,7 +235,7 @@ describe("toGCPFunction", () => {
 
     it("should return 401 when verification fails", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook, { secret: "test" });
 
       const req = createMockRequest({
@@ -248,7 +251,7 @@ describe("toGCPFunction", () => {
 
     it("should return 200 with JSON body on success", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -265,7 +268,7 @@ describe("toGCPFunction", () => {
 
     it("should return 400 for invalid JSON body", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -281,7 +284,7 @@ describe("toGCPFunction", () => {
 
     it("should return 400 for schema validation failure", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toGCPFunction(webhook);
 
       const req = createMockRequest({
@@ -299,7 +302,7 @@ describe("toGCPFunction", () => {
   describe("options", () => {
     it("should call onSuccess callback on successful processing", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toGCPFunction(webhook, { onSuccess });
 
@@ -333,7 +336,7 @@ describe("toGCPFunction", () => {
 
     it("should not call onSuccess on error responses", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn();
       const handler = toGCPFunction(webhook, { secret: "test", onSuccess });
 
@@ -350,7 +353,7 @@ describe("toGCPFunction", () => {
 
     it("should ignore errors from onSuccess callback", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onSuccess = vi.fn().mockRejectedValue(new Error("callback error"));
       const handler = toGCPFunction(webhook, { onSuccess });
 
@@ -370,7 +373,7 @@ describe("toGCPFunction", () => {
   describe("error handling", () => {
     it("should return 500 when handler throws an error", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {
+      const webhook = createWebhook(provider).event(testEvent, () => {
         throw new Error("Handler error");
       });
       const handler = toGCPFunction(webhook);
@@ -388,7 +391,7 @@ describe("toGCPFunction", () => {
 
     it("should return 500 when async handler rejects", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", async () => {
+      const webhook = createWebhook(provider).event(testEvent, async () => {
         throw new Error("Async handler error");
       });
       const handler = toGCPFunction(webhook);
@@ -408,7 +411,7 @@ describe("toGCPFunction", () => {
   describe("observer option", () => {
     it("should call observer callbacks when observer option is provided", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted = vi.fn();
       const handler = toGCPFunction(webhook, { observer: { onCompleted } });
 
@@ -434,7 +437,7 @@ describe("toGCPFunction", () => {
 
     it("should accept an array of observers", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted1 = vi.fn();
       const onCompleted2 = vi.fn();
       const handler = toGCPFunction(webhook, {
@@ -484,7 +487,7 @@ describe("toGCPFunction", () => {
 
     it("should not call observer when adapter rejects before processing (missing body)", async () => {
       const provider = createTestProvider();
-      const webhook = createWebhook(provider).event("test.event", () => {});
+      const webhook = createWebhook(provider).event(testEvent, () => {});
       const onCompleted = vi.fn();
       const handler = toGCPFunction(webhook, { observer: { onCompleted } });
 
@@ -505,7 +508,7 @@ describe("toGCPFunction", () => {
     it("should handle headers case-insensitively", async () => {
       const provider = createTestProvider();
       const handler = vi.fn();
-      const webhook = createWebhook(provider).event("test.event", handler);
+      const webhook = createWebhook(provider).event(testEvent, handler);
       const gcpHandler = toGCPFunction(webhook);
 
       const req = createMockRequest({
