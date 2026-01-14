@@ -2,6 +2,7 @@
   "name": "@better-webhook/nestjs-example",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "description": "NestJS example for better-webhook",
   "scripts": {
     "dev": "nest start --watch",

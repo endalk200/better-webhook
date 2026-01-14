@@ -1,7 +1,13 @@
 import { Controller, Post, Get, Req, Res, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push, pull_request, issues } from "@better-webhook/github/events";
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_finished,
+  entity_extracted,
+} from "@better-webhook/ragie/events";
 import { toNestJS } from "@better-webhook/nestjs";
 import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
 
@@ -44,7 +50,7 @@ export class WebhooksController {
   private githubWebhook = github()
     .observe(githubStats.observer)
     .observe(loggingObserver)
-    .event("push", async (payload, context) => {
+    .event(push, async (payload, context) => {
       console.log("📦 Push event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Received at: ${context.receivedAt.toISOString()}`);
@@ -55,7 +61,7 @@ export class WebhooksController {
         console.log(`   - ${commit.message} (${commit.id.slice(0, 7)})`);
       });
     })
-    .event("pull_request", async (payload, context) => {
+    .event(pull_request, async (payload, context) => {
       console.log("🔀 Pull request event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Action: ${payload.action}`);
@@ -64,7 +70,7 @@ export class WebhooksController {
       );
       console.log(`   State: ${payload.pull_request.state}`);
     })
-    .event("issues", async (payload, context) => {
+    .event(issues, async (payload, context) => {
       console.log("🎫 Issue event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Action: ${payload.action}`);
@@ -83,23 +89,20 @@ export class WebhooksController {
   private ragieWebhook = ragie()
     .observe(ragieStats.observer)
     .observe(loggingObserver)
-    .event("document_status_updated", async (payload, context) => {
+    .event(document_status_updated, async (payload, context) => {
       console.log("📄 Document status updated!");
-      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Status: ${payload.status}`);
       console.log(`   Partition: ${payload.partition}`);
     })
-    .event("connection_sync_finished", async (payload, context) => {
+    .event(connection_sync_finished, async (payload, context) => {
       console.log("✅ Connection sync finished!");
-      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Connection ID: ${payload.connection_id}`);
       console.log(`   Sync ID: ${payload.sync_id}`);
       console.log(`   Partition: ${payload.partition}`);
     })
-    .event("entity_extracted", async (payload, context) => {
+    .event(entity_extracted, async (payload, context) => {
       console.log("🔍 Entity extraction completed!");
-      console.log(`   Nonce: ${payload.nonce}`);
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Partition: ${payload.partition || "default"}`);
     })
