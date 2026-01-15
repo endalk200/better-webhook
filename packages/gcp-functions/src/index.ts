@@ -97,10 +97,11 @@ export type GCPFunctionHandler = (
  * // index.ts (2nd Gen Cloud Functions)
  * import { http } from '@google-cloud/functions-framework';
  * import { ragie } from '@better-webhook/ragie';
+ * import { document_status_updated } from '@better-webhook/ragie/events';
  * import { toGCPFunction } from '@better-webhook/gcp-functions';
  *
  * const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
- *   .event('document_status_updated', async (payload) => {
+ *   .event(document_status_updated, async (payload) => {
  *     console.log(`Document ${payload.document_id} is now ${payload.status}`);
  *   });
  *
@@ -111,10 +112,11 @@ export type GCPFunctionHandler = (
  * ```ts
  * // 1st Gen Cloud Functions (exports style)
  * import { ragie } from '@better-webhook/ragie';
+ * import { document_status_updated } from '@better-webhook/ragie/events';
  * import { toGCPFunction } from '@better-webhook/gcp-functions';
  *
  * const webhook = ragie()
- *   .event('document_status_updated', async (payload) => {
+ *   .event(document_status_updated, async (payload) => {
  *     console.log(`Document ${payload.document_id} is now ${payload.status}`);
  *   });
  *

@@ -1,18 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z, type ZodSchema, type ZodError } from "zod";
 
-// ============================================================================
-// Types and Interfaces
-// ============================================================================
-
 /**
  * Normalized headers with lowercase keys
  */
 export type Headers = Record<string, string | undefined>;
-
-// ============================================================================
-// Tree-Shakeable Event Definitions
-// ============================================================================
 
 /**
  * Event definition object that carries both runtime information
