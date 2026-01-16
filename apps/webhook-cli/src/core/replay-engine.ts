@@ -139,7 +139,7 @@ export class ReplayEngine {
    */
   captureToTemplate(
     captureId: string,
-    options?: { url?: string },
+    options?: { url?: string; event?: string },
   ): WebhookTemplate {
     const captureFile = this.getCapture(captureId);
     if (!captureFile) {
@@ -186,14 +186,117 @@ export class ReplayEngine {
       }
     }
 
+    // Detect event from headers/body if not provided
+    const event = options?.event || this.detectEvent(capture);
+
     return {
       url: options?.url || `http://localhost:3000${capture.path}`,
       method: capture.method,
       headers,
       body,
       provider: capture.provider,
+      event,
       description: `Captured ${capture.provider || "webhook"} at ${capture.timestamp}`,
     };
+  }
+
+  /**
+   * Detect event type from captured webhook headers/body
+   */
+  private detectEvent(capture: CapturedWebhook): string | undefined {
+    const headers = capture.headers;
+
+    // GitHub: x-github-event header
+    const githubEvent = headers["x-github-event"];
+    if (githubEvent) {
+      return Array.isArray(githubEvent) ? githubEvent[0] : githubEvent;
+    }
+
+    // Stripe: event type in body
+    if (capture.provider === "stripe" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "string") {
+        return body.type;
+      }
+    }
+
+    // Slack: event type in body
+    if (capture.provider === "slack" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "string") {
+        return body.type;
+      }
+      const event = body.event as Record<string, unknown> | undefined;
+      if (event && typeof event.type === "string") {
+        return event.type;
+      }
+    }
+
+    // Linear: event type in body
+    if (capture.provider === "linear" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "string") {
+        return body.type;
+      }
+    }
+
+    // Clerk/Svix: event type in body
+    if (capture.provider === "clerk" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "string") {
+        return body.type;
+      }
+    }
+
+    // Ragie: event type in body
+    if (capture.provider === "ragie" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.event_type === "string") {
+        return body.event_type;
+      }
+    }
+
+    // Shopify: x-shopify-topic header
+    const shopifyTopic = headers["x-shopify-topic"];
+    if (shopifyTopic) {
+      return Array.isArray(shopifyTopic) ? shopifyTopic[0] : shopifyTopic;
+    }
+
+    // SendGrid: Check for common event types in body
+    if (capture.provider === "sendgrid" && Array.isArray(capture.body)) {
+      const firstEvent = capture.body[0] as Record<string, unknown> | undefined;
+      if (firstEvent && typeof firstEvent.event === "string") {
+        return firstEvent.event;
+      }
+    }
+
+    // Discord: Check for event type in body
+    if (capture.provider === "discord" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "number") {
+        return `type_${body.type}`;
+      }
+    }
+
+    // Fallback: Try common event field patterns for unknown providers
+    if (capture.body && typeof capture.body === "object") {
+      const body = capture.body as Record<string, unknown>;
+      // Common patterns: type, event_type, event, action
+      if (typeof body.type === "string") {
+        return body.type;
+      }
+      if (typeof body.event_type === "string") {
+        return body.event_type;
+      }
+      if (typeof body.event === "string") {
+        return body.event;
+      }
+      if (typeof body.action === "string") {
+        return body.action;
+      }
+    }
+
+    return undefined;
   }
 
   /**

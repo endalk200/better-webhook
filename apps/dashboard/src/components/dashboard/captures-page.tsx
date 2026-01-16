@@ -10,6 +10,7 @@ import {
   getCapture,
   listCaptures,
   replayCapture,
+  saveAsTemplate,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,26 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   formatBytes,
   parseHeaderLines,
   safeJsonStringify,
 } from "@/components/dashboard/utils";
-import { ArrowClockwiseIcon, TrashIcon } from "@phosphor-icons/react";
+import {
+  ArrowClockwiseIcon,
+  TrashIcon,
+  FloppyDiskIcon,
+} from "@phosphor-icons/react";
 
 const providers = [
   { label: "All providers", value: "all" },
@@ -80,6 +96,23 @@ export function CapturesPage(props: {
     React.useState<WebhookExecutionResult | null>(null);
   const [replayError, setReplayError] = React.useState<string | null>(null);
   const [replayBusy, setReplayBusy] = React.useState(false);
+
+  // Save as template state
+  const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false);
+  const [saveTemplateId, setSaveTemplateId] = React.useState("");
+  const [saveTemplateName, setSaveTemplateName] = React.useState("");
+  const [saveTemplateEvent, setSaveTemplateEvent] = React.useState("");
+  const [saveTemplateDescription, setSaveTemplateDescription] =
+    React.useState("");
+  const [saveTemplateOverwrite, setSaveTemplateOverwrite] =
+    React.useState(false);
+  const [saveTemplateBusy, setSaveTemplateBusy] = React.useState(false);
+  const [saveTemplateError, setSaveTemplateError] = React.useState<
+    string | null
+  >(null);
+  const [saveTemplateSuccess, setSaveTemplateSuccess] = React.useState<
+    string | null
+  >(null);
 
   const list = async () => {
     setIsLoading(true);
@@ -201,6 +234,58 @@ export function CapturesPage(props: {
     }
   };
 
+  const openSaveTemplateDialog = () => {
+    if (!selected) return;
+    // Auto-suggest template ID based on provider and event
+    const capture = selected.capture;
+    const provider = capture.provider || "custom";
+    // Try to detect event from headers
+    let event = "";
+    const githubEvent = capture.headers["x-github-event"];
+    if (githubEvent) {
+      event = Array.isArray(githubEvent) ? githubEvent[0] : githubEvent;
+    }
+    const suggestedId = event ? `${provider}-${event}` : provider;
+    setSaveTemplateId(suggestedId.toLowerCase().replace(/\s+/g, "-"));
+    setSaveTemplateName("");
+    setSaveTemplateEvent(event);
+    setSaveTemplateDescription("");
+    setSaveTemplateOverwrite(false);
+    setSaveTemplateError(null);
+    setSaveTemplateSuccess(null);
+    setSaveTemplateOpen(true);
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!selected) return;
+    setSaveTemplateBusy(true);
+    setSaveTemplateError(null);
+    setSaveTemplateSuccess(null);
+    try {
+      const result = await saveAsTemplate({
+        captureId: selected.capture.id,
+        id: saveTemplateId || undefined,
+        name: saveTemplateName || undefined,
+        event: saveTemplateEvent || undefined,
+        description: saveTemplateDescription || undefined,
+        overwrite: saveTemplateOverwrite,
+      });
+      setSaveTemplateSuccess(`Template saved: ${result.id}`);
+    } catch (e: unknown) {
+      setSaveTemplateError(
+        e instanceof Error ? e.message : "Failed to save template",
+      );
+    } finally {
+      setSaveTemplateBusy(false);
+    }
+  };
+
+  const handleCloseTemplateDialog = () => {
+    setSaveTemplateOpen(false);
+    // Reset success state when closing
+    setSaveTemplateSuccess(null);
+  };
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
       <Card>
@@ -320,6 +405,140 @@ export function CapturesPage(props: {
             Inspect a capture, then replay it to any local endpoint.
           </CardDescription>
           <CardAction className="flex items-center gap-2">
+            <AlertDialog
+              open={saveTemplateOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  handleCloseTemplateDialog();
+                } else {
+                  setSaveTemplateOpen(open);
+                }
+              }}
+            >
+              <AlertDialogTrigger
+                render={
+                  <Button variant="outline" size="default" disabled={!selected}>
+                    <FloppyDiskIcon data-icon="inline-start" />
+                    Save as Template
+                  </Button>
+                }
+                onClick={openSaveTemplateDialog}
+              />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Save as Template</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Save this captured webhook as a reusable template.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleSaveAsTemplate();
+                  }}
+                >
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="template-id">Template ID</FieldLabel>
+                      <Input
+                        id="template-id"
+                        value={saveTemplateId}
+                        onChange={(e) => setSaveTemplateId(e.target.value)}
+                        placeholder="e.g., github-push"
+                      />
+                      <FieldDescription>
+                        Unique identifier for the template
+                      </FieldDescription>
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="template-name">
+                        Name (optional)
+                      </FieldLabel>
+                      <Input
+                        id="template-name"
+                        value={saveTemplateName}
+                        onChange={(e) => setSaveTemplateName(e.target.value)}
+                        placeholder="e.g., GitHub Push Event"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="template-event">
+                        Event (optional)
+                      </FieldLabel>
+                      <Input
+                        id="template-event"
+                        value={saveTemplateEvent}
+                        onChange={(e) => setSaveTemplateEvent(e.target.value)}
+                        placeholder="e.g., push"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="template-description">
+                        Description (optional)
+                      </FieldLabel>
+                      <Textarea
+                        id="template-description"
+                        value={saveTemplateDescription}
+                        onChange={(e) =>
+                          setSaveTemplateDescription(e.target.value)
+                        }
+                        placeholder="Describe what this template does..."
+                      />
+                    </Field>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="template-overwrite"
+                        checked={saveTemplateOverwrite}
+                        onChange={(e) =>
+                          setSaveTemplateOverwrite(e.target.checked)
+                        }
+                        className="accent-primary h-4 w-4"
+                      />
+                      <label
+                        htmlFor="template-overwrite"
+                        className="text-muted-foreground text-xs"
+                      >
+                        Overwrite if template ID exists
+                      </label>
+                    </div>
+                    {saveTemplateError && (
+                      <div className="text-destructive text-xs">
+                        {saveTemplateError}
+                      </div>
+                    )}
+                    {saveTemplateSuccess && (
+                      <div className="text-xs text-green-600 dark:text-green-400">
+                        {saveTemplateSuccess}
+                      </div>
+                    )}
+                  </FieldGroup>
+                </form>
+                <AlertDialogFooter>
+                  {saveTemplateSuccess ? (
+                    <AlertDialogAction onClick={handleCloseTemplateDialog}>
+                      Done
+                    </AlertDialogAction>
+                  ) : (
+                    <>
+                      <AlertDialogCancel disabled={saveTemplateBusy}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        type="submit"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void handleSaveAsTemplate();
+                        }}
+                        disabled={saveTemplateBusy || !saveTemplateId.trim()}
+                      >
+                        {saveTemplateBusy ? "Saving..." : "Save Template"}
+                      </AlertDialogAction>
+                    </>
+                  )}
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               variant="destructive"
               size="default"

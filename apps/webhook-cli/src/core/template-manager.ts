@@ -16,6 +16,8 @@ import {
   type WebhookTemplate,
   type LocalTemplate,
   type RemoteTemplate,
+  type WebhookProvider,
+  type SaveAsTemplateResult,
   TemplatesIndexSchema,
   WebhookTemplateSchema,
 } from "../types/index.js";
@@ -23,6 +25,14 @@ import {
 const GITHUB_RAW_BASE =
   "https://raw.githubusercontent.com/endalk200/better-webhook/main";
 const TEMPLATES_INDEX_URL = `${GITHUB_RAW_BASE}/templates/templates.json`;
+
+const TEMPLATE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
+
+function isValidTemplateId(id: string): boolean {
+  if (!id || id.length > 128) return false;
+  if (id.includes("/") || id.includes("\\") || id.includes("..")) return false;
+  return TEMPLATE_ID_PATTERN.test(id);
+}
 
 export class TemplateManager {
   private baseDir: string;
@@ -348,6 +358,110 @@ export class TemplateManager {
     }
 
     return deleted;
+  }
+
+  /**
+   * Check if a template with the given ID already exists locally
+   */
+  templateExists(templateId: string): boolean {
+    return this.getLocalTemplate(templateId) !== null;
+  }
+
+  /**
+   * Generate a unique template ID from provider and event
+   */
+  private generateTemplateId(
+    provider: WebhookProvider | undefined,
+    event: string | undefined,
+  ): string {
+    const providerPart = provider || "custom";
+    const eventPart = event || "webhook";
+    const baseId = `${providerPart}-${eventPart}`
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    // If base ID doesn't exist, use it
+    if (!this.templateExists(baseId)) {
+      return baseId;
+    }
+
+    // Otherwise, append a counter
+    let counter = 1;
+    while (this.templateExists(`${baseId}-${counter}`)) {
+      counter++;
+    }
+    return `${baseId}-${counter}`;
+  }
+
+  /**
+   * Save a user-created template from a captured webhook
+   */
+  saveUserTemplate(
+    template: WebhookTemplate,
+    options: {
+      id?: string;
+      name?: string;
+      event?: string;
+      description?: string;
+      overwrite?: boolean;
+    } = {},
+  ): SaveAsTemplateResult {
+    const provider = template.provider || "custom";
+    const event = options.event || template.event || "webhook";
+    const templateId = options.id || this.generateTemplateId(provider, event);
+    const name = options.name || templateId;
+    const description = options.description || template.description;
+
+    // Validate template ID to prevent path traversal
+    if (!isValidTemplateId(templateId)) {
+      throw new Error(
+        `Invalid template ID "${templateId}". IDs must start with alphanumeric, contain only letters, numbers, dots, underscores, and hyphens.`,
+      );
+    }
+
+    // Check for conflicts unless overwrite is enabled
+    if (!options.overwrite && this.templateExists(templateId)) {
+      throw new Error(
+        `Template with ID "${templateId}" already exists. Use --overwrite to replace it.`,
+      );
+    }
+
+    // Create provider subdirectory if needed
+    const providerDir = join(this.templatesDir, provider);
+    if (!existsSync(providerDir)) {
+      mkdirSync(providerDir, { recursive: true });
+    }
+
+    // Build the metadata
+    const metadata: TemplateMetadata & { source: string; createdAt: string } = {
+      id: templateId,
+      name,
+      provider,
+      event,
+      file: `${provider}/${templateId}.json`,
+      description,
+      source: "capture",
+      createdAt: new Date().toISOString(),
+    };
+
+    // Build the full template with metadata
+    const saveData = {
+      ...template,
+      provider,
+      event,
+      description,
+      _metadata: metadata,
+    };
+
+    // Save template file
+    const filePath = join(providerDir, `${templateId}.json`);
+    writeFileSync(filePath, JSON.stringify(saveData, null, 2));
+
+    return {
+      id: templateId,
+      filePath,
+      template: saveData,
+    };
   }
 }
 

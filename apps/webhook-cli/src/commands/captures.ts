@@ -1,7 +1,17 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import prompts from "prompts";
+import { homedir } from "os";
 import { getReplayEngine } from "../core/replay-engine.js";
+import { getTemplateManager } from "../core/template-manager.js";
+
+function toRelativePath(absolutePath: string): string {
+  const home = homedir();
+  if (absolutePath.startsWith(home)) {
+    return "~" + absolutePath.slice(home.length);
+  }
+  return absolutePath;
+}
 
 /**
  * List captured webhooks
@@ -291,6 +301,135 @@ const cleanCommand = new Command()
   });
 
 /**
+ * Save a capture as a reusable template
+ */
+const saveAsTemplateCommand = new Command()
+  .name("save-as-template")
+  .alias("sat")
+  .argument("<captureId>", "Capture ID or partial ID")
+  .description("Save a captured webhook as a reusable template")
+  .option("--id <id>", "Template ID (auto-generated if not provided)")
+  .option("--name <name>", "Template display name")
+  .option("--event <event>", "Event type (auto-detected if not provided)")
+  .option("--description <description>", "Template description")
+  .option("--url <url>", "Default target URL for the template")
+  .option("--overwrite", "Overwrite existing template with same ID")
+  .action(
+    async (
+      captureId: string,
+      options: {
+        id?: string;
+        name?: string;
+        event?: string;
+        description?: string;
+        url?: string;
+        overwrite?: boolean;
+      },
+    ) => {
+      const engine = getReplayEngine();
+      const templateManager = getTemplateManager();
+
+      // Get the capture
+      const captureFile = engine.getCapture(captureId);
+      if (!captureFile) {
+        console.log(chalk.red(`\n❌ Capture not found: ${captureId}\n`));
+        process.exitCode = 1;
+        return;
+      }
+
+      const { capture } = captureFile;
+
+      // Show capture info
+      console.log(chalk.bold("\n📋 Capture to save as template:\n"));
+      console.log(`    ${chalk.white(capture.id.slice(0, 8))}`);
+      console.log(chalk.gray(`    ${capture.method} ${capture.path}`));
+      if (capture.provider) {
+        console.log(chalk.gray(`    Provider: ${capture.provider}`));
+      }
+      console.log();
+
+      // Convert capture to template
+      const template = engine.captureToTemplate(captureId, {
+        url: options.url,
+        event: options.event,
+      });
+
+      // If no ID provided, prompt interactively
+      let templateId = options.id;
+      if (!templateId) {
+        const suggestedId =
+          `${capture.provider || "custom"}-${template.event || "webhook"}`
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+
+        const response = await prompts({
+          type: "text",
+          name: "templateId",
+          message: "Template ID:",
+          initial: suggestedId,
+          validate: (value) =>
+            value.trim().length > 0 || "Template ID is required",
+        });
+
+        if (!response.templateId) {
+          console.log(chalk.yellow("Cancelled"));
+          return;
+        }
+        templateId = response.templateId;
+      }
+
+      // Check for existing template
+      if (
+        !options.overwrite &&
+        templateId &&
+        templateManager.templateExists(templateId)
+      ) {
+        const response = await prompts({
+          type: "confirm",
+          name: "overwrite",
+          message: `Template "${templateId}" already exists. Overwrite?`,
+          initial: false,
+        });
+
+        if (!response.overwrite) {
+          console.log(chalk.yellow("Cancelled"));
+          return;
+        }
+        options.overwrite = true;
+      }
+
+      try {
+        const result = templateManager.saveUserTemplate(template, {
+          id: templateId,
+          name: options.name,
+          event: options.event || template.event,
+          description: options.description,
+          overwrite: options.overwrite,
+        });
+
+        console.log(chalk.green(`\n✓ Saved template: ${result.id}`));
+        console.log(chalk.gray(`  File: ${toRelativePath(result.filePath)}`));
+        console.log(chalk.gray(`  Provider: ${template.provider || "custom"}`));
+        if (template.event) {
+          console.log(chalk.gray(`  Event: ${template.event}`));
+        }
+        console.log();
+        console.log(chalk.gray("  Run it with:"));
+        console.log(
+          chalk.cyan(
+            `    better-webhook run ${result.id} --url http://localhost:3000/webhooks\n`,
+          ),
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Failed to save template";
+        console.log(chalk.red(`\n❌ ${message}\n`));
+        process.exitCode = 1;
+      }
+    },
+  );
+
+/**
  * Main captures command
  */
 export const captures = new Command()
@@ -301,4 +440,5 @@ export const captures = new Command()
   .addCommand(showCommand)
   .addCommand(searchCommand)
   .addCommand(deleteCommand)
-  .addCommand(cleanCommand);
+  .addCommand(cleanCommand)
+  .addCommand(saveAsTemplateCommand);
