@@ -219,6 +219,41 @@ better-webhook captures clean [options]
 | ------------- | ------------------------ |
 | `-f, --force` | Skip confirmation prompt |
 
+#### `captures save-as-template` (alias: `sat`)
+
+Save a captured webhook as a reusable template.
+
+```bash
+better-webhook captures save-as-template <captureId> [options]
+```
+
+| Option                        | Description                                  |
+| ----------------------------- | -------------------------------------------- |
+| `--id <id>`                   | Template ID (auto-generated if not provided) |
+| `--name <name>`               | Template display name                        |
+| `--event <event>`             | Event type (auto-detected if not provided)   |
+| `--description <description>` | Template description                         |
+| `--url <url>`                 | Default target URL for the template          |
+| `--overwrite`                 | Overwrite existing template with same ID     |
+
+**Arguments:**
+
+- `<captureId>` — Capture ID or partial ID
+
+**Example:**
+
+```bash
+# Interactive mode (prompts for template ID)
+better-webhook captures save-as-template abc123
+
+# With explicit options
+better-webhook captures save-as-template abc123 \
+  --id github-push-custom \
+  --name "GitHub Push" \
+  --event push \
+  --overwrite
+```
+
 ---
 
 ### `better-webhook templates` (alias: `t`)
