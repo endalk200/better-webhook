@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.8.0
+
+### Minor Changes
+
+- adds tree-shakeability feature for provider packages
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @better-webhook/gcp-functions
 
+## 0.3.0
+
+### Minor Changes
+
+- adds tree-shakeability feature for provider packages
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.8.0
+
 ## 0.2.1
 
 ### Patch Changes

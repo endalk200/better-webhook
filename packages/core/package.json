@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/core",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Core webhook handling functionality for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
