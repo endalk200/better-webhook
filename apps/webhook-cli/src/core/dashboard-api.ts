@@ -402,6 +402,15 @@ export function createDashboardApiRouter(
       const { captureId, id, name, event, description, url, overwrite } =
         parsed.data;
 
+      // Validate URL if provided
+      if (url !== undefined) {
+        try {
+          new URL(url);
+        } catch {
+          return jsonError(res, 400, "Invalid url");
+        }
+      }
+
       // Get the capture
       const captureFile = replayEngine.getCapture(captureId);
       if (!captureFile) {

@@ -301,7 +301,7 @@ describe("ReplayEngine", () => {
     });
 
     describe("unknown provider", () => {
-      it("should return undefined event when provider not recognized", () => {
+      it("should return undefined event when provider not recognized and no common fields", () => {
         const capture = createCapture({
           provider: "custom",
           body: { some: "data" },
@@ -333,6 +333,176 @@ describe("ReplayEngine", () => {
         const template = engine.captureToTemplate(capture.id);
 
         expect(template.event).toBeUndefined();
+      });
+    });
+
+    describe("fallback event detection for unknown providers", () => {
+      it("should detect event from body.type for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: { type: "custom.event.created" },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("custom.event.created");
+      });
+
+      it("should detect event from body.event_type for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: { event_type: "order_placed" },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("order_placed");
+      });
+
+      it("should detect event from body.event for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: { event: "user.signup" },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("user.signup");
+      });
+
+      it("should detect event from body.action for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: { action: "completed" },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("completed");
+      });
+
+      it("should prioritize type > event_type > event > action for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            type: "primary_type",
+            event_type: "secondary_type",
+            event: "tertiary_type",
+            action: "quaternary_type",
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("primary_type");
+      });
+
+      it("should fallback to event_type when type is missing for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            event_type: "secondary_type",
+            event: "tertiary_type",
+            action: "quaternary_type",
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("secondary_type");
+      });
+
+      it("should fallback to event when type and event_type are missing for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            event: "tertiary_type",
+            action: "quaternary_type",
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("tertiary_type");
+      });
+
+      it("should fallback to action when type, event_type, and event are missing for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            action: "quaternary_type",
+            data: { some: "value" },
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("quaternary_type");
+      });
+
+      it("should ignore non-string values in fallback fields for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            type: 123,
+            event_type: { nested: "object" },
+            event: ["array"],
+            action: "valid_string",
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("valid_string");
+      });
+
+      it("should return undefined when all fallback fields are non-string for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: {
+            type: 123,
+            event_type: null,
+            event: undefined,
+            action: { not: "a string" },
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBeUndefined();
+      });
+
+      it("should handle null body for unknown provider", () => {
+        const capture = createCapture({
+          provider: "custom",
+          body: null as unknown as Record<string, unknown>,
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBeUndefined();
+      });
+
+      it("should use fallback for undefined provider", () => {
+        const capture = createCapture({
+          body: { event_type: "fallback_event" },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("fallback_event");
       });
     });
   });
