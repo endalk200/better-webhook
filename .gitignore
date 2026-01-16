@@ -38,3 +38,5 @@ yarn-error.log*
 *.pem
 *.tsbuildinfo
 .pnpm-store/*
+
+**/*/tsconfig.tsbuildinfo

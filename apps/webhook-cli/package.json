@@ -21,6 +21,7 @@
     "dev": "tsup --watch",
     "start": "tsx src/index.ts",
     "lint": "tsc",
+    "test": "vitest run",
     "prepublishOnly": "pnpm run build",
     "prepare": "pnpm run build:cli"
   },
