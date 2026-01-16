@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.5.0
+
+### Minor Changes
+
+- feat: ability to convert captures into templates
+
 ## 3.4.4
 
 ### Patch Changes
