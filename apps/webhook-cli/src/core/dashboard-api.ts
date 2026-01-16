@@ -43,11 +43,33 @@ const TemplateDownloadBodySchema = z.object({
   id: z.string().min(1),
 });
 
+const TemplateIdSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9][a-z0-9._-]*$/i,
+    "ID must start with alphanumeric and contain only letters, numbers, dots, underscores, and hyphens",
+  )
+  .max(128, "ID must be 128 characters or less")
+  .refine(
+    (val) => !val.includes("/") && !val.includes("\\") && !val.includes(".."),
+    "ID cannot contain path separators or parent directory references",
+  );
+
 const RunTemplateBodySchema = z.object({
   templateId: z.string().min(1),
   url: z.string().min(1),
   secret: z.string().optional(),
   headers: z.array(HeaderEntrySchema).optional(),
+});
+
+const SaveAsTemplateBodySchema = z.object({
+  captureId: z.string().min(1),
+  id: TemplateIdSchema.optional(),
+  name: z.string().optional(),
+  event: z.string().optional(),
+  description: z.string().optional(),
+  url: z.string().optional(),
+  overwrite: z.boolean().optional(),
 });
 
 export interface DashboardApiOptions {
@@ -76,24 +98,29 @@ export function createDashboardApiRouter(
 
   const broadcastTemplates = async () => {
     if (!broadcast) return;
-    const local = templateManager.listLocalTemplates();
-    let remote: any[] = [];
     try {
-      const index = await templateManager.fetchRemoteIndex(false);
-      const localIds = new Set(local.map((t) => t.id));
-      remote = index.templates.map((metadata) => ({
-        metadata,
-        isDownloaded: localIds.has(metadata.id),
-      }));
-    } catch {
-      // Remote may fail offline; still notify with local templates.
-      remote = [];
-    }
+      const local = templateManager.listLocalTemplates();
+      let remote: any[] = [];
+      try {
+        const index = await templateManager.fetchRemoteIndex(false);
+        const localIds = new Set(local.map((t) => t.id));
+        remote = index.templates.map((metadata) => ({
+          metadata,
+          isDownloaded: localIds.has(metadata.id),
+        }));
+      } catch {
+        // Remote may fail offline; still notify with local templates.
+        remote = [];
+      }
 
-    broadcast({
-      type: "templates_updated",
-      payload: { local, remote },
-    });
+      broadcast({
+        type: "templates_updated",
+        payload: { local, remote },
+      });
+    } catch (error) {
+      // Log broadcast errors but don't crash - broadcast failures are non-critical
+      console.error("[dashboard-api] Failed to broadcast templates:", error);
+    }
   };
 
   router.get("/captures", (req, res) => {
@@ -358,6 +385,58 @@ export function createDashboardApiRouter(
       return jsonError(res, 400, error?.message || "Run failed");
     }
   });
+
+  router.post(
+    "/templates/from-capture",
+    express.json({ limit: "5mb" }),
+    async (req, res) => {
+      const parsed = SaveAsTemplateBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return jsonError(
+          res,
+          400,
+          parsed.error.issues[0]?.message || "Invalid body",
+        );
+      }
+
+      const { captureId, id, name, event, description, url, overwrite } =
+        parsed.data;
+
+      // Get the capture
+      const captureFile = replayEngine.getCapture(captureId);
+      if (!captureFile) {
+        return jsonError(res, 404, "Capture not found");
+      }
+
+      // Convert capture to template
+      const template = replayEngine.captureToTemplate(captureId, {
+        url,
+        event,
+      });
+
+      try {
+        const result = templateManager.saveUserTemplate(template, {
+          id,
+          name,
+          event: event || template.event,
+          description,
+          overwrite,
+        });
+
+        // Broadcast templates update
+        void broadcastTemplates();
+
+        return res.json({
+          success: true,
+          id: result.id,
+          filePath: result.filePath,
+          template: result.template,
+        });
+      } catch (error: any) {
+        return jsonError(res, 400, error?.message || "Failed to save template");
+      }
+    },
+  );
 
   return router;
 }

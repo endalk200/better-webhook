@@ -126,3 +126,23 @@ export async function runTemplate(args: {
     body: JSON.stringify(args),
   });
 }
+
+export async function saveAsTemplate(args: {
+  captureId: string;
+  id?: string;
+  name?: string;
+  event?: string;
+  description?: string;
+  url?: string;
+  overwrite?: boolean;
+}): Promise<{
+  success: true;
+  id: string;
+  filePath: string;
+  template: unknown;
+}> {
+  return apiFetch(`/api/templates/from-capture`, {
+    method: "POST",
+    body: JSON.stringify(args),
+  });
+}

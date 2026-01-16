@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-// ============================================================================
-// HTTP Types
-// ============================================================================
-
 export const HttpMethodSchema = z.enum([
   "GET",
   "POST",
@@ -23,10 +19,6 @@ export const HeaderEntrySchema = z.object({
 
 export type HeaderEntry = z.infer<typeof HeaderEntrySchema>;
 
-// ============================================================================
-// Provider Types
-// ============================================================================
-
 export const WebhookProviderSchema = z.enum([
   "stripe",
   "github",
@@ -42,10 +34,6 @@ export const WebhookProviderSchema = z.enum([
 ]);
 
 export type WebhookProvider = z.infer<typeof WebhookProviderSchema>;
-
-// ============================================================================
-// Template Types
-// ============================================================================
 
 export const TemplateMetadataSchema = z.object({
   id: z.string(),
@@ -92,10 +80,6 @@ export interface RemoteTemplate {
   isDownloaded: boolean;
 }
 
-// ============================================================================
-// Capture Types
-// ============================================================================
-
 export const CapturedWebhookSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
@@ -117,10 +101,6 @@ export interface CaptureFile {
   file: string;
   capture: CapturedWebhook;
 }
-
-// ============================================================================
-// Execution Types
-// ============================================================================
 
 export interface WebhookExecutionOptions {
   url: string;
@@ -148,10 +128,6 @@ export interface ReplayOptions {
   headers?: HeaderEntry[];
 }
 
-// ============================================================================
-// Configuration Types
-// ============================================================================
-
 export const ConfigSchema = z.object({
   version: z.string().default("2.0.0"),
   templatesDir: z.string().optional(),
@@ -177,10 +153,6 @@ export const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-// ============================================================================
-// Dashboard API Types
-// ============================================================================
-
 export interface DashboardState {
   templates: {
     remote: RemoteTemplate[];
@@ -200,10 +172,6 @@ export interface WebSocketMessage {
   payload: unknown;
 }
 
-// ============================================================================
-// Signature Types
-// ============================================================================
-
 export interface SignatureOptions {
   provider: WebhookProvider;
   payload: string;
@@ -214,4 +182,19 @@ export interface SignatureOptions {
 export interface GeneratedSignature {
   header: string;
   value: string;
+}
+
+export interface SaveAsTemplateOptions {
+  id?: string;
+  name?: string;
+  event?: string;
+  description?: string;
+  url?: string;
+  overwrite?: boolean;
+}
+
+export interface SaveAsTemplateResult {
+  id: string;
+  filePath: string;
+  template: WebhookTemplate;
 }
