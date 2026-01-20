@@ -43,6 +43,37 @@ These providers are auto-detected from headers but signature generation is not y
 
 ## Installation
 
+### Standalone Binary (Recommended)
+
+Download a standalone binary - no Node.js required:
+
+**macOS (Homebrew)**
+
+```bash
+brew install endalk200/tap/better-webhook
+```
+
+**Manual Download**
+
+Download the latest binary for your platform from [GitHub Releases](https://github.com/anomalyco/better-webhook/releases):
+
+| Platform      | Download                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| macOS (ARM)   | [better-webhook-darwin-arm64](https://github.com/anomalyco/better-webhook/releases/latest)    |
+| macOS (Intel) | [better-webhook-darwin-x64](https://github.com/anomalyco/better-webhook/releases/latest)      |
+| Linux (x64)   | [better-webhook-linux-x64](https://github.com/anomalyco/better-webhook/releases/latest)       |
+| Linux (ARM)   | [better-webhook-linux-arm64](https://github.com/anomalyco/better-webhook/releases/latest)     |
+| Windows       | [better-webhook-windows-x64.exe](https://github.com/anomalyco/better-webhook/releases/latest) |
+
+```bash
+# Example: macOS ARM
+curl -L https://github.com/anomalyco/better-webhook/releases/latest/download/better-webhook-darwin-arm64 -o better-webhook
+chmod +x better-webhook
+sudo mv better-webhook /usr/local/bin/
+```
+
+### NPM (Alternative)
+
 ```bash
 # NPM
 npm install -g @better-webhook/cli

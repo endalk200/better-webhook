@@ -18,6 +18,8 @@
   "scripts": {
     "build:cli": "tsup --format cjs,esm --dts && node ./scripts/copy-dashboard.mjs",
     "build": "pnpm --filter @better-webhook/dashboard build && pnpm run build:cli",
+    "build:binary": "bun ./scripts/build-binary.ts",
+    "build:binary:all": "bun ./scripts/build-binary.ts --all",
     "dev": "tsup --watch",
     "start": "tsx src/index.ts",
     "lint": "tsc",
@@ -71,6 +73,7 @@
   },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",
+    "@types/bun": "^1.2.18",
     "@types/express": "^4.17.21",
     "@types/node": "^24.3.1",
     "@types/prompts": "^2.4.9",

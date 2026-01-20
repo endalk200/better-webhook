@@ -2,7 +2,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import path from "path";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import {
   createDashboardApiRouter,
@@ -12,6 +12,139 @@ import { CaptureServer } from "./capture-server.js";
 import { ReplayEngine } from "./replay-engine.js";
 import { TemplateManager } from "./template-manager.js";
 import type { WebSocketMessage } from "../types/index.js";
+
+// Type declarations for Bun runtime (only available in standalone binary)
+declare const Bun:
+  | {
+      file: (path: string) => {
+        arrayBuffer: () => Promise<ArrayBuffer>;
+        text: () => Promise<string>;
+        exists: () => Promise<boolean>;
+      };
+    }
+  | undefined;
+
+// Build-time flag for standalone binary mode (set via --define)
+declare const STANDALONE_BINARY: boolean | undefined;
+
+// Extend globalThis to include embedded dashboard files (set by binary wrapper)
+declare global {
+  // eslint-disable-next-line no-var
+  var embeddedDashboardFiles: Record<string, string> | undefined;
+}
+
+/**
+ * Check if running as a standalone Bun-compiled binary with embedded files.
+ */
+function isStandaloneBinary(): boolean {
+  // Check build-time flag
+  if (typeof STANDALONE_BINARY !== "undefined" && STANDALONE_BINARY) {
+    return true;
+  }
+  // Fallback: check if embedded files are available at runtime
+  if (
+    typeof globalThis.embeddedDashboardFiles !== "undefined" &&
+    globalThis.embeddedDashboardFiles
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Get MIME type based on file extension.
+ */
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".eot": "application/vnd.ms-fontobject",
+  };
+  return mimeTypes[ext] || "application/octet-stream";
+}
+
+/**
+ * Create Express middleware to serve dashboard from Bun embedded files.
+ * Uses the file paths imported with { type: "file" } attribute.
+ */
+function createEmbeddedDashboardMiddleware(): {
+  staticMiddleware: express.RequestHandler;
+  spaFallback: express.RequestHandler;
+} {
+  // Build a map of serve paths to embedded file paths
+  const filePathMap = new Map<string, string>();
+  let indexHtmlPath: string | null = null;
+
+  if (typeof globalThis.embeddedDashboardFiles !== "undefined") {
+    for (const [key, filePath] of Object.entries(
+      globalThis.embeddedDashboardFiles,
+    )) {
+      // key is like "dashboard/index.html", we want to serve at "/index.html"
+      const servePath = "/" + key.replace(/^dashboard\//, "");
+      filePathMap.set(servePath, filePath);
+      if (servePath === "/index.html") {
+        indexHtmlPath = filePath;
+      }
+    }
+  }
+
+  const staticMiddleware: express.RequestHandler = async (req, res, next) => {
+    if (!Bun) {
+      return next();
+    }
+
+    const requestPath = req.path === "/" ? "/index.html" : req.path;
+    const filePath = filePathMap.get(requestPath);
+
+    if (filePath) {
+      try {
+        const file = Bun.file(filePath);
+        const content = await file.arrayBuffer();
+        res.setHeader("Content-Type", getMimeType(requestPath));
+        res.setHeader("Content-Length", content.byteLength);
+        res.send(Buffer.from(content));
+      } catch (err) {
+        next();
+      }
+    } else {
+      next();
+    }
+  };
+
+  const spaFallback: express.RequestHandler = async (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path === "/health") {
+      return next();
+    }
+
+    if (!Bun || !indexHtmlPath) {
+      return next();
+    }
+
+    try {
+      const file = Bun.file(indexHtmlPath);
+      const content = await file.arrayBuffer();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Length", content.byteLength);
+      res.send(Buffer.from(content));
+    } catch {
+      next();
+    }
+  };
+
+  return { staticMiddleware, spaFallback };
+}
 
 function resolveDashboardDistDir(runtimeDir: string): {
   distDir: string;
@@ -103,26 +236,35 @@ export async function startDashboardServer(
   const port = options.port ?? 4000;
 
   // Serve the bundled dashboard UI.
-  // Prefer CJS `__dirname`, but fall back to ESM `import.meta.url`,
-  // while keeping esbuild happy for CJS output.
-  // eslint-disable-next-line no-undef
-  const runtimeDir =
-    typeof __dirname !== "undefined"
-      ? // eslint-disable-next-line no-undef
-        __dirname
-      : path.dirname(fileURLToPath(import.meta.url));
-  const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
-    resolveDashboardDistDir(runtimeDir);
+  // When running as a standalone binary, serve from Bun.embeddedFiles.
+  // Otherwise, serve from the filesystem.
+  if (isStandaloneBinary()) {
+    const { staticMiddleware, spaFallback } =
+      createEmbeddedDashboardMiddleware();
+    app.use(staticMiddleware);
+    app.get("*", spaFallback);
+  } else {
+    // Prefer CJS `__dirname`, but fall back to ESM `import.meta.url`,
+    // while keeping esbuild happy for CJS output.
+    // eslint-disable-next-line no-undef
+    const runtimeDir =
+      typeof __dirname !== "undefined"
+        ? // eslint-disable-next-line no-undef
+          __dirname
+        : path.dirname(fileURLToPath(import.meta.url));
+    const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
+      resolveDashboardDistDir(runtimeDir);
 
-  app.use(express.static(dashboardDistDir));
+    app.use(express.static(dashboardDistDir));
 
-  // SPA fallback (keep after /api)
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path === "/health") return next();
-    res.sendFile(dashboardIndexHtml, (err) => {
-      if (err) next();
+    // SPA fallback (keep after /api)
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path === "/health") return next();
+      res.sendFile(dashboardIndexHtml, (err) => {
+        if (err) next();
+      });
     });
-  });
+  }
 
   const server = createServer(app);
 
