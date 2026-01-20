@@ -48,6 +48,6 @@ jobs:
           publish: pnpm release:publish
           title: "chore: release packages"
           commit: "chore: release packages"
-          createGithubReleases: true
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
