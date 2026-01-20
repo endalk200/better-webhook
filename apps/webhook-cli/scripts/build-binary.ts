@@ -17,10 +17,9 @@ import {
   statSync,
   mkdirSync,
   writeFileSync,
-  readFileSync,
 } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join, resolve, relative } from "node:path";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { execSync } from "node:child_process";
 
@@ -101,10 +100,11 @@ function generateWrapperEntry(
 
   dashboardFiles.forEach((file, index) => {
     const varName = `__file_${index}`;
+    const escapedFile = file.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     imports.push(
-      `import ${varName} from "./dashboard/${file}" with { type: "file" };`,
+      `import ${varName} from "./dashboard/${escapedFile}" with { type: "file" };`,
     );
-    fileMap.push(`  "dashboard/${file}": ${varName},`);
+    fileMap.push(`  "dashboard/${escapedFile}": ${varName},`);
   });
 
   return `// Auto-generated wrapper for standalone binary

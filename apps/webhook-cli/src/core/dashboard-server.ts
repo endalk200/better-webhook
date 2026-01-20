@@ -116,6 +116,7 @@ function createEmbeddedDashboardMiddleware(): {
         res.setHeader("Content-Length", content.byteLength);
         res.send(Buffer.from(content));
       } catch (err) {
+        console.error(`Failed to serve embedded file ${requestPath}:`, err);
         next();
       }
     } else {
