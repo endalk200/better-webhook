@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.6.0
+
+### Minor Changes
+
+- add support for binary distribution with bun bundling
+
 ## 3.5.0
 
 ### Minor Changes
