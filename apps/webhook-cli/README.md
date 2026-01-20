@@ -55,19 +55,19 @@ brew install endalk200/tap/better-webhook
 
 **Manual Download**
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/anomalyco/better-webhook/releases):
+Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
 
 | Platform      | Download                                                                                      |
 | ------------- | --------------------------------------------------------------------------------------------- |
-| macOS (ARM)   | [better-webhook-darwin-arm64](https://github.com/anomalyco/better-webhook/releases/latest)    |
-| macOS (Intel) | [better-webhook-darwin-x64](https://github.com/anomalyco/better-webhook/releases/latest)      |
-| Linux (x64)   | [better-webhook-linux-x64](https://github.com/anomalyco/better-webhook/releases/latest)       |
-| Linux (ARM)   | [better-webhook-linux-arm64](https://github.com/anomalyco/better-webhook/releases/latest)     |
-| Windows       | [better-webhook-windows-x64.exe](https://github.com/anomalyco/better-webhook/releases/latest) |
+| macOS (ARM)   | [better-webhook-darwin-arm64](https://github.com/endalk200/better-webhook/releases/latest)    |
+| macOS (Intel) | [better-webhook-darwin-x64](https://github.com/endalk200/better-webhook/releases/latest)      |
+| Linux (x64)   | [better-webhook-linux-x64](https://github.com/endalk200/better-webhook/releases/latest)       |
+| Linux (ARM)   | [better-webhook-linux-arm64](https://github.com/endalk200/better-webhook/releases/latest)     |
+| Windows       | [better-webhook-windows-x64.exe](https://github.com/endalk200/better-webhook/releases/latest) |
 
 ```bash
 # Example: macOS ARM
-curl -L https://github.com/anomalyco/better-webhook/releases/latest/download/better-webhook-darwin-arm64 -o better-webhook
+curl -L https://github.com/endalk200/better-webhook/releases/latest/download/better-webhook-darwin-arm64 -o better-webhook
 chmod +x better-webhook
 sudo mv better-webhook /usr/local/bin/
 ```
