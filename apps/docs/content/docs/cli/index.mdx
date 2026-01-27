@@ -13,7 +13,36 @@ The Better Webhook CLI is a local development tool for capturing, replaying, and
 
 ## Installation
 
-Install the CLI globally:
+### Standalone Binary (Recommended)
+
+Download a standalone binary - no Node.js required.
+
+**macOS (Homebrew)**
+
+```bash
+brew install endalk200/tap/better-webhook
+```
+
+**Manual Download**
+
+Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
+
+| Platform      | Binary Name                   |
+| ------------- | ----------------------------- |
+| macOS (ARM)   | `better-webhook-darwin-arm64` |
+| macOS (Intel) | `better-webhook-darwin-x64`   |
+| Linux (x64)   | `better-webhook-linux-x64`    |
+| Linux (ARM)   | `better-webhook-linux-arm64`  |
+| Windows       | `better-webhook-windows-x64.exe` |
+
+```bash
+# Example: macOS ARM
+curl -L https://github.com/endalk200/better-webhook/releases/latest/download/better-webhook-darwin-arm64 -o better-webhook
+chmod +x better-webhook
+sudo mv better-webhook /usr/local/bin/
+```
+
+### NPM (Alternative)
 
 <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
   <Tab value="npm">
@@ -33,7 +62,13 @@ Install the CLI globally:
   </Tab>
 </Tabs>
 
-Verify the installation:
+Or use with npx (no installation required):
+
+```bash
+npx @better-webhook/cli --help
+```
+
+### Verify Installation
 
 ```bash
 better-webhook --version
