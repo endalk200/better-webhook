@@ -45,10 +45,12 @@ const anotherEvent = defineEvent({
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
+  verification?: "required" | "disabled";
 }): Provider<"test"> {
   return {
     name: "test",
     secret: options?.secret,
+    verification: options?.verification ?? "required",
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -621,6 +623,7 @@ describe("WebhookBuilder", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        // No secret in options - should fall back to provider.secret
       });
 
       expect(verifyMock).toHaveBeenCalledWith(
@@ -641,6 +644,7 @@ describe("WebhookBuilder", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        // No secret in options or provider - should fall back to env variable
       });
 
       expect(verifyMock).toHaveBeenCalledWith(
@@ -650,8 +654,24 @@ describe("WebhookBuilder", () => {
       );
     });
 
-    it("should skip verification if no secret available", async () => {
+    it("should fail when no secret is available and verification is required", async () => {
       const provider = createTestProvider();
+      const verifyMock = vi.spyOn(provider, "verify");
+
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(verifyMock).not.toHaveBeenCalled();
+      expect(result.status).toBe(401);
+      expect(result.body?.error).toBe("Missing webhook secret");
+    });
+
+    it("should allow unsigned requests when verification is disabled", async () => {
+      const provider = createTestProvider({ verification: "disabled" });
       const verifyMock = vi.spyOn(provider, "verify");
 
       const webhook = createWebhook(provider).event(testEvent, () => {});
@@ -889,6 +909,7 @@ describe("createProvider", () => {
     const provider = createProvider({
       name: "custom",
       getEventType: (headers) => headers["x-event-type"],
+      verify: () => true,
     });
 
     expect(provider.name).toBe("custom");
@@ -897,11 +918,23 @@ describe("createProvider", () => {
     expect(typeof provider.verify).toBe("function");
   });
 
+  it("should throw when verification is required and verify is missing", () => {
+    expect(() =>
+      createProvider({
+        name: "custom",
+        getEventType: (headers) => headers["x-event-type"],
+      }),
+    ).toThrow(
+      'Webhook verification is required. Provide a verify function or set verification: "disabled".',
+    );
+  });
+
   it("should use provided secret", () => {
     const provider = createProvider({
       name: "custom",
       secret: "my-secret",
       getEventType: (headers) => headers["x-event-type"],
+      verify: () => true,
     });
 
     expect(provider.secret).toBe("my-secret");
@@ -912,6 +945,7 @@ describe("createProvider", () => {
       name: "custom",
       getEventType: (headers) => headers["x-event-type"],
       getDeliveryId: (headers) => headers["x-delivery-id"],
+      verify: () => true,
     });
 
     const headers: Headers = { "x-delivery-id": "123" };
@@ -922,6 +956,7 @@ describe("createProvider", () => {
     const provider = createProvider({
       name: "custom",
       getEventType: (headers) => headers["x-event-type"],
+      verify: () => true,
     });
 
     expect(provider.getDeliveryId({})).toBeUndefined();
@@ -942,10 +977,11 @@ describe("createProvider", () => {
     expect(result).toBe(true);
   });
 
-  it("should default verify to return true (skip verification)", () => {
+  it("should allow disabled verification without a verify function", () => {
     const provider = createProvider({
       name: "custom",
       getEventType: (headers) => headers["x-event-type"],
+      verification: "disabled",
     });
 
     const result = provider.verify("body", {}, "secret");
@@ -975,6 +1011,7 @@ describe("customWebhook", () => {
     const webhook = customWebhook({
       name: "payment-provider",
       getEventType: (headers) => headers["x-webhook-event"],
+      verification: "disabled",
     });
 
     expect(webhook).toBeInstanceOf(WebhookBuilder);
@@ -987,6 +1024,7 @@ describe("customWebhook", () => {
     const webhook = customWebhook({
       name: "payment-provider",
       getEventType: (headers) => headers["x-webhook-event"],
+      verification: "disabled",
     }).event(paymentCompleted, handler);
 
     const payload = { id: "pay_123", amount: 1000, currency: "USD" };
@@ -1107,6 +1145,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onCompleted).toHaveBeenCalledTimes(1);
@@ -1124,6 +1163,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onCompleted1).toHaveBeenCalledTimes(1);
@@ -1143,6 +1183,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onCompleted1).toHaveBeenCalledTimes(1);
@@ -1162,6 +1203,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onRequestReceived).toHaveBeenCalledTimes(1);
@@ -1183,6 +1225,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onCompleted).toHaveBeenCalledTimes(1);
@@ -1208,6 +1251,7 @@ describe("WebhookBuilder observability", () => {
           "x-test-delivery-id": "delivery-123",
         },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onCompleted).toHaveBeenCalledTimes(1);
@@ -1311,8 +1355,8 @@ describe("WebhookBuilder observability", () => {
       expect(event.verifyDurationMs).toBeGreaterThanOrEqual(0);
     });
 
-    it("should not emit verification events when verification is skipped (no secret)", async () => {
-      const provider = createTestProvider();
+    it("should not emit verification events when verification is disabled", async () => {
+      const provider = createTestProvider({ verification: "disabled" });
       const onVerificationSucceeded = vi.fn();
       const onVerificationFailed = vi.fn();
       const onCompleted = vi.fn();
@@ -1324,6 +1368,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onVerificationSucceeded).not.toHaveBeenCalled();
@@ -1370,6 +1415,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
@@ -1391,6 +1437,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify({ invalid: "payload" }),
+        secret: "test-secret",
       });
 
       expect(onSchemaValidationFailed).toHaveBeenCalledTimes(1);
@@ -1408,6 +1455,7 @@ describe("WebhookBuilder observability", () => {
       // Create a provider without using defineEvent (raw handler without schema)
       const provider: Provider<"test-no-schema"> = {
         name: "test",
+        verification: "required",
         getEventType(headers: Headers) {
           return headers["x-test-event"];
         },
@@ -1442,6 +1490,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
@@ -1466,6 +1515,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onHandlerStarted).toHaveBeenCalledTimes(2);
@@ -1502,6 +1552,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onHandlerFailed).toHaveBeenCalledTimes(1);
@@ -1530,6 +1581,7 @@ describe("WebhookBuilder observability", () => {
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       // Processing should succeed despite observer error
@@ -1552,6 +1604,7 @@ describe("WebhookBuilder observability", () => {
       const result = await webhook.process({
         headers: { "x-test-event": "test.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(result.status).toBe(200);
@@ -1578,6 +1631,7 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     let snapshot = stats.snapshot();
@@ -1589,6 +1643,7 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: "invalid json",
+      secret: "test-secret",
     });
 
     snapshot = stats.snapshot();
@@ -1608,6 +1663,7 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     const snapshot = stats.snapshot();
@@ -1630,11 +1686,13 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     await webhook.process({
       headers: { "x-test-event": "another.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     const snapshot = stats.snapshot();
@@ -1661,6 +1719,7 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     const snapshot = stats.snapshot();
@@ -1678,6 +1737,7 @@ describe("createWebhookStats", () => {
     await webhook.process({
       headers: { "x-test-event": "test.event" },
       rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
     });
 
     expect(stats.snapshot().totalRequests).toBe(1);

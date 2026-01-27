@@ -51,6 +51,7 @@ function createRagieProvider(options?: RagieOptions): Provider<"ragie"> {
   return {
     name: "ragie",
     secret: options?.secret,
+    verification: "required",
 
     /**
      * Extract the event type from the body

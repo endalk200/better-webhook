@@ -147,6 +147,9 @@ export interface Provider<TProviderBrand extends string = string> {
   /** Optional default secret (can be overridden by adapters) */
   readonly secret?: string;
 
+  /** Verification mode (required by default) */
+  readonly verification: "required" | "disabled";
+
   /**
    * Extract event type from headers or body
    * @param headers - Normalized headers from the webhook request
@@ -192,6 +195,12 @@ export interface ProviderConfig<TProviderBrand extends string = string> {
   secret?: string;
 
   /**
+   * Verification mode (default: "required")
+   * Use "disabled" only for trusted internal sources.
+   */
+  verification?: "required" | "disabled";
+
+  /**
    * Extract event type from headers or body
    * @param headers - Normalized headers from the webhook request
    * @param body - Optional parsed JSON body (for providers that include event type in body)
@@ -203,7 +212,7 @@ export interface ProviderConfig<TProviderBrand extends string = string> {
 
   /**
    * Custom verification function.
-   * If not provided, verification will be skipped (useful for development or trusted sources)
+   * Required when verification is "required".
    */
   verify?: (
     rawBody: string | Buffer,
@@ -840,17 +849,25 @@ export function createProvider<TProviderBrand extends string = string>(
     secret,
     getEventType,
     getDeliveryId = () => undefined,
-    verify = () => true, // Skip verification if not provided
+    verify,
     getPayload,
+    verification = "required",
   } = config;
+
+  if (verification === "required" && !verify) {
+    throw new Error(
+      'Webhook verification is required. Provide a verify function or set verification: "disabled".',
+    );
+  }
 
   return {
     name,
     secret,
     getEventType,
     getDeliveryId,
-    verify,
+    verify: verify ?? (() => true),
     getPayload,
+    verification,
   };
 }
 
@@ -1147,8 +1164,32 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     const resolvedSecret =
       secret || this.provider.secret || this.getEnvSecret(this.provider.name);
 
-    // Verify signature if secret is available
-    if (resolvedSecret) {
+    // Enforce verification unless explicitly disabled
+    if (this.provider.verification !== "disabled") {
+      if (!resolvedSecret) {
+        const reason = "Missing webhook secret";
+
+        this.emit("onVerificationFailed", {
+          ...createBase(eventType, deliveryId),
+          type: "verification_failed",
+          verifyDurationMs: 0,
+          reason,
+        });
+
+        if (this.verificationFailedHandler) {
+          try {
+            await this.verificationFailedHandler(reason, headers);
+          } catch {
+            // Ignore errors from verification failed handler
+          }
+        }
+
+        return complete(401, eventType, deliveryId, {
+          ok: false,
+          error: reason,
+        });
+      }
+
       const verifyStartTime = performance.now();
       const isValid = this.provider.verify(rawBody, headers, resolvedSecret);
       const verifyDurationMs = performance.now() - verifyStartTime;

@@ -595,7 +595,7 @@ describe("ragie()", () => {
       expect(result.status).toBe(401);
     });
 
-    it("should work without secret when not required", async () => {
+    it("should fail when no secret is configured", async () => {
       const envelope = createEnvelope(
         "document_status_updated",
         validDocumentStatusUpdatedPayload,
@@ -612,25 +612,29 @@ describe("ragie()", () => {
         rawBody: body,
       });
 
-      expect(result.status).toBe(200);
-      expect(handler).toHaveBeenCalled();
+      expect(result.status).toBe(401);
+      expect(result.body?.error).toBe("Missing webhook secret");
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
   describe("event type extraction from body", () => {
     it("should extract event type from body.type", async () => {
+      const secret = "test-secret";
       const envelope = createEnvelope(
         "document_status_updated",
         validDocumentStatusUpdatedPayload,
       );
       const body = JSON.stringify(envelope);
+      const signature = createHmac("sha256", secret).update(body).digest("hex");
       const handler = vi.fn();
 
-      const webhook = ragie().event(document_status_updated, handler);
+      const webhook = ragie({ secret }).event(document_status_updated, handler);
 
       const result = await webhook.process({
         headers: {
           "content-type": "application/json",
+          "x-signature": signature,
         },
         rawBody: body,
       });
@@ -640,16 +644,18 @@ describe("ragie()", () => {
     });
 
     it("should not call handler for unregistered event types", async () => {
+      const secret = "test-secret";
       // Create envelope for partition_limit_exceeded but register handler for document_status_updated
       const envelope = createEnvelope("partition_limit_exceeded", {
         partition: "default",
       });
       const body = JSON.stringify(envelope);
+      const signature = createHmac("sha256", secret).update(body).digest("hex");
       const documentHandler = vi.fn();
       const partitionHandler = vi.fn();
 
       // Register handlers for both events
-      const webhook = ragie()
+      const webhook = ragie({ secret })
         .event(document_status_updated, documentHandler)
         .event(partition_limit_exceeded, partitionHandler);
 
@@ -657,6 +663,7 @@ describe("ragie()", () => {
       const result = await webhook.process({
         headers: {
           "content-type": "application/json",
+          "x-signature": signature,
         },
         rawBody: body,
       });
