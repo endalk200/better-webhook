@@ -68,6 +68,8 @@ That's it. Your webhook endpoint is:
 - ✅ Fully typed with autocomplete
 - ✅ Handling multiple event types
 
+If no secret is configured, requests are rejected by default.
+
 ## Error Handling
 
 Gracefully handle failures with the built-in error hooks:
@@ -204,6 +206,9 @@ Secrets are resolved automatically in this order:
 2. **Provider default** — Set when creating the provider
 3. **Environment variable** — `{PROVIDER}_WEBHOOK_SECRET` (e.g., `GITHUB_WEBHOOK_SECRET`)
 4. **Fallback** — `WEBHOOK_SECRET`
+
+Verification is required by default. If no secret can be resolved, the request
+is rejected unless verification is explicitly disabled.
 
 ```ts
 // Option 1: Environment variable (recommended)
@@ -410,7 +415,8 @@ function stripeVerify(
 
 ### Provider Without Verification
 
-For development or trusted internal services:
+For development or trusted internal services, you must explicitly disable
+verification:
 
 ```ts
 const webhook = customWebhook({
@@ -420,7 +426,7 @@ const webhook = customWebhook({
     "user.deleted": UserSchema,
   },
   getEventType: (headers) => headers["x-event-type"],
-  // No verify function = skip verification
+  verification: "disabled",
 });
 ```
 
@@ -614,6 +620,7 @@ interface ProviderConfig<EventMap> {
   name: string;
   schemas: EventMap;
   secret?: string;
+  verification?: "required" | "disabled";
   getEventType: (headers: Headers) => string | undefined;
   getDeliveryId?: (headers: Headers) => string | undefined;
   verify?: (

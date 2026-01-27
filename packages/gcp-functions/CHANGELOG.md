@@ -1,5 +1,12 @@
 # @better-webhook/gcp-functions
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.8.1
+
 ## 0.3.0
 
 ### Minor Changes
