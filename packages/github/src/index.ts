@@ -48,6 +48,7 @@ function createGitHubProvider(options?: GitHubOptions): Provider<"github"> {
   return {
     name: "github",
     secret: normalizedSecret,
+    verification: "required",
 
     /**
      * Extract the event type from the X-GitHub-Event header.

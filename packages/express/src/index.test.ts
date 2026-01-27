@@ -30,7 +30,8 @@ function createTestProvider(options?: {
 }): Provider<"test"> {
   return {
     name: "test",
-    secret: options?.secret,
+    secret: options?.secret ?? "test-secret",
+    verification: "required",
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
