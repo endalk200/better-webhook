@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.8.1
+
+### Patch Changes
+
+- Add explicit opt out to avoid authentication bypass in @better-webhook/core
+
 ## 0.8.0
 
 ### Minor Changes
