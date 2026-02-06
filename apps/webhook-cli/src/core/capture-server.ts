@@ -25,6 +25,10 @@ import type {
 
 export interface CaptureServerOptions {
   capturesDir?: string;
+  /**
+   * Enable verbose logging for captured requests.
+   * WARNING: Logs full headers and payloads; may include sensitive data.
+   */
   verbose?: boolean;
   /**
    * Whether to run a WebSocket server on the same port.
@@ -180,7 +184,17 @@ export class CaptureServer {
 
     // Parse URL
     const url = req.url || "/";
-    const urlParts = new URL(url, `http://${req.headers.host || "localhost"}`);
+    const hostHeader = req.headers.host;
+    const hostValue = typeof hostHeader === "string" ? hostHeader : "";
+    const isHostSafe = /^[a-z0-9.-]+(:\d+)?$/i.test(hostValue);
+    const baseUrl = isHostSafe ? `http://${hostValue}` : "http://localhost";
+    let urlParts: URL;
+
+    try {
+      urlParts = new URL(url, baseUrl);
+    } catch {
+      urlParts = new URL(url, "http://localhost");
+    }
 
     // Parse query parameters
     const query: Record<string, string | string[]> = {};
@@ -274,7 +288,6 @@ export class CaptureServer {
           .join("\n");
         const method = req.method || "GET";
         const providerLabel = provider || "unknown";
-        const rawBodyLabel = rawBody;
         const contentTypeLabel = contentType || "(none)";
 
         console.log(
@@ -288,7 +301,7 @@ export class CaptureServer {
             "headers:",
             headerEntries || "(none)",
             "raw-body:",
-            rawBodyLabel,
+            rawBody,
           ].join("\n"),
         );
       }
