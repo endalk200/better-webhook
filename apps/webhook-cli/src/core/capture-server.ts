@@ -25,6 +25,7 @@ import type {
 
 export interface CaptureServerOptions {
   capturesDir?: string;
+  verbose?: boolean;
   /**
    * Whether to run a WebSocket server on the same port.
    * The dashboard (Option A) owns WebSocket at :4000/ws, so this can be disabled.
@@ -44,6 +45,7 @@ export class CaptureServer {
   private captureCount = 0;
   private enableWebSocket: boolean;
   private onCapture?: CaptureServerOptions["onCapture"];
+  private verbose: boolean;
 
   constructor(options?: string | CaptureServerOptions) {
     const capturesDir =
@@ -55,6 +57,8 @@ export class CaptureServer {
       typeof options === "object" ? options?.enableWebSocket !== false : true;
     this.onCapture =
       typeof options === "object" ? options?.onCapture : undefined;
+    this.verbose =
+      typeof options === "object" ? options?.verbose === true : false;
 
     // Ensure captures directory exists
     if (!existsSync(this.capturesDir)) {
@@ -255,6 +259,39 @@ export class CaptureServer {
       console.log(
         `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`,
       );
+
+      if (this.verbose) {
+        const headerEntries = Object.entries(req.headers)
+          .map(([key, value]) => {
+            if (Array.isArray(value)) {
+              return `${key}: ${value.join(", ")}`;
+            }
+            if (value === undefined) {
+              return `${key}:`;
+            }
+            return `${key}: ${value}`;
+          })
+          .join("\n");
+        const method = req.method || "GET";
+        const providerLabel = provider || "unknown";
+        const rawBodyLabel = rawBody;
+        const contentTypeLabel = contentType || "(none)";
+
+        console.log(
+          [
+            "[debug] request",
+            `method: ${method}`,
+            `path: ${urlParts.pathname}`,
+            `provider: ${providerLabel}`,
+            `content-type: ${contentTypeLabel}`,
+            `body-length: ${rawBody.length}`,
+            "headers:",
+            headerEntries || "(none)",
+            "raw-body:",
+            rawBodyLabel,
+          ].join("\n"),
+        );
+      }
 
       this.onCapture?.({ file: filename, capture: captured });
 

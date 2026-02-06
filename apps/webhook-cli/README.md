@@ -165,10 +165,12 @@ Start a server to capture incoming webhooks. All captured webhooks are saved to 
 better-webhook capture [options]
 ```
 
-| Option              | Description       | Default   |
-| ------------------- | ----------------- | --------- |
-| `-p, --port <port>` | Port to listen on | `3001`    |
-| `-h, --host <host>` | Host to bind to   | `0.0.0.0` |
+| Option              | Description              | Default   |
+| ------------------- | ------------------------ | --------- |
+| `-p, --port <port>` | Port to listen on        | `3001`    |
+| `-h, --host <host>` | Host to bind to          | `0.0.0.0` |
+| `-v, --verbose`     | Show raw request details |           |
+| `--debug`           | Alias for `--verbose`    |           |
 
 **Features:**
 
@@ -176,11 +178,15 @@ better-webhook capture [options]
 - Saves full request including headers, body, query params
 - WebSocket server for real-time notifications
 - Returns capture ID in response for easy reference
+- `--verbose/--debug` prints raw request data; use with care since it may include sensitive payloads
 
 **Example:**
 
 ```bash
 better-webhook capture --port 4000 --host localhost
+
+# Show request headers + raw body
+better-webhook capture --verbose
 ```
 
 ---
