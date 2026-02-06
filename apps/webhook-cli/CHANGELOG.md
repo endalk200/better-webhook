@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.7.0
+
+### Minor Changes
+
+- feat: adds verbose flag for full output of webhook payload for debugging purpose
+
 ## 3.6.0
 
 ### Minor Changes

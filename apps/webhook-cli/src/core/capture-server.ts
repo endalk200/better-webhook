@@ -26,6 +26,11 @@ import type {
 export interface CaptureServerOptions {
   capturesDir?: string;
   /**
+   * Enable verbose logging for captured requests.
+   * WARNING: Logs full headers and payloads; may include sensitive data.
+   */
+  verbose?: boolean;
+  /**
    * Whether to run a WebSocket server on the same port.
    * The dashboard (Option A) owns WebSocket at :4000/ws, so this can be disabled.
    */
@@ -44,6 +49,7 @@ export class CaptureServer {
   private captureCount = 0;
   private enableWebSocket: boolean;
   private onCapture?: CaptureServerOptions["onCapture"];
+  private verbose: boolean;
 
   constructor(options?: string | CaptureServerOptions) {
     const capturesDir =
@@ -55,6 +61,8 @@ export class CaptureServer {
       typeof options === "object" ? options?.enableWebSocket !== false : true;
     this.onCapture =
       typeof options === "object" ? options?.onCapture : undefined;
+    this.verbose =
+      typeof options === "object" ? options?.verbose === true : false;
 
     // Ensure captures directory exists
     if (!existsSync(this.capturesDir)) {
@@ -176,7 +184,17 @@ export class CaptureServer {
 
     // Parse URL
     const url = req.url || "/";
-    const urlParts = new URL(url, `http://${req.headers.host || "localhost"}`);
+    const hostHeader = req.headers.host;
+    const hostValue = typeof hostHeader === "string" ? hostHeader : "";
+    const isHostSafe = /^[a-z0-9.-]+(:\d+)?$/i.test(hostValue);
+    const baseUrl = isHostSafe ? `http://${hostValue}` : "http://localhost";
+    let urlParts: URL;
+
+    try {
+      urlParts = new URL(url, baseUrl);
+    } catch {
+      urlParts = new URL(url, "http://localhost");
+    }
 
     // Parse query parameters
     const query: Record<string, string | string[]> = {};
@@ -255,6 +273,38 @@ export class CaptureServer {
       console.log(
         `📦 ${req.method} ${urlParts.pathname}${providerStr} -> ${filename}`,
       );
+
+      if (this.verbose) {
+        const headerEntries = Object.entries(req.headers)
+          .map(([key, value]) => {
+            if (Array.isArray(value)) {
+              return `${key}: ${value.join(", ")}`;
+            }
+            if (value === undefined) {
+              return `${key}:`;
+            }
+            return `${key}: ${value}`;
+          })
+          .join("\n");
+        const method = req.method || "GET";
+        const providerLabel = provider || "unknown";
+        const contentTypeLabel = contentType || "(none)";
+
+        console.log(
+          [
+            "[debug] request",
+            `method: ${method}`,
+            `path: ${urlParts.pathname}`,
+            `provider: ${providerLabel}`,
+            `content-type: ${contentTypeLabel}`,
+            `body-length: ${rawBody.length}`,
+            "headers:",
+            headerEntries || "(none)",
+            "raw-body:",
+            rawBody,
+          ].join("\n"),
+        );
+      }
 
       this.onCapture?.({ file: filename, capture: captured });
 
