@@ -1,0 +1,102 @@
+name: Question / Support
+description: Ask a question or get help with using better-webhook
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using better-webhook? We're here to help!
+
+        **Before submitting:** Please check the [documentation](https://betterwebhook.vercel.app) and existing issues/discussions first.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Related Package(s)
+      description: Which package(s) is your question about?
+      multiple: true
+      options:
+        - "@better-webhook/core"
+        - "@better-webhook/github"
+        - "@better-webhook/ragie"
+        - "@better-webhook/nextjs"
+        - "@better-webhook/express"
+        - "@better-webhook/nestjs"
+        - "@better-webhook/gcp-functions"
+        - "@better-webhook/cli"
+        - "General / Not package-specific"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What type of question is this?
+      options:
+        - "How do I...? (Usage question)"
+        - "Why does... happen? (Behavior question)"
+        - "What is the best way to...? (Best practices)"
+        - "Is it possible to...? (Capability question)"
+        - "Setup / Installation help"
+        - "TypeScript types / Type safety"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Ask your question clearly and concisely
+      placeholder: How can I...? What is the best way to...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / What You've Tried
+      description: Provide context about what you're trying to accomplish and what you've already tried
+      placeholder: |
+        I'm trying to build a webhook handler for [use case]...
+        I've tried [approach], but...
+        I've read [documentation/examples], but I'm still unsure about...
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Relevant Code (Optional)
+      description: If applicable, share relevant code snippets
+      render: typescript
+      placeholder: |
+        import { createWebhook } from '@better-webhook/github';
+
+        const webhook = createWebhook({
+          // your code
+        });
+
+  - type: input
+    id: version
+    attributes:
+      label: Package Version
+      description: Which version of better-webhook are you using?
+      placeholder: e.g., 1.2.3
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other relevant information (framework versions, environment details, etc.)
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have checked the documentation at https://betterwebhook.vercel.app
+          required: true
+        - label: I have searched existing issues and discussions for similar questions
+          required: true

@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "@better-webhook/cli@*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (e.g. @better-webhook/cli@3.7.0)"
+        required: true
+        type: string
 
 # Ensure we don't run multiple binary builds concurrently for the same tag
 concurrency:
@@ -12,6 +18,9 @@ concurrency:
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   build-binaries:
@@ -24,10 +33,10 @@ jobs:
             os: ubuntu-latest
             artifact: better-webhook-linux-x64
           - target: bun-linux-arm64
-            os: ubuntu-24.04-arm # Native ARM64 runner
+            os: ubuntu-24.04-arm64 # Native ARM64 runner
             artifact: better-webhook-linux-arm64
           - target: bun-darwin-x64
-            os: macos-15-intel
+            os: macos-13
             artifact: better-webhook-darwin-x64
           - target: bun-darwin-arm64
             os: macos-latest
@@ -40,6 +49,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -70,7 +82,11 @@ jobs:
         id: version
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#@better-webhook/cli@}"
+          if [[ "${RELEASE_TAG}" != @better-webhook/cli@* ]]; then
+            echo "Invalid tag: ${RELEASE_TAG}"
+            exit 1
+          fi
+          VERSION="${RELEASE_TAG#@better-webhook/cli@}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compile binary
@@ -109,15 +125,21 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#@better-webhook/cli@}"
+          if [[ "${RELEASE_TAG}" != @better-webhook/cli@* ]]; then
+            echo "Invalid tag: ${RELEASE_TAG}"
+            exit 1
+          fi
+          VERSION="${RELEASE_TAG#@better-webhook/cli@}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           name: "@better-webhook/cli v${{ steps.version.outputs.version }}"
           generate_release_notes: true
+          draft: false
+          prerelease: false
           files: |
             artifacts/better-webhook-*
             artifacts/checksums.txt

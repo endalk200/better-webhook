@@ -1,0 +1,157 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in better-webhook
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below to help us investigate and fix the issue.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Affected Package(s)
+      description: Which package(s) are affected by this bug?
+      multiple: true
+      options:
+        - "@better-webhook/core"
+        - "@better-webhook/github"
+        - "@better-webhook/ragie"
+        - "@better-webhook/nextjs"
+        - "@better-webhook/express"
+        - "@better-webhook/nestjs"
+        - "@better-webhook/gcp-functions"
+        - "@better-webhook/cli"
+        - "Dashboard"
+        - "Documentation"
+        - "Other/Unknown"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I try to..., the following happens...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the bug
+      placeholder: |
+        1. Install @better-webhook/nextjs
+        2. Create a webhook handler with...
+        3. Send a webhook payload with...
+        4. Observe the error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: I expected the webhook to be processed successfully and...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Instead, I got an error / the webhook was not processed / ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: If applicable, provide a minimal code sample that reproduces the issue
+      render: typescript
+      placeholder: |
+        import { createWebhook } from '@better-webhook/github';
+
+        const webhook = createWebhook({
+          // your code here
+        });
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages / Logs
+      description: If applicable, paste any error messages or relevant logs
+      render: shell
+      placeholder: |
+        Error: ...
+        at ...
+
+  - type: input
+    id: version
+    attributes:
+      label: Package Version(s)
+      description: Which version(s) of better-webhook are you using?
+      placeholder: e.g., @better-webhook/core@1.2.3, @better-webhook/nextjs@2.0.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Which version of Node.js are you using?
+      options:
+        - "18.x"
+        - "20.x"
+        - "22.x"
+        - "Other (specify in Additional Context)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package-manager
+    attributes:
+      label: Package Manager
+      description: Which package manager are you using?
+      options:
+        - "pnpm"
+        - "npm"
+        - "yarn"
+        - "bun"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Provide any relevant environment details
+      placeholder: |
+        - OS: macOS 14.2
+        - Framework version (if applicable): Next.js 15.0.0
+        - TypeScript version: 5.6.3
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or information about the problem here
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all the information requested above
+          required: true
+        - label: I am using a supported version of Node.js (>= 18)
+          required: false
