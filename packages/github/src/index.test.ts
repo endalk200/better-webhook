@@ -5,12 +5,16 @@ import {
   type GitHubPushEvent,
   type GitHubPullRequestEvent,
   type GitHubIssuesEvent,
+  type GitHubInstallationEvent,
+  type GitHubInstallationRepositoriesEvent,
 } from "./index.js";
 import { push, pull_request, issues } from "./events.js";
 import {
   GitHubPushEventSchema,
   GitHubPullRequestEventSchema,
   GitHubIssuesEventSchema,
+  GitHubInstallationEventSchema,
+  GitHubInstallationRepositoriesEventSchema,
 } from "./schemas.js";
 
 // ============================================================================
@@ -166,6 +170,56 @@ const validIssuesPayload: GitHubIssuesEvent = {
   },
 };
 
+const validInstallationPayload: GitHubInstallationEvent = {
+  action: "created",
+  installation: {
+    id: 1,
+    account: {
+      login: "octocat",
+      id: 123,
+      type: "User",
+    },
+    repository_selection: "all",
+    access_tokens_url:
+      "https://api.github.com/app/installations/1/access_tokens",
+    repositories_url: "https://api.github.com/installation/repositories",
+    html_url: "https://github.com/settings/installations/1",
+    app_id: 999,
+    target_id: 123,
+    target_type: "User",
+    permissions: { contents: "read" },
+    events: ["push"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  sender: {
+    login: "octocat",
+    id: 123,
+    type: "User",
+  },
+};
+
+const validInstallationReposPayload: GitHubInstallationRepositoriesEvent = {
+  action: "added",
+  installation: validInstallationPayload.installation,
+  repository_selection: "selected",
+  repositories_added: [
+    {
+      id: 1,
+      node_id: "R_kgDOExample",
+      name: "example",
+      full_name: "octocat/example",
+      private: false,
+    },
+  ],
+  repositories_removed: [],
+  sender: {
+    login: "octocat",
+    id: 123,
+    type: "User",
+  },
+};
+
 function createSignature(body: string, secret: string): string {
   const hmac = createHmac("sha256", secret);
   hmac.update(body, "utf-8");
@@ -211,6 +265,36 @@ describe("GitHub Schemas", () => {
 
     it("should reject invalid issues event", () => {
       const result = GitHubIssuesEventSchema.safeParse({ invalid: true });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("GitHubInstallationEventSchema", () => {
+    it("should validate a valid installation event", () => {
+      const result = GitHubInstallationEventSchema.safeParse(
+        validInstallationPayload,
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject invalid installation event", () => {
+      const result = GitHubInstallationEventSchema.safeParse({ invalid: true });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("GitHubInstallationRepositoriesEventSchema", () => {
+    it("should validate a valid installation_repositories event", () => {
+      const result = GitHubInstallationRepositoriesEventSchema.safeParse(
+        validInstallationReposPayload,
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject invalid installation_repositories event", () => {
+      const result = GitHubInstallationRepositoriesEventSchema.safeParse({
+        invalid: true,
+      });
       expect(result.success).toBe(false);
     });
   });
@@ -392,6 +476,24 @@ describe("github()", () => {
       });
 
       expect(result.status).toBe(401);
+    });
+
+    it("should accept secrets accidentally prefixed with sha256=", async () => {
+      const rawSecret = "test-secret";
+      const prefixedSecret = `sha256=${rawSecret}`;
+      const body = JSON.stringify(validPushPayload);
+
+      const webhook = github({ secret: prefixedSecret }).event(push, () => {});
+
+      const result = await webhook.process({
+        headers: {
+          "x-github-event": "push",
+          "x-hub-signature-256": createSignature(body, rawSecret),
+        },
+        rawBody: body,
+      });
+
+      expect(result.status).toBe(200);
     });
   });
 

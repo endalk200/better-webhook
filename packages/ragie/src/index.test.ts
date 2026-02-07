@@ -9,6 +9,7 @@ import {
   type RagieConnectionSyncProgressEvent,
   type RagieConnectionSyncFinishedEvent,
   type RagieConnectionLimitExceededEvent,
+  type RagiePartitionLimitExceededEvent,
 } from "./index.js";
 import {
   document_status_updated,
@@ -28,6 +29,7 @@ import {
   RagieConnectionSyncProgressEventSchema,
   RagieConnectionSyncFinishedEventSchema,
   RagieConnectionLimitExceededEventSchema,
+  RagiePartitionLimitExceededEventSchema,
 } from "./schemas.js";
 
 // ============================================================================
@@ -107,6 +109,11 @@ const validConnectionLimitExceededPayload: RagieConnectionLimitExceededEvent = {
   partition: "default",
   connection_metadata: { source: "notion", workspace_id: "workspace-abc123" },
   limit_type: "page_limit",
+};
+
+const validPartitionLimitExceededPayload: RagiePartitionLimitExceededEvent = {
+  partition: "default",
+  limit_type: "document_limit",
 };
 
 // ============================================================================
@@ -261,6 +268,22 @@ describe("Ragie Schemas", () => {
       expect(result.success).toBe(false);
     });
   });
+
+  describe("RagiePartitionLimitExceededEventSchema", () => {
+    it("should validate a valid partition limit exceeded event", () => {
+      const result = RagiePartitionLimitExceededEventSchema.safeParse(
+        validPartitionLimitExceededPayload,
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject missing partition", () => {
+      const result = RagiePartitionLimitExceededEventSchema.safeParse({
+        limit_type: "document_limit",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
 });
 
 // ============================================================================
@@ -310,6 +333,7 @@ describe("ragie()", () => {
           document_id: "aa9a87d5-fbfa-4b48-8db3-b88a0d5826d4",
           status: "ready",
           name: "Test Document.pdf",
+          nonce: "unique-nonce-123",
         }),
         expect.objectContaining({
           eventType: "document_status_updated",
@@ -672,6 +696,27 @@ describe("ragie()", () => {
       expect(result.status).toBe(200);
       expect(partitionHandler).toHaveBeenCalled();
       expect(documentHandler).not.toHaveBeenCalled();
+    });
+
+    it("should return 204 when event type is missing from envelope", async () => {
+      const secret = "test-secret";
+      const envelope = { payload: validDocumentStatusUpdatedPayload };
+      const body = JSON.stringify(envelope);
+      const signature = createHmac("sha256", secret).update(body).digest("hex");
+      const handler = vi.fn();
+
+      const webhook = ragie({ secret }).event(document_status_updated, handler);
+
+      const result = await webhook.process({
+        headers: {
+          "content-type": "application/json",
+          "x-signature": signature,
+        },
+        rawBody: body,
+      });
+
+      expect(result.status).toBe(204);
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
