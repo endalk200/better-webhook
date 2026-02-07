@@ -1,0 +1,143 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for better-webhook
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Target Package(s)
+      description: Which package(s) should this feature be added to?
+      multiple: true
+      options:
+        - "@better-webhook/core"
+        - "@better-webhook/github"
+        - "@better-webhook/ragie"
+        - "@better-webhook/nextjs"
+        - "@better-webhook/express"
+        - "@better-webhook/nestjs"
+        - "@better-webhook/gcp-functions"
+        - "@better-webhook/cli"
+        - "Dashboard"
+        - "Documentation"
+        - "New Package/Provider"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature is this?
+      options:
+        - "New Provider Integration (e.g., Stripe, Shopify)"
+        - "New Framework Adapter (e.g., Fastify, Hono)"
+        - "Enhancement to Existing Feature"
+        - "New Core Functionality"
+        - "Developer Experience (DX) Improvement"
+        - "Performance Improvement"
+        - "Documentation Improvement"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What is the use case?
+      placeholder: |
+        Currently, when working with webhooks from [provider/framework], I need to...
+        This is painful because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your ideal solution to the problem
+      placeholder: |
+        I would like better-webhook to provide...
+        This would work by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: |
+        I've tried...
+        The current workaround is...
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: API Design (Optional)
+      description: If you have ideas about the API design, share them here
+      render: typescript
+      placeholder: |
+        // Example usage of the proposed feature
+        import { createWebhook } from '@better-webhook/[package]';
+
+        const webhook = createWebhook({
+          // proposed API
+        });
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example Use Cases
+      description: Provide specific examples of how this feature would be used
+      placeholder: |
+        1. When receiving webhooks from [provider]...
+        2. When integrating with [framework]...
+        3. When handling [event type]...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - "Critical - Blocking my use case"
+        - "High - Would significantly improve my workflow"
+        - "Medium - Nice to have"
+        - "Low - Just an idea"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references to similar features in other libraries
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be willing to contribute?
+      options:
+        - label: I am willing to submit a PR to implement this feature
+        - label: I can help with documentation for this feature
+        - label: I can help with testing this feature
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues and discussions to ensure this hasn't been requested before
+          required: true
+        - label: This feature aligns with the goals of better-webhook (type-safe webhook handling)
+          required: true
