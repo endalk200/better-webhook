@@ -524,6 +524,72 @@ describe("WebhookBuilder", () => {
     });
   });
 
+  describe("payload extraction", () => {
+    it("should validate and handle payload extracted by getPayload", async () => {
+      const schema = z.object({
+        action: z.string(),
+        data: z.object({ id: z.number() }),
+        nonce: z.string(),
+      });
+
+      const payloadEvent = defineEvent({
+        name: "payload.event",
+        schema,
+        provider: "test" as const,
+      });
+
+      const provider: Provider<"test"> = {
+        name: "test",
+        verification: "disabled",
+        getEventType(headers: Headers) {
+          return headers["x-test-event"];
+        },
+        getDeliveryId() {
+          return undefined;
+        },
+        verify() {
+          return true;
+        },
+        getPayload(body: unknown) {
+          if (body && typeof body === "object" && "payload" in body) {
+            const payload = (body as { payload: unknown }).payload;
+            const nonce =
+              "nonce" in body &&
+              typeof (body as { nonce: unknown }).nonce === "string"
+                ? (body as { nonce: string }).nonce
+                : undefined;
+
+            if (payload && typeof payload === "object" && nonce) {
+              return { ...(payload as Record<string, unknown>), nonce };
+            }
+
+            return payload;
+          }
+          return body;
+        },
+      };
+
+      const handler = vi.fn();
+      const webhook = createWebhook(provider).event(payloadEvent, handler);
+      const envelope = {
+        type: "payload.event",
+        payload: { action: "created", data: { id: 1 } },
+        nonce: "nonce-123",
+      };
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "payload.event" },
+        rawBody: JSON.stringify(envelope),
+      });
+
+      expect(result.status).toBe(200);
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({ nonce: "nonce-123" }),
+        expect.objectContaining({ eventType: "payload.event" }),
+      );
+    });
+  });
+
   describe("error handling", () => {
     it("should call onError when handler throws", async () => {
       const provider = createTestProvider();
@@ -586,6 +652,48 @@ describe("WebhookBuilder", () => {
         "Signature verification failed",
         expect.any(Object),
       );
+    });
+
+    it("should ignore errors from onError handler", async () => {
+      const provider = createTestProvider();
+      const onError = vi.fn(() => {
+        throw new Error("onError failure");
+      });
+
+      const webhook = createWebhook(provider)
+        .event(testEvent, () => {
+          throw new Error("Handler error");
+        })
+        .onError(onError);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it("should ignore errors from onVerificationFailed handler", async () => {
+      const provider = createTestProvider({ verifyResult: false });
+      const onVerificationFailed = vi.fn(() => {
+        throw new Error("onVerificationFailed failure");
+      });
+
+      const webhook = createWebhook(provider)
+        .event(testEvent, () => {})
+        .onVerificationFailed(onVerificationFailed);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(401);
+      expect(onVerificationFailed).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -652,6 +760,35 @@ describe("WebhookBuilder", () => {
         expect.any(Object),
         "env-secret",
       );
+    });
+
+    it("should fall back to WEBHOOK_SECRET when provider-specific env is missing", async () => {
+      const previous = process.env.WEBHOOK_SECRET;
+      process.env.WEBHOOK_SECRET = "global-secret";
+
+      try {
+        const provider = createTestProvider();
+        const verifyMock = vi.spyOn(provider, "verify");
+
+        const webhook = createWebhook(provider).event(testEvent, () => {});
+
+        await webhook.process({
+          headers: { "x-test-event": "test.event" },
+          rawBody: JSON.stringify(validPayload),
+        });
+
+        expect(verifyMock).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.any(Object),
+          "global-secret",
+        );
+      } finally {
+        if (previous === undefined) {
+          delete process.env.WEBHOOK_SECRET;
+        } else {
+          process.env.WEBHOOK_SECRET = previous;
+        }
+      }
     });
 
     it("should fail when no secret is available and verification is required", async () => {
@@ -792,6 +929,18 @@ describe("verifyHmac", () => {
     expect(isValid).toBe(true);
   });
 
+  it("should return false when base64 signature length mismatches", () => {
+    const isValid = verifyHmac({
+      algorithm: "sha256",
+      rawBody: payload,
+      secret,
+      signature: "AA==",
+      signatureEncoding: "base64",
+    });
+
+    expect(isValid).toBe(false);
+  });
+
   it("should work with sha1 algorithm", () => {
     const signature = computeHmac("sha1", payload, secret);
 
@@ -841,10 +990,14 @@ describe("createHmacVerifier", () => {
   const secret = "test-secret";
   const payload = JSON.stringify({ test: "data" });
 
-  function computeHmac(body: string, secretKey: string): string {
+  function computeHmac(
+    body: string,
+    secretKey: string,
+    encoding: "hex" | "base64" = "hex",
+  ): string {
     const hmac = createHmac("sha256", secretKey);
     hmac.update(body, "utf-8");
-    return hmac.digest("hex");
+    return hmac.digest(encoding);
   }
 
   it("should create a verifier function", () => {
@@ -892,6 +1045,21 @@ describe("createHmacVerifier", () => {
     });
 
     const signature = "v1=" + computeHmac(payload, secret);
+    const headers: Headers = { "x-signature": signature };
+
+    const isValid = verify(payload, headers, secret);
+
+    expect(isValid).toBe(true);
+  });
+
+  it("should verify base64 signatures", () => {
+    const verify = createHmacVerifier({
+      algorithm: "sha256",
+      signatureHeader: "x-signature",
+      signatureEncoding: "base64",
+    });
+
+    const signature = computeHmac(payload, secret, "base64");
     const headers: Headers = { "x-signature": signature };
 
     const isValid = verify(payload, headers, secret);
@@ -1650,6 +1818,22 @@ describe("createWebhookStats", () => {
     expect(snapshot.totalRequests).toBe(2);
     expect(snapshot.successCount).toBe(1);
     expect(snapshot.errorCount).toBe(1);
+  });
+
+  it("should not track by event type when event type is unknown", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+
+    const webhook = createWebhook(provider).observe(stats.observer);
+
+    await webhook.process({
+      headers: {},
+      rawBody: JSON.stringify(validPayload),
+    });
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.totalRequests).toBe(1);
+    expect(Object.keys(snapshot.byEventType)).toHaveLength(0);
   });
 
   it("should track by provider", async () => {

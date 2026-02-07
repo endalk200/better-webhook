@@ -395,5 +395,29 @@ describe("toExpress", () => {
       expect(onCompleted1).toHaveBeenCalledTimes(1);
       expect(onCompleted2).toHaveBeenCalledTimes(1);
     });
+
+    it("should not mutate original webhook when observer is provided", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const onCompleted = vi.fn();
+      const middleware = toExpress(webhook, { observer: { onCompleted } });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(200);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+    });
   });
 });

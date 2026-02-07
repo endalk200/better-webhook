@@ -153,11 +153,7 @@ describe("toNextJS", () => {
   describe("options", () => {
     it("should pass secret to webhook processor", async () => {
       const provider = createTestProvider();
-      const processSpy = vi.spyOn(
-        createWebhook(provider).event(testEvent, () => {}),
-        "process",
-      );
-
+      const verifySpy = vi.spyOn(provider, "verify");
       const webhook = createWebhook(provider).event(testEvent, () => {});
       const handler = toNextJS(webhook, { secret: "my-secret" });
 
@@ -167,8 +163,11 @@ describe("toNextJS", () => {
       });
       await handler(request);
 
-      // Verify that the handler works - the secret is passed internally
-      expect(true).toBe(true);
+      expect(verifySpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Object),
+        "my-secret",
+      );
     });
 
     it("should call onSuccess callback on successful processing", async () => {
@@ -286,6 +285,30 @@ describe("toNextJS", () => {
           success: false,
         }),
       );
+    });
+
+    it("should not mutate original webhook when observer is provided", async () => {
+      const provider = createTestProvider();
+      const onCompleted = vi.fn();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      const handler = toNextJS(webhook, { observer: { onCompleted } });
+
+      const request = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: JSON.stringify(validPayload),
+      });
+
+      await handler(request);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(200);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
     });
   });
 
