@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.8.0
+
+### Minor Changes
+
+- feat: expand the parsed json payload received during capture in dashboard UI.
+
 ## 3.7.0
 
 ### Minor Changes
