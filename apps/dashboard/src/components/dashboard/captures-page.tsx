@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   formatBytes,
+  formatJsonString,
   parseHeaderLines,
   safeJsonStringify,
 } from "@/components/dashboard/utils";
@@ -715,8 +716,9 @@ export function CapturesPage(props: {
                   </pre>
                   <div className="text-muted-foreground text-xs">Body</div>
                   <pre className="bg-muted/40 border-border overflow-auto border p-3 text-xs">
-                    {selected.capture.rawBody ||
-                      safeJsonStringify(selected.capture.body)}
+                    {selected.capture.rawBody
+                      ? formatJsonString(selected.capture.rawBody)
+                      : safeJsonStringify(selected.capture.body)}
                   </pre>
                 </CardContent>
               </Card>
