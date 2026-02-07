@@ -33,10 +33,10 @@ jobs:
             os: ubuntu-latest
             artifact: better-webhook-linux-x64
           - target: bun-linux-arm64
-            os: ubuntu-24.04-arm64 # Native ARM64 runner
+            os: ubuntu-24.04-arm # Native ARM64 runner
             artifact: better-webhook-linux-arm64
           - target: bun-darwin-x64
-            os: macos-13
+            os: macos-latest
             artifact: better-webhook-darwin-x64
           - target: bun-darwin-arm64
             os: macos-latest
