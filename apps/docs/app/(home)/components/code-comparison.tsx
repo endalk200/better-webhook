@@ -32,10 +32,11 @@ app.post('/webhooks/github', async (req, res) => {
 const afterCode = `// The better-webhook way - type-safe and secure
 
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Full autocomplete and type safety!
     console.log(payload.repository.name);
     console.log(payload.commits.length);

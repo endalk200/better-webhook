@@ -81,12 +81,13 @@ async function readRawBody(c: Context): Promise<string> {
  * ```ts
  * import { Hono } from "hono";
  * import { github } from "@better-webhook/github";
+ * import { push } from "@better-webhook/github/events";
  * import { toHono } from "@better-webhook/hono";
  *
  * const app = new Hono();
  *
  * const webhook = github()
- *   .event("push", async (payload) => {
+ *   .event(push, async (payload) => {
  *     console.log(`Push to ${payload.repository.name}`);
  *   });
  *

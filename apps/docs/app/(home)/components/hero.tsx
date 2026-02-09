@@ -5,15 +5,16 @@ import Link from "next/link";
 import { ArrowRight, Github, Terminal, Code2, Copy, Check } from "lucide-react";
 
 const codeBlock = `import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Fully typed payload
     console.log(payload.repository.name);
     console.log(payload.commits.length);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       await notifyTeam(payload.pull_request);
     }
@@ -171,7 +172,7 @@ export function Hero() {
               </div>
               <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
                 <div className="text-2xl font-bold font-mono text-[var(--lyra-accent)]">
-                  4
+                  5
                 </div>
                 <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
                   Adapters

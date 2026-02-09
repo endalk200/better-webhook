@@ -75,10 +75,11 @@ function jsonResponse(
  * ```ts
  * // app/api/webhooks/github/route.ts
  * import { github } from '@better-webhook/github';
+ * import { push } from '@better-webhook/github/events';
  * import { toNextJS } from '@better-webhook/nextjs';
  *
  * const webhook = github()
- *   .event('push', async (payload) => {
+ *   .event(push, async (payload) => {
  *     console.log(`Push to ${payload.repository.name}`);
  *   });
  *

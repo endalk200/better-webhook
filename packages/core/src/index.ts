@@ -260,12 +260,12 @@ export interface HmacVerifyOptions {
  * @example
  * ```ts
  * // Simple handler - just use payload
- * .event('push', async (payload) => {
+ * .event(push, async (payload) => {
  *   console.log(payload.repository.name);
  * })
  *
  * // With context - access delivery ID, headers, etc.
- * .event('push', async (payload, context) => {
+ * .event(push, async (payload, context) => {
  *   console.log(`[${context.deliveryId}] Push to ${payload.repository.name}`);
  *   console.log(`Provider: ${context.provider}`);
  *   console.log(`Received at: ${context.receivedAt}`);
@@ -494,7 +494,7 @@ export type ObservationEvent =
  *
  * const webhook = github()
  *   .observe(observer)
- *   .event('push', handler);
+ *   .event(push, handler);
  * ```
  */
 export interface WebhookObserver {
@@ -541,7 +541,7 @@ export interface WebhookObserver {
  *
  * const webhook = github()
  *   .observe(stats.observer)
- *   .event('push', handler);
+ *   .event(push, handler);
  *
  * // Later, get stats
  * console.log(stats.snapshot());

@@ -33,8 +33,10 @@ const commands = [
     command: "better-webhook capture --port 3001",
     output: [
       "",
-      "🎣 Webhook capture server started",
+      "🎣 Webhook Capture Server",
       "   Listening on http://localhost:3001",
+      "   Captures saved to: ~/.better-webhook/captures",
+      "   Tip: Send webhooks to any path, e.g. http://localhost:3001/webhooks/github",
       "",
       "📥 Captured webhook from github",
       "   ID: abc12345",

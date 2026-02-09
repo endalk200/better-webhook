@@ -10,11 +10,12 @@ Drop-in Hono handler that handles signature verification, payload parsing, and t
 ```ts
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -53,16 +54,17 @@ npm install @better-webhook/github
 ```ts
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     const branch = payload.ref.replace("refs/heads/", "");
     console.log(`Push to ${branch} by ${payload.pusher.name}`);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       await notifySlack(`New PR: ${payload.pull_request.title}`);
     }
@@ -87,11 +89,12 @@ Use `@hono/node-server` and the `toHonoNode` helper:
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHonoNode } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -105,11 +108,12 @@ serve(app);
 ```ts
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -123,11 +127,12 @@ export default app;
 ```ts
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -144,11 +149,12 @@ export default {
 ```ts
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 

@@ -73,12 +73,13 @@ export type NestJSHandler = (req: NestJSRequest) => Promise<NestJSResult>;
  * import { Controller, Post, Req, Res, HttpStatus } from '@nestjs/common';
  * import { Response } from 'express';
  * import { github } from '@better-webhook/github';
+ * import { push } from '@better-webhook/github/events';
  * import { toNestJS } from '@better-webhook/nestjs';
  *
  * @Controller('webhooks')
  * export class WebhooksController {
  *   private webhook = github()
- *     .event('push', async (payload) => {
+ *     .event(push, async (payload) => {
  *       console.log(`Push to ${payload.repository.name}`);
  *     });
  *

@@ -36,9 +36,10 @@ The Next.js adapter works with the App Router's route handlers.
 
 ```ts title="app/api/webhooks/github/route.ts"
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -99,11 +100,12 @@ The Express adapter returns a middleware function.
 ```ts title="src/webhooks.ts"
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -140,19 +142,18 @@ app.post(
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toExpress } from "@better-webhook/express";
 
-const githubWebhook = github().event("push", async (payload) => {
+const githubWebhook = github().event(push, async (payload) => {
   // Handle GitHub
 });
 
-const ragieWebhook = ragie().event(
-  "document_status_updated",
-  async (payload) => {
-    // Handle Ragie
-  },
-);
+const ragieWebhook = ragie().event(document_status_updated, async (payload) => {
+  // Handle Ragie
+});
 
 app.post(
   "/webhooks/github",
@@ -197,11 +198,12 @@ The NestJS adapter returns an async function that processes the request and retu
 import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github().event("push", async (payload) => {
+  private webhook = github().event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -295,9 +297,10 @@ The GCP Cloud Functions adapter works with both 1st and 2nd generation Cloud Fun
 ```ts title="index.ts"
 import { http } from "@google-cloud/functions-framework";
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
+const webhook = ragie().event(document_status_updated, async (payload) => {
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 
@@ -308,9 +311,10 @@ http("webhookHandler", toGCPFunction(webhook));
 
 ```ts title="index.ts"
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
+const webhook = ragie().event(document_status_updated, async (payload) => {
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 
@@ -388,11 +392,12 @@ The Hono adapter returns a standard Hono handler and works across runtimes.
 ```ts title="src/webhooks.ts"
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -407,11 +412,12 @@ export default app;
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHonoNode } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -425,11 +431,12 @@ serve(app);
 ```ts title="src/worker.ts"
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -443,11 +450,12 @@ export default app;
 ```ts title="src/index.ts"
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -464,11 +472,12 @@ export default {
 ```ts title="src/main.ts"
 import { Hono } from "hono";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toHono } from "@better-webhook/hono";
 
 const app = new Hono();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 

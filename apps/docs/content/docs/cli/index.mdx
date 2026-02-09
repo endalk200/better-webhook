@@ -89,6 +89,7 @@ The fastest way to get started is with the dashboard command, which starts both 
     This starts:
     - **Dashboard UI** at `http://localhost:4000`
     - **Capture Server** at `http://localhost:3001`
+    - **WebSocket** at `ws://localhost:4000/ws`
 
   </Step>
 
@@ -100,6 +101,8 @@ The fastest way to get started is with the dashboard command, which starts both 
     ```
     http://localhost:3001/webhooks/your-provider
     ```
+
+    Tip: The capture server accepts **any** path and stores the request with headers and body.
 
     <Callout type="info">
       Use a tunnel service like ngrok or cloudflared to expose the capture server if your webhook source can't reach localhost.
