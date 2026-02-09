@@ -1,0 +1,166 @@
+import { type Context } from "hono";
+import { cloneRawRequest } from "hono/request";
+import {
+  type WebhookBuilder,
+  type ProcessResult,
+  type WebhookObserver,
+} from "@better-webhook/core";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * Options for the Hono adapter
+ */
+export interface HonoAdapterOptions {
+  /** Webhook secret for signature verification (overrides provider secret) */
+  secret?: string;
+
+  /** Callback invoked on successful webhook processing */
+  onSuccess?: (eventType: string) => void | Promise<void>;
+
+  /**
+   * Observer(s) for webhook lifecycle events.
+   * Use this to add observability without modifying the webhook builder.
+   */
+  observer?: WebhookObserver | WebhookObserver[];
+}
+
+/**
+ * Hono handler type
+ */
+export type HonoHandler = (c: Context) => Promise<Response>;
+
+// ============================================================================
+// Response Helpers
+// ============================================================================
+
+/**
+ * Create a JSON response
+ */
+function jsonResponse(
+  body: Record<string, unknown> | null,
+  status: number,
+): Response {
+  if (body === null) {
+    return new Response(null, { status });
+  }
+
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+async function readRawBody(c: Context): Promise<string> {
+  try {
+    const arrayBuffer = await c.req.arrayBuffer();
+    return new TextDecoder().decode(arrayBuffer);
+  } catch {
+    try {
+      const clonedRequest = await cloneRawRequest(c.req);
+      const arrayBuffer = await clonedRequest.arrayBuffer();
+      return new TextDecoder().decode(arrayBuffer);
+    } catch {
+      throw new Error("Failed to read request body");
+    }
+  }
+}
+
+// ============================================================================
+// Hono Adapter
+// ============================================================================
+
+/**
+ * Convert a webhook builder to a Hono handler
+ *
+ * @example
+ * ```ts
+ * import { Hono } from "hono";
+ * import { github } from "@better-webhook/github";
+ * import { toHono } from "@better-webhook/hono";
+ *
+ * const app = new Hono();
+ *
+ * const webhook = github()
+ *   .event("push", async (payload) => {
+ *     console.log(`Push to ${payload.repository.name}`);
+ *   });
+ *
+ * app.post("/webhooks/github", toHono(webhook));
+ *
+ * export default app;
+ * ```
+ *
+ * @param webhook - The webhook builder instance
+ * @param options - Adapter options
+ * @returns A Hono handler function
+ */
+export function toHono<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
+  options?: HonoAdapterOptions,
+): HonoHandler {
+  // Apply observer(s) if provided
+  const instrumentedWebhook = options?.observer
+    ? webhook.observe(options.observer)
+    : webhook;
+
+  return async (c: Context): Promise<Response> => {
+    if (c.req.method !== "POST") {
+      return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
+    }
+
+    let rawBody: string;
+    try {
+      rawBody = await readRawBody(c);
+    } catch {
+      return jsonResponse(
+        { ok: false, error: "Failed to read request body" },
+        400,
+      );
+    }
+
+    const headers = c.req.header();
+
+    const result: ProcessResult = await instrumentedWebhook.process({
+      headers,
+      rawBody,
+      secret: options?.secret,
+    });
+
+    if (result.status === 200 && result.eventType && options?.onSuccess) {
+      try {
+        await options.onSuccess(result.eventType);
+      } catch {
+        // Ignore errors from onSuccess callback
+      }
+    }
+
+    if (result.status === 204) {
+      return new Response(null, { status: 204 });
+    }
+
+    return jsonResponse(
+      result.body || { ok: result.status === 200 },
+      result.status,
+    );
+  };
+}
+
+/**
+ * Convert a webhook builder to a Hono handler for Node.js runtimes
+ *
+ * This is a convenience wrapper for `toHono` to make Node.js usage explicit.
+ */
+export function toHonoNode<TProviderBrand extends string = string>(
+  webhook: WebhookBuilder<TProviderBrand>,
+  options?: HonoAdapterOptions,
+): HonoHandler {
+  return toHono(webhook, options);
+}
+
+// Re-export types for convenience
+export type { ProcessResult };

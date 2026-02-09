@@ -12,14 +12,14 @@ import { Callout } from "fumadocs-ui/components/callout";
 The Better Webhook SDK provides type-safe webhook handlers with automatic signature verification. It consists of:
 
 - **Provider packages** — Type definitions and schemas for webhook sources (GitHub, Ragie)
-- **Adapter packages** — Framework integrations (Next.js, Express, NestJS, GCP Cloud Functions)
+- **Adapter packages** — Framework integrations (Next.js, Express, NestJS, GCP Cloud Functions, Hono)
 - **Core package** — Base functionality for custom providers
 
 ## Installation
 
 Install a provider and an adapter for your framework:
 
-<Tabs items={["Next.js", "Express", "NestJS", "GCP Cloud Functions"]}>
+<Tabs items={["Next.js", "Express", "NestJS", "GCP Cloud Functions", "Hono"]}>
   <Tab value="Next.js">
     <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
       <Tab value="npm">
@@ -96,11 +96,30 @@ Install a provider and an adapter for your framework:
       </Tab>
     </Tabs>
   </Tab>
+  <Tab value="Hono">
+    <Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+      <Tab value="npm">
+        ```bash
+        npm install @better-webhook/github @better-webhook/hono
+        ```
+      </Tab>
+      <Tab value="pnpm">
+        ```bash
+        pnpm add @better-webhook/github @better-webhook/hono
+        ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash
+        yarn add @better-webhook/github @better-webhook/hono
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
 </Tabs>
 
 ## Quick Example
 
-<Tabs items={['Next.js', 'Express', 'NestJS', 'GCP Cloud Functions']}>
+<Tabs items={['Next.js', 'Express', 'NestJS', 'GCP Cloud Functions', 'Hono']}>
   <Tab value="Next.js">
     ```ts title="app/api/webhooks/github/route.ts"
     import { github } from "@better-webhook/github";
@@ -192,6 +211,26 @@ Install a provider and an adapter for your framework:
     ```
 
   </Tab>
+  <Tab value="Hono">
+    ```ts title="src/webhooks.ts"
+    import { Hono } from "hono";
+    import { github } from "@better-webhook/github";
+    import { push } from "@better-webhook/github/events";
+    import { toHono } from "@better-webhook/hono";
+
+    const app = new Hono();
+
+    const webhook = github()
+      .event(push, async (payload) => {
+        console.log(`Push to ${payload.repository.name}`);
+      });
+
+    app.post("/webhooks/github", toHono(webhook));
+
+    export default app;
+    ```
+
+  </Tab>
 </Tabs>
 
 ## Tree-Shaking
@@ -271,6 +310,9 @@ This is especially beneficial for serverless deployments where bundle size matte
 
     // GCP Cloud Functions
     http("webhookHandler", toGCPFunction(webhook));
+
+    // Hono
+    app.post("/webhooks/github", toHono(webhook));
     ```
 
   </Step>

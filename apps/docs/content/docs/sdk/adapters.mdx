@@ -1,6 +1,6 @@
 ---
 title: Framework Adapters
-description: Integrate Better Webhook with Next.js, Express, NestJS, and GCP Cloud Functions.
+description: Integrate Better Webhook with Next.js, Express, NestJS, GCP Cloud Functions, and Hono.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -358,6 +358,141 @@ gcloud functions deploy webhookHandler \
   --entry-point webhookHandler \
   --set-env-vars RAGIE_WEBHOOK_SECRET=your-secret
 ```
+
+---
+
+## Hono
+
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/hono
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/hono
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/hono
+  ```
+  </Tab>
+</Tabs>
+
+The Hono adapter returns a standard Hono handler and works across runtimes.
+
+### Basic Usage
+
+```ts title="src/webhooks.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;
+```
+
+### Node.js
+
+```ts title="src/index.ts"
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { toHonoNode } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHonoNode(webhook));
+
+serve(app);
+```
+
+### Cloudflare Workers
+
+```ts title="src/worker.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;
+```
+
+### Bun
+
+```ts title="src/index.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default {
+  port: 3000,
+  fetch: app.fetch,
+};
+```
+
+### Deno
+
+```ts title="src/main.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event("push", async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+Deno.serve(app.fetch);
+```
+
+### Response Behavior
+
+| Status | Condition                                     |
+| ------ | --------------------------------------------- |
+| `200`  | Handler executed successfully                 |
+| `204`  | No handler registered for this event type     |
+| `400`  | Invalid JSON body or schema validation failed |
+| `401`  | Signature verification failed                 |
+| `405`  | Request method is not POST                    |
+| `500`  | Handler threw an error                        |
+
+<Callout type="warn">
+  **Raw Body:** Avoid consuming `c.req.raw` before the adapter runs. If you need
+  the body in middleware, use HonoRequest methods (e.g. `c.req.text()`), which
+  allow the adapter to reconstruct the body via `cloneRawRequest`.
+</Callout>
 
 ---
 
