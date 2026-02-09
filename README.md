@@ -51,6 +51,7 @@ npm install @better-webhook/ragie
 npm install @better-webhook/nextjs
 npm install @better-webhook/express
 npm install @better-webhook/nestjs
+npm install @better-webhook/hono
 ```
 
 ## 🚀 Quick Start
@@ -188,6 +189,7 @@ This monorepo contains:
 - **[@better-webhook/nextjs](packages/nextjs/)** - Next.js adapter
 - **[@better-webhook/express](packages/express/)** - Express adapter
 - **[@better-webhook/nestjs](packages/nestjs/)** - NestJS adapter
+- **[@better-webhook/hono](packages/hono/)** - Hono adapter
 
 ### Configuration
 

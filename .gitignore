@@ -43,3 +43,5 @@ yarn-error.log*
 .pnpm-store/*
 
 **/*/tsconfig.tsbuildinfo
+
+.opencode/plans/**/*.md
