@@ -503,6 +503,10 @@ Deno.serve(app.fetch);
   allow the adapter to reconstruct the body via `cloneRawRequest`.
 </Callout>
 
+With `app.post(...)`, non-POST requests may return `404` at the route layer
+before the adapter runs. `405` is returned when the adapter itself receives a
+non-POST request (for example, when mounted via `app.all(...)`).
+
 ---
 
 ## Adapter Options
@@ -523,7 +527,9 @@ When verifying signatures, the SDK looks for a secret in this order:
 2. **Provider options** — `github({ secret: "..." })`
 3. **Environment variables** — `GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, or `WEBHOOK_SECRET`
 
-If no secret is found, signature verification is skipped.
+If the provider requires verification and no secret is found, the request is
+rejected (typically `401`). Verification is skipped only when the provider is
+explicitly configured with `verification: "disabled"`.
 
 <Callout type="warn">
   Always configure a secret in production. Without signature verification,

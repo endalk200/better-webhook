@@ -130,6 +130,28 @@ describe("toHono", () => {
 
       expect(response.status).toBe(400);
     });
+
+    it("should recover the raw body after middleware consumes it", async () => {
+      const provider = createTestProvider();
+      const handler = vi.fn();
+      const webhook = createWebhook(provider).event(testEvent, handler);
+      const app = new Hono();
+
+      app.use("/webhooks", async (c, next) => {
+        await c.req.text();
+        await next();
+      });
+      app.post("/webhooks", toHono(webhook));
+
+      const request = createRequest({
+        headers: { "x-test-event": "test.event" },
+        body: JSON.stringify(validPayload),
+      });
+      const response = await app.request(request);
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("response mapping", () => {
@@ -198,6 +220,34 @@ describe("toHono", () => {
       const response = await app.request(request);
 
       expect(response.status).toBe(500);
+    });
+
+    it("should let Hono onError handle unexpected adapter errors", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const processSpy = vi
+        .spyOn(webhook, "process")
+        .mockRejectedValue(new Error("Unexpected process failure"));
+      const app = new Hono();
+
+      app.onError((error, c) => {
+        return c.json({ ok: false, error: `global: ${error.message}` }, 503);
+      });
+      app.post("/webhooks", toHono(webhook));
+
+      try {
+        const request = createRequest({
+          headers: { "x-test-event": "test.event" },
+          body: JSON.stringify(validPayload),
+        });
+        const response = await app.request(request);
+
+        expect(response.status).toBe(503);
+        const body = await response.json();
+        expect(body.error).toBe("global: Unexpected process failure");
+      } finally {
+        processSpy.mockRestore();
+      }
     });
   });
 

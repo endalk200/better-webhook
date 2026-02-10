@@ -24,6 +24,8 @@ app.post("/webhooks/github", toHono(webhook));
 export default app;
 ```
 
+For a runnable local app, see [`apps/examples/hono-example`](https://github.com/endalk200/better-webhook/tree/main/apps/examples/hono-example).
+
 ## Features
 
 - **🔌 Drop-in handler** — Works with any Hono runtime
@@ -196,6 +198,21 @@ app.post(
 );
 ```
 
+### Observer
+
+```ts
+import { createWebhookStats } from "@better-webhook/core";
+
+const stats = createWebhookStats();
+
+app.post(
+  "/webhooks/github",
+  toHono(webhook, {
+    observer: stats.observer,
+  }),
+);
+```
+
 ## Response Codes
 
 | Code  | Meaning                                   |
@@ -206,6 +223,10 @@ app.post(
 | `401` | Signature verification failed             |
 | `405` | Request method is not POST                |
 | `500` | Handler threw an error                    |
+
+Note: with `app.post(...)`, non-POST requests may return `404` at the routing
+layer before the adapter runs. `405` is returned when the adapter itself
+receives a non-POST request (for example, via `app.all(...)`).
 
 ## License
 

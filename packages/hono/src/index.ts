@@ -115,48 +115,50 @@ export function toHono<
     : webhook;
 
   return async (c: C): Promise<Response> => {
-    try {
-      if (c.req.method !== "POST") {
-        return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
-      }
-
-      let rawBody: string;
-      try {
-        rawBody = await readRawBody(c);
-      } catch {
-        return jsonResponse(
-          { ok: false, error: "Failed to read request body" },
-          400,
-        );
-      }
-
-      const headers = c.req.header();
-
-      const result: ProcessResult = await instrumentedWebhook.process({
-        headers,
-        rawBody,
-        secret: options?.secret,
-      });
-
-      if (result.status === 200 && result.eventType && options?.onSuccess) {
-        try {
-          await options.onSuccess(result.eventType);
-        } catch {
-          // Ignore errors from onSuccess callback
-        }
-      }
-
-      if (result.status === 204) {
-        return new Response(null, { status: 204 });
-      }
-
-      return jsonResponse(
-        result.body ?? { ok: result.status === 200 },
-        result.status,
-      );
-    } catch {
-      return jsonResponse({ ok: false, error: "Internal Server Error" }, 500);
+    if (c.req.method !== "POST") {
+      return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
     }
+
+    let rawBody: string;
+    try {
+      rawBody = await readRawBody(c);
+    } catch {
+      return jsonResponse(
+        { ok: false, error: "Failed to read request body" },
+        400,
+      );
+    }
+
+    const requestHeaders = c.req.header();
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(requestHeaders)) {
+      if (value !== undefined) {
+        headers[key.toLowerCase()] = value;
+      }
+    }
+
+    const result: ProcessResult = await instrumentedWebhook.process({
+      headers,
+      rawBody,
+      secret: options?.secret,
+    });
+
+    if (result.status === 200 && result.eventType && options?.onSuccess) {
+      try {
+        await options.onSuccess(result.eventType);
+      } catch {
+        // Ignore errors from onSuccess callback
+      }
+    }
+
+    if (result.status === 204) {
+      return new Response(null, { status: 204 });
+    }
+
+    return jsonResponse(
+      result.body || { ok: result.status === 200 },
+      result.status,
+    );
   };
 }
 

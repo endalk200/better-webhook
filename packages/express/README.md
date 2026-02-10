@@ -126,6 +126,8 @@ Handle multiple providers in the same app:
 import { github } from "@better-webhook/github";
 import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
+import { defineEvent, customWebhook } from "@better-webhook/core";
+import { JobSchema } from "./schemas";
 
 // GitHub webhooks
 const githubWebhook = github().event(push, async (payload) => {

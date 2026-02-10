@@ -189,6 +189,40 @@ importers:
         specifier: ^5.6.3
         version: 5.9.2
 
+  apps/examples/hono-example:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@better-webhook/github':
+        specifier: workspace:*
+        version: link:../../../packages/github
+      '@better-webhook/hono':
+        specifier: workspace:*
+        version: link:../../../packages/hono
+      '@better-webhook/ragie':
+        specifier: workspace:*
+        version: link:../../../packages/ragie
+      '@hono/node-server':
+        specifier: ^1.19.7
+        version: 1.19.7(hono@4.11.2)
+      hono:
+        specifier: ^4.11.2
+        version: 4.11.2
+    devDependencies:
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../../../packages/typescript-config
+      '@types/node':
+        specifier: ^24.3.1
+        version: 24.10.4
+      tsx:
+        specifier: ^4.20.5
+        version: 4.20.5
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   apps/examples/nestjs-example:
     dependencies:
       '@better-webhook/core':
