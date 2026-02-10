@@ -68,8 +68,12 @@ async function readRawBody(c: Context): Promise<string> {
       const clonedRequest = await cloneRawRequest(c.req);
       const arrayBuffer = await clonedRequest.arrayBuffer();
       return decoder.decode(arrayBuffer);
-    } catch {
-      throw new Error("Failed to read request body", { cause: error });
+    } catch (cloneError) {
+      const cause =
+        error instanceof Error && cloneError instanceof Error
+          ? new AggregateError([error, cloneError], "Failed to read request body")
+          : cloneError;
+      throw new Error("Failed to read request body", { cause });
     }
   }
 }
@@ -163,7 +167,7 @@ export function toHono<
     }
 
     return jsonResponse(
-      result.body || { ok: result.status === 200 },
+      result.body ?? { ok: result.status === 200 },
       result.status,
     );
   };

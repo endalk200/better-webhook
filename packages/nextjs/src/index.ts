@@ -145,7 +145,7 @@ export function toNextJS<TProviderBrand extends string = string>(
     }
 
     return jsonResponse(
-      result.body || { ok: result.status === 200 },
+      result.body ?? { ok: result.status === 200 },
       result.status,
     );
   };

@@ -178,7 +178,7 @@ export function toNestJS<TProviderBrand extends string = string>(
 
     return {
       statusCode: result.status,
-      body: result.body || {
+      body: result.body ?? {
         ok: result.status === 200,
         eventType: result.eventType,
       },

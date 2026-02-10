@@ -137,7 +137,7 @@ export function toExpress<TProviderBrand extends string = string>(
       }
 
       res.status(result.status).json(
-        result.body || {
+        result.body ?? {
           ok: result.status === 200,
           eventType: result.eventType,
         },
