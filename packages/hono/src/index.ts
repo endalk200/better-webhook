@@ -59,13 +59,13 @@ async function readRawBody(c: Context): Promise<string> {
   try {
     const arrayBuffer = await c.req.arrayBuffer();
     return new TextDecoder().decode(arrayBuffer);
-  } catch {
+  } catch (error) {
     try {
       const clonedRequest = await cloneRawRequest(c.req);
       const arrayBuffer = await clonedRequest.arrayBuffer();
       return new TextDecoder().decode(arrayBuffer);
     } catch {
-      throw new Error("Failed to read request body");
+      throw new Error("Failed to read request body", { cause: error });
     }
   }
 }

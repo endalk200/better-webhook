@@ -563,6 +563,9 @@ http(
     observer: stats.observer,
   }),
 );
+
+// Hono
+app.post("/webhooks/github", toHono(webhook, { observer: stats.observer }));
 ```
 
 See the [SDK Getting Started](/docs/sdk) page for more details on observability.
