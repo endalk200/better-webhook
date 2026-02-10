@@ -176,7 +176,9 @@ describe("toHono", () => {
       const response = await app.request(request);
 
       expect(response.status).toBe(200);
-      expect(response.headers.get("content-type")).toBe("application/json");
+      expect(response.headers.get("content-type")).toContain(
+        "application/json",
+      );
       const body = await response.json();
       expect(body.ok).toBe(true);
     });

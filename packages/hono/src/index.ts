@@ -30,7 +30,9 @@ export interface HonoAdapterOptions {
 /**
  * Hono handler type
  */
-export type HonoHandler = (c: Context) => Promise<Response>;
+export type HonoHandler<C extends Context = Context> = (
+  c: C,
+) => Response | Promise<Response>;
 
 // ============================================================================
 // Response Helpers
@@ -100,54 +102,61 @@ async function readRawBody(c: Context): Promise<string> {
  * @param options - Adapter options
  * @returns A Hono handler function
  */
-export function toHono<TProviderBrand extends string = string>(
+export function toHono<
+  TProviderBrand extends string = string,
+  C extends Context = Context,
+>(
   webhook: WebhookBuilder<TProviderBrand>,
   options?: HonoAdapterOptions,
-): HonoHandler {
+): HonoHandler<C> {
   // Apply observer(s) if provided
   const instrumentedWebhook = options?.observer
     ? webhook.observe(options.observer)
     : webhook;
 
-  return async (c: Context): Promise<Response> => {
-    if (c.req.method !== "POST") {
-      return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
-    }
-
-    let rawBody: string;
+  return async (c: C): Promise<Response> => {
     try {
-      rawBody = await readRawBody(c);
-    } catch {
-      return jsonResponse(
-        { ok: false, error: "Failed to read request body" },
-        400,
-      );
-    }
-
-    const headers = c.req.header();
-
-    const result: ProcessResult = await instrumentedWebhook.process({
-      headers,
-      rawBody,
-      secret: options?.secret,
-    });
-
-    if (result.status === 200 && result.eventType && options?.onSuccess) {
-      try {
-        await options.onSuccess(result.eventType);
-      } catch {
-        // Ignore errors from onSuccess callback
+      if (c.req.method !== "POST") {
+        return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
       }
-    }
 
-    if (result.status === 204) {
-      return new Response(null, { status: 204 });
-    }
+      let rawBody: string;
+      try {
+        rawBody = await readRawBody(c);
+      } catch {
+        return jsonResponse(
+          { ok: false, error: "Failed to read request body" },
+          400,
+        );
+      }
 
-    return jsonResponse(
-      result.body || { ok: result.status === 200 },
-      result.status,
-    );
+      const headers = c.req.header();
+
+      const result: ProcessResult = await instrumentedWebhook.process({
+        headers,
+        rawBody,
+        secret: options?.secret,
+      });
+
+      if (result.status === 200 && result.eventType && options?.onSuccess) {
+        try {
+          await options.onSuccess(result.eventType);
+        } catch {
+          // Ignore errors from onSuccess callback
+        }
+      }
+
+      if (result.status === 204) {
+        return new Response(null, { status: 204 });
+      }
+
+      return jsonResponse(
+        result.body ?? { ok: result.status === 200 },
+        result.status,
+      );
+    } catch {
+      return jsonResponse({ ok: false, error: "Internal Server Error" }, 500);
+    }
   };
 }
 
@@ -156,11 +165,14 @@ export function toHono<TProviderBrand extends string = string>(
  *
  * This is a convenience wrapper for `toHono` to make Node.js usage explicit.
  */
-export function toHonoNode<TProviderBrand extends string = string>(
+export function toHonoNode<
+  TProviderBrand extends string = string,
+  C extends Context = Context,
+>(
   webhook: WebhookBuilder<TProviderBrand>,
   options?: HonoAdapterOptions,
-): HonoHandler {
-  return toHono(webhook, options);
+): HonoHandler<C> {
+  return toHono<TProviderBrand, C>(webhook, options);
 }
 
 // Re-export types for convenience
