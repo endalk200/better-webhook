@@ -195,6 +195,14 @@ const sdkFeatures = [
   },
 ];
 
+const frameworkLabels: Record<Framework, string> = {
+  nextjs: "Next.js",
+  hono: "Hono",
+  express: "Express",
+  nestjs: "NestJS",
+  "gcp-functions": "GCP Functions",
+};
+
 export function SDKSection() {
   const [activeFramework, setActiveFramework] = useState<Framework>("nextjs");
   const [copiedInstall, setCopiedInstall] = useState(false);
@@ -267,15 +275,7 @@ export function SDKSection() {
                 onClick={() => setActiveFramework(fw)}
                 className={`lyra-tab ${activeFramework === fw ? "active" : ""}`}
               >
-                {fw === "nextjs"
-                  ? "Next.js"
-                  : fw === "hono"
-                    ? "Hono"
-                    : fw === "express"
-                      ? "Express"
-                      : fw === "nestjs"
-                        ? "NestJS"
-                        : "GCP Functions"}
+                {frameworkLabels[fw]}
               </button>
             ))}
           </div>

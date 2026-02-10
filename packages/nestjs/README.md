@@ -146,7 +146,7 @@ export class WebhooksController {
         }
       })
       .event(pull_request, async (payload) => {
-        if (payload.action === "merged") {
+        if (payload.action === "closed" && payload.pull_request.merged) {
           await this.notificationService.notify(
             `PR #${payload.number} merged!`,
           );
@@ -167,22 +167,22 @@ export class WebhooksController {
 Handle different webhook sources in separate controller methods:
 
 ```ts
+const paymentSucceeded = defineEvent({
+  name: "payment.succeeded",
+  schema: PaymentSchema,
+  provider: "stripe" as const,
+});
+
 @Controller("webhooks")
 export class WebhooksController {
   private githubWebhook = github().event(push, async (payload) => {
     console.log("GitHub push:", payload.repository.name);
   });
 
-  private paymentSucceeded = defineEvent({
-    name: "payment.succeeded",
-    schema: PaymentSchema,
-    provider: "stripe" as const,
-  });
-
   private stripeWebhook = customWebhook({
     name: "stripe",
     getEventType: (headers) => headers["stripe-event-type"],
-  }).event(this.paymentSucceeded, async (payload) => {
+  }).event(paymentSucceeded, async (payload) => {
     console.log("Payment received:", payload.id);
   });
 

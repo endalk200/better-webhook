@@ -427,4 +427,18 @@ describe("toHonoNode", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("should return 405 for non-POST requests", async () => {
+    const provider = createTestProvider();
+    const webhook = createWebhook(provider).event(testEvent, () => {});
+    const app = new Hono();
+    app.all("/webhooks", toHonoNode(webhook));
+
+    const request = createRequest({ method: "GET" });
+    const response = await app.request(request);
+
+    expect(response.status).toBe(405);
+    const body = await response.json();
+    expect(body.error).toBe("Method not allowed");
+  });
 });

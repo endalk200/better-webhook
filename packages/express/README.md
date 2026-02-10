@@ -11,7 +11,6 @@ Drop-in middleware that handles signature verification, payload parsing, and typ
 import express from "express";
 import { github } from "@better-webhook/github";
 import { push } from "@better-webhook/github/events";
-import { customWebhook, defineEvent } from "@better-webhook/core";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
@@ -260,6 +259,7 @@ Full type safety with your Express app:
 ```ts
 import express, { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress, ExpressMiddleware } from "@better-webhook/express";
 
 const webhook = github().event(push, async (payload) => {

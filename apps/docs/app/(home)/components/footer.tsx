@@ -16,10 +16,10 @@ const footerLinks = {
     { name: "Custom Providers", href: "/docs/sdk/custom-providers" },
   ],
   frameworks: [
-    { name: "Next.js", href: "/docs/sdk/adapters" },
-    { name: "Hono", href: "/docs/sdk/adapters" },
-    { name: "Express", href: "/docs/sdk/adapters" },
-    { name: "NestJS", href: "/docs/sdk/adapters" },
+    { name: "Next.js", href: "/docs/sdk/adapters#nextjs" },
+    { name: "Hono", href: "/docs/sdk/adapters#hono" },
+    { name: "Express", href: "/docs/sdk/adapters#express" },
+    { name: "NestJS", href: "/docs/sdk/adapters#nestjs" },
   ],
   resources: [
     {
