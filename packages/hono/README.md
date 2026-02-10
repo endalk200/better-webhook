@@ -36,11 +36,11 @@ For a runnable local app, see [`apps/examples/hono-example`](https://github.com/
 ## Installation
 
 ```bash
-npm install @better-webhook/hono @better-webhook/core
+npm install @better-webhook/hono
 # or
-pnpm add @better-webhook/hono @better-webhook/core
+pnpm add @better-webhook/hono
 # or
-yarn add @better-webhook/hono @better-webhook/core
+yarn add @better-webhook/hono
 ```
 
 ## Quick Start

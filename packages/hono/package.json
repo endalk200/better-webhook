@@ -49,9 +49,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "engines": {
-    "node": ">=18"
-  },
   "dependencies": {
     "@better-webhook/core": "workspace:*"
   },

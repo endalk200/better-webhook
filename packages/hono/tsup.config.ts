@@ -11,7 +11,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   outDir: "dist",
-  target: "node18",
+  target: "es2022",
   sourcemap: false,
   minify: false,
   splitting: false,
