@@ -137,11 +137,16 @@ export function toHono<
       }
     }
 
-    const result: ProcessResult = await instrumentedWebhook.process({
-      headers,
-      rawBody,
-      secret: options?.secret,
-    });
+    let result: ProcessResult;
+    try {
+      result = await instrumentedWebhook.process({
+        headers,
+        rawBody,
+        secret: options?.secret,
+      });
+    } catch {
+      return jsonResponse({ ok: false, error: "Internal server error" }, 500);
+    }
 
     if (result.status === 200 && result.eventType && options?.onSuccess) {
       try {

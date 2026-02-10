@@ -16,7 +16,6 @@ import {
 declare const CLI_VERSION: string | undefined;
 
 function getRuntimeDir(): string {
-  // eslint-disable-next-line no-undef
   if (typeof __dirname !== "undefined") {
     // eslint-disable-next-line no-undef
     return __dirname;
@@ -37,19 +36,19 @@ function getVersion(): string {
   }
 
   // Fall back to reading from package.json (npm install / dev mode)
-  try {
-    const runtimeDir = getRuntimeDir();
-    const candidatePaths = [
-      path.resolve(runtimeDir, "..", "package.json"),
-      path.resolve(runtimeDir, "package.json"),
-      path.resolve(process.cwd(), "package.json"),
-    ];
+  const runtimeDir = getRuntimeDir();
+  const candidatePaths = [
+    path.resolve(runtimeDir, "..", "package.json"),
+    path.resolve(runtimeDir, "package.json"),
+    path.resolve(process.cwd(), "package.json"),
+  ];
 
-    for (const packageJsonPath of candidatePaths) {
-      if (!existsSync(packageJsonPath)) {
-        continue;
-      }
+  for (const packageJsonPath of candidatePaths) {
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
 
+    try {
       const packageJson = JSON.parse(
         readFileSync(packageJsonPath, { encoding: "utf8" }),
       ) as { version?: string };
@@ -57,12 +56,12 @@ function getVersion(): string {
       if (typeof packageJson.version === "string" && packageJson.version) {
         return packageJson.version;
       }
+    } catch {
+      continue;
     }
-
-    return "0.0.0-unknown";
-  } catch {
-    return "0.0.0-unknown";
   }
+
+  return "0.0.0-unknown";
 }
 
 const program = new Command()

@@ -148,7 +148,6 @@ function createEmbeddedDashboardMiddleware(): {
 
 function resolveRuntimeDir(): string {
   // In bundled CJS output, __dirname points to dist/.
-  // eslint-disable-next-line no-undef
   if (typeof __dirname !== "undefined") {
     // eslint-disable-next-line no-undef
     return __dirname;

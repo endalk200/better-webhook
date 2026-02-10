@@ -28,6 +28,8 @@ function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
 }): Provider<"test"> {
+  type VerifyRawBody = Parameters<Provider<"test">["verify"]>[0];
+
   return {
     name: "test",
     secret: options?.secret ?? "test-secret",
@@ -38,11 +40,7 @@ function createTestProvider(options?: {
     getDeliveryId(headers: Headers) {
       return headers["x-test-delivery-id"];
     },
-    verify(
-      _rawBody: string | Buffer,
-      _headers: Headers,
-      _secret: string,
-    ): boolean {
+    verify(_rawBody: VerifyRawBody, _headers: Headers, _secret: string): boolean {
       return options?.verifyResult ?? true;
     },
   };
@@ -226,17 +224,13 @@ describe("toHono", () => {
       expect(response.status).toBe(500);
     });
 
-    it("should let Hono onError handle unexpected adapter errors", async () => {
+    it("should return 500 JSON when webhook processing throws unexpectedly", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});
       const processSpy = vi
         .spyOn(webhook, "process")
         .mockRejectedValue(new Error("Unexpected process failure"));
       const app = new Hono();
-
-      app.onError((error, c) => {
-        return c.json({ ok: false, error: `global: ${error.message}` }, 503);
-      });
       app.post("/webhooks", toHono(webhook));
 
       try {
@@ -246,9 +240,9 @@ describe("toHono", () => {
         });
         const response = await app.request(request);
 
-        expect(response.status).toBe(503);
+        expect(response.status).toBe(500);
         const body = await response.json();
-        expect(body.error).toBe("global: Unexpected process failure");
+        expect(body.error).toBe("Internal server error");
       } finally {
         processSpy.mockRestore();
       }
