@@ -7,12 +7,25 @@ export const dashboard = new Command()
   .description("Start the local dashboard (UI + API + WebSocket) server")
   .option("-p, --port <port>", "Port to listen on", "4000")
   .option("-h, --host <host>", "Host to bind to", "localhost")
+  .option("-v, --verbose", "Show dashboard startup debug details")
+  .option("--debug", "Alias for --verbose")
   .option("--capture-port <port>", "Capture server port", "3001")
   .option("--capture-host <host>", "Capture server host", "0.0.0.0")
   .option("--no-capture", "Do not start the capture server")
   .option("--captures-dir <dir>", "Override captures directory")
   .option("--templates-dir <dir>", "Override templates base directory")
-  .action(async (options: any) => {
+  .action(
+    async (options: {
+      port: string;
+      host: string;
+      capturePort: string;
+      captureHost: string;
+      capture?: boolean;
+      capturesDir?: string;
+      templatesDir?: string;
+      verbose?: boolean;
+      debug?: boolean;
+    }) => {
     const port = Number.parseInt(String(options.port), 10);
     if (!Number.isFinite(port) || port < 0 || port > 65535) {
       console.error(chalk.red("Invalid port number"));
@@ -32,6 +45,7 @@ export const dashboard = new Command()
         return;
       }
 
+      const verbose = Boolean(options.verbose || options.debug);
       const { url, server, capture } = await startDashboardServer({
         host: options.host,
         port,
@@ -40,6 +54,7 @@ export const dashboard = new Command()
         startCapture: options.capture !== false,
         capturesDir: options.capturesDir,
         templatesBaseDir: options.templatesDir,
+        verbose,
       });
 
       console.log(chalk.bold("\n🧭 Dashboard Server\n"));
@@ -71,12 +86,12 @@ export const dashboard = new Command()
 
       process.on("SIGINT", shutdown);
       process.on("SIGTERM", shutdown);
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error(
-        chalk.red(
-          `Failed to start dashboard server: ${error?.message || error}`,
-        ),
+        chalk.red(`Failed to start dashboard server: ${message}`),
       );
       process.exitCode = 1;
     }
-  });
+    },
+  );

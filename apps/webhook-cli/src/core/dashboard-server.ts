@@ -147,7 +147,10 @@ function createEmbeddedDashboardMiddleware(): {
   return { staticMiddleware, spaFallback };
 }
 
-function resolveDashboardDistDir(runtimeDir: string): {
+function resolveDashboardDistDir(
+  runtimeDir: string,
+  options: { verbose?: boolean } = {},
+): {
   distDir: string;
   indexHtml: string;
 } {
@@ -176,6 +179,12 @@ function resolveDashboardDistDir(runtimeDir: string): {
     path.resolve(runtimeDir, "..", "..", "..", "dashboard", "dist"),
   ];
 
+  if (options.verbose) {
+    console.debug(
+      `[dashboard] dist resolution candidates: ${candidates.join(", ")}`,
+    );
+  }
+
   for (const distDir of candidates) {
     const indexHtml = path.join(distDir, "index.html");
     if (existsSync(indexHtml)) {
@@ -198,6 +207,7 @@ export interface DashboardServerOptions extends DashboardApiOptions {
   port?: number;
   captureHost?: string;
   capturePort?: number;
+  verbose?: boolean;
   /**
    * Start the capture server in-process (default: true).
    */
@@ -251,7 +261,7 @@ export async function startDashboardServer(
   } else {
     const runtimeDir = resolveRuntimeDir();
     const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
-      resolveDashboardDistDir(runtimeDir);
+      resolveDashboardDistDir(runtimeDir, { verbose: options.verbose });
 
     app.use(express.static(dashboardDistDir));
 
