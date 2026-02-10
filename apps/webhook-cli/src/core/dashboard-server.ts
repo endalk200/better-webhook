@@ -10,6 +10,7 @@ import {
 import { CaptureServer } from "./capture-server.js";
 import { ReplayEngine } from "./replay-engine.js";
 import { TemplateManager } from "./template-manager.js";
+import { resolveRuntimeDir } from "./runtime-paths.js";
 import type { WebSocketMessage } from "../types/index.js";
 
 // Type declarations for Bun runtime (only available in standalone binary)
@@ -144,22 +145,6 @@ function createEmbeddedDashboardMiddleware(): {
   };
 
   return { staticMiddleware, spaFallback };
-}
-
-function resolveRuntimeDir(): string {
-  // In bundled CJS output, __dirname points to dist/.
-  if (typeof __dirname !== "undefined") {
-    // eslint-disable-next-line no-undef
-    return __dirname;
-  }
-
-  // In ESM/dev execution, resolve from the entry script location.
-  const entryPath = process.argv[1];
-  if (entryPath) {
-    return path.dirname(path.resolve(entryPath));
-  }
-
-  return process.cwd();
 }
 
 function resolveDashboardDistDir(runtimeDir: string): {
