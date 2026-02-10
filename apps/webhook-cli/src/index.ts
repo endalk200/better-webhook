@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import {
   templates,
   run,
@@ -15,20 +15,51 @@ import {
 // Build-time version injection for standalone binaries (set via --define CLI_VERSION)
 declare const CLI_VERSION: string | undefined;
 
+function getRuntimeDir(): string {
+  // eslint-disable-next-line no-undef
+  if (typeof __dirname !== "undefined") {
+    // eslint-disable-next-line no-undef
+    return __dirname;
+  }
+
+  const entryPath = process.argv[1];
+  if (entryPath) {
+    return path.dirname(path.resolve(entryPath));
+  }
+
+  return process.cwd();
+}
+
 function getVersion(): string {
   // Use build-time injected version if available (standalone binary)
   if (typeof CLI_VERSION !== "undefined") {
     return CLI_VERSION;
   }
+
   // Fall back to reading from package.json (npm install / dev mode)
   try {
-    const packageJsonPath = fileURLToPath(
-      new URL("../package.json", import.meta.url),
-    );
-    const packageJson = JSON.parse(
-      readFileSync(packageJsonPath, { encoding: "utf8" }),
-    );
-    return packageJson.version;
+    const runtimeDir = getRuntimeDir();
+    const candidatePaths = [
+      path.resolve(runtimeDir, "..", "package.json"),
+      path.resolve(runtimeDir, "package.json"),
+      path.resolve(process.cwd(), "package.json"),
+    ];
+
+    for (const packageJsonPath of candidatePaths) {
+      if (!existsSync(packageJsonPath)) {
+        continue;
+      }
+
+      const packageJson = JSON.parse(
+        readFileSync(packageJsonPath, { encoding: "utf8" }),
+      ) as { version?: string };
+
+      if (typeof packageJson.version === "string" && packageJson.version) {
+        return packageJson.version;
+      }
+    }
+
+    return "0.0.0-unknown";
   } catch {
     return "0.0.0-unknown";
   }

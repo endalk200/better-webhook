@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import path from "path";
 import { existsSync, readFileSync } from "fs";
-import { fileURLToPath } from "url";
 import {
   createDashboardApiRouter,
   type DashboardApiOptions,
@@ -147,6 +146,23 @@ function createEmbeddedDashboardMiddleware(): {
   return { staticMiddleware, spaFallback };
 }
 
+function resolveRuntimeDir(): string {
+  // In bundled CJS output, __dirname points to dist/.
+  // eslint-disable-next-line no-undef
+  if (typeof __dirname !== "undefined") {
+    // eslint-disable-next-line no-undef
+    return __dirname;
+  }
+
+  // In ESM/dev execution, resolve from the entry script location.
+  const entryPath = process.argv[1];
+  if (entryPath) {
+    return path.dirname(path.resolve(entryPath));
+  }
+
+  return process.cwd();
+}
+
 function resolveDashboardDistDir(runtimeDir: string): {
   distDir: string;
   indexHtml: string;
@@ -166,8 +182,12 @@ function resolveDashboardDistDir(runtimeDir: string): {
     path.resolve(runtimeDir, "dashboard"),
     // Legacy/unbundled: dist/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "dashboard"),
+    // Dev from src -> dist/dashboard
+    path.resolve(runtimeDir, "..", "dist", "dashboard"),
     // Dev from src/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "..", "dist", "dashboard"),
+    // Dev from src -> apps/dashboard/dist
+    path.resolve(runtimeDir, "..", "..", "dashboard", "dist"),
     // Dev from src/core -> apps/dashboard/dist
     path.resolve(runtimeDir, "..", "..", "..", "dashboard", "dist"),
   ];
@@ -245,14 +265,7 @@ export async function startDashboardServer(
     app.use(staticMiddleware);
     app.get("*", spaFallback);
   } else {
-    // Prefer CJS `__dirname`, but fall back to ESM `import.meta.url`,
-    // while keeping esbuild happy for CJS output.
-    // eslint-disable-next-line no-undef
-    const runtimeDir =
-      typeof __dirname !== "undefined"
-        ? // eslint-disable-next-line no-undef
-          __dirname
-        : path.dirname(fileURLToPath(import.meta.url));
+    const runtimeDir = resolveRuntimeDir();
     const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
       resolveDashboardDistDir(runtimeDir);
 
