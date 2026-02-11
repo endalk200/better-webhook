@@ -64,6 +64,7 @@ function createMockResponse() {
     statusCode: null as number | null,
     jsonBody: null as unknown,
     ended: false,
+    headers: {} as Record<string, string>,
   };
 
   const res: GCPFunctionResponse = {
@@ -79,7 +80,8 @@ function createMockResponse() {
       state.ended = true;
       return this;
     },
-    set(_header: string, _value: string) {
+    set(header: string, value: string) {
+      state.headers[header.toLowerCase()] = value;
       return this;
     },
   };
@@ -106,6 +108,7 @@ describe("toGCPFunction", () => {
       await handler(req, res);
 
       expect(state.statusCode).toBe(405);
+      expect(state.headers.allow).toBe("POST");
       expect((state.jsonBody as { error: string }).error).toBe(
         "Method not allowed",
       );

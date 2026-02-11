@@ -102,7 +102,16 @@ export function toNextJS<TProviderBrand extends string = string>(
   return async (request: Request): Promise<Response> => {
     // Enforce POST method
     if (request.method !== "POST") {
-      return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: {
+            "Content-Type": "application/json",
+            Allow: "POST",
+          },
+        },
+      );
     }
 
     // Read raw body

@@ -82,6 +82,7 @@ describe("toHono", () => {
       const response = await app.request(request);
 
       expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("POST");
       const body = await response.json();
       expect(body.error).toBe("Method not allowed");
     });
@@ -486,6 +487,7 @@ describe("toHonoNode", () => {
     const response = await app.request(request);
 
     expect(response.status).toBe(405);
+    expect(response.headers.get("allow")).toBe("POST");
     const body = await response.json();
     expect(body.error).toBe("Method not allowed");
   });

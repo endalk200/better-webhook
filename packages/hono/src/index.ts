@@ -42,7 +42,7 @@ export type HonoHandler<C extends Context = Context> = (
  * Create a JSON response
  */
 function jsonResponse(
-  body: Record<string, unknown> | null,
+  body: NonNullable<ProcessResult["body"]> | null,
   status: number,
 ): Response {
   if (body === null) {
@@ -122,7 +122,16 @@ export function toHono<
 
   return async (c: C): Promise<Response> => {
     if (c.req.method !== "POST") {
-      return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
+      return new Response(
+        JSON.stringify({ ok: false, error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: {
+            "Content-Type": "application/json",
+            Allow: "POST",
+          },
+        },
+      );
     }
 
     let rawBody: string;
