@@ -29,7 +29,6 @@ declare const STANDALONE_BINARY: boolean | undefined;
 
 // Extend globalThis to include embedded dashboard files (set by binary wrapper)
 declare global {
-  // eslint-disable-next-line no-var
   var embeddedDashboardFiles: Record<string, string> | undefined;
 }
 
@@ -165,6 +164,8 @@ function resolveDashboardDistDir(
   //   .../apps/webhook-cli/dist/dashboard (if CLI was built), OR
   //   .../apps/dashboard/dist (if dashboard was built)
   const candidates = [
+    // Package root fallback -> dist/dashboard
+    path.resolve(runtimeDir, "dist", "dashboard"),
     // Bundled CLI: dist/index.js -> dist/dashboard
     path.resolve(runtimeDir, "dashboard"),
     // Legacy/unbundled: dist/core -> dist/dashboard
@@ -173,6 +174,8 @@ function resolveDashboardDistDir(
     path.resolve(runtimeDir, "..", "dist", "dashboard"),
     // Dev from src/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "..", "dist", "dashboard"),
+    // Dev from package root -> apps/dashboard/dist
+    path.resolve(runtimeDir, "..", "dashboard", "dist"),
     // Dev from src -> apps/dashboard/dist
     path.resolve(runtimeDir, "..", "..", "dashboard", "dist"),
     // Dev from src/core -> apps/dashboard/dist

@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { resolveRuntimeDir } from "./core/runtime-paths.js";
+import { resolveRuntimePackageVersion } from "./core/cli-version.js";
 import {
   templates,
   run,
@@ -20,30 +19,11 @@ function getVersion(): string {
     return CLI_VERSION;
   }
 
-  // Fall back to reading from package.json (npm install / dev mode)
+  // Fall back to reading from the CLI package.json (npm install / dev mode)
   const runtimeDir = resolveRuntimeDir();
-  const candidatePaths = [
-    path.resolve(runtimeDir, "..", "package.json"),
-    path.resolve(runtimeDir, "package.json"),
-    path.resolve(process.cwd(), "package.json"),
-  ];
-
-  for (const packageJsonPath of candidatePaths) {
-    if (!existsSync(packageJsonPath)) {
-      continue;
-    }
-
-    try {
-      const packageJson = JSON.parse(
-        readFileSync(packageJsonPath, { encoding: "utf8" }),
-      ) as { version?: string };
-
-      if (typeof packageJson.version === "string" && packageJson.version) {
-        return packageJson.version;
-      }
-    } catch {
-      continue;
-    }
+  const runtimeVersion = resolveRuntimePackageVersion(runtimeDir);
+  if (runtimeVersion) {
+    return runtimeVersion;
   }
 
   return "0.0.0-unknown";
