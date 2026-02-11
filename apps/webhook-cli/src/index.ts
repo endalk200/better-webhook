@@ -1,8 +1,6 @@
-#!/usr/bin/env node
-
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolveRuntimeDir } from "./core/runtime-paths.js";
+import { resolveRuntimePackageVersion } from "./core/cli-version.js";
 import {
   templates,
   run,
@@ -20,18 +18,15 @@ function getVersion(): string {
   if (typeof CLI_VERSION !== "undefined") {
     return CLI_VERSION;
   }
-  // Fall back to reading from package.json (npm install / dev mode)
-  try {
-    const packageJsonPath = fileURLToPath(
-      new URL("../package.json", import.meta.url),
-    );
-    const packageJson = JSON.parse(
-      readFileSync(packageJsonPath, { encoding: "utf8" }),
-    );
-    return packageJson.version;
-  } catch {
-    return "0.0.0-unknown";
+
+  // Fall back to reading from the CLI package.json (npm install / dev mode)
+  const runtimeDir = resolveRuntimeDir();
+  const runtimeVersion = resolveRuntimePackageVersion(runtimeDir);
+  if (runtimeVersion) {
+    return runtimeVersion;
   }
+
+  return "0.0.0-unknown";
 }
 
 const program = new Command()

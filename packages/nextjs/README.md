@@ -10,9 +10,10 @@ Turn any `better-webhook` handler into a Next.js route handler. Zero configurati
 ```ts
 // app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -51,16 +52,17 @@ npm install @better-webhook/github
 ```ts
 // app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Deploy on push to main
     if (payload.ref === "refs/heads/main") {
       await triggerDeployment();
     }
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     // Comment on new PRs
     if (payload.action === "opened") {
       await postWelcomeComment(payload.pull_request.number);
@@ -102,7 +104,7 @@ Each route is independent with its own secret and handlers.
 Every handler receives a second parameter with metadata about the webhook request:
 
 ```ts
-const webhook = github().event("push", async (payload, context) => {
+const webhook = github().event(push, async (payload, context) => {
   // Access provider info
   console.log(`Provider: ${context.provider}`); // "github"
   console.log(`Event: ${context.eventType}`); // "push"
@@ -136,7 +138,7 @@ Handle errors gracefully:
 
 ```ts
 const webhook = github()
-  .event("push", async (payload, context) => {
+  .event(push, async (payload, context) => {
     console.log(`[${context.eventType}] Deploying...`);
     await deployToProduction(payload);
   })
@@ -203,19 +205,22 @@ The adapter returns appropriate HTTP status codes:
 Works with any `better-webhook` provider:
 
 ```ts
-import { customWebhook, z } from "@better-webhook/core";
+import { customWebhook, defineEvent, z } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
+
+const userCreated = defineEvent({
+  name: "user.created",
+  schema: z.object({
+    userId: z.string(),
+    email: z.string().email(),
+  }),
+  provider: "my-service" as const,
+});
 
 const webhook = customWebhook({
   name: "my-service",
-  schemas: {
-    "user.created": z.object({
-      userId: z.string(),
-      email: z.string().email(),
-    }),
-  },
   getEventType: (headers) => headers["x-event-type"],
-}).event("user.created", async (payload, context) => {
+}).event(userCreated, async (payload, context) => {
   console.log(`[${context.eventType}] New user: ${payload.userId}`);
   await sendWelcomeEmail(payload.email);
 });

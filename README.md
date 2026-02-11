@@ -51,6 +51,7 @@ npm install @better-webhook/ragie
 npm install @better-webhook/nextjs
 npm install @better-webhook/express
 npm install @better-webhook/nestjs
+npm install @better-webhook/hono
 ```
 
 ## 🚀 Quick Start
@@ -82,14 +83,15 @@ better-webhook run github-push --url http://localhost:3000/webhooks/github
 ```ts
 // app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // ✨ Full autocomplete for payload.repository, payload.commits, etc.
     console.log(`${payload.pusher.name} pushed to ${payload.repository.name}`);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       console.log(`New PR #${payload.number}: ${payload.pull_request.title}`);
     }
@@ -151,12 +153,13 @@ better-webhook run github-push \
 ```ts
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   })
   .onError((error, context) => {
@@ -188,6 +191,7 @@ This monorepo contains:
 - **[@better-webhook/nextjs](packages/nextjs/)** - Next.js adapter
 - **[@better-webhook/express](packages/express/)** - Express adapter
 - **[@better-webhook/nestjs](packages/nestjs/)** - NestJS adapter
+- **[@better-webhook/hono](packages/hono/)** - Hono adapter
 
 ### Configuration
 

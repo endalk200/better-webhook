@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import path from "path";
 import { existsSync, readFileSync } from "fs";
-import { fileURLToPath } from "url";
 import {
   createDashboardApiRouter,
   type DashboardApiOptions,
@@ -11,6 +10,7 @@ import {
 import { CaptureServer } from "./capture-server.js";
 import { ReplayEngine } from "./replay-engine.js";
 import { TemplateManager } from "./template-manager.js";
+import { findCliPackageRoot, resolveRuntimeDir } from "./runtime-paths.js";
 import type { WebSocketMessage } from "../types/index.js";
 
 // Type declarations for Bun runtime (only available in standalone binary)
@@ -29,7 +29,6 @@ declare const STANDALONE_BINARY: boolean | undefined;
 
 // Extend globalThis to include embedded dashboard files (set by binary wrapper)
 declare global {
-  // eslint-disable-next-line no-var
   var embeddedDashboardFiles: Record<string, string> | undefined;
 }
 
@@ -147,7 +146,10 @@ function createEmbeddedDashboardMiddleware(): {
   return { staticMiddleware, spaFallback };
 }
 
-function resolveDashboardDistDir(runtimeDir: string): {
+function resolveDashboardDistDir(
+  runtimeDir: string,
+  options: { verbose?: boolean } = {},
+): {
   distDir: string;
   indexHtml: string;
 } {
@@ -161,16 +163,36 @@ function resolveDashboardDistDir(runtimeDir: string): {
   // and we can serve either:
   //   .../apps/webhook-cli/dist/dashboard (if CLI was built), OR
   //   .../apps/dashboard/dist (if dashboard was built)
+  const runtimePackageRoot = findCliPackageRoot(runtimeDir);
+  const includePackageRootDistCandidate =
+    runtimePackageRoot !== undefined && runtimePackageRoot === runtimeDir;
+
   const candidates = [
+    // Package root fallback -> dist/dashboard (only when runtimeDir is package root)
+    ...(includePackageRootDistCandidate
+      ? [path.resolve(runtimeDir, "dist", "dashboard")]
+      : []),
     // Bundled CLI: dist/index.js -> dist/dashboard
     path.resolve(runtimeDir, "dashboard"),
     // Legacy/unbundled: dist/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "dashboard"),
+    // Dev from src -> dist/dashboard
+    path.resolve(runtimeDir, "..", "dist", "dashboard"),
     // Dev from src/core -> dist/dashboard
     path.resolve(runtimeDir, "..", "..", "dist", "dashboard"),
+    // Dev from package root -> apps/dashboard/dist
+    path.resolve(runtimeDir, "..", "dashboard", "dist"),
+    // Dev from src -> apps/dashboard/dist
+    path.resolve(runtimeDir, "..", "..", "dashboard", "dist"),
     // Dev from src/core -> apps/dashboard/dist
     path.resolve(runtimeDir, "..", "..", "..", "dashboard", "dist"),
   ];
+
+  if (options.verbose) {
+    console.debug(
+      `[dashboard] dist resolution candidates: ${candidates.join(", ")}`,
+    );
+  }
 
   for (const distDir of candidates) {
     const indexHtml = path.join(distDir, "index.html");
@@ -194,6 +216,7 @@ export interface DashboardServerOptions extends DashboardApiOptions {
   port?: number;
   captureHost?: string;
   capturePort?: number;
+  verbose?: boolean;
   /**
    * Start the capture server in-process (default: true).
    */
@@ -245,16 +268,9 @@ export async function startDashboardServer(
     app.use(staticMiddleware);
     app.get("*", spaFallback);
   } else {
-    // Prefer CJS `__dirname`, but fall back to ESM `import.meta.url`,
-    // while keeping esbuild happy for CJS output.
-    // eslint-disable-next-line no-undef
-    const runtimeDir =
-      typeof __dirname !== "undefined"
-        ? // eslint-disable-next-line no-undef
-          __dirname
-        : path.dirname(fileURLToPath(import.meta.url));
+    const runtimeDir = resolveRuntimeDir();
     const { distDir: dashboardDistDir, indexHtml: dashboardIndexHtml } =
-      resolveDashboardDistDir(runtimeDir);
+      resolveDashboardDistDir(runtimeDir, { verbose: options.verbose });
 
     app.use(express.static(dashboardDistDir));
 

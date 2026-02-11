@@ -11,9 +11,10 @@ Turn any `better-webhook` handler into a GCP Cloud Functions HTTP handler. Zero 
 // index.ts
 import { http } from "@google-cloud/functions-framework";
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
+const webhook = ragie().event(document_status_updated, async (payload) => {
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 
@@ -57,15 +58,19 @@ npm install @better-webhook/ragie
 // index.ts
 import { http } from "@google-cloud/functions-framework";
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
-  .event("document_status_updated", async (payload) => {
+  .event(document_status_updated, async (payload) => {
     if (payload.status === "ready") {
       await notifyDocumentReady(payload.document_id);
     }
   })
-  .event("connection_sync_finished", async (payload) => {
+  .event(connection_sync_finished, async (payload) => {
     console.log(`Sync ${payload.sync_id} completed`);
   });
 
@@ -77,10 +82,11 @@ http("webhookHandler", toGCPFunction(webhook));
 ```ts
 // index.ts
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
-  "document_status_updated",
+  document_status_updated,
   async (payload) => {
     console.log(`Document ${payload.document_id} status: ${payload.status}`);
   },
@@ -108,7 +114,7 @@ Every handler receives a second parameter with metadata about the webhook reques
 
 ```ts
 const webhook = ragie().event(
-  "document_status_updated",
+  document_status_updated,
   async (payload, context) => {
     // Access provider info
     console.log(`Provider: ${context.provider}`); // "ragie"
@@ -143,7 +149,7 @@ Handle errors gracefully:
 
 ```ts
 const webhook = ragie()
-  .event("document_status_updated", async (payload, context) => {
+  .event(document_status_updated, async (payload, context) => {
     console.log(`[${context.eventType}] Processing document...`);
     await processDocument(payload);
   })
@@ -225,20 +231,23 @@ The adapter returns appropriate HTTP status codes:
 Works with any `better-webhook` provider:
 
 ```ts
-import { customWebhook, z } from "@better-webhook/core";
+import { customWebhook, defineEvent, z } from "@better-webhook/core";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 import { http } from "@google-cloud/functions-framework";
 
+const userCreated = defineEvent({
+  name: "user.created",
+  schema: z.object({
+    userId: z.string(),
+    email: z.string().email(),
+  }),
+  provider: "my-service" as const,
+});
+
 const webhook = customWebhook({
   name: "my-service",
-  schemas: {
-    "user.created": z.object({
-      userId: z.string(),
-      email: z.string().email(),
-    }),
-  },
   getEventType: (headers) => headers["x-event-type"],
-}).event("user.created", async (payload, context) => {
+}).event(userCreated, async (payload, context) => {
   console.log(`[${context.eventType}] New user: ${payload.userId}`);
   await sendWelcomeEmail(payload.email);
 });

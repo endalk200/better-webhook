@@ -142,6 +142,7 @@ export function toGCPFunction<TProviderBrand extends string = string>(
   ): Promise<void> => {
     // Enforce POST method
     if (req.method !== "POST") {
+      res.set("Allow", "POST");
       res.status(405).json({
         ok: false,
         error: "Method not allowed",
@@ -205,7 +206,7 @@ export function toGCPFunction<TProviderBrand extends string = string>(
     }
 
     res.status(result.status).json(
-      result.body || {
+      result.body ?? {
         ok: result.status === 200,
         eventType: result.eventType,
       },

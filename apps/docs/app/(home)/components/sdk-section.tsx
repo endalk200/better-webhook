@@ -11,7 +11,7 @@ import {
   Check,
 } from "lucide-react";
 
-type Framework = "nextjs" | "express" | "nestjs" | "gcp-functions";
+type Framework = "nextjs" | "hono" | "express" | "nestjs" | "gcp-functions";
 type Provider = "github" | "ragie";
 
 const frameworkCode: Record<
@@ -22,15 +22,16 @@ const frameworkCode: Record<
     install: "npm install @better-webhook/github @better-webhook/nextjs",
     filename: "app/api/webhooks/github/route.ts",
     code: `import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Fully typed - payload.repository, payload.commits, etc.
     console.log(\`Push to \${payload.repository.name}\`);
     console.log(\`\${payload.commits.length} commits\`);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       console.log(\`New PR: \${payload.pull_request.title}\`);
     }
@@ -46,15 +47,16 @@ export const POST = toNextJS(webhook);`,
     filename: "src/webhooks.ts",
     code: `import express from "express";
 import { github } from "@better-webhook/github";
+import { push, issues } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(\`Push to \${payload.repository.name}\`);
   })
-  .event("issues", async (payload) => {
+  .event(issues, async (payload) => {
     console.log(\`Issue \${payload.action}: \${payload.issue.title}\`);
   });
 
@@ -67,21 +69,41 @@ app.post(
 
 app.listen(3000);`,
   },
+  hono: {
+    install: "npm install @better-webhook/github @better-webhook/hono",
+    filename: "src/webhooks.ts",
+    code: `import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github()
+  .event(push, async (payload) => {
+    console.log(\`Push to \${payload.repository.name}\`);
+  });
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;`,
+  },
   nestjs: {
     install: "npm install @better-webhook/github @better-webhook/nestjs",
     filename: "src/webhooks.controller.ts",
     code: `import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push, installation } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
   private webhook = github()
-    .event("push", async (payload) => {
+    .event(push, async (payload) => {
       console.log(\`Push to \${payload.repository.name}\`);
     })
-    .event("installation", async (payload) => {
+    .event(installation, async (payload) => {
       console.log(\`App \${payload.action}\`);
     });
 
@@ -97,18 +119,22 @@ export class WebhooksController {
     filename: "index.ts",
     code: `import { http } from "@google-cloud/functions-framework";
 import { ragie } from "@better-webhook/ragie";
+import {
+  document_status_updated,
+  connection_sync_finished,
+} from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
 const webhook = ragie()
-  .event("document_status_updated", async (payload) => {
+  .event(document_status_updated, async (payload) => {
     // Fully typed - payload.document_id, payload.status, etc.
     console.log(\`Document \${payload.document_id} is now \${payload.status}\`);
-    
+
     if (payload.status === "ready") {
       await notifyDocumentReady(payload.document_id);
     }
   })
-  .event("connection_sync_finished", async (payload) => {
+  .event(connection_sync_finished, async (payload) => {
     console.log(\`Sync \${payload.sync_id} completed\`);
   })
   .onError((error, context) => {
@@ -165,9 +191,17 @@ const sdkFeatures = [
     icon: Layers,
     title: "Framework Adapters",
     description:
-      "First-class support for Next.js, Express, NestJS, and GCP Cloud Functions.",
+      "First-class support for Next.js, Hono, Express, NestJS, and GCP Cloud Functions.",
   },
 ];
+
+const frameworkLabels: Record<Framework, string> = {
+  nextjs: "Next.js",
+  hono: "Hono",
+  express: "Express",
+  nestjs: "NestJS",
+  "gcp-functions": "GCP Functions",
+};
 
 export function SDKSection() {
   const [activeFramework, setActiveFramework] = useState<Framework>("nextjs");
@@ -228,20 +262,20 @@ export function SDKSection() {
         <div className="flex justify-center mb-8">
           <div className="lyra-tabs">
             {(
-              ["nextjs", "express", "nestjs", "gcp-functions"] as Framework[]
+              [
+                "nextjs",
+                "hono",
+                "express",
+                "nestjs",
+                "gcp-functions",
+              ] as Framework[]
             ).map((fw) => (
               <button
                 key={fw}
                 onClick={() => setActiveFramework(fw)}
                 className={`lyra-tab ${activeFramework === fw ? "active" : ""}`}
               >
-                {fw === "nextjs"
-                  ? "Next.js"
-                  : fw === "express"
-                    ? "Express"
-                    : fw === "nestjs"
-                      ? "NestJS"
-                      : "GCP Functions"}
+                {frameworkLabels[fw]}
               </button>
             ))}
           </div>

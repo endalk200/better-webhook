@@ -5,7 +5,7 @@ import { Copy, Check, ArrowRight, Terminal, Code2 } from "lucide-react";
 import Link from "next/link";
 
 type Tab = "cli" | "sdk";
-type Framework = "nextjs" | "express" | "nestjs";
+type Framework = "nextjs" | "hono" | "express" | "nestjs";
 
 const cliSteps = [
   {
@@ -42,13 +42,14 @@ const sdkCode: Record<
     install: "npm install @better-webhook/github @better-webhook/nextjs",
     filename: "app/api/webhooks/github/route.ts",
     code: `import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(\`Push to \${payload.repository.name}\`);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       console.log(\`New PR: \${payload.pull_request.title}\`);
     }
@@ -61,12 +62,13 @@ export const POST = toNextJS(webhook);`,
     filename: "src/webhooks.ts",
     code: `import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(\`Push to \${payload.repository.name}\`);
   });
 
@@ -76,22 +78,48 @@ app.post(
   toExpress(webhook)
 );`,
   },
+  hono: {
+    install: "npm install @better-webhook/github @better-webhook/hono",
+    filename: "src/webhooks.ts",
+    code: `import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github()
+  .event(push, async (payload) => {
+    console.log(\`Push to \${payload.repository.name}\`);
+  })
+  .event(pull_request, async (payload) => {
+    if (payload.action === "opened") {
+      console.log(\`New PR: \${payload.pull_request.title}\`);
+    }
+  });
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;`,
+  },
   nestjs: {
     install: "npm install @better-webhook/github @better-webhook/nestjs",
     filename: "src/webhooks.controller.ts",
     code: `import { Controller, Post, Req, Res } from "@nestjs/common";
+import { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
   private webhook = github()
-    .event("push", async (payload) => {
+    .event(push, async (payload) => {
       console.log(\`Push to \${payload.repository.name}\`);
     });
 
   @Post("github")
-  async handleGitHub(@Req() req: any, @Res() res: any) {
+  async handleGitHub(@Req() req: Request, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
     return res.status(result.statusCode).json(result.body);
   }
@@ -101,6 +129,7 @@ export class WebhooksController {
 
 const frameworks: { id: Framework; name: string }[] = [
   { id: "nextjs", name: "Next.js" },
+  { id: "hono", name: "Hono" },
   { id: "express", name: "Express" },
   { id: "nestjs", name: "NestJS" },
 ];

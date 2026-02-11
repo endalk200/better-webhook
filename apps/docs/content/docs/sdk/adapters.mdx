@@ -1,6 +1,6 @@
 ---
 title: Framework Adapters
-description: Integrate Better Webhook with Next.js, Express, NestJS, and GCP Cloud Functions.
+description: Integrate Better Webhook with Next.js, Express, NestJS, GCP Cloud Functions, and Hono.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -36,9 +36,10 @@ The Next.js adapter works with the App Router's route handlers.
 
 ```ts title="app/api/webhooks/github/route.ts"
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -99,11 +100,12 @@ The Express adapter returns a middleware function.
 ```ts title="src/webhooks.ts"
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -140,19 +142,18 @@ app.post(
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toExpress } from "@better-webhook/express";
 
-const githubWebhook = github().event("push", async (payload) => {
+const githubWebhook = github().event(push, async (payload) => {
   // Handle GitHub
 });
 
-const ragieWebhook = ragie().event(
-  "document_status_updated",
-  async (payload) => {
-    // Handle Ragie
-  },
-);
+const ragieWebhook = ragie().event(document_status_updated, async (payload) => {
+  // Handle Ragie
+});
 
 app.post(
   "/webhooks/github",
@@ -197,11 +198,12 @@ The NestJS adapter returns an async function that processes the request and retu
 import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github().event("push", async (payload) => {
+  private webhook = github().event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -295,9 +297,10 @@ The GCP Cloud Functions adapter works with both 1st and 2nd generation Cloud Fun
 ```ts title="index.ts"
 import { http } from "@google-cloud/functions-framework";
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
+const webhook = ragie().event(document_status_updated, async (payload) => {
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 
@@ -308,9 +311,10 @@ http("webhookHandler", toGCPFunction(webhook));
 
 ```ts title="index.ts"
 import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
 import { toGCPFunction } from "@better-webhook/gcp-functions";
 
-const webhook = ragie().event("document_status_updated", async (payload) => {
+const webhook = ragie().event(document_status_updated, async (payload) => {
   console.log(`Document ${payload.document_id} is now ${payload.status}`);
 });
 
@@ -361,6 +365,150 @@ gcloud functions deploy webhookHandler \
 
 ---
 
+## Hono
+
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/hono
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/hono
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/hono
+  ```
+  </Tab>
+</Tabs>
+
+The Hono adapter returns a standard Hono handler and works across runtimes.
+
+### Basic Usage
+
+```ts title="src/webhooks.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event(push, async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;
+```
+
+### Node.js
+
+```ts title="src/index.ts"
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHonoNode } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event(push, async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHonoNode(webhook));
+
+serve(app);
+```
+
+### Cloudflare Workers
+
+```ts title="src/worker.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event(push, async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default app;
+```
+
+### Bun
+
+```ts title="src/index.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event(push, async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+export default {
+  port: 3000,
+  fetch: app.fetch,
+};
+```
+
+### Deno
+
+```ts title="src/main.ts"
+import { Hono } from "hono";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toHono } from "@better-webhook/hono";
+
+const app = new Hono();
+
+const webhook = github().event(push, async (payload) => {
+  console.log(`Push to ${payload.repository.name}`);
+});
+
+app.post("/webhooks/github", toHono(webhook));
+
+Deno.serve(app.fetch);
+```
+
+### Response Behavior
+
+| Status | Condition                                     |
+| ------ | --------------------------------------------- |
+| `200`  | Handler executed successfully                 |
+| `204`  | No handler registered for this event type     |
+| `400`  | Invalid JSON body or schema validation failed |
+| `401`  | Signature verification failed                 |
+| `405`  | Request method is not POST                    |
+| `500`  | Handler threw an error                        |
+
+<Callout type="warn">
+  **Raw Body:** Avoid consuming `c.req.raw` before the adapter runs. If you need
+  the body in middleware, use HonoRequest methods (e.g. `c.req.text()`), which
+  allow the adapter to reconstruct the body via `cloneRawRequest`.
+</Callout>
+
+With `app.post(...)`, non-POST requests may return `404` at the route layer
+before the adapter runs. `405` is returned when the adapter itself receives a
+non-POST request (for example, when mounted via `app.all(...)`).
+
+---
+
 ## Adapter Options
 
 All adapters accept the same options:
@@ -379,7 +527,9 @@ When verifying signatures, the SDK looks for a secret in this order:
 2. **Provider options** — `github({ secret: "..." })`
 3. **Environment variables** — `GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, or `WEBHOOK_SECRET`
 
-If no secret is found, signature verification is skipped.
+If the provider requires verification and no secret is found, the request is
+rejected (typically `401`). Verification is skipped only when the provider is
+explicitly configured with `verification: "disabled"`.
 
 <Callout type="warn">
   Always configure a secret in production. Without signature verification,
@@ -419,6 +569,9 @@ http(
     observer: stats.observer,
   }),
 );
+
+// Hono
+app.post("/webhooks/github", toHono(webhook, { observer: stats.observer }));
 ```
 
 See the [SDK Getting Started](/docs/sdk) page for more details on observability.

@@ -10,11 +10,12 @@ Drop-in middleware that handles signature verification, payload parsing, and typ
 ```ts
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   console.log(`Push to ${payload.repository.name}`);
 });
 
@@ -57,13 +58,14 @@ npm install @better-webhook/github
 ```ts
 import express from "express";
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
 
 const app = express();
 
 // Create your webhook handler
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     const branch = payload.ref.replace("refs/heads/", "");
     console.log(`Push to ${branch} by ${payload.pusher.name}`);
 
@@ -71,7 +73,7 @@ const webhook = github()
       await triggerDeployment();
     }
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       await notifySlack(`New PR: ${payload.pull_request.title}`);
     }
@@ -122,19 +124,27 @@ Handle multiple providers in the same app:
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress } from "@better-webhook/express";
+import { defineEvent, customWebhook } from "@better-webhook/core";
+import { JobSchema } from "./schemas";
 
 // GitHub webhooks
-const githubWebhook = github().event("push", async (payload) => {
+const githubWebhook = github().event(push, async (payload) => {
   console.log("GitHub push:", payload.repository.name);
 });
 
 // Custom internal service
+const jobCompleted = defineEvent({
+  name: "job.completed",
+  schema: JobSchema,
+  provider: "internal" as const,
+});
+
 const internalWebhook = customWebhook({
   name: "internal",
-  schemas: { "job.completed": JobSchema },
   getEventType: (headers) => headers["x-event-type"],
-}).event("job.completed", async (payload) => {
+}).event(jobCompleted, async (payload) => {
   console.log("Job completed:", payload.jobId);
 });
 
@@ -160,7 +170,7 @@ Use the built-in error hooks:
 
 ```ts
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     await riskyOperation(payload);
   })
   .onError((error, context) => {
@@ -198,7 +208,7 @@ Handle signature verification failures:
 
 ```ts
 const webhook = github()
-  .event("push", handler)
+  .event(push, handler)
   .onVerificationFailed((reason, headers) => {
     console.warn("Verification failed:", reason);
     // Alert on potential attacks
@@ -251,9 +261,10 @@ Full type safety with your Express app:
 ```ts
 import express, { Request, Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toExpress, ExpressMiddleware } from "@better-webhook/express";
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   // payload is fully typed
 });
 

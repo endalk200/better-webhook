@@ -9,8 +9,9 @@ Stop wrestling with raw webhook payloads. `better-webhook` gives you fully-typed
 
 ```ts
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 
-const webhook = github().event("push", async (payload) => {
+const webhook = github().event(push, async (payload) => {
   // ✨ payload is fully typed!
   console.log(`${payload.pusher.name} pushed to ${payload.repository.name}`);
 });
@@ -22,7 +23,7 @@ const webhook = github().event("push", async (payload) => {
 - **📝 Fully typed** — TypeScript autocomplete for every event payload
 - **✅ Schema validated** — Zod validation catches malformed webhooks
 - **🔗 Chainable API** — Register multiple handlers with elegant fluent syntax
-- **🎯 Framework adapters** — First-class support for Next.js, Express, NestJS
+- **🎯 Framework adapters** — First-class support for Next.js, Hono, Express, NestJS, GCP Cloud Functions
 
 ## Installation
 
@@ -45,14 +46,15 @@ npm install @better-webhook/github @better-webhook/nextjs
 ```ts
 // app/api/webhooks/github/route.ts
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(`Push to ${payload.repository.full_name}`);
     console.log(`Commits: ${payload.commits.length}`);
   })
-  .event("pull_request", async (payload) => {
+  .event(pull_request, async (payload) => {
     if (payload.action === "opened") {
       console.log(`New PR: ${payload.pull_request.title}`);
     }
@@ -76,7 +78,7 @@ Gracefully handle failures with the built-in error hooks:
 
 ```ts
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     await deployToProduction(payload);
   })
   .onError((error, context) => {
@@ -102,7 +104,7 @@ const webhook = github()
 Every event handler receives a second parameter—`context`—containing metadata about the webhook request. This is useful for logging, debugging, and accessing request details:
 
 ```ts
-const webhook = github().event("push", async (payload, context) => {
+const webhook = github().event(push, async (payload, context) => {
   // Know which provider sent this webhook
   console.log(`Provider: ${context.provider}`); // "github"
 
@@ -143,7 +145,7 @@ The `deliveryId` is extracted from provider-specific headers (e.g., `X-GitHub-De
 ```ts
 const processedIds = new Set<string>();
 
-const webhook = github().event("push", async (payload, context) => {
+const webhook = github().event(push, async (payload, context) => {
   // Skip if we've already processed this webhook
   if (context.deliveryId && processedIds.has(context.deliveryId)) {
     console.log(`Skipping duplicate delivery: ${context.deliveryId}`);
@@ -165,14 +167,14 @@ All handlers for the same event receive the same context object:
 
 ```ts
 const webhook = github()
-  .event("push", async (payload, context) => {
+  .event(push, async (payload, context) => {
     // Log the webhook
     await logger.info(`Received ${context.eventType}`, {
       provider: context.provider,
       receivedAt: context.receivedAt,
     });
   })
-  .event("push", async (payload, context) => {
+  .event(push, async (payload, context) => {
     // Both handlers receive the exact same context
     await processPayload(payload);
   });
@@ -184,15 +186,15 @@ Register multiple handlers for the same event—they run sequentially:
 
 ```ts
 const webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // First: Update database
     await db.commits.insertMany(payload.commits);
   })
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Second: Send notifications
     await slack.notify(`New push to ${payload.repository.name}`);
   })
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     // Third: Trigger CI/CD
     await triggerBuild(payload.after);
   });
@@ -213,10 +215,10 @@ is rejected unless verification is explicitly disabled.
 ```ts
 // Option 1: Environment variable (recommended)
 // Set GITHUB_WEBHOOK_SECRET=your-secret
-const webhook = github().event("push", handler);
+const webhook = github().event(push, handler);
 
 // Option 2: Explicit secret
-const webhook = github({ secret: "your-secret" }).event("push", handler);
+const webhook = github({ secret: "your-secret" }).event(push, handler);
 
 // Option 3: At adapter level
 export const POST = toNextJS(webhook, { secret: "your-secret" });
@@ -231,7 +233,12 @@ Need to handle webhooks from a service we don't have a pre-built provider for? C
 For one-off integrations, use `customWebhook`:
 
 ```ts
-import { customWebhook, createHmacVerifier, z } from "@better-webhook/core";
+import {
+  customWebhook,
+  createHmacVerifier,
+  defineEvent,
+  z,
+} from "@better-webhook/core";
 
 // Define your event schemas with Zod
 const OrderSchema = z.object({
@@ -252,13 +259,20 @@ const RefundSchema = z.object({
 });
 
 // Create your webhook handler
+const orderCreated = defineEvent({
+  name: "order.created",
+  schema: OrderSchema,
+  provider: "my-ecommerce" as const,
+});
+
+const refundRequested = defineEvent({
+  name: "refund.requested",
+  schema: RefundSchema,
+  provider: "my-ecommerce" as const,
+});
+
 const webhook = customWebhook({
   name: "my-ecommerce",
-  schemas: {
-    "order.created": OrderSchema,
-    "order.updated": OrderSchema,
-    "refund.requested": RefundSchema,
-  },
   // Tell us where to find the event type
   getEventType: (headers) => headers["x-webhook-event"],
   // Optional: Extract delivery ID for logging/deduplication
@@ -270,12 +284,12 @@ const webhook = customWebhook({
     signaturePrefix: "sha256=",
   }),
 })
-  .event("order.created", async (payload) => {
+  .event(orderCreated, async (payload) => {
     // payload is typed as OrderSchema!
     console.log(`New order: ${payload.orderId}`);
     await sendConfirmationEmail(payload.customer.email);
   })
-  .event("refund.requested", async (payload) => {
+  .event(refundRequested, async (payload) => {
     // payload is typed as RefundSchema!
     console.log(`Refund requested: ${payload.refundId}`);
   });
@@ -447,7 +461,7 @@ const stats = createWebhookStats();
 
 const webhook = github()
   .observe(stats.observer)
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -514,7 +528,7 @@ const metricsObserver: WebhookObserver = {
   },
 };
 
-const webhook = github().observe(metricsObserver).event("push", handler);
+const webhook = github().observe(metricsObserver).event(push, handler);
 ```
 
 ### Observer via Adapter Options
@@ -542,12 +556,12 @@ const webhook = github()
   .observe(stats.observer) // Track metrics
   .observe(loggingObserver) // Log events
   .observe(tracingObserver) // Add traces
-  .event("push", handler);
+  .event(push, handler);
 
 // Or pass an array
 const webhook = github()
   .observe([stats.observer, loggingObserver])
-  .event("push", handler);
+  .event(push, handler);
 ```
 
 ### Lifecycle Events
@@ -597,7 +611,7 @@ const faultyObserver: WebhookObserver = {
 };
 
 // Webhook still processes successfully even if observer throws
-const webhook = github().observe(faultyObserver).event("push", handler);
+const webhook = github().observe(faultyObserver).event(push, handler);
 ```
 
 ## API Reference

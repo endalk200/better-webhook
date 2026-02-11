@@ -6,6 +6,11 @@ export default defineConfig({
     events: "src/events.ts",
   },
   format: ["esm", "cjs"],
+  outExtension({ format }) {
+    return {
+      js: format === "cjs" ? ".cjs" : ".js",
+    };
+  },
   dts: true,
   clean: true,
   outDir: "dist",

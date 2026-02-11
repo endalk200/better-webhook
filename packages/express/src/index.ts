@@ -61,12 +61,13 @@ export type ExpressMiddleware = (
  * ```ts
  * import express from 'express';
  * import { github } from '@better-webhook/github';
+ * import { push } from '@better-webhook/github/events';
  * import { toExpress } from '@better-webhook/express';
  *
  * const app = express();
  *
  * const webhook = github()
- *   .event('push', async (payload) => {
+ *   .event(push, async (payload) => {
  *     console.log(`Push to ${payload.repository.name}`);
  *   });
  *
@@ -136,7 +137,7 @@ export function toExpress<TProviderBrand extends string = string>(
       }
 
       res.status(result.status).json(
-        result.body || {
+        result.body ?? {
           ok: result.status === 200,
           eventType: result.eventType,
         },

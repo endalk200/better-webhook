@@ -11,11 +11,12 @@ Seamlessly integrate `better-webhook` into your NestJS application with full dec
 import { Controller, Post, Req, Res } from "@nestjs/common";
 import { Response } from "express";
 import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
-  private webhook = github().event("push", async (payload) => {
+  private webhook = github().event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
@@ -77,12 +78,14 @@ npm install @better-webhook/github
 import { Controller, Post, Req, Res, HttpStatus } from "@nestjs/common";
 import { Response } from "express";
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
+import { customWebhook, defineEvent } from "@better-webhook/core";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
 export class WebhooksController {
   private webhook = github()
-    .event("push", async (payload) => {
+    .event(push, async (payload) => {
       const branch = payload.ref.replace("refs/heads/", "");
       console.log(`Push to ${branch}`);
 
@@ -90,7 +93,7 @@ export class WebhooksController {
         await this.deployService.trigger();
       }
     })
-    .event("pull_request", async (payload) => {
+    .event(pull_request, async (payload) => {
       if (payload.action === "opened") {
         await this.notificationService.sendSlack(
           `New PR: ${payload.pull_request.title}`,
@@ -120,6 +123,7 @@ Inject services into your webhook handlers:
 import { Controller, Post, Req, Res, Injectable } from "@nestjs/common";
 import { Response } from "express";
 import { github } from "@better-webhook/github";
+import { push, pull_request } from "@better-webhook/github/events";
 import { toNestJS } from "@better-webhook/nestjs";
 
 @Controller("webhooks")
@@ -132,7 +136,7 @@ export class WebhooksController {
   // Create webhook in getter to access injected services
   private get webhook() {
     return github()
-      .event("push", async (payload) => {
+      .event(push, async (payload) => {
         if (payload.ref === "refs/heads/main") {
           // Use injected service
           await this.deployService.triggerDeployment({
@@ -141,8 +145,8 @@ export class WebhooksController {
           });
         }
       })
-      .event("pull_request", async (payload) => {
-        if (payload.action === "merged") {
+      .event(pull_request, async (payload) => {
+        if (payload.action === "closed" && payload.pull_request.merged) {
           await this.notificationService.notify(
             `PR #${payload.number} merged!`,
           );
@@ -163,17 +167,22 @@ export class WebhooksController {
 Handle different webhook sources in separate controller methods:
 
 ```ts
+const paymentSucceeded = defineEvent({
+  name: "payment.succeeded",
+  schema: PaymentSchema,
+  provider: "stripe" as const,
+});
+
 @Controller("webhooks")
 export class WebhooksController {
-  private githubWebhook = github().event("push", async (payload) => {
+  private githubWebhook = github().event(push, async (payload) => {
     console.log("GitHub push:", payload.repository.name);
   });
 
   private stripeWebhook = customWebhook({
     name: "stripe",
-    schemas: { "payment.succeeded": PaymentSchema },
     getEventType: (headers) => headers["stripe-event-type"],
-  }).event("payment.succeeded", async (payload) => {
+  }).event(paymentSucceeded, async (payload) => {
     console.log("Payment received:", payload.id);
   });
 
@@ -199,7 +208,7 @@ Use built-in error hooks:
 
 ```ts
 private webhook = github()
-  .event("push", async (payload) => {
+  .event(push, async (payload) => {
     await this.riskyOperation(payload);
   })
   .onError((error, context) => {

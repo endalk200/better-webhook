@@ -11,14 +11,15 @@ const footerLinks = {
   ],
   sdk: [
     { name: "SDK Overview", href: "/docs/sdk" },
-    { name: "GitHub Provider", href: "/docs/providers/github" },
-    { name: "Ragie Provider", href: "/docs/providers/ragie" },
+    { name: "Providers", href: "/docs/sdk/providers" },
+    { name: "Adapters", href: "/docs/sdk/adapters" },
     { name: "Custom Providers", href: "/docs/sdk/custom-providers" },
   ],
   frameworks: [
-    { name: "Next.js", href: "/docs/frameworks/nextjs" },
-    { name: "Express", href: "/docs/frameworks/express" },
-    { name: "NestJS", href: "/docs/frameworks/nestjs" },
+    { name: "Next.js", href: "/docs/sdk/adapters#nextjs" },
+    { name: "Hono", href: "/docs/sdk/adapters#hono" },
+    { name: "Express", href: "/docs/sdk/adapters#express" },
+    { name: "NestJS", href: "/docs/sdk/adapters#nestjs" },
   ],
   resources: [
     {
@@ -72,6 +73,10 @@ const packages = [
   {
     name: "@better-webhook/nestjs",
     href: "https://www.npmjs.com/package/@better-webhook/nestjs",
+  },
+  {
+    name: "@better-webhook/hono",
+    href: "https://www.npmjs.com/package/@better-webhook/hono",
   },
 ];
 

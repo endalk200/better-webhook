@@ -24,35 +24,14 @@ const providers = [
     package: "@better-webhook/ragie",
     events: [
       "document_status_updated",
-      "connection_sync_finished",
+      "document_deleted",
       "entity_extracted",
+      "connection_sync_started",
+      "connection_sync_progress",
+      "connection_sync_finished",
     ],
     color: "#ffffff",
     bgColor: "#0d9488",
-  },
-  {
-    name: "Stripe",
-    status: "coming",
-    package: "@better-webhook/stripe",
-    events: ["payment_intent.succeeded", "checkout.session.completed"],
-    color: "#ffffff",
-    bgColor: "#635bff",
-  },
-  {
-    name: "Clerk",
-    status: "coming",
-    package: "@better-webhook/clerk",
-    events: ["user.created", "session.created"],
-    color: "#ffffff",
-    bgColor: "#6c47ff",
-  },
-  {
-    name: "Resend",
-    status: "coming",
-    package: "@better-webhook/resend",
-    events: ["email.sent", "email.delivered"],
-    color: "#ffffff",
-    bgColor: "#000000",
   },
   {
     name: "Custom",
@@ -82,7 +61,7 @@ export function ProviderShowcase() {
         </div>
 
         {/* Provider Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {providers.map((provider) => (
             <div
               key={provider.name}
