@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.9.0
+
+### Minor Changes
+
+- chore: improvement in error handling, body parsing and other stability improvements
+
 ## 3.8.0
 
 ### Minor Changes

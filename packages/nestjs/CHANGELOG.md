@@ -1,5 +1,16 @@
 # @better-webhook/nestjs
 
+## 0.9.0
+
+### Minor Changes
+
+- chore: improvement in error handling, body parsing and other stability improvements
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.9.0
+
 ## 0.8.1
 
 ### Patch Changes
