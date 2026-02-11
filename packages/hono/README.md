@@ -149,10 +149,10 @@ export default {
 ## Deno
 
 ```ts
-import { Hono } from "hono";
-import { github } from "@better-webhook/github";
-import { push } from "@better-webhook/github/events";
-import { toHono } from "@better-webhook/hono";
+import { Hono } from "npm:hono";
+import { github } from "npm:@better-webhook/github";
+import { push } from "npm:@better-webhook/github/events";
+import { toHono } from "npm:@better-webhook/hono";
 
 const app = new Hono();
 
@@ -163,6 +163,20 @@ const webhook = github().event(push, async (payload) => {
 app.post("/webhooks/github", toHono(webhook));
 
 Deno.serve(app.fetch);
+```
+
+If you prefer bare specifiers (`"hono"`, `"@better-webhook/github"`, etc.),
+add mappings in `deno.json`:
+
+```json
+{
+  "imports": {
+    "hono": "npm:hono",
+    "@better-webhook/github": "npm:@better-webhook/github",
+    "@better-webhook/github/events": "npm:@better-webhook/github/events",
+    "@better-webhook/hono": "npm:@better-webhook/hono"
+  }
+}
 ```
 
 ## Raw Body Notes
