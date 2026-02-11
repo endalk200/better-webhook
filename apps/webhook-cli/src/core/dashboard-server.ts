@@ -10,7 +10,7 @@ import {
 import { CaptureServer } from "./capture-server.js";
 import { ReplayEngine } from "./replay-engine.js";
 import { TemplateManager } from "./template-manager.js";
-import { resolveRuntimeDir } from "./runtime-paths.js";
+import { findCliPackageRoot, resolveRuntimeDir } from "./runtime-paths.js";
 import type { WebSocketMessage } from "../types/index.js";
 
 // Type declarations for Bun runtime (only available in standalone binary)
@@ -163,9 +163,15 @@ function resolveDashboardDistDir(
   // and we can serve either:
   //   .../apps/webhook-cli/dist/dashboard (if CLI was built), OR
   //   .../apps/dashboard/dist (if dashboard was built)
+  const runtimePackageRoot = findCliPackageRoot(runtimeDir);
+  const includePackageRootDistCandidate =
+    runtimePackageRoot !== undefined && runtimePackageRoot === runtimeDir;
+
   const candidates = [
-    // Package root fallback -> dist/dashboard
-    path.resolve(runtimeDir, "dist", "dashboard"),
+    // Package root fallback -> dist/dashboard (only when runtimeDir is package root)
+    ...(includePackageRootDistCandidate
+      ? [path.resolve(runtimeDir, "dist", "dashboard")]
+      : []),
     // Bundled CLI: dist/index.js -> dist/dashboard
     path.resolve(runtimeDir, "dashboard"),
     // Legacy/unbundled: dist/core -> dist/dashboard
