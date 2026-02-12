@@ -11,9 +11,7 @@
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
     "composite": false,
-    "incremental": false,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "incremental": false
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]

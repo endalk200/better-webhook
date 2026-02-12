@@ -19,5 +19,5 @@ export default defineConfig({
   minify: false,
   splitting: true,
   treeshake: true,
-  external: ["@nestjs/common", "@nestjs/core", "reflect-metadata"],
+  external: [],
 });
