@@ -367,12 +367,12 @@ export class CaptureServer {
       }
     }
 
-    // Recall.ai realtime webhook endpoints
-    if (
-      headers["webhook-signature"] ||
-      (headers["webhook-id"] && headers["webhook-timestamp"])
-    ) {
-      return "recall";
+    // Recall.ai realtime webhook endpoints (Standard Webhooks + Recall-specific hints)
+    if (this.hasStandardWebhookHeaders(headers)) {
+      const recallUserAgent = this.headerIncludes(headers["user-agent"], "recall");
+      if (recallUserAgent || this.hasRecallStandardWebhookShape(body)) {
+        return "recall";
+      }
     }
 
     // Shopify
@@ -405,8 +405,8 @@ export class CaptureServer {
       return "linear";
     }
 
-    // Svix providers (Recall legacy bot webhooks and Clerk)
     if (headers["svix-signature"]) {
+      // Svix providers (Recall legacy bot webhooks and Clerk)
       if (
         body &&
         typeof body === "object" &&
@@ -416,10 +416,7 @@ export class CaptureServer {
       ) {
         return "recall";
       }
-    }
 
-    // Clerk (Svix)
-    if (headers["svix-signature"]) {
       return "clerk";
     }
 
@@ -437,6 +434,75 @@ export class CaptureServer {
         client.send(data);
       }
     }
+  }
+
+  private hasStandardWebhookHeaders(
+    headers: Record<string, string | string[] | undefined>,
+  ): boolean {
+    return Boolean(
+      headers["webhook-signature"] ||
+        (headers["webhook-id"] && headers["webhook-timestamp"]),
+    );
+  }
+
+  private hasRecallStandardWebhookShape(body: unknown): boolean {
+    if (!body || typeof body !== "object") {
+      return false;
+    }
+
+    const payload = body as Record<string, unknown>;
+    const event = payload.event;
+
+    if (typeof event === "string") {
+      const recallEventPrefixes = [
+        "bot.",
+        "transcript.",
+        "participant_events.",
+      ];
+      if (recallEventPrefixes.some((prefix) => event.startsWith(prefix))) {
+        return true;
+      }
+    }
+
+    if (this.hasRecallResourceKeys(payload)) {
+      return true;
+    }
+
+    const nestedData = payload.data;
+    if (nestedData && typeof nestedData === "object") {
+      return this.hasRecallResourceKeys(nestedData as Record<string, unknown>);
+    }
+
+    return false;
+  }
+
+  private hasRecallResourceKeys(payload: Record<string, unknown>): boolean {
+    return [
+      "bot",
+      "realtime_endpoint",
+      "participant_events",
+      "transcript",
+      "recording",
+    ].some((key) => key in payload);
+  }
+
+  private headerIncludes(
+    headerValue: string | string[] | undefined,
+    searchText: string,
+  ): boolean {
+    const normalizedSearchText = searchText.toLowerCase();
+
+    if (typeof headerValue === "string") {
+      return headerValue.toLowerCase().includes(normalizedSearchText);
+    }
+
+    if (Array.isArray(headerValue)) {
+      return headerValue.some((value) =>
+        value.toLowerCase().includes(normalizedSearchText),
+      );
+    }
+
+    return false;
   }
 
   /**

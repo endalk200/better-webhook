@@ -33,18 +33,18 @@ export const dashboard = new Command()
         return;
       }
 
-      try {
-        const capturePort = Number.parseInt(String(options.capturePort), 10);
-        if (
-          !Number.isFinite(capturePort) ||
-          capturePort < 0 ||
-          capturePort > 65535
-        ) {
-          console.error(chalk.red("Invalid capture port number"));
-          process.exitCode = 1;
-          return;
-        }
+      const capturePort = Number.parseInt(String(options.capturePort), 10);
+      if (
+        !Number.isFinite(capturePort) ||
+        capturePort < 0 ||
+        capturePort > 65535
+      ) {
+        console.error(chalk.red("Invalid capture port number"));
+        process.exitCode = 1;
+        return;
+      }
 
+      try {
         const verbose = Boolean(options.verbose || options.debug);
         const { url, server, capture } = await startDashboardServer({
           host: options.host,
