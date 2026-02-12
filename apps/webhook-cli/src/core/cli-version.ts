@@ -33,7 +33,9 @@ export function resolveRuntimePackageVersion(
     }
 
     visitedRoots.add(cliPackageRoot);
-    const version = readPackageVersion(path.join(cliPackageRoot, "package.json"));
+    const version = readPackageVersion(
+      path.join(cliPackageRoot, "package.json"),
+    );
     if (version) {
       return version;
     }

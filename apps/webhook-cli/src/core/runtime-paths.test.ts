@@ -36,10 +36,18 @@ afterEach(() => {
 describe("findCliPackageRoot", () => {
   it("finds CLI package root from nested directories", () => {
     const tempDir = createTempDir("better-webhook-runtime-paths-");
-    const cliRoot = path.join(tempDir, "node_modules", "@better-webhook", "cli");
+    const cliRoot = path.join(
+      tempDir,
+      "node_modules",
+      "@better-webhook",
+      "cli",
+    );
     const nestedDir = path.join(cliRoot, "dist", "core");
 
-    writePackageJson(cliRoot, { name: "@better-webhook/cli", version: "3.8.0" });
+    writePackageJson(cliRoot, {
+      name: "@better-webhook/cli",
+      version: "3.8.0",
+    });
     mkdirSync(nestedDir, { recursive: true });
 
     expect(findCliPackageRoot(nestedDir)).toBe(realpathSync(cliRoot));

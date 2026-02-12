@@ -203,6 +203,27 @@ describe("ReplayEngine", () => {
       });
     });
 
+    describe("Recall event detection", () => {
+      it("should detect event from body event field", () => {
+        const capture = createCapture({
+          provider: "recall",
+          body: {
+            event: "transcript.data",
+            data: {
+              data: {
+                words: [],
+              },
+            },
+          },
+        });
+        saveCapture(capture);
+
+        const template = engine.captureToTemplate(capture.id);
+
+        expect(template.event).toBe("transcript.data");
+      });
+    });
+
     describe("Shopify event detection", () => {
       it("should detect event from x-shopify-topic header", () => {
         const capture = createCapture({
@@ -549,6 +570,7 @@ describe("ReplayEngine", () => {
           "x-hub-signature-256": "sha256=abc123",
           "stripe-signature": "t=123,v1=abc",
           "x-shopify-hmac-sha256": "abc123",
+          "webhook-signature": "v1,abc123",
         },
       });
       saveCapture(capture);
@@ -560,6 +582,7 @@ describe("ReplayEngine", () => {
       expect(headerKeys).not.toContain("x-hub-signature-256");
       expect(headerKeys).not.toContain("stripe-signature");
       expect(headerKeys).not.toContain("x-shopify-hmac-sha256");
+      expect(headerKeys).not.toContain("webhook-signature");
     });
 
     it("should throw error when capture not found", () => {

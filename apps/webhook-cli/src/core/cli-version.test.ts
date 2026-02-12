@@ -30,10 +30,18 @@ afterEach(() => {
 describe("resolveRuntimePackageVersion", () => {
   it("returns CLI version from the resolved package root", () => {
     const tempDir = createTempDir("better-webhook-cli-version-");
-    const cliRoot = path.join(tempDir, "node_modules", "@better-webhook", "cli");
+    const cliRoot = path.join(
+      tempDir,
+      "node_modules",
+      "@better-webhook",
+      "cli",
+    );
     const runtimeDir = path.join(cliRoot, "dist", "core");
 
-    writePackageJson(cliRoot, { name: "@better-webhook/cli", version: "3.8.0" });
+    writePackageJson(cliRoot, {
+      name: "@better-webhook/cli",
+      version: "3.8.0",
+    });
     mkdirSync(runtimeDir, { recursive: true });
 
     expect(resolveRuntimePackageVersion(runtimeDir)).toBe("3.8.0");
