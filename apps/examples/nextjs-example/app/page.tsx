@@ -2,12 +2,12 @@ export default function Home() {
   return (
     <main style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
       <h1>Better Webhook - Next.js Example</h1>
-      <>
-        This example demonstrates how to use <code>@better-webhook/github</code>{" "}
-        , <code>@better-webhook/ragie</code>, and{" "}
+      <p>
+        This example demonstrates how to use <code>@better-webhook/github</code>,{" "}
+        <code>@better-webhook/ragie</code>, and{" "}
         <code>@better-webhook/recall</code> with{" "}
         <code>@better-webhook/nextjs</code>.
-      </>
+      </p>
 
       <h2>Endpoints</h2>
       <ul>

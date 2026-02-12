@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 import type {
   WebhookProvider,
   GeneratedSignature,

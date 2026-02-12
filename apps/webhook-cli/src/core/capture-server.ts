@@ -451,39 +451,45 @@ export class CaptureServer {
     }
 
     const payload = body as Record<string, unknown>;
-    const event = payload.event;
-
-    if (typeof event === "string") {
-      const recallEventPrefixes = [
-        "bot.",
-        "transcript.",
-        "participant_events.",
-      ];
-      if (recallEventPrefixes.some((prefix) => event.startsWith(prefix))) {
-        return true;
-      }
+    if (this.hasRecallEventPrefix(payload.event)) {
+      return true;
     }
 
-    if (this.hasRecallResourceKeys(payload)) {
+    if (this.hasRecallResourceCombination(payload)) {
       return true;
     }
 
     const nestedData = payload.data;
     if (nestedData && typeof nestedData === "object") {
-      return this.hasRecallResourceKeys(nestedData as Record<string, unknown>);
+      return this.hasRecallResourceCombination(
+        nestedData as Record<string, unknown>,
+      );
     }
 
     return false;
   }
 
-  private hasRecallResourceKeys(payload: Record<string, unknown>): boolean {
-    return [
-      "bot",
-      "realtime_endpoint",
-      "participant_events",
-      "transcript",
-      "recording",
-    ].some((key) => key in payload);
+  private hasRecallEventPrefix(event: unknown): boolean {
+    if (typeof event !== "string") {
+      return false;
+    }
+
+    return ["bot.", "transcript.", "participant_events."].some((prefix) =>
+      event.startsWith(prefix),
+    );
+  }
+
+  private hasRecallResourceCombination(payload: Record<string, unknown>): boolean {
+    const hasRealtimeEndpoint = "realtime_endpoint" in payload;
+    const hasRecording = "recording" in payload;
+    const hasParticipantEvents = "participant_events" in payload;
+    const hasTranscript = "transcript" in payload;
+
+    return (
+      hasRealtimeEndpoint &&
+      hasRecording &&
+      (hasParticipantEvents || hasTranscript)
+    );
   }
 
   private headerIncludes(
