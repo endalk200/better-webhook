@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 type Framework = "nextjs" | "hono" | "express" | "nestjs" | "gcp-functions";
-type Provider = "github" | "ragie";
+type Provider = "github" | "ragie" | "recall";
 
 const frameworkCode: Record<
   Framework,
@@ -171,6 +171,20 @@ const providerInfo: Record<
       "connection_sync_finished",
     ],
     package: "@better-webhook/ragie",
+  },
+  recall: {
+    name: "Recall.ai",
+    events: [
+      "participant_events.join",
+      "participant_events.leave",
+      "participant_events.chat_message",
+      "transcript.data",
+      "transcript.partial_data",
+      "bot.joining_call",
+      "bot.done",
+      "bot.fatal",
+    ],
+    package: "@better-webhook/recall",
   },
 };
 

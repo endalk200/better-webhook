@@ -14,6 +14,7 @@
     "@better-webhook/core": "workspace:*",
     "@better-webhook/github": "workspace:*",
     "@better-webhook/nestjs": "workspace:*",
+    "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",

@@ -13,6 +13,7 @@
     "@better-webhook/core": "workspace:*",
     "@better-webhook/github": "workspace:*",
     "@better-webhook/nextjs": "workspace:*",
+    "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "next": "^16.1.5",
     "react": "^19.0.0",

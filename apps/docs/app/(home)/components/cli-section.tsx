@@ -107,7 +107,7 @@ const cliFeatures = [
     icon: FileCode,
     title: "Templates",
     description:
-      "Download and run community templates for GitHub, Ragie, and more",
+      "Download and run community templates for GitHub, Ragie, Recall.ai, and more",
     command: "better-webhook templates list",
   },
   {
