@@ -40,7 +40,11 @@ function createTestProvider(options?: {
     getDeliveryId(headers: Headers) {
       return headers["x-test-delivery-id"];
     },
-    verify(_rawBody: VerifyRawBody, _headers: Headers, _secret: string): boolean {
+    verify(
+      _rawBody: VerifyRawBody,
+      _headers: Headers,
+      _secret: string,
+    ): boolean {
       return options?.verifyResult ?? true;
     },
   };

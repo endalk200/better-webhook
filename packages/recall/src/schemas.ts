@@ -88,7 +88,8 @@ const RecallBotEventEnvelopeSchema = z.object({
   bot: RecallResourceSchema,
 });
 
-export const RecallParticipantEventSchema = RecallParticipantEventEnvelopeSchema;
+export const RecallParticipantEventSchema =
+  RecallParticipantEventEnvelopeSchema;
 export const RecallParticipantChatMessageEventSchema =
   RecallParticipantChatMessageEnvelopeSchema;
 export const RecallTranscriptDataEventSchema = RecallTranscriptEnvelopeSchema;
@@ -96,7 +97,9 @@ export const RecallTranscriptPartialDataEventSchema =
   RecallTranscriptEnvelopeSchema;
 export const RecallBotEventSchema = RecallBotEventEnvelopeSchema;
 
-export type RecallParticipantEvent = z.infer<typeof RecallParticipantEventSchema>;
+export type RecallParticipantEvent = z.infer<
+  typeof RecallParticipantEventSchema
+>;
 export type RecallParticipantChatMessageEvent = z.infer<
   typeof RecallParticipantChatMessageEventSchema
 >;
