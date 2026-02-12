@@ -130,6 +130,256 @@
       "file": "ragie/ragie-partition_limit_exceeded.json",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#partition_limit_exceeded"
+    },
+    {
+      "id": "recall-participant_events_join",
+      "name": "Recall Participant Events Join",
+      "description": "Recall participant joined event",
+      "provider": "recall",
+      "event": "participant_events.join",
+      "file": "recall/recall-participant_events_join.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_leave",
+      "name": "Recall Participant Events Leave",
+      "description": "Recall participant left event",
+      "provider": "recall",
+      "event": "participant_events.leave",
+      "file": "recall/recall-participant_events_leave.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_update",
+      "name": "Recall Participant Events Update",
+      "description": "Recall participant updated details event",
+      "provider": "recall",
+      "event": "participant_events.update",
+      "file": "recall/recall-participant_events_update.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_speech_on",
+      "name": "Recall Participant Events Speech On",
+      "description": "Recall participant speech on event",
+      "provider": "recall",
+      "event": "participant_events.speech_on",
+      "file": "recall/recall-participant_events_speech_on.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_speech_off",
+      "name": "Recall Participant Events Speech Off",
+      "description": "Recall participant speech off event",
+      "provider": "recall",
+      "event": "participant_events.speech_off",
+      "file": "recall/recall-participant_events_speech_off.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_webcam_on",
+      "name": "Recall Participant Events Webcam On",
+      "description": "Recall participant webcam on event",
+      "provider": "recall",
+      "event": "participant_events.webcam_on",
+      "file": "recall/recall-participant_events_webcam_on.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_webcam_off",
+      "name": "Recall Participant Events Webcam Off",
+      "description": "Recall participant webcam off event",
+      "provider": "recall",
+      "event": "participant_events.webcam_off",
+      "file": "recall/recall-participant_events_webcam_off.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_screenshare_on",
+      "name": "Recall Participant Events Screenshare On",
+      "description": "Recall participant screenshare on event",
+      "provider": "recall",
+      "event": "participant_events.screenshare_on",
+      "file": "recall/recall-participant_events_screenshare_on.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_screenshare_off",
+      "name": "Recall Participant Events Screenshare Off",
+      "description": "Recall participant screenshare off event",
+      "provider": "recall",
+      "event": "participant_events.screenshare_off",
+      "file": "recall/recall-participant_events_screenshare_off.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-participant_events_chat_message",
+      "name": "Recall Participant Events Chat Message",
+      "description": "Recall participant chat message event",
+      "provider": "recall",
+      "event": "participant_events.chat_message",
+      "file": "recall/recall-participant_events_chat_message.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+    },
+    {
+      "id": "recall-transcript_data",
+      "name": "Recall Transcript Data",
+      "description": "Recall transcript data event",
+      "provider": "recall",
+      "event": "transcript.data",
+      "file": "recall/recall-transcript_data.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
+    },
+    {
+      "id": "recall-transcript_partial_data",
+      "name": "Recall Transcript Partial Data",
+      "description": "Recall transcript partial data event",
+      "provider": "recall",
+      "event": "transcript.partial_data",
+      "file": "recall/recall-transcript_partial_data.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
+    },
+    {
+      "id": "recall-bot_joining_call",
+      "name": "Recall Bot Joining Call",
+      "description": "Recall bot joining call status event",
+      "provider": "recall",
+      "event": "bot.joining_call",
+      "file": "recall/recall-bot_joining_call.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_in_waiting_room",
+      "name": "Recall Bot In Waiting Room",
+      "description": "Recall bot in waiting room status event",
+      "provider": "recall",
+      "event": "bot.in_waiting_room",
+      "file": "recall/recall-bot_in_waiting_room.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_in_call_not_recording",
+      "name": "Recall Bot In Call Not Recording",
+      "description": "Recall bot in call not recording status event",
+      "provider": "recall",
+      "event": "bot.in_call_not_recording",
+      "file": "recall/recall-bot_in_call_not_recording.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_recording_permission_allowed",
+      "name": "Recall Bot Recording Permission Allowed",
+      "description": "Recall bot recording permission allowed status event",
+      "provider": "recall",
+      "event": "bot.recording_permission_allowed",
+      "file": "recall/recall-bot_recording_permission_allowed.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_recording_permission_denied",
+      "name": "Recall Bot Recording Permission Denied",
+      "description": "Recall bot recording permission denied status event",
+      "provider": "recall",
+      "event": "bot.recording_permission_denied",
+      "file": "recall/recall-bot_recording_permission_denied.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_in_call_recording",
+      "name": "Recall Bot In Call Recording",
+      "description": "Recall bot in call recording status event",
+      "provider": "recall",
+      "event": "bot.in_call_recording",
+      "file": "recall/recall-bot_in_call_recording.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_call_ended",
+      "name": "Recall Bot Call Ended",
+      "description": "Recall bot call ended status event",
+      "provider": "recall",
+      "event": "bot.call_ended",
+      "file": "recall/recall-bot_call_ended.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_done",
+      "name": "Recall Bot Done",
+      "description": "Recall bot done status event",
+      "provider": "recall",
+      "event": "bot.done",
+      "file": "recall/recall-bot_done.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_fatal",
+      "name": "Recall Bot Fatal",
+      "description": "Recall bot fatal status event",
+      "provider": "recall",
+      "event": "bot.fatal",
+      "file": "recall/recall-bot_fatal.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_breakout_room_entered",
+      "name": "Recall Bot Breakout Room Entered",
+      "description": "Recall bot breakout room entered status event",
+      "provider": "recall",
+      "event": "bot.breakout_room_entered",
+      "file": "recall/recall-bot_breakout_room_entered.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_breakout_room_left",
+      "name": "Recall Bot Breakout Room Left",
+      "description": "Recall bot breakout room left status event",
+      "provider": "recall",
+      "event": "bot.breakout_room_left",
+      "file": "recall/recall-bot_breakout_room_left.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_breakout_room_opened",
+      "name": "Recall Bot Breakout Room Opened",
+      "description": "Recall bot breakout room opened status event",
+      "provider": "recall",
+      "event": "bot.breakout_room_opened",
+      "file": "recall/recall-bot_breakout_room_opened.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "recall-bot_breakout_room_closed",
+      "name": "Recall Bot Breakout Room Closed",
+      "description": "Recall bot breakout room closed status event",
+      "provider": "recall",
+      "event": "bot.breakout_room_closed",
+      "file": "recall/recall-bot_breakout_room_closed.json",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     }
   ]
 }
