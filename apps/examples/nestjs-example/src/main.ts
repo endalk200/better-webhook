@@ -15,12 +15,14 @@ async function bootstrap() {
 🚀 NestJS webhook server running!
    
    Webhook endpoint: http://localhost:${port}/webhooks/github
+   Webhook endpoint: http://localhost:${port}/webhooks/ragie
+   Webhook endpoint: http://localhost:${port}/webhooks/recall
    Health check:     http://localhost:${port}/health
 
    To test with ngrok:
    1. ngrok http ${port}
-   2. Configure GitHub webhook with the ngrok URL + /webhooks/github
-   3. Set GITHUB_WEBHOOK_SECRET environment variable
+   2. Configure webhook providers with the ngrok URL + /webhooks/[provider]
+   3. Set GITHUB_WEBHOOK_SECRET, RAGIE_WEBHOOK_SECRET, and RECALL_WEBHOOK_SECRET
 
    Or test locally with curl:
    curl -X POST http://localhost:${port}/webhooks/github \\

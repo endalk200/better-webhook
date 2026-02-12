@@ -34,6 +34,41 @@ Templates are pre-built webhook payloads that you can use to test your handlers 
 | `ragie-connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded                  |
 | `ragie-partition_limit_exceeded`  | `partition_limit_exceeded`  | Partition document limit exceeded               |
 
+### Recall.ai
+
+| Template ID                                     | Event                                    | Description                             |
+| ----------------------------------------------- | ---------------------------------------- | --------------------------------------- |
+| `recall-participant_events_join`                | `participant_events.join`                | Participant joined event                |
+| `recall-participant_events_leave`               | `participant_events.leave`               | Participant left event                  |
+| `recall-participant_events_update`              | `participant_events.update`              | Participant updated details             |
+| `recall-participant_events_speech_on`           | `participant_events.speech_on`           | Participant speech on                   |
+| `recall-participant_events_speech_off`          | `participant_events.speech_off`          | Participant speech off                  |
+| `recall-participant_events_webcam_on`           | `participant_events.webcam_on`           | Participant webcam on                   |
+| `recall-participant_events_webcam_off`          | `participant_events.webcam_off`          | Participant webcam off                  |
+| `recall-participant_events_screenshare_on`      | `participant_events.screenshare_on`      | Participant screenshare on              |
+| `recall-participant_events_screenshare_off`     | `participant_events.screenshare_off`     | Participant screenshare off             |
+| `recall-participant_events_chat_message`        | `participant_events.chat_message`        | Participant chat message                |
+| `recall-transcript_data`                        | `transcript.data`                        | Transcript final data event             |
+| `recall-transcript_partial_data`                | `transcript.partial_data`                | Transcript partial data event           |
+| `recall-bot_joining_call`                       | `bot.joining_call`                       | Bot joining call status event           |
+| `recall-bot_in_waiting_room`                    | `bot.in_waiting_room`                    | Bot in waiting room status event        |
+| `recall-bot_in_call_not_recording`              | `bot.in_call_not_recording`              | Bot in call not recording status event  |
+| `recall-bot_recording_permission_allowed`       | `bot.recording_permission_allowed`       | Bot recording permission allowed status |
+| `recall-bot_recording_permission_denied`        | `bot.recording_permission_denied`        | Bot recording permission denied status  |
+| `recall-bot_in_call_recording`                  | `bot.in_call_recording`                  | Bot in call recording status event      |
+| `recall-bot_call_ended`                         | `bot.call_ended`                         | Bot call ended status event             |
+| `recall-bot_done`                               | `bot.done`                               | Bot done status event                   |
+| `recall-bot_fatal`                              | `bot.fatal`                              | Bot fatal status event                  |
+| `recall-bot_breakout_room_entered`              | `bot.breakout_room_entered`              | Bot breakout room entered               |
+| `recall-bot_breakout_room_left`                 | `bot.breakout_room_left`                 | Bot breakout room left                  |
+| `recall-bot_breakout_room_opened`               | `bot.breakout_room_opened`               | Bot breakout room opened                |
+| `recall-bot_breakout_room_closed`               | `bot.breakout_room_closed`               | Bot breakout room closed                |
+
+<Callout type="info">
+  Recall template signing expects `RECALL_WEBHOOK_SECRET` to use the `whsec_`
+  format from Recall.
+</Callout>
+
 ## Commands
 
 ### List Remote Templates
@@ -115,7 +150,10 @@ better-webhook run github-push \
 
 <Callout type="info">
   The CLI will automatically look for provider-specific environment variables if
-  you don't pass `--secret`: - `GITHUB_WEBHOOK_SECRET` - `RAGIE_WEBHOOK_SECRET`
+  you don't pass `--secret`:
+  - `GITHUB_WEBHOOK_SECRET`
+  - `RAGIE_WEBHOOK_SECRET`
+  - `RECALL_WEBHOOK_SECRET`
 </Callout>
 
 ### With Custom Headers

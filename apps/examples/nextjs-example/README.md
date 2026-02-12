@@ -1,6 +1,6 @@
 # Next.js Example
 
-A simple Next.js app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, and `@better-webhook/nextjs`.
+A simple Next.js app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/nextjs`.
 
 ## Quick Start
 
@@ -21,6 +21,7 @@ Set environment variables to enable signature verification:
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret \
 RAGIE_WEBHOOK_SECRET=your-ragie-secret \
+RECALL_WEBHOOK_SECRET=your-recall-whsec-secret \
 pnpm --filter @better-webhook/nextjs-example dev
 ```
 
@@ -29,6 +30,7 @@ Or create a `.env.local` file:
 ```env
 GITHUB_WEBHOOK_SECRET=your-github-secret
 RAGIE_WEBHOOK_SECRET=your-ragie-secret
+RECALL_WEBHOOK_SECRET=your-recall-whsec-secret
 ```
 
 ## Endpoints
@@ -37,6 +39,8 @@ RAGIE_WEBHOOK_SECRET=your-ragie-secret
 - `GET /api/webhooks/github` - Returns GitHub endpoint info
 - `POST /api/webhooks/ragie` - Ragie webhook endpoint
 - `GET /api/webhooks/ragie` - Returns Ragie endpoint info
+- `POST /api/webhooks/recall` - Recall.ai webhook endpoint
+- `GET /api/webhooks/recall` - Returns Recall endpoint info
 
 ## Testing Locally
 
@@ -59,8 +63,10 @@ nextjs-example/
 │   │   └── webhooks/
 │   │       ├── github/
 │   │       │   └── route.ts  # GitHub webhook handler
-│   │       └── ragie/
-│   │           └── route.ts  # Ragie webhook handler
+│   │       ├── ragie/
+│   │       │   └── route.ts  # Ragie webhook handler
+│   │       └── recall/
+│   │           └── route.ts  # Recall.ai webhook handler
 │   ├── layout.tsx
 │   └── page.tsx
 ├── next.config.js

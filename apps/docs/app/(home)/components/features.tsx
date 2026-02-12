@@ -30,7 +30,7 @@ const features = [
     icon: Shield,
     title: "Signature Verification",
     description:
-      "Automatic HMAC signature verification for GitHub and Ragie. Timing-safe comparison prevents attacks.",
+      "Automatic signature verification for GitHub, Ragie, and Recall.ai with timing-safe comparison.",
     badge: "SDK",
   },
   {
@@ -65,7 +65,7 @@ const features = [
     icon: FileCode,
     title: "Community Templates",
     description:
-      "Download and run webhook templates for GitHub and Ragie. Real payloads ready to use instantly.",
+      "Download and run webhook templates for GitHub, Ragie, and Recall.ai. Real payloads ready to use instantly.",
     badge: "CLI",
   },
 ];

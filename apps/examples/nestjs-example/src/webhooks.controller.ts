@@ -2,6 +2,34 @@ import { Controller, Post, Get, Req, Res, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { github } from "@better-webhook/github";
 import { push, pull_request, issues } from "@better-webhook/github/events";
+import { recall } from "@better-webhook/recall";
+import {
+  bot_breakout_room_closed,
+  bot_breakout_room_entered,
+  bot_breakout_room_left,
+  bot_breakout_room_opened,
+  bot_call_ended,
+  bot_done,
+  bot_fatal,
+  bot_in_call_not_recording,
+  bot_in_call_recording,
+  bot_in_waiting_room,
+  bot_joining_call,
+  bot_recording_permission_allowed,
+  bot_recording_permission_denied,
+  participant_events_chat_message,
+  participant_events_join,
+  participant_events_leave,
+  participant_events_screenshare_off,
+  participant_events_screenshare_on,
+  participant_events_speech_off,
+  participant_events_speech_on,
+  participant_events_update,
+  participant_events_webcam_off,
+  participant_events_webcam_on,
+  transcript_data,
+  transcript_partial_data,
+} from "@better-webhook/recall/events";
 import { ragie } from "@better-webhook/ragie";
 import {
   document_status_updated,
@@ -19,6 +47,7 @@ interface RawBodyRequest extends Request {
 // Create stats collectors for observability
 const githubStats = createWebhookStats();
 const ragieStats = createWebhookStats();
+const recallStats = createWebhookStats();
 
 // Custom observer for logging webhook lifecycle events
 const loggingObserver: WebhookObserver = {
@@ -114,6 +143,116 @@ export class WebhooksController {
       console.error("🔐 Ragie verification failed:", reason);
     });
 
+  private recallWebhook = recall()
+    .observe(recallStats.observer)
+    .observe(loggingObserver)
+    .event(participant_events_join, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_leave, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_update, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_speech_on, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_speech_off, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_webcam_on, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_webcam_off, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_screenshare_on, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_screenshare_off, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name}`,
+      );
+    })
+    .event(participant_events_chat_message, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: ${payload.data.participant.name} -> ${payload.data.data.text}`,
+      );
+    })
+    .event(transcript_data, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: words=${payload.data.words.length}`,
+      );
+    })
+    .event(transcript_partial_data, async (payload, context) => {
+      console.log(
+        `Recall ${context.eventType}: words=${payload.data.words.length}`,
+      );
+    })
+    .event(bot_joining_call, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_in_waiting_room, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_in_call_not_recording, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_recording_permission_allowed, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_recording_permission_denied, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_in_call_recording, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_call_ended, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_done, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_fatal, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_breakout_room_entered, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_breakout_room_left, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_breakout_room_opened, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .event(bot_breakout_room_closed, async (payload, context) => {
+      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+    })
+    .onError(async (error, context) => {
+      console.error("❌ Recall webhook error:", error.message);
+      console.error("   Event type:", context.eventType);
+    })
+    .onVerificationFailed(async (reason) => {
+      console.error("🔐 Recall verification failed:", reason);
+    });
+
   // Create the handlers with options
   private githubHandler = toNestJS(this.githubWebhook, {
     secret: process.env.GITHUB_WEBHOOK_SECRET,
@@ -126,6 +265,13 @@ export class WebhooksController {
     secret: process.env.RAGIE_WEBHOOK_SECRET,
     onSuccess: (eventType) => {
       console.log(`✅ Successfully processed Ragie ${eventType} event`);
+    },
+  });
+
+  private recallHandler = toNestJS(this.recallWebhook, {
+    secret: process.env.RECALL_WEBHOOK_SECRET,
+    onSuccess: (eventType) => {
+      console.log(`✅ Successfully processed Recall ${eventType} event`);
     },
   });
 
@@ -192,6 +338,59 @@ export class WebhooksController {
     };
   }
 
+  @Post("webhooks/recall")
+  async handleRecallWebhook(
+    @Req() req: RawBodyRequest,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.recallHandler({
+      headers: req.headers as Record<string, string | string[] | undefined>,
+      body: req.body,
+      rawBody: req.rawBody,
+    });
+
+    if (result.body) {
+      res.status(result.statusCode).json(result.body);
+    } else {
+      res.status(result.statusCode).end();
+    }
+  }
+
+  @Get("webhooks/recall")
+  getRecallWebhookInfo(): object {
+    return {
+      status: "ok",
+      endpoint: "/webhooks/recall",
+      supportedEvents: [
+        "participant_events.join",
+        "participant_events.leave",
+        "participant_events.update",
+        "participant_events.speech_on",
+        "participant_events.speech_off",
+        "participant_events.webcam_on",
+        "participant_events.webcam_off",
+        "participant_events.screenshare_on",
+        "participant_events.screenshare_off",
+        "participant_events.chat_message",
+        "transcript.data",
+        "transcript.partial_data",
+        "bot.joining_call",
+        "bot.in_waiting_room",
+        "bot.in_call_not_recording",
+        "bot.recording_permission_allowed",
+        "bot.recording_permission_denied",
+        "bot.in_call_recording",
+        "bot.call_ended",
+        "bot.done",
+        "bot.fatal",
+        "bot.breakout_room_entered",
+        "bot.breakout_room_left",
+        "bot.breakout_room_opened",
+        "bot.breakout_room_closed",
+      ],
+    };
+  }
+
   @Get("health")
   healthCheck(): object {
     return {
@@ -205,6 +404,7 @@ export class WebhooksController {
     return {
       github: githubStats.snapshot(),
       ragie: ragieStats.snapshot(),
+      recall: recallStats.snapshot(),
       timestamp: new Date().toISOString(),
     };
   }

@@ -34,6 +34,21 @@ const providers = [
     bgColor: "#0d9488",
   },
   {
+    name: "Recall.ai",
+    status: "available",
+    package: "@better-webhook/recall",
+    events: [
+      "participant_events.join",
+      "transcript.data",
+      "transcript.partial_data",
+      "bot.joining_call",
+      "bot.done",
+      "bot.fatal",
+    ],
+    color: "#ffffff",
+    bgColor: "#4f46e5",
+  },
+  {
     name: "Custom",
     status: "available",
     package: "@better-webhook/core",

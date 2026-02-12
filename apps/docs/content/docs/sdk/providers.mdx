@@ -1,6 +1,6 @@
 ---
 title: Providers
-description: Documentation for GitHub and Ragie webhook providers with all supported events.
+description: Documentation for GitHub, Ragie, and Recall.ai webhook providers with all supported events.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -416,6 +416,198 @@ import { partition_limit_exceeded } from "@better-webhook/ragie/events";
 ### Signature Verification
 
 Ragie uses HMAC-SHA256 signatures sent in the `X-Signature` header.
+
+---
+
+## Recall.ai
+
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/recall
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/recall
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/recall
+  ```
+  </Tab>
+</Tabs>
+
+```ts
+import { recall } from "@better-webhook/recall";
+import {
+  participant_events_join,
+  transcript_data,
+  bot_done,
+} from "@better-webhook/recall/events";
+
+const webhook = recall({ secret: process.env.RECALL_WEBHOOK_SECRET })
+  .event(participant_events_join, async (payload) => {
+    console.log(payload.data.participant.name);
+  })
+  .event(transcript_data, async (payload) => {
+    console.log(payload.data.words.length);
+  })
+  .event(bot_done, async (payload) => {
+    console.log(payload.data.code);
+  });
+```
+
+<Callout type="info">
+  Recall events use an envelope where the SDK reads event type from `body.event`
+  and validates the unwrapped payload from `body.data`.
+</Callout>
+
+### Events
+
+Import events from `@better-webhook/recall/events`:
+
+```ts
+import {
+  participant_events_join,
+  participant_events_leave,
+  participant_events_update,
+  participant_events_speech_on,
+  participant_events_speech_off,
+  participant_events_webcam_on,
+  participant_events_webcam_off,
+  participant_events_screenshare_on,
+  participant_events_screenshare_off,
+  participant_events_chat_message,
+  transcript_data,
+  transcript_partial_data,
+  bot_joining_call,
+  bot_in_waiting_room,
+  bot_in_call_not_recording,
+  bot_recording_permission_allowed,
+  bot_recording_permission_denied,
+  bot_in_call_recording,
+  bot_call_ended,
+  bot_done,
+  bot_fatal,
+  bot_breakout_room_entered,
+  bot_breakout_room_left,
+  bot_breakout_room_opened,
+  bot_breakout_room_closed,
+} from "@better-webhook/recall/events";
+```
+
+#### participant_events.*
+
+Events:
+
+- `participant_events.join`
+- `participant_events.leave`
+- `participant_events.update`
+- `participant_events.speech_on`
+- `participant_events.speech_off`
+- `participant_events.webcam_on`
+- `participant_events.webcam_off`
+- `participant_events.screenshare_on`
+- `participant_events.screenshare_off`
+- `participant_events.chat_message`
+
+```ts
+import {
+  participant_events_join,
+  participant_events_chat_message,
+} from "@better-webhook/recall/events";
+
+.event(participant_events_join, async (payload) => {
+  console.log(payload.data.participant.id);
+  console.log(payload.data.timestamp.relative);
+})
+.event(participant_events_chat_message, async (payload) => {
+  console.log(payload.data.data.text);
+  console.log(payload.data.data.to);
+})
+```
+
+**Key payload fields:**
+
+- `data.participant` - Participant identity and metadata
+- `data.timestamp` - Absolute and relative event timestamps
+- `data.data` - Event-specific data (chat content for `chat_message`, otherwise often `null`)
+- `realtime_endpoint` / `participant_events` / `recording` / `bot` - Related Recall resources
+
+#### transcript.*
+
+Events:
+
+- `transcript.data`
+- `transcript.partial_data`
+
+```ts
+import {
+  transcript_data,
+  transcript_partial_data,
+} from "@better-webhook/recall/events";
+
+.event(transcript_data, async (payload) => {
+  console.log(payload.data.words.map((word) => word.text).join(" "));
+})
+.event(transcript_partial_data, async (payload) => {
+  console.log(payload.data.words.length);
+})
+```
+
+**Key payload fields:**
+
+- `data.words` - Transcript word segments with relative timestamps
+- `data.participant` - Speaker information
+- `transcript` / `recording` / `bot` - Related Recall resources
+
+#### bot.*
+
+Events:
+
+- `bot.joining_call`
+- `bot.in_waiting_room`
+- `bot.in_call_not_recording`
+- `bot.recording_permission_allowed`
+- `bot.recording_permission_denied`
+- `bot.in_call_recording`
+- `bot.call_ended`
+- `bot.done`
+- `bot.fatal`
+- `bot.breakout_room_entered`
+- `bot.breakout_room_left`
+- `bot.breakout_room_opened`
+- `bot.breakout_room_closed`
+
+```ts
+import {
+  bot_joining_call,
+  bot_fatal,
+} from "@better-webhook/recall/events";
+
+.event(bot_joining_call, async (payload) => {
+  console.log(payload.data.code);
+})
+.event(bot_fatal, async (payload) => {
+  console.log(payload.data.sub_code);
+})
+```
+
+**Key payload fields:**
+
+- `data.code` - Machine-readable bot status code
+- `data.sub_code` - Optional additional reason code
+- `data.updated_at` - Status update timestamp
+- `bot` - Bot resource metadata
+
+### Signature Verification
+
+Recall uses signature headers such as `webhook-id`, `webhook-timestamp`, and
+`webhook-signature` (with `svix-*` compatibility for legacy flows). The SDK
+verifies HMAC-SHA256 signatures automatically when `RECALL_WEBHOOK_SECRET` (or
+`secret`) is provided, and rejects stale timestamps to reduce replay risk.
 
 ---
 
