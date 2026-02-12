@@ -44,7 +44,7 @@ const loggingObserver: WebhookObserver = {
   },
 };
 
-const webhook = recall({ secret: process.env.RECALL_WEBHOOK_SECRET })
+const webhook = recall()
   .observe(stats.observer)
   .observe(loggingObserver)
   .event(participant_events_join, async (payload, context) => {
@@ -223,8 +223,14 @@ const webhook = recall({ secret: process.env.RECALL_WEBHOOK_SECRET })
   })
   .onVerificationFailed(async (reason, headers) => {
     console.error("🔐 Recall verification failed:", reason);
-    console.log("Headers: ", headers);
-    console.log("Received signature header: ", headers["webhook-signature"]);
+    console.log("Verification header presence:", {
+      hasWebhookId: typeof headers["webhook-id"] === "string",
+      hasTimestamp: typeof headers["webhook-timestamp"] === "string",
+      hasSignature: typeof headers["webhook-signature"] === "string",
+    });
+    console.log(
+      "Tip: avoid logging raw signature/header values in production environments.",
+    );
   });
 
 export const POST = toNextJS(webhook, {

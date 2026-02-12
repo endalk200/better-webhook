@@ -21,7 +21,7 @@ Set environment variables to enable signature verification:
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret \
 RAGIE_WEBHOOK_SECRET=your-ragie-secret \
-RECALL_WEBHOOK_SECRET=your-recall-whsec-secret \
+RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64 \
 pnpm --filter @better-webhook/nextjs-example dev
 ```
 
@@ -30,7 +30,7 @@ Or create a `.env.local` file:
 ```env
 GITHUB_WEBHOOK_SECRET=your-github-secret
 RAGIE_WEBHOOK_SECRET=your-ragie-secret
-RECALL_WEBHOOK_SECRET=your-recall-whsec-secret
+RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64
 ```
 
 ## Endpoints

@@ -73,6 +73,22 @@ const loggingObserver: WebhookObserver = {
   },
 };
 
+const logRecallParticipantEvent = async (
+  payload: { data: { participant: { name: string | null } } },
+  context: { eventType: string },
+) => {
+  console.log(
+    `Recall ${context.eventType}: ${payload.data.participant.name ?? "unknown participant"}`,
+  );
+};
+
+const logRecallBotCodeEvent = async (
+  payload: { data: { code: string } },
+  context: { eventType: string },
+) => {
+  console.log(`Recall ${context.eventType}: ${payload.data.code}`);
+};
+
 @Controller()
 export class WebhooksController {
   // Create a GitHub webhook handler with observability
@@ -146,51 +162,15 @@ export class WebhooksController {
   private recallWebhook = recall()
     .observe(recallStats.observer)
     .observe(loggingObserver)
-    .event(participant_events_join, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_leave, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_update, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_speech_on, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_speech_off, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_webcam_on, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_webcam_off, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_screenshare_on, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
-    .event(participant_events_screenshare_off, async (payload, context) => {
-      console.log(
-        `Recall ${context.eventType}: ${payload.data.participant.name}`,
-      );
-    })
+    .event(participant_events_join, logRecallParticipantEvent)
+    .event(participant_events_leave, logRecallParticipantEvent)
+    .event(participant_events_update, logRecallParticipantEvent)
+    .event(participant_events_speech_on, logRecallParticipantEvent)
+    .event(participant_events_speech_off, logRecallParticipantEvent)
+    .event(participant_events_webcam_on, logRecallParticipantEvent)
+    .event(participant_events_webcam_off, logRecallParticipantEvent)
+    .event(participant_events_screenshare_on, logRecallParticipantEvent)
+    .event(participant_events_screenshare_off, logRecallParticipantEvent)
     .event(participant_events_chat_message, async (payload, context) => {
       console.log(
         `Recall ${context.eventType}: ${payload.data.participant.name} -> ${payload.data.data.text}`,
@@ -206,45 +186,19 @@ export class WebhooksController {
         `Recall ${context.eventType}: words=${payload.data.words.length}`,
       );
     })
-    .event(bot_joining_call, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_in_waiting_room, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_in_call_not_recording, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_recording_permission_allowed, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_recording_permission_denied, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_in_call_recording, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_call_ended, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_done, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_fatal, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_breakout_room_entered, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_breakout_room_left, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_breakout_room_opened, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
-    .event(bot_breakout_room_closed, async (payload, context) => {
-      console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-    })
+    .event(bot_joining_call, logRecallBotCodeEvent)
+    .event(bot_in_waiting_room, logRecallBotCodeEvent)
+    .event(bot_in_call_not_recording, logRecallBotCodeEvent)
+    .event(bot_recording_permission_allowed, logRecallBotCodeEvent)
+    .event(bot_recording_permission_denied, logRecallBotCodeEvent)
+    .event(bot_in_call_recording, logRecallBotCodeEvent)
+    .event(bot_call_ended, logRecallBotCodeEvent)
+    .event(bot_done, logRecallBotCodeEvent)
+    .event(bot_fatal, logRecallBotCodeEvent)
+    .event(bot_breakout_room_entered, logRecallBotCodeEvent)
+    .event(bot_breakout_room_left, logRecallBotCodeEvent)
+    .event(bot_breakout_room_opened, logRecallBotCodeEvent)
+    .event(bot_breakout_room_closed, logRecallBotCodeEvent)
     .onError(async (error, context) => {
       console.error("❌ Recall webhook error:", error.message);
       console.error("   Event type:", context.eventType);
