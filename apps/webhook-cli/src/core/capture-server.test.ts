@@ -77,6 +77,49 @@ describe("CaptureServer provider detection", () => {
     expect(await waitForCapturedProvider()).toBeUndefined();
   });
 
+  it("does not classify single generic resource keys as Recall", async () => {
+    const response = await request(`http://127.0.0.1:${port}/webhooks/generic`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "webhook-id": "msg_test_generic_234",
+        "webhook-timestamp": "1731705121",
+        "webhook-signature": "v1,abc123",
+      },
+      body: JSON.stringify({
+        event: "recording.completed",
+        data: { recording: { id: "rec_123" } },
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(await waitForCapturedProvider()).toBeUndefined();
+  });
+
+  it("detects Recall from resource key combinations without event prefix", async () => {
+    const response = await request(`http://127.0.0.1:${port}/webhooks/recall`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "webhook-id": "msg_test_345",
+        "webhook-timestamp": "1731705121",
+        "webhook-signature": "v1,abc123",
+      },
+      body: JSON.stringify({
+        event: "status.updated",
+        data: {
+          realtime_endpoint: { id: "rt_123" },
+          participant_events: { id: "pe_123" },
+          recording: { id: "rec_123" },
+          data: { id: "payload_123" },
+        },
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(await waitForCapturedProvider()).toBe("recall");
+  });
+
   it("detects Recall from svix headers when event starts with bot.", async () => {
     const response = await request(`http://127.0.0.1:${port}/webhooks/recall`, {
       method: "POST",
