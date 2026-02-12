@@ -367,6 +367,14 @@ export class CaptureServer {
       }
     }
 
+    // Recall.ai realtime webhook endpoints
+    if (
+      headers["webhook-signature"] ||
+      (headers["webhook-id"] && headers["webhook-timestamp"])
+    ) {
+      return "recall";
+    }
+
     // Shopify
     if (headers["x-shopify-hmac-sha256"] || headers["x-shopify-topic"]) {
       return "shopify";
@@ -395,6 +403,19 @@ export class CaptureServer {
     // Linear
     if (headers["linear-signature"]) {
       return "linear";
+    }
+
+    // Svix providers (Recall legacy bot webhooks and Clerk)
+    if (headers["svix-signature"]) {
+      if (
+        body &&
+        typeof body === "object" &&
+        "event" in body &&
+        typeof (body as { event: string }).event === "string" &&
+        (body as { event: string }).event.startsWith("bot.")
+      ) {
+        return "recall";
+      }
     }
 
     // Clerk (Svix)

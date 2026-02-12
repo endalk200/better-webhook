@@ -22,6 +22,7 @@ function getSecretEnvVarName(provider: WebhookProvider): string {
     shopify: "SHOPIFY_WEBHOOK_SECRET",
     twilio: "TWILIO_WEBHOOK_SECRET",
     ragie: "RAGIE_WEBHOOK_SECRET",
+    recall: "RECALL_WEBHOOK_SECRET",
     slack: "SLACK_WEBHOOK_SECRET",
     linear: "LINEAR_WEBHOOK_SECRET",
     clerk: "CLERK_WEBHOOK_SECRET",

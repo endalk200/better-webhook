@@ -45,8 +45,34 @@ export async function executeWebhook(
 
   // Generate signature if secret provided
   if (options.secret && options.provider && bodyStr) {
+    const timestampHeader =
+      headers["Webhook-Timestamp"] ||
+      headers["webhook-timestamp"] ||
+      headers["Svix-Timestamp"] ||
+      headers["svix-timestamp"] ||
+      headers["X-Slack-Request-Timestamp"] ||
+      headers["x-slack-request-timestamp"] ||
+      headers["X-Twilio-Email-Event-Webhook-Timestamp"] ||
+      headers["x-twilio-email-event-webhook-timestamp"];
+    const parsedTimestamp = timestampHeader
+      ? Number.parseInt(timestampHeader, 10)
+      : undefined;
+    const timestamp = Number.isFinite(parsedTimestamp)
+      ? parsedTimestamp
+      : undefined;
+
+    const webhookId =
+      headers["Webhook-Id"] ||
+      headers["webhook-id"] ||
+      headers["Svix-Id"] ||
+      headers["svix-id"] ||
+      headers["X-GitHub-Delivery"] ||
+      headers["x-github-delivery"];
+
     const sig = generateSignature(options.provider, bodyStr, options.secret, {
       url: options.url,
+      timestamp,
+      webhookId,
     });
     if (sig) {
       headers[sig.header] = sig.value;

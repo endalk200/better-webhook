@@ -161,6 +161,7 @@ export class ReplayEngine {
       "x-twilio-signature",
       "x-slack-signature",
       "svix-signature",
+      "webhook-signature",
       "linear-signature",
     ];
 
@@ -251,8 +252,19 @@ export class ReplayEngine {
     // Ragie: event type in body
     if (capture.provider === "ragie" && capture.body) {
       const body = capture.body as Record<string, unknown>;
+      if (typeof body.type === "string") {
+        return body.type;
+      }
       if (typeof body.event_type === "string") {
         return body.event_type;
+      }
+    }
+
+    // Recall.ai: event type in body.event
+    if (capture.provider === "recall" && capture.body) {
+      const body = capture.body as Record<string, unknown>;
+      if (typeof body.event === "string") {
+        return body.event;
       }
     }
 

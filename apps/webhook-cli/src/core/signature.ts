@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createHmac } from "crypto";
 import type {
   WebhookProvider,
@@ -184,6 +185,40 @@ export function generateRagieSignature(
 }
 
 /**
+ * Generate a Recall webhook signature
+ * Format: v1,{base64-signature}
+ * Signature: HMAC-SHA256(webhook-id.webhook-timestamp.payload, base64-decoded whsec key)
+ */
+export function generateRecallSignature(
+  payload: string,
+  secret: string,
+  timestamp?: number,
+  webhookId?: string,
+): GeneratedSignature {
+  if (!secret.startsWith("whsec_")) {
+    throw new Error(
+      "Recall signature generation requires a secret with the whsec_ prefix",
+    );
+  }
+
+  const ts = timestamp || Math.floor(Date.now() / 1000);
+  const msgId = webhookId || `msg_${Date.now()}`;
+  const key = Buffer.from(secret.slice("whsec_".length), "base64");
+  if (key.length === 0) {
+    throw new Error("Recall signing secret is invalid");
+  }
+  const signedPayload = `${msgId}.${ts}.${payload}`;
+  const signature = createHmac("sha256", key)
+    .update(signedPayload)
+    .digest("base64");
+
+  return {
+    header: "Webhook-Signature",
+    value: `v1,${signature}`,
+  };
+}
+
+/**
  * Generate webhook signature based on provider
  */
 export function generateSignature(
@@ -221,6 +256,13 @@ export function generateSignature(
       return generateSendGridSignature(payload, secret, timestamp);
     case "ragie":
       return generateRagieSignature(payload, secret);
+    case "recall":
+      return generateRecallSignature(
+        payload,
+        secret,
+        timestamp,
+        options?.webhookId,
+      );
     case "discord":
     case "custom":
     default:
@@ -324,6 +366,14 @@ export function getProviderHeaders(
         { key: "Content-Type", value: "application/json" },
         // Ragie signs requests with an `X-Signature` header.
         // Event type + nonce are included in the JSON body envelope.
+      );
+      break;
+
+    case "recall":
+      headers.push(
+        { key: "Content-Type", value: "application/json" },
+        { key: "Webhook-Id", value: options?.webhookId || `msg_${Date.now()}` },
+        { key: "Webhook-Timestamp", value: String(timestamp) },
       );
       break;
 
