@@ -156,7 +156,11 @@ function createRecallProvider(options?: RecallOptions): Provider<"recall"> {
     getDeliveryId(headers: Headers): string | undefined {
       return headers["webhook-id"] ?? headers["svix-id"];
     },
-    verify(rawBody: string | Buffer, headers: Headers, secret: string): boolean {
+    verify(
+      rawBody: string | Buffer,
+      headers: Headers,
+      secret: string,
+    ): boolean {
       return verifyRecallSignature(rawBody, headers, secret);
     },
     getPayload(body: unknown): unknown {

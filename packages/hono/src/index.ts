@@ -71,7 +71,10 @@ async function readRawBody(c: Context): Promise<string> {
     } catch (cloneError) {
       const cause =
         error instanceof Error && cloneError instanceof Error
-          ? new AggregateError([error, cloneError], "Failed to read request body")
+          ? new AggregateError(
+              [error, cloneError],
+              "Failed to read request body",
+            )
           : cloneError;
       throw new Error("Failed to read request body", { cause });
     }

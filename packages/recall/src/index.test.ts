@@ -165,7 +165,9 @@ const botEnvelope = {
 
 describe("Recall Schemas", () => {
   it("validates participant event payloads", () => {
-    const result = RecallParticipantEventSchema.safeParse(participantEnvelope.data);
+    const result = RecallParticipantEventSchema.safeParse(
+      participantEnvelope.data,
+    );
     expect(result.success).toBe(true);
   });
 
@@ -177,7 +179,9 @@ describe("Recall Schemas", () => {
   });
 
   it("validates transcript payloads", () => {
-    const result = RecallTranscriptDataEventSchema.safeParse(transcriptEnvelope.data);
+    const result = RecallTranscriptDataEventSchema.safeParse(
+      transcriptEnvelope.data,
+    );
     expect(result.success).toBe(true);
   });
 
