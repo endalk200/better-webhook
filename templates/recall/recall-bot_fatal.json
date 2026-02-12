@@ -1,0 +1,24 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "Webhook-Id", "value": "msg_recall_bot_fatal_001" },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+  ],
+  "body": {
+    "event": "bot.fatal",
+    "data": {
+      "data": {
+        "code": "fatal",
+        "sub_code": "meeting_join_failed",
+        "updated_at": "2026-02-12T10:32:00.000Z"
+      },
+      "bot": { "id": "bot_123", "metadata": {} }
+    }
+  },
+  "provider": "recall",
+  "event": "bot.fatal",
+  "description": "Recall bot fatal status event"
+}

@@ -1,0 +1,27 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    {
+      "key": "Webhook-Id",
+      "value": "msg_recall_bot_breakout_room_opened_001"
+    },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+  ],
+  "body": {
+    "event": "bot.breakout_room_opened",
+    "data": {
+      "data": {
+        "code": "breakout_room_opened",
+        "sub_code": null,
+        "updated_at": "2026-02-12T10:35:00.000Z"
+      },
+      "bot": { "id": "bot_123", "metadata": {} }
+    }
+  },
+  "provider": "recall",
+  "event": "bot.breakout_room_opened",
+  "description": "Recall bot breakout room opened status event"
+}

@@ -1,0 +1,27 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    {
+      "key": "Webhook-Id",
+      "value": "msg_recall_bot_recording_permission_allowed_001"
+    },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+  ],
+  "body": {
+    "event": "bot.recording_permission_allowed",
+    "data": {
+      "data": {
+        "code": "recording_permission_allowed",
+        "sub_code": null,
+        "updated_at": "2026-02-12T10:18:00.000Z"
+      },
+      "bot": { "id": "bot_123", "metadata": {} }
+    }
+  },
+  "provider": "recall",
+  "event": "bot.recording_permission_allowed",
+  "description": "Recall bot recording permission allowed status event"
+}
