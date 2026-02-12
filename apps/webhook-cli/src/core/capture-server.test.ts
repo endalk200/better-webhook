@@ -58,6 +58,25 @@ describe("CaptureServer provider detection", () => {
     expect(await waitForCapturedProvider()).toBe("recall");
   });
 
+  it("does not misclassify generic Standard Webhooks payloads as Recall", async () => {
+    const response = await request(`http://127.0.0.1:${port}/webhooks/generic`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "webhook-id": "msg_test_generic_123",
+        "webhook-timestamp": "1731705121",
+        "webhook-signature": "v1,abc123",
+      },
+      body: JSON.stringify({
+        event: "user.created",
+        data: { id: "usr_123" },
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(await waitForCapturedProvider()).toBeUndefined();
+  });
+
   it("detects Recall from svix headers when event starts with bot.", async () => {
     const response = await request(`http://127.0.0.1:${port}/webhooks/recall`, {
       method: "POST",

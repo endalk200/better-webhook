@@ -201,8 +201,8 @@ export function generateRecallSignature(
     );
   }
 
-  const ts = timestamp || Math.floor(Date.now() / 1000);
-  const msgId = webhookId || `msg_${Date.now()}`;
+  const ts = timestamp ?? Math.floor(Date.now() / 1000);
+  const msgId = webhookId ?? `msg_${Date.now()}`;
   const key = Buffer.from(secret.slice("whsec_".length), "base64");
   if (key.length === 0) {
     throw new Error("Recall signing secret is invalid");

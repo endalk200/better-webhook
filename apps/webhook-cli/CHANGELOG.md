@@ -1,5 +1,17 @@
 # @better-webhook/cli
 
+## 3.10.0
+
+### Minor Changes
+
+- feat: initial release of recall.ai provider and logic for handling recall.ai webhooks in CLI
+
+### Patch Changes
+
+- Add a new `@better-webhook/recall` provider with explicit Recall.ai realtime events for `participant_events.*`, `transcript.*`, and `bot.*`, including envelope payload extraction and Recall/Svix-compatible request verification.
+
+  Update the CLI to support Recall provider workflows with `RECALL_WEBHOOK_SECRET`, Recall signature/header generation, capture provider detection, and template replay event extraction.
+
 ## 3.9.0
 
 ### Minor Changes

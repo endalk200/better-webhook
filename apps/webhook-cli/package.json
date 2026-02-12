@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/cli",
-  "version": "3.9.0",
+  "version": "3.10.0",
   "description": "Modern CLI for developing, capturing, and replaying webhooks locally with dashboard UI.",
   "type": "module",
   "bin": {

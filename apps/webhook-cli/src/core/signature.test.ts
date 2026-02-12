@@ -21,7 +21,9 @@ describe("signature helpers", () => {
       );
 
       expect(signature.header).toBe("Webhook-Signature");
-      expect(signature.value.startsWith("v1,")).toBe(true);
+      expect(signature.value).toBe(
+        "v1,/Tpb01gdtwsQOKZ92HQ+9qzHEHG5ZxDXmPhaxPG4yFs=",
+      );
     });
 
     it("throws when secret does not use whsec_ prefix", () => {
@@ -46,7 +48,9 @@ describe("signature helpers", () => {
       );
 
       expect(generated?.header).toBe("Webhook-Signature");
-      expect(generated?.value.startsWith("v1,")).toBe(true);
+      expect(generated?.value).toBe(
+        "v1,1S4uDLnwC3qN9n7rIcbvZeQpikXxcznCf/DzNCSEzXA=",
+      );
     });
   });
 
