@@ -1,0 +1,74 @@
+{
+  "name": "@better-webhook/recall",
+  "version": "0.1.0",
+  "description": "Recall.ai module for better-webhook",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./events": {
+      "types": "./dist/events.d.ts",
+      "import": "./dist/events.js",
+      "require": "./dist/events.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo",
+    "prepublishOnly": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "webhook",
+    "recall",
+    "recall-ai",
+    "webhook-handler",
+    "module",
+    "api"
+  ],
+  "license": "MIT",
+  "author": "Endalk <endalk200>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git",
+    "directory": "packages/recall"
+  },
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@better-webhook/core": "workspace:*",
+    "zod": "4.1.8"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "@better-webhook/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16"
+  }
+}
