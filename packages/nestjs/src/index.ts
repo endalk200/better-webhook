@@ -24,6 +24,9 @@ export interface NestJSAdapterOptions {
   /** Webhook secret for signature verification (overrides provider secret) */
   secret?: string;
 
+  /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
+  maxBodyBytes?: number;
+
   /** Callback invoked on successful webhook processing */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
@@ -160,6 +163,7 @@ export function toNestJS<TProviderBrand extends string = string>(
       headers: req.headers,
       rawBody,
       secret: options?.secret,
+      maxBodyBytes: options?.maxBodyBytes,
     });
 
     // Call onSuccess if applicable

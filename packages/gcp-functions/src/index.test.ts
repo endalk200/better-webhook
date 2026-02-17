@@ -355,6 +355,24 @@ describe("toGCPFunction", () => {
       expect(onSuccess).not.toHaveBeenCalled();
     });
 
+    it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const onSuccess = vi.fn();
+      const handler = toGCPFunction(webhook, { maxBodyBytes: 10, onSuccess });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(413);
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
     it("should ignore errors from onSuccess callback", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});

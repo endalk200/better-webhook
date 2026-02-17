@@ -423,6 +423,23 @@ describe("WebhookBuilder", () => {
 
       expect(builder1).not.toBe(builder2);
     });
+
+    it("should return a new builder instance on .maxBodyBytes()", () => {
+      const provider = createTestProvider();
+      const builder1 = createWebhook(provider);
+      const builder2 = builder1.maxBodyBytes(1024);
+
+      expect(builder1).not.toBe(builder2);
+    });
+
+    it("should throw when .maxBodyBytes() is not a positive integer", () => {
+      const provider = createTestProvider();
+      const builder = createWebhook(provider);
+
+      expect(() => builder.maxBodyBytes(0)).toThrow(RangeError);
+      expect(() => builder.maxBodyBytes(-1)).toThrow(RangeError);
+      expect(() => builder.maxBodyBytes(1.5)).toThrow(RangeError);
+    });
   });
 
   describe("process - status codes", () => {
@@ -476,6 +493,76 @@ describe("WebhookBuilder", () => {
 
       expect(result.status).toBe(400);
       expect(result.body?.error).toBe("Invalid JSON body");
+    });
+
+    it("should return 413 when body exceeds maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+        maxBodyBytes: 10,
+      });
+
+      expect(result.status).toBe(413);
+      expect(result.body?.error).toBe("Payload too large");
+    });
+
+    it("should allow body exactly at maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const rawBody = JSON.stringify(validPayload);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody,
+        secret: "test-secret",
+        maxBodyBytes: Buffer.byteLength(rawBody, "utf-8"),
+      });
+
+      expect(result.status).toBe(200);
+    });
+
+    it("should not enforce body size limit when maxBodyBytes is not set", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const rawBody = JSON.stringify({
+        ...validPayload,
+        padding: "x".repeat(2048),
+      });
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody,
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(200);
+    });
+
+    it("should prioritize process maxBodyBytes over builder maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider)
+        .maxBodyBytes(10)
+        .event(testEvent, () => {});
+      const rawBody = JSON.stringify(validPayload);
+
+      const overriddenResult = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody,
+        secret: "test-secret",
+        maxBodyBytes: 1000,
+      });
+      expect(overriddenResult.status).toBe(200);
+
+      const defaultResult = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody,
+        secret: "test-secret",
+      });
+      expect(defaultResult.status).toBe(413);
     });
 
     it("should return 400 for schema validation failure", async () => {
@@ -1278,6 +1365,7 @@ describe("customWebhook", () => {
 import {
   type WebhookObserver,
   type RequestReceivedEvent,
+  type BodyTooLargeEvent,
   type CompletedEvent,
   type JsonParseFailedEvent,
   type EventUnhandledEvent,
@@ -1500,6 +1588,42 @@ describe("WebhookBuilder observability", () => {
       const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
       expect(completedEvent.status).toBe(204);
       expect(completedEvent.eventType).toBeUndefined();
+    });
+
+    it("should emit onBodyTooLarge and completed with 413", async () => {
+      const provider = createTestProvider();
+      const onBodyTooLarge = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onBodyTooLarge, onCompleted })
+        .event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-413",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+        maxBodyBytes: 10,
+      });
+
+      expect(result.status).toBe(413);
+
+      expect(onBodyTooLarge).toHaveBeenCalledTimes(1);
+      const bodyTooLargeEvent = onBodyTooLarge.mock
+        .calls[0]![0] as BodyTooLargeEvent;
+      expect(bodyTooLargeEvent.type).toBe("body_too_large");
+      expect(bodyTooLargeEvent.maxBodyBytes).toBe(10);
+      expect(bodyTooLargeEvent.deliveryId).toBe("delivery-413");
+      expect(bodyTooLargeEvent.rawBodyBytes).toBeGreaterThan(10);
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(413);
+      expect(completedEvent.success).toBe(false);
+      expect(completedEvent.deliveryId).toBe("delivery-413");
     });
 
     it("should emit onVerificationSucceeded when verification passes", async () => {

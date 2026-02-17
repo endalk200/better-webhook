@@ -224,6 +224,27 @@ const webhook = github({ secret: "your-secret" }).event(push, handler);
 export const POST = toNextJS(webhook, { secret: "your-secret" });
 ```
 
+## Request Body Size Guard
+
+Use `maxBodyBytes` to reject oversized requests with `413` before parsing,
+signature verification, schema validation, and handler execution.
+
+```ts
+const webhook = github()
+  .maxBodyBytes(1024 * 1024) // 1MB builder default
+  .event(push, handler);
+
+// Per-request override (adapters pass this through)
+await webhook.process({
+  headers: { "x-github-event": "push" },
+  rawBody: payload,
+  maxBodyBytes: 2 * 1024 * 1024, // 2MB
+});
+```
+
+Use this as an app-layer guard. Keep proxy/framework request-size limits
+configured for earlier rejection and better memory protection.
+
 ## Creating Custom Providers
 
 Need to handle webhooks from a service we don't have a pre-built provider for? Create your own in minutes:
@@ -573,6 +594,7 @@ Observers can subscribe to these lifecycle events:
 | `onRequestReceived`           | Webhook request starts processing   | `provider`, `rawBodyBytes`                   |
 | `onJsonParseFailed`           | JSON parsing failed                 | `error`, `durationMs`                        |
 | `onEventUnhandled`            | No handler for event type (204)     | `eventType`, `durationMs`                    |
+| `onBodyTooLarge`              | Body exceeds configured limit (413) | `maxBodyBytes`, `rawBodyBytes`               |
 | `onVerificationSucceeded`     | Signature verification passed       | `verifyDurationMs`                           |
 | `onVerificationFailed`        | Signature verification failed       | `reason`, `verifyDurationMs`                 |
 | `onSchemaValidationSucceeded` | Zod schema validation passed        | `validateDurationMs`                         |
@@ -677,6 +699,7 @@ interface WebhookObserver {
   onRequestReceived?: (event: RequestReceivedEvent) => void;
   onJsonParseFailed?: (event: JsonParseFailedEvent) => void;
   onEventUnhandled?: (event: EventUnhandledEvent) => void;
+  onBodyTooLarge?: (event: BodyTooLargeEvent) => void;
   onVerificationSucceeded?: (event: VerificationSucceededEvent) => void;
   onVerificationFailed?: (event: VerificationFailedEvent) => void;
   onSchemaValidationSucceeded?: (event: SchemaValidationSucceededEvent) => void;

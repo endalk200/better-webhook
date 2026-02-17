@@ -309,6 +309,7 @@ export interface ProcessOptions {
   headers: Headers | Record<string, string | string[] | undefined>;
   rawBody: string | Buffer;
   secret?: string;
+  maxBodyBytes?: number;
 }
 
 // ============================================================================
@@ -363,6 +364,15 @@ export interface EventUnhandledEvent extends ObservationBase {
   type: "event_unhandled";
   /** Duration in milliseconds */
   durationMs: number;
+}
+
+/**
+ * Emitted when the request body exceeds the configured size limit
+ */
+export interface BodyTooLargeEvent extends ObservationBase {
+  type: "body_too_large";
+  /** Configured maximum body size in bytes */
+  maxBodyBytes: number;
 }
 
 /**
@@ -464,6 +474,7 @@ export type ObservationEvent =
   | RequestReceivedEvent
   | JsonParseFailedEvent
   | EventUnhandledEvent
+  | BodyTooLargeEvent
   | VerificationSucceededEvent
   | VerificationFailedEvent
   | SchemaValidationSucceededEvent
@@ -506,6 +517,9 @@ export interface WebhookObserver {
 
   /** Called when no handler is registered for the event type */
   onEventUnhandled?: (event: EventUnhandledEvent) => void;
+
+  /** Called when request body exceeds the configured size limit */
+  onBodyTooLarge?: (event: BodyTooLargeEvent) => void;
 
   /** Called when signature verification succeeds */
   onVerificationSucceeded?: (event: VerificationSucceededEvent) => void;
@@ -954,6 +968,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   private readonly handlerEntries: Map<string, HandlerEntry> = new Map();
   private errorHandler?: ErrorHandler;
   private verificationFailedHandler?: VerificationFailedHandler;
+  private maxBodyBytesLimit?: number;
   private readonly observers: WebhookObserver[] = [];
 
   constructor(provider: Provider<TProviderBrand>) {
@@ -1072,11 +1087,28 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   }
 
   /**
+   * Set a maximum request body size in bytes.
+   * Requests larger than this limit return a 413 response.
+   *
+   * @param bytes - Maximum body size in bytes
+   * @returns A new builder instance with the configured limit
+   */
+  maxBodyBytes(bytes: number): WebhookBuilder<TProviderBrand> {
+    if (!Number.isInteger(bytes) || bytes <= 0) {
+      throw new RangeError("maxBodyBytes must be a positive integer");
+    }
+
+    const newBuilder = this.clone();
+    newBuilder.maxBodyBytesLimit = bytes;
+    return newBuilder;
+  }
+
+  /**
    * Process an incoming webhook request
    * Used by adapters to handle the webhook lifecycle
    */
   async process(options: ProcessOptions): Promise<ProcessResult> {
-    const { rawBody, secret } = options;
+    const { rawBody, secret, maxBodyBytes } = options;
     const startTime = performance.now();
     const receivedAt = new Date();
 
@@ -1124,6 +1156,23 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       ...createBase(),
       type: "request_received",
     });
+
+    const effectiveMaxBodyBytes = maxBodyBytes ?? this.maxBodyBytesLimit;
+    const deliveryIdFromHeaders = this.provider.getDeliveryId(headers);
+    if (
+      effectiveMaxBodyBytes !== undefined &&
+      rawBodyBytes > effectiveMaxBodyBytes
+    ) {
+      this.emit("onBodyTooLarge", {
+        ...createBase(undefined, deliveryIdFromHeaders),
+        type: "body_too_large",
+        maxBodyBytes: effectiveMaxBodyBytes,
+      });
+      return complete(413, undefined, deliveryIdFromHeaders, {
+        ok: false,
+        error: "Payload too large",
+      });
+    }
 
     // Parse JSON body early (needed for getEventType and getPayload)
     let parsedBody: unknown;
@@ -1379,6 +1428,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     // Copy error handlers
     newBuilder.errorHandler = this.errorHandler;
     newBuilder.verificationFailedHandler = this.verificationFailedHandler;
+    newBuilder.maxBodyBytesLimit = this.maxBodyBytesLimit;
 
     // Copy observers
     newBuilder.observers.push(...this.observers);

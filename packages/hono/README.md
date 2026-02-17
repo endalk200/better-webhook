@@ -212,6 +212,20 @@ app.post(
 );
 ```
 
+### Body Size Guard
+
+```ts
+app.post(
+  "/webhooks/github",
+  toHono(webhook, {
+    maxBodyBytes: 1024 * 1024, // 1MB
+  }),
+);
+```
+
+Use `maxBodyBytes` as an app-layer guard. Keep edge/proxy limits configured for
+early rejection before the request body is fully buffered.
+
 ### Observer
 
 ```ts
@@ -236,6 +250,7 @@ app.post(
 | `400` | Invalid body or schema validation failed  |
 | `401` | Signature verification failed             |
 | `405` | Request method is not POST                |
+| `413` | Request body exceeds `maxBodyBytes`       |
 | `500` | Handler threw an error                    |
 
 Note: with `app.post(...)`, non-POST requests may return `404` at the routing
