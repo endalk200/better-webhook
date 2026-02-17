@@ -1,3 +1,4 @@
+---
 "@better-webhook/core": minor
 "@better-webhook/express": minor
 "@better-webhook/hono": minor
