@@ -565,6 +565,38 @@ describe("WebhookBuilder", () => {
       expect(defaultResult.status).toBe(413);
     });
 
+    it("should throw when process maxBodyBytes is not a positive integer", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      await expect(
+        webhook.process({
+          headers: { "x-test-event": "test.event" },
+          rawBody: JSON.stringify(validPayload),
+          secret: "test-secret",
+          maxBodyBytes: 0,
+        }),
+      ).rejects.toThrow(RangeError);
+
+      await expect(
+        webhook.process({
+          headers: { "x-test-event": "test.event" },
+          rawBody: JSON.stringify(validPayload),
+          secret: "test-secret",
+          maxBodyBytes: -1,
+        }),
+      ).rejects.toThrow(RangeError);
+
+      await expect(
+        webhook.process({
+          headers: { "x-test-event": "test.event" },
+          rawBody: JSON.stringify(validPayload),
+          secret: "test-secret",
+          maxBodyBytes: 1.5,
+        }),
+      ).rejects.toThrow(RangeError);
+    });
+
     it("should return 400 for schema validation failure", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});
