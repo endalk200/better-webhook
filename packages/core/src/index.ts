@@ -1090,6 +1090,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
    * Set a maximum request body size in bytes.
    * Requests larger than this limit return a 413 response.
    *
+   * Note: This guard runs after adapters/frameworks read the request body.
+   * Keep proxy/framework request size limits configured as the first line of
+   * defense against memory exhaustion.
+   *
    * @param bytes - Maximum body size in bytes
    * @returns A new builder instance with the configured limit
    */
@@ -1115,10 +1119,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     // Normalize headers to lowercase
     const headers = normalizeHeaders(options.headers);
 
-    // Convert raw body to string for consistent handling
-    const bodyString =
-      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
-    const rawBodyBytes = Buffer.byteLength(bodyString, "utf-8");
+    const rawBodyBytes =
+      typeof rawBody === "string"
+        ? Buffer.byteLength(rawBody, "utf-8")
+        : rawBody.byteLength;
 
     // Helper to create base observation fields
     const createBase = (
@@ -1161,6 +1165,12 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     const deliveryIdFromHeaders = this.provider.getDeliveryId(headers);
     if (
       effectiveMaxBodyBytes !== undefined &&
+      (!Number.isInteger(effectiveMaxBodyBytes) || effectiveMaxBodyBytes <= 0)
+    ) {
+      throw new RangeError("maxBodyBytes must be a positive integer");
+    }
+    if (
+      effectiveMaxBodyBytes !== undefined &&
       rawBodyBytes > effectiveMaxBodyBytes
     ) {
       this.emit("onBodyTooLarge", {
@@ -1173,6 +1183,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         error: "Payload too large",
       });
     }
+
+    // Convert raw body to string for consistent downstream handling
+    const bodyString =
+      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
 
     // Parse JSON body early (needed for getEventType and getPayload)
     let parsedBody: unknown;
