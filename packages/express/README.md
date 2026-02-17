@@ -244,6 +244,21 @@ app.post(
 );
 ```
 
+### Body Size Guard
+
+```ts
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json", limit: "1mb" }),
+  toExpress(webhook, {
+    maxBodyBytes: 1024 * 1024, // 1MB
+  }),
+);
+```
+
+Use adapter-level `maxBodyBytes` as an app-layer guard. Keep your
+`express.raw({ limit })` and edge/proxy limits configured as well.
+
 ## Response Codes
 
 | Code  | Meaning                                   |
@@ -252,6 +267,7 @@ app.post(
 | `204` | No handler registered for this event type |
 | `400` | Invalid body or schema validation failed  |
 | `401` | Signature verification failed             |
+| `413` | Request body exceeds `maxBodyBytes`       |
 | `500` | Handler threw an error                    |
 
 ## TypeScript

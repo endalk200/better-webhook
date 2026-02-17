@@ -17,6 +17,9 @@ export interface HonoAdapterOptions {
   /** Webhook secret for signature verification (overrides provider secret) */
   secret?: string;
 
+  /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
+  maxBodyBytes?: number;
+
   /** Callback invoked on successful webhook processing */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
@@ -161,6 +164,7 @@ export function toHono<
         headers,
         rawBody,
         secret: options?.secret,
+        maxBodyBytes: options?.maxBodyBytes,
       });
     } catch {
       return jsonResponse({ ok: false, error: "Internal server error" }, 500);

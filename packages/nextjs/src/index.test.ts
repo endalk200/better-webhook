@@ -215,6 +215,22 @@ describe("toNextJS", () => {
 
       expect(onSuccess).not.toHaveBeenCalled();
     });
+
+    it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const onSuccess = vi.fn();
+      const handler = toNextJS(webhook, { maxBodyBytes: 10, onSuccess });
+
+      const request = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: JSON.stringify(validPayload),
+      });
+      const response = await handler(request);
+
+      expect(response.status).toBe(413);
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
   });
 
   describe("observer option", () => {

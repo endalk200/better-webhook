@@ -53,6 +53,9 @@ export const POST = toNextJS(webhook, {
   // Override the secret (instead of using provider or env var)
   secret: process.env.GITHUB_WEBHOOK_SECRET,
 
+  // Optional app-layer body size guard (bytes)
+  maxBodyBytes: 1024 * 1024, // 1MB
+
   // Callback after successful processing
   onSuccess: async (eventType) => {
     console.log(`Successfully processed ${eventType}`);
@@ -69,6 +72,7 @@ export const POST = toNextJS(webhook, {
 | `400`  | Invalid JSON body or schema validation failed |
 | `401`  | Signature verification failed                 |
 | `405`  | Request method is not POST                    |
+| `413`  | Request body exceeds `maxBodyBytes`           |
 | `500`  | Handler threw an error                        |
 
 ---
@@ -495,6 +499,7 @@ Deno.serve(app.fetch);
 | `400`  | Invalid JSON body or schema validation failed |
 | `401`  | Signature verification failed                 |
 | `405`  | Request method is not POST                    |
+| `413`  | Request body exceeds `maxBodyBytes`           |
 | `500`  | Handler threw an error                        |
 
 <Callout type="warn">
@@ -516,8 +521,14 @@ All adapters accept the same options:
 | Option      | Type                                           | Description                                                                                                       |
 | ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `secret`    | `string`                                       | Webhook secret for signature verification. Overrides provider secret and environment variables.                   |
+| `maxBodyBytes` | `number`                                    | Optional request body size guard in bytes. Returns `413` when exceeded.                                          |
 | `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored.                      |
 | `observer`  | `WebhookObserver \| WebhookObserver[]`         | Observer(s) for webhook lifecycle events. Add metrics, logging, or tracing without modifying the webhook builder. |
+
+<Callout type="warn">
+  Use `maxBodyBytes` as an app-layer guard. Keep edge/proxy and framework body
+  limits configured as well for early rejection and better memory protection.
+</Callout>
 
 ### Secret Resolution Order
 

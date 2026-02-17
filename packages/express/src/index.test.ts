@@ -223,6 +223,24 @@ describe("toExpress", () => {
 
       expect(onSuccess).not.toHaveBeenCalled();
     });
+
+    it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const onSuccess = vi.fn();
+      const middleware = toExpress(webhook, { maxBodyBytes: 10, onSuccess });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "test.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(state.statusCode).toBe(413);
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
   });
 
   describe("error handling", () => {

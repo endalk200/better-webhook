@@ -187,6 +187,17 @@ export const POST = toNextJS(webhook, {
 });
 ```
 
+### Body Size Guard
+
+```ts
+export const POST = toNextJS(webhook, {
+  maxBodyBytes: 1024 * 1024, // 1MB
+});
+```
+
+Use `maxBodyBytes` as an app-layer guard. Keep platform/runtime request-size
+limits configured as the first line of defense.
+
 ## Response Codes
 
 The adapter returns appropriate HTTP status codes:
@@ -198,6 +209,7 @@ The adapter returns appropriate HTTP status codes:
 | `400` | Invalid JSON body or schema validation failed |
 | `401` | Signature verification failed                 |
 | `405` | Method not allowed (non-POST request)         |
+| `413` | Request body exceeds `maxBodyBytes`           |
 | `500` | Handler threw an error                        |
 
 ## Custom Providers

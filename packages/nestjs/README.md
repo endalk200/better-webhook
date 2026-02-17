@@ -280,6 +280,21 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
 }
 ```
 
+### Body Size Guard
+
+```ts
+@Post("github")
+async handleGitHub(@Req() req: any, @Res() res: Response) {
+  const result = await toNestJS(this.webhook, {
+    maxBodyBytes: 1024 * 1024, // 1MB
+  })(req);
+  return res.status(result.statusCode).json(result.body);
+}
+```
+
+Use `maxBodyBytes` as an app-layer guard. Keep proxy/gateway request-size
+limits configured for earlier rejection.
+
 ## Response Codes
 
 | Code  | Meaning                                   |
@@ -288,6 +303,7 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
 | `204` | No handler registered for this event type |
 | `400` | Invalid body or schema validation failed  |
 | `401` | Signature verification failed             |
+| `413` | Request body exceeds `maxBodyBytes`       |
 | `500` | Handler threw an error                    |
 
 ## Module Registration

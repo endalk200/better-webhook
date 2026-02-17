@@ -199,6 +199,20 @@ http(
 );
 ```
 
+### Body Size Guard
+
+```ts
+http(
+  "webhookHandler",
+  toGCPFunction(webhook, {
+    maxBodyBytes: 1024 * 1024, // 1MB
+  }),
+);
+```
+
+Use `maxBodyBytes` as an app-layer guard. Keep gateway and platform request-size
+limits configured to reject large payloads earlier.
+
 ## Raw Body for Signature Verification
 
 For signature verification to work correctly, the raw request body must be available. GCP Cloud Functions with the Functions Framework provide `req.rawBody` automatically.
@@ -224,6 +238,7 @@ The adapter returns appropriate HTTP status codes:
 | `400` | Invalid JSON body or schema validation failed |
 | `401` | Signature verification failed                 |
 | `405` | Method not allowed (non-POST request)         |
+| `413` | Request body exceeds `maxBodyBytes`           |
 | `500` | Handler threw an error                        |
 
 ## Custom Providers
