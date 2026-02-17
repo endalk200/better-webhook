@@ -1,5 +1,12 @@
 # @better-webhook/github
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [89d0e5b]
+  - @better-webhook/core@0.10.0
+
 ## 0.8.0
 
 ### Minor Changes
