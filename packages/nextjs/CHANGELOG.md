@@ -1,5 +1,24 @@
 # @better-webhook/nextjs
 
+## 0.11.0
+
+### Minor Changes
+
+- 89d0e5b: Add an opt-in request body size guard for webhook processing.
+
+  Adapters now accept `maxBodyBytes` and pass it to core processing. When the
+  request body exceeds the configured limit, processing returns `413` with
+  `Payload too large`, emits a new `onBodyTooLarge` observability event, and
+  still emits `onCompleted` with status `413`.
+
+  This change is non-breaking and disabled by default unless `maxBodyBytes` is
+  configured via adapter options, `process()` options, or `WebhookBuilder.maxBodyBytes()`.
+
+### Patch Changes
+
+- Updated dependencies [89d0e5b]
+  - @better-webhook/core@0.11.0
+
 ## 0.10.0
 
 ### Minor Changes
