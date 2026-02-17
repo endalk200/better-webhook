@@ -1162,7 +1162,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     });
 
     const effectiveMaxBodyBytes = maxBodyBytes ?? this.maxBodyBytesLimit;
-    const deliveryIdFromHeaders = this.provider.getDeliveryId(headers);
+    const deliveryId = this.provider.getDeliveryId(headers);
     if (
       effectiveMaxBodyBytes !== undefined &&
       (!Number.isInteger(effectiveMaxBodyBytes) || effectiveMaxBodyBytes <= 0)
@@ -1174,11 +1174,11 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       rawBodyBytes > effectiveMaxBodyBytes
     ) {
       this.emit("onBodyTooLarge", {
-        ...createBase(undefined, deliveryIdFromHeaders),
+        ...createBase(undefined, deliveryId),
         type: "body_too_large",
         maxBodyBytes: effectiveMaxBodyBytes,
       });
-      return complete(413, undefined, deliveryIdFromHeaders, {
+      return complete(413, undefined, deliveryId, {
         ok: false,
         error: "Payload too large",
       });
@@ -1210,7 +1210,6 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
 
     // Get event type (pass parsed body for providers that extract type from body)
     const eventType = this.provider.getEventType(headers, parsedBody);
-    const deliveryId = this.provider.getDeliveryId(headers);
 
     // No event type or no handlers for this event → 204
     if (!eventType || !this.handlerEntries.has(eventType)) {
