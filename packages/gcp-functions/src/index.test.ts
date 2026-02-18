@@ -270,7 +270,7 @@ describe("toGCPFunction", () => {
       expect((state.jsonBody as { ok: boolean }).ok).toBe(true);
     });
 
-    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+    it("should pass through 409 status from process() (for duplicate delivery responses)", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});
       const processSpy = vi.spyOn(webhook, "process");
@@ -285,21 +285,32 @@ describe("toGCPFunction", () => {
         body: { ok: false, error: "Duplicate webhook delivery" },
       });
       const handler = toGCPFunction(webhook);
+      const createDuplicateReq = () =>
+        createMockRequest({
+          headers: {
+            "x-test-event": "test.event",
+            "x-test-delivery-id": "delivery-duplicate",
+          },
+          body: Buffer.from(JSON.stringify(validPayload)),
+        });
 
-      const req = createMockRequest({
-        headers: {
-          "x-test-event": "test.event",
-          "x-test-delivery-id": "delivery-duplicate",
-        },
-        body: Buffer.from(JSON.stringify(validPayload)),
-      });
-      const { res, state } = createMockResponse();
+      try {
+        const {
+          res: firstRes,
+          state: firstState,
+        } = createMockResponse();
+        await handler(createDuplicateReq(), firstRes);
+        expect(firstState.statusCode).toBe(200);
 
-      await handler(req, res);
-      expect(state.statusCode).toBe(200);
-
-      await handler(req, res);
-      expect(state.statusCode).toBe(409);
+        const {
+          res: secondRes,
+          state: secondState,
+        } = createMockResponse();
+        await handler(createDuplicateReq(), secondRes);
+        expect(secondState.statusCode).toBe(409);
+      } finally {
+        processSpy.mockRestore();
+      }
     });
 
     it("should return 400 for invalid JSON body", async () => {

@@ -57,15 +57,13 @@ const webhook = github().event(push, async (payload) => {
 export const POST = toNextJS(webhook);
 ```
 
-## Documentation (source of truth)
+## Documentation
 
-- **Docs site**: [better-webhook.dev](https://better-webhook.dev)
-- **CLI docs**: [better-webhook.dev/docs/cli](https://better-webhook.dev/docs/cli)
-- **SDK docs**: [better-webhook.dev/docs/sdk](https://better-webhook.dev/docs/sdk)
-- **Command reference**: [`apps/webhook-cli/README.md`](apps/webhook-cli/README.md)
-- **Core SDK reference**: [`packages/core/README.md`](packages/core/README.md)
+- **Docs source**: [`apps/docs`](apps/docs)
+- **CLI docs**: [`apps/webhook-cli/README.md`](apps/webhook-cli/README.md)
+- **SDK docs**: [`packages/core/README.md`](packages/core/README.md)
 
-For deep details, use the docs site and package-level READMEs. The root README stays intentionally lightweight.
+For deep details, use the docs source and package-level READMEs. The root README stays intentionally lightweight.
 
 ## Security behavior notes
 

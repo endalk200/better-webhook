@@ -16,7 +16,6 @@ import {
   type Headers,
   type HandlerContext,
   type ReplayContext,
-  type WebhookEvent,
 } from "./index.js";
 
 // ============================================================================
@@ -628,6 +627,60 @@ describe("WebhookBuilder", () => {
 
       expect(result.status).toBe(401);
       expect(result.body?.error).toBe("Missing webhook secret");
+    });
+
+    it("should not call provider replay context extraction when replay protection is disabled", async () => {
+      const getReplayContext = vi.fn(() => {
+        throw new Error("replay context should not run");
+      });
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getReplayContext,
+      };
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(200);
+      expect(getReplayContext).not.toHaveBeenCalled();
+    });
+
+    it("should return 500 when provider replay context extraction throws", async () => {
+      const replayError = new Error("replay context failed");
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getReplayContext() {
+          throw replayError;
+        },
+      };
+      const onError = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .event(testEvent, () => {})
+        .onError(onError);
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "replay-context-error",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Replay protection failed");
+      expect(onError).toHaveBeenCalledWith(
+        replayError,
+        expect.objectContaining({
+          eventType: "test.event",
+          payload: validPayload,
+        }),
+      );
     });
 
     it("should return 409 when replay protection detects duplicates", async () => {

@@ -133,7 +133,8 @@ describe("toExpress", () => {
       await middleware(req as Request, res as Response);
 
       expect(state.statusCode).toBe(400);
-      expect((state.jsonBody as any).error).toContain("raw");
+      const errorBody = state.jsonBody as { error?: string };
+      expect(errorBody.error).toContain("raw");
     });
   });
 
@@ -185,10 +186,11 @@ describe("toExpress", () => {
       await middleware(req as Request, res as Response);
 
       expect(state.statusCode).toBe(200);
-      expect((state.jsonBody as any).ok).toBe(true);
+      const successBody = state.jsonBody as { ok?: boolean };
+      expect(successBody.ok).toBe(true);
     });
 
-    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+    it("should pass through 409 status from process() (for duplicate delivery responses)", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});
       const processSpy = vi.spyOn(webhook, "process");
@@ -203,21 +205,32 @@ describe("toExpress", () => {
         body: { ok: false, error: "Duplicate webhook delivery" },
       });
       const middleware = toExpress(webhook);
+      const createDuplicateReq = () =>
+        createMockRequest({
+          headers: {
+            "x-test-event": "test.event",
+            "x-test-delivery-id": "delivery-duplicate",
+          },
+          body: Buffer.from(JSON.stringify(validPayload)),
+        });
 
-      const req = createMockRequest({
-        headers: {
-          "x-test-event": "test.event",
-          "x-test-delivery-id": "delivery-duplicate",
-        },
-        body: Buffer.from(JSON.stringify(validPayload)),
-      });
-      const { res, state } = createMockResponse();
+      try {
+        const { res: firstRes, state: firstState } = createMockResponse();
+        await middleware(
+          createDuplicateReq() as Request,
+          firstRes as Response,
+        );
+        expect(firstState.statusCode).toBe(200);
 
-      await middleware(req as Request, res as Response);
-      expect(state.statusCode).toBe(200);
-
-      await middleware(req as Request, res as Response);
-      expect(state.statusCode).toBe(409);
+        const { res: secondRes, state: secondState } = createMockResponse();
+        await middleware(
+          createDuplicateReq() as Request,
+          secondRes as Response,
+        );
+        expect(secondState.statusCode).toBe(409);
+      } finally {
+        processSpy.mockRestore();
+      }
     });
   });
 
@@ -288,9 +301,6 @@ describe("toExpress", () => {
       });
       const { res, state } = createMockResponse();
       const next = vi.fn();
-
-      // Force an error by making body undefined
-      (req as any).body = undefined;
 
       await middleware(req as Request, res as Response, next);
 

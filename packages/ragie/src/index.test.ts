@@ -570,13 +570,13 @@ describe("ragie()", () => {
 
     it("should reject envelopes missing nonce for handled events", async () => {
       const secret = "test-secret";
-      const payloadWithoutNonce = {
+      const payloadWithUndefinedNonce = {
         ...validDocumentStatusUpdatedPayload,
         nonce: undefined,
       };
       const envelope = {
         type: "document_status_updated",
-        payload: payloadWithoutNonce,
+        payload: payloadWithUndefinedNonce,
       };
       const body = JSON.stringify(envelope);
       const handler = vi.fn();
@@ -597,13 +597,13 @@ describe("ragie()", () => {
 
     it("should reject envelopes with non-string nonce for handled events", async () => {
       const secret = "test-secret";
-      const payloadWithoutNonce = {
+      const payloadWithUndefinedNonce = {
         ...validDocumentStatusUpdatedPayload,
         nonce: undefined,
       };
       const envelope = {
         type: "document_status_updated",
-        payload: payloadWithoutNonce,
+        payload: payloadWithUndefinedNonce,
         nonce: 12345,
       };
       const body = JSON.stringify(envelope);

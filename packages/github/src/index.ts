@@ -3,6 +3,7 @@ import {
   WebhookBuilder,
   type Provider,
   type Headers,
+  type ProviderReplayContext,
 } from "@better-webhook/core";
 
 // Re-export types for provider brand (lightweight, no runtime import)
@@ -67,9 +68,12 @@ function createGitHubProvider(options?: GitHubOptions): Provider<"github"> {
       return headers["x-github-delivery"];
     },
 
-    getReplayContext(headers: Headers) {
+    getReplayContext(
+      headers: Headers,
+      _body?: unknown,
+    ): ProviderReplayContext {
       return {
-        replayKey: headers["x-github-delivery"],
+        replayKey: this.getDeliveryId(headers),
       };
     },
 

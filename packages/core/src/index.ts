@@ -1776,14 +1776,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       });
     }
 
-    const providerReplayContext = this.provider.getReplayContext?.(
-      headers,
-      parsedBody,
-    );
     if (this.replayProtection) {
       const replayPolicy = this.replayProtection.policy;
       const replayStore = this.replayProtection.store;
       try {
+        const providerReplayContext = this.provider.getReplayContext?.(
+          headers,
+          parsedBody,
+        );
         const replayContext: ReplayContext = {
           provider: this.provider.name,
           eventType,

@@ -19,3 +19,14 @@ When filing an issue, include:
 
 For vulnerabilities, do not open a public issue.
 Follow the process in `SECURITY.md`.
+
+## Code of Conduct reports (private)
+
+To report harassment or other Code of Conduct violations privately, send a
+private security/contact request by email to `eb808826@gmail.com`.
+
+Include:
+
+- A summary of what happened
+- Links/screenshots or other supporting context
+- Your preferred follow-up contact method

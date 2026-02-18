@@ -3,6 +3,7 @@ import {
   WebhookBuilder,
   type Provider,
   type Headers,
+  type ProviderReplayContext,
 } from "@better-webhook/core";
 
 // Re-export types for provider brand (lightweight, no runtime import)
@@ -99,11 +100,17 @@ function createRagieProvider(options?: RagieOptions): Provider<"ragie"> {
       return body;
     },
 
-    getReplayContext(_headers: Headers, body?: unknown) {
+    getReplayContext(
+      _headers: Headers,
+      body?: unknown,
+    ): ProviderReplayContext | undefined {
       if (body && typeof body === "object" && "nonce" in body) {
         const nonceValue = (body as { nonce: unknown }).nonce;
         if (typeof nonceValue === "string") {
-          return { replayKey: nonceValue };
+          const trimmedNonce = nonceValue.trim();
+          if (trimmedNonce.length > 0) {
+            return { replayKey: trimmedNonce };
+          }
         }
       }
       return undefined;

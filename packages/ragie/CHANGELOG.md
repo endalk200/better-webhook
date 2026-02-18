@@ -5,13 +5,13 @@
 ### Minor Changes
 
 - Updated dependencies
-  - @better-webhook/core@0.11.0
+  - @better-webhook/core@0.11.0 (replay protection + strict verification ordering)
 - Expose normalized replay metadata from Ragie `nonce` for core replay
   protection.
 - Clarify docs language from built-in idempotency enforcement to idempotency
   primitives.
-- Updated dependencies
-  - @better-webhook/core (replay protection + strict verification ordering)
+- Breaking behavior: Ragie event schemas now require envelope `nonce`.
+  Requests missing `nonce` fail validation and return `400`.
 
 ## 0.5.1
 

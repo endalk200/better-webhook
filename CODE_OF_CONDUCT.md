@@ -30,7 +30,7 @@ This Code of Conduct applies in all project spaces and when an individual is off
 
 ## Enforcement
 
-To report unacceptable behavior, open a private security/contact request as documented in `SUPPORT.md`.
+To report unacceptable behavior, open a private security/contact request as documented in `SUPPORT.md` under "Code of Conduct reports (private)".
 All reports will be reviewed and investigated promptly and fairly.
 
 ## Attribution
