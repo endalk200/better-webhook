@@ -1,5 +1,18 @@
 # @better-webhook/ragie
 
+## 0.6.0
+
+### Minor Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.11.0
+- Expose normalized replay metadata from Ragie `nonce` for core replay
+  protection.
+- Clarify docs language from built-in idempotency enforcement to idempotency
+  primitives.
+- Updated dependencies
+  - @better-webhook/core (replay protection + strict verification ordering)
+
 ## 0.5.1
 
 ### Patch Changes
@@ -99,7 +112,7 @@
   - `connection_sync_finished` - Connection sync completes
   - `connection_limit_exceeded` - Connection page limit exceeded
   - `partition_limit_exceeded` - Partition document limit exceeded
-- Built-in idempotency support with `nonce` field
+- Idempotency primitives with exposed `nonce` field
 - Comprehensive TypeScript types and Zod schemas
 - Error handling with `onError` and `onVerificationFailed` hooks
 - Examples for Express, NestJS, and Next.js

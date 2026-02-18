@@ -24,7 +24,7 @@ const webhook = ragie().event(document_status_updated, async (payload) => {
 - **Fully typed payloads** — TypeScript knows every field on every event
 - **Schema validated** — Malformed payloads are caught and rejected
 - **Multiple events** — Handle document updates, sync events, and more
-- **Idempotency support** — Built-in `nonce` field for preventing duplicate processing
+- **Idempotency primitives** — `nonce` is exposed so you can implement deduplication
 
 ## Installation
 
@@ -43,6 +43,8 @@ You'll also need a framework adapter:
 npm install @better-webhook/nextjs   # Next.js App Router
 npm install @better-webhook/express  # Express.js
 npm install @better-webhook/nestjs   # NestJS
+npm install @better-webhook/hono     # Hono (Node/Workers/Bun/Deno)
+npm install @better-webhook/gcp-functions # GCP Cloud Functions
 ```
 
 ## Quick Start
@@ -312,7 +314,13 @@ ragie()
 
 ## Idempotency
 
-Ragie includes a `nonce` field in all webhook payloads to help you implement idempotency:
+Ragie includes a required `nonce` field in every webhook envelope, exposed by
+the SDK as `payload.nonce`, to help you implement idempotency:
+
+Note: the SDK exposes `payload.nonce` but does not block duplicates automatically.
+Use core replay protection or your own storage-backed deduplication.
+For production, prefer replay stores with atomic reservation semantics
+(`reserve/commit/release`) to avoid concurrency races.
 
 ```ts
 import { document_status_updated } from "@better-webhook/ragie/events";

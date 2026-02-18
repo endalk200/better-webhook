@@ -38,6 +38,7 @@ import {
 
 const validDocumentStatusUpdatedPayload: RagieDocumentStatusUpdatedEvent = {
   document_id: "aa9a87d5-fbfa-4b48-8db3-b88a0d5826d4",
+  nonce: "nonce-document-status-updated",
   status: "ready",
   partition: "default",
   metadata: { key: "value" },
@@ -50,6 +51,7 @@ const validDocumentStatusUpdatedPayload: RagieDocumentStatusUpdatedEvent = {
 
 const validDocumentDeletedPayload: RagieDocumentDeletedEvent = {
   document_id: "f16812e2-9159-4de7-be62-5c19010582a5",
+  nonce: "nonce-document-deleted",
   partition: "default",
   metadata: { key: "value" },
   external_id: "ext_123",
@@ -60,6 +62,7 @@ const validDocumentDeletedPayload: RagieDocumentDeletedEvent = {
 
 const validEntityExtractedPayload: RagieEntityExtractedEvent = {
   entity_id: "be49098d-7b17-462c-bfb7-379e985882f1",
+  nonce: "nonce-entity-extracted",
   document_id: "7aa8841d-1d4a-41d0-8549-1c42db1ace42",
   instruction_id: "645ed2a7-67fb-4637-b12d-c4643d6d8706",
   document_metadata: { key: "value" },
@@ -72,6 +75,7 @@ const validEntityExtractedPayload: RagieEntityExtractedEvent = {
 
 const validConnectionSyncStartedPayload: RagieConnectionSyncStartedEvent = {
   connection_id: "622abd9c-a511-4a0b-827c-b56832b40c46",
+  nonce: "nonce-connection-sync-started",
   sync_id: "6638577d-b241-4d7b-b611-81668feed866",
   partition: "default",
   connection_metadata: { source: "google-drive", folder_id: "folder-123" },
@@ -83,6 +87,7 @@ const validConnectionSyncStartedPayload: RagieConnectionSyncStartedEvent = {
 
 const validConnectionSyncProgressPayload: RagieConnectionSyncProgressEvent = {
   connection_id: "b6a2ff40-3919-4f4d-8c81-4288dcd030dc",
+  nonce: "nonce-connection-sync-progress",
   sync_id: "559dda4b-a250-49ca-a5f3-f4fb7deb0b04",
   partition: "default",
   connection_metadata: { source: "google-drive", folder_id: "folder-123" },
@@ -99,6 +104,7 @@ const validConnectionSyncProgressPayload: RagieConnectionSyncProgressEvent = {
 
 const validConnectionSyncFinishedPayload: RagieConnectionSyncFinishedEvent = {
   connection_id: "1936bf39-f0c8-43de-b1cc-e7c60c3493b1",
+  nonce: "nonce-connection-sync-finished",
   sync_id: "9f3ee773-225f-4c3f-8f40-98d80d48ca80",
   partition: "default",
   connection_metadata: { source: "google-drive", folder_id: "folder-123" },
@@ -106,12 +112,14 @@ const validConnectionSyncFinishedPayload: RagieConnectionSyncFinishedEvent = {
 
 const validConnectionLimitExceededPayload: RagieConnectionLimitExceededEvent = {
   connection_id: "fb283324-d6ad-4803-ba4b-3cb32e46e5ae",
+  nonce: "nonce-connection-limit-exceeded",
   partition: "default",
   connection_metadata: { source: "notion", workspace_id: "workspace-abc123" },
   limit_type: "page_limit",
 };
 
 const validPartitionLimitExceededPayload: RagiePartitionLimitExceededEvent = {
+  nonce: "nonce-partition-limit-exceeded",
   partition: "default",
   limit_type: "document_limit",
 };
@@ -247,6 +255,7 @@ describe("Ragie Schemas", () => {
     it("should not require count fields (minimal payload)", () => {
       const result = RagieConnectionSyncFinishedEventSchema.safeParse({
         connection_id: "conn-123",
+        nonce: "nonce-connection-sync-finished-minimal",
         sync_id: "sync-456",
         partition: "default",
       });
@@ -305,6 +314,19 @@ describe("ragie()", () => {
   it("should accept a secret option", () => {
     const webhook = ragie({ secret: "my-secret" });
     expect(webhook.getProvider().secret).toBe("my-secret");
+  });
+
+  it("should expose replay context from envelope nonce", () => {
+    const provider = ragie().getProvider();
+    const replayContext = provider.getReplayContext?.(
+      {},
+      createEnvelope(
+        "document_status_updated",
+        validDocumentStatusUpdatedPayload,
+      ),
+    );
+
+    expect(replayContext).toEqual({ replayKey: "unique-nonce-123" });
   });
 
   describe("event handlers with envelope structure", () => {
@@ -544,6 +566,61 @@ describe("ragie()", () => {
           provider: "ragie",
         }),
       );
+    });
+
+    it("should reject envelopes missing nonce for handled events", async () => {
+      const secret = "test-secret";
+      const payloadWithoutNonce = {
+        ...validDocumentStatusUpdatedPayload,
+        nonce: undefined,
+      };
+      const envelope = {
+        type: "document_status_updated",
+        payload: payloadWithoutNonce,
+      };
+      const body = JSON.stringify(envelope);
+      const handler = vi.fn();
+
+      const webhook = ragie({ secret }).event(document_status_updated, handler);
+
+      const result = await webhook.process({
+        headers: {
+          "content-type": "application/json",
+          "x-signature": createSignature(body, secret),
+        },
+        rawBody: body,
+      });
+
+      expect(result.status).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("should reject envelopes with non-string nonce for handled events", async () => {
+      const secret = "test-secret";
+      const payloadWithoutNonce = {
+        ...validDocumentStatusUpdatedPayload,
+        nonce: undefined,
+      };
+      const envelope = {
+        type: "document_status_updated",
+        payload: payloadWithoutNonce,
+        nonce: 12345,
+      };
+      const body = JSON.stringify(envelope);
+      const handler = vi.fn();
+
+      const webhook = ragie({ secret }).event(document_status_updated, handler);
+
+      const result = await webhook.process({
+        headers: {
+          "content-type": "application/json",
+          "x-signature": createSignature(body, secret),
+        },
+        rawBody: body,
+      });
+
+      expect(result.status).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
