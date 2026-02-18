@@ -224,6 +224,19 @@ describe("recall()", () => {
     });
   });
 
+  it("trims replay key headers and ignores whitespace-only values", () => {
+    const provider = recall().getProvider();
+    const replayContext = provider.getReplayContext?.({
+      "webhook-id": "   ",
+      "webhook-timestamp": "1700000000",
+    });
+
+    expect(replayContext).toEqual({
+      replayKey: undefined,
+      timestamp: 1700000000,
+    });
+  });
+
   it("routes participant events", async () => {
     const body = JSON.stringify(participantEnvelope);
     const headers = createHeaders(body, secret);

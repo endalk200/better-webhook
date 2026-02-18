@@ -323,7 +323,8 @@ describe("github()", () => {
 
   it("should expose replay context from delivery header", () => {
     const provider = github().getProvider();
-    const replayContext = provider.getReplayContext?.({
+    const getReplayContext = provider.getReplayContext;
+    const replayContext = getReplayContext?.({
       "x-github-delivery": "delivery-123",
     });
 

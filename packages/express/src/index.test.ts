@@ -228,6 +228,10 @@ describe("toExpress", () => {
           secondRes as Response,
         );
         expect(secondState.statusCode).toBe(409);
+        expect(secondState.jsonBody).toEqual({
+          ok: false,
+          error: "Duplicate webhook delivery",
+        });
       } finally {
         processSpy.mockRestore();
       }
