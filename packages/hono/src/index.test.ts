@@ -229,6 +229,45 @@ describe("toHono", () => {
       expect(response.status).toBe(500);
     });
 
+    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const processSpy = vi.spyOn(webhook, "process");
+      processSpy.mockResolvedValueOnce({
+        status: 200,
+        eventType: "test.event",
+        body: { ok: true },
+      });
+      processSpy.mockResolvedValueOnce({
+        status: 409,
+        eventType: "test.event",
+        body: { ok: false, error: "Duplicate webhook delivery" },
+      });
+      const app = new Hono();
+      app.post("/webhooks", toHono(webhook));
+
+      const firstRequest = createRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        body: JSON.stringify(validPayload),
+      });
+
+      const firstResponse = await app.request(firstRequest);
+      expect(firstResponse.status).toBe(200);
+
+      const secondRequest = createRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        body: JSON.stringify(validPayload),
+      });
+      const secondResponse = await app.request(secondRequest);
+      expect(secondResponse.status).toBe(409);
+    });
+
     it("should return 500 JSON when webhook processing throws unexpectedly", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});

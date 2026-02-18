@@ -243,15 +243,16 @@ app.post(
 
 ## Response Codes
 
-| Code  | Meaning                                   |
-| ----- | ----------------------------------------- |
-| `200` | Webhook processed successfully            |
-| `204` | No handler registered for this event type |
-| `400` | Invalid body or schema validation failed  |
-| `401` | Signature verification failed             |
-| `405` | Request method is not POST                |
-| `413` | Request body exceeds `maxBodyBytes`       |
-| `500` | Handler threw an error                    |
+| Code  | Meaning                                                           |
+| ----- | ----------------------------------------------------------------- |
+| `200` | Webhook processed successfully                                    |
+| `204` | No handler registered for this event type (after verification)    |
+| `409` | Duplicate replay key detected (when replay protection is enabled) |
+| `400` | Invalid body or schema validation failed                          |
+| `401` | Signature verification failed                                     |
+| `405` | Request method is not POST                                        |
+| `413` | Request body exceeds `maxBodyBytes`                               |
+| `500` | Handler threw an error                                            |
 
 Note: with `app.post(...)`, non-POST requests may return `404` at the routing
 layer before the adapter runs. `405` is returned when the adapter itself

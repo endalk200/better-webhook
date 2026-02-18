@@ -190,6 +190,37 @@ describe("toNestJS", () => {
       expect(result.statusCode).toBe(200);
       expect(result.body?.ok).toBe(true);
     });
+
+    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const processSpy = vi.spyOn(webhook, "process");
+      processSpy.mockResolvedValueOnce({
+        status: 200,
+        eventType: "test.event",
+        body: { ok: true },
+      });
+      processSpy.mockResolvedValueOnce({
+        status: 409,
+        eventType: "test.event",
+        body: { ok: false, error: "Duplicate webhook delivery" },
+      });
+      const handler = toNestJS(webhook);
+
+      const req = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      const firstResult = await handler(req);
+      expect(firstResult.statusCode).toBe(200);
+
+      const secondResult = await handler(req);
+      expect(secondResult.statusCode).toBe(409);
+    });
   });
 
   describe("options", () => {

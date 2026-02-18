@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { toNextJS } from "./index.js";
 import {
   createWebhook,
+  createInMemoryReplayStore,
   defineEvent,
   z,
   type Provider,
@@ -148,6 +149,75 @@ describe("toNextJS", () => {
 
       const body = await response.json();
       expect(body.ok).toBe(true);
+    });
+
+    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const processSpy = vi.spyOn(webhook, "process");
+      processSpy.mockResolvedValueOnce({
+        status: 200,
+        eventType: "test.event",
+        body: { ok: true },
+      });
+      processSpy.mockResolvedValueOnce({
+        status: 409,
+        eventType: "test.event",
+        body: { ok: false, error: "Duplicate webhook delivery" },
+      });
+      const handler = toNextJS(webhook);
+
+      const firstRequest = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        body: JSON.stringify(validPayload),
+      });
+
+      const firstResponse = await handler(firstRequest);
+      expect(firstResponse.status).toBe(200);
+
+      const secondRequest = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        body: JSON.stringify(validPayload),
+      });
+      const secondResponse = await handler(secondRequest);
+      expect(secondResponse.status).toBe(409);
+    });
+
+    it("should enforce replay protection with a real replay store", async () => {
+      const provider = createTestProvider();
+      const eventHandler = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .event(testEvent, eventHandler);
+      const handler = toNextJS(webhook);
+
+      const firstRequest = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-real-store",
+        },
+        body: JSON.stringify(validPayload),
+      });
+      const secondRequest = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-real-store",
+        },
+        body: JSON.stringify(validPayload),
+      });
+
+      const firstResponse = await handler(firstRequest);
+      const secondResponse = await handler(secondRequest);
+
+      expect(firstResponse.status).toBe(200);
+      expect(secondResponse.status).toBe(409);
+      expect(eventHandler).toHaveBeenCalledTimes(1);
     });
   });
 
