@@ -40,6 +40,18 @@ import {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const processedReplayKeys = new Set<string>();
+
+function isDuplicateReplay(key: string | undefined): boolean {
+  if (!key) {
+    return false;
+  }
+  if (processedReplayKeys.has(key)) {
+    return true;
+  }
+  processedReplayKeys.add(key);
+  return false;
+}
 
 // Create stats collectors for observability
 const githubStats = createWebhookStats();
@@ -75,6 +87,13 @@ const githubWebhook = github()
   .observe(githubStats.observer)
   .observe(loggingObserver)
   .event(push, async (payload, context) => {
+    const replayKey = context.deliveryId
+      ? `github:${context.deliveryId}`
+      : undefined;
+    if (isDuplicateReplay(replayKey)) {
+      console.log("Duplicate GitHub delivery detected, skipping");
+      return;
+    }
     console.log("📦 Push event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Received at: ${context.receivedAt.toISOString()}`);
@@ -114,6 +133,10 @@ const ragieWebhook = ragie()
   .observe(ragieStats.observer)
   .observe(loggingObserver)
   .event(document_status_updated, async (payload, context) => {
+    if (isDuplicateReplay(`ragie:${payload.nonce}`)) {
+      console.log("Duplicate Ragie nonce detected, skipping");
+      return;
+    }
     console.log("📄 Document status updated!");
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Status: ${payload.status}`);
@@ -128,7 +151,7 @@ const ragieWebhook = ragie()
   .event(entity_extracted, async (payload, context) => {
     console.log("🔍 Entity extraction completed!");
     console.log(`   Document ID: ${payload.document_id}`);
-    console.log(`   Partition: ${payload.partition || "default"}`);
+    console.log(`   Partition: ${payload.partition}`);
   })
   .onError(async (error, context) => {
     console.error("❌ Ragie webhook error:", error.message);
@@ -143,6 +166,13 @@ const recallWebhook = recall()
   .observe(recallStats.observer)
   .observe(loggingObserver)
   .event(participant_events_join, async (payload, context) => {
+    const replayKey = context.deliveryId
+      ? `recall:${context.deliveryId}`
+      : undefined;
+    if (isDuplicateReplay(replayKey)) {
+      console.log("Duplicate Recall delivery detected, skipping");
+      return;
+    }
     console.log("🟢 Recall participant joined");
     console.log(`   Event: ${context.eventType}`);
     console.log(`   Participant: ${payload.data.participant.name}`);

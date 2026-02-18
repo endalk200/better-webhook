@@ -1,22 +1,28 @@
 # Hono Example
 
-A simple Hono app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/hono`.
+A simple Hono app demonstrating `@better-webhook/github`,
+`@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/hono`.
 
 ## Quick Start
 
 ```bash
 # From the repository root
 pnpm install
-
-# Run the example
 pnpm --filter @better-webhook/hono-example dev
 ```
 
-The app will be available at `http://localhost:3004`
+Server URL: `http://localhost:3004`
 
 ## Configuration
 
-Set environment variables to enable signature verification:
+| Variable                | Required | Description                             |
+| ----------------------- | -------- | --------------------------------------- |
+| `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures |
+| `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures  |
+| `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures |
+| `PORT`                  | No       | Override the default port (`3004`)      |
+
+Example:
 
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret \
@@ -24,10 +30,6 @@ RAGIE_WEBHOOK_SECRET=your-ragie-secret \
 RECALL_WEBHOOK_SECRET=your-recall-whsec-secret \
 pnpm --filter @better-webhook/hono-example dev
 ```
-
-Optional:
-
-- `PORT` - Override the default port (`3004`)
 
 ## Endpoints
 
@@ -37,10 +39,10 @@ Optional:
 - `GET /health` - Health check
 - `GET /stats` - In-memory webhook stats
 
-## Testing Locally
+## Signed Testing
 
 Unsigned requests are rejected (`401`) because verification is required by
-default. To test locally, sign the payload with the same secret:
+default. Sign test payloads with the same secret configured in your env vars.
 
 ```bash
 SECRET="your-github-secret"
@@ -55,9 +57,25 @@ curl -X POST "http://localhost:3004/webhooks/github" \
   -d "$PAYLOAD"
 ```
 
-## Raw Body Notes
+For dev-only unsigned testing, use a custom provider configured with
+`verification: "disabled"`. Do not use disabled verification in production.
 
-Webhook signature verification depends on the original raw request body. Avoid
-consuming `c.req.raw` directly before the adapter runs. If you need access to
-the body in middleware, use Hono request helpers such as `c.req.text()` or
-`c.req.arrayBuffer()` so the adapter can still reconstruct the payload.
+## Replay Strategy Notes
+
+This example demonstrates manual in-memory dedupe on selected handlers:
+
+- GitHub and Recall use `context.deliveryId`
+- Ragie uses `payload.nonce` from the signed envelope
+
+For production, use a shared replay store so duplicate detection works across
+multiple instances.
+
+For side-by-side examples of manual checks, `createInMemoryReplayStore`, and a
+custom `ReplayStore`, see `apps/examples/nextjs-example/app/api/webhooks`.
+
+## Troubleshooting
+
+- `401` responses: verify secrets match the sender and your local env vars.
+- Signature mismatch: sign the exact raw payload bytes sent in `curl`.
+- Raw body handling: avoid consuming `c.req.raw` before the adapter runs.
+- Replays after restart: expected with in-memory dedupe; switch to shared storage.

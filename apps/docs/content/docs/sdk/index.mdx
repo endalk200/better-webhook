@@ -341,10 +341,29 @@ const webhook = github({
 // Just set GITHUB_WEBHOOK_SECRET in your environment
 ```
 
+Verification is evaluated before unhandled-event routing. Requests for unknown
+event types still need to pass signature verification before receiving `204`.
+
 <Callout type="warn">
   Always configure signature verification in production. Without it, anyone can
   send fake webhooks to your endpoint.
 </Callout>
+
+## Replay Protection
+
+Use core replay protection to enforce deduplication with a pluggable store:
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+
+const replayStore = createInMemoryReplayStore();
+
+const webhook = github()
+  .withReplayProtection({ store: replayStore })
+  .event(push, handler);
+```
+
+Default duplicate behavior is `409`.
 
 ## Error Handling
 

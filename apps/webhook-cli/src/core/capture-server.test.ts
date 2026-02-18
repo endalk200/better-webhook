@@ -59,38 +59,44 @@ describe("CaptureServer provider detection", () => {
   });
 
   it("does not misclassify generic Standard Webhooks payloads as Recall", async () => {
-    const response = await request(`http://127.0.0.1:${port}/webhooks/generic`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "webhook-id": "msg_test_generic_123",
-        "webhook-timestamp": "1731705121",
-        "webhook-signature": "v1,abc123",
+    const response = await request(
+      `http://127.0.0.1:${port}/webhooks/generic`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "webhook-id": "msg_test_generic_123",
+          "webhook-timestamp": "1731705121",
+          "webhook-signature": "v1,abc123",
+        },
+        body: JSON.stringify({
+          event: "user.created",
+          data: { id: "usr_123" },
+        }),
       },
-      body: JSON.stringify({
-        event: "user.created",
-        data: { id: "usr_123" },
-      }),
-    });
+    );
 
     expect(response.statusCode).toBe(200);
     expect(await waitForCapturedProvider()).toBeUndefined();
   });
 
   it("does not classify single generic resource keys as Recall", async () => {
-    const response = await request(`http://127.0.0.1:${port}/webhooks/generic`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "webhook-id": "msg_test_generic_234",
-        "webhook-timestamp": "1731705121",
-        "webhook-signature": "v1,abc123",
+    const response = await request(
+      `http://127.0.0.1:${port}/webhooks/generic`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "webhook-id": "msg_test_generic_234",
+          "webhook-timestamp": "1731705121",
+          "webhook-signature": "v1,abc123",
+        },
+        body: JSON.stringify({
+          event: "recording.completed",
+          data: { recording: { id: "rec_123" } },
+        }),
       },
-      body: JSON.stringify({
-        event: "recording.completed",
-        data: { recording: { id: "rec_123" } },
-      }),
-    });
+    );
 
     expect(response.statusCode).toBe(200);
     expect(await waitForCapturedProvider()).toBeUndefined();

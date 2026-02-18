@@ -1,22 +1,27 @@
 # NestJS Example
 
-A simple NestJS app demonstrating `@better-webhook/github`, `@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/nestjs`.
+A simple NestJS app demonstrating `@better-webhook/github`,
+`@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/nestjs`.
 
 ## Quick Start
 
 ```bash
 # From the repository root
 pnpm install
-
-# Run the example
 pnpm --filter @better-webhook/nestjs-example dev
 ```
 
-The app will be available at http://localhost:3003
+Server URL: `http://localhost:3003`
 
 ## Configuration
 
-Set environment variables to enable signature verification:
+| Variable                | Required | Description                             |
+| ----------------------- | -------- | --------------------------------------- |
+| `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures |
+| `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures  |
+| `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures |
+
+Example:
 
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret \
@@ -28,46 +33,51 @@ pnpm --filter @better-webhook/nestjs-example dev
 ## Endpoints
 
 - `POST /webhooks/github` - GitHub webhook endpoint
-- `GET /webhooks/github` - Returns GitHub endpoint info
+- `GET /webhooks/github` - GitHub endpoint info
 - `POST /webhooks/ragie` - Ragie webhook endpoint
-- `GET /webhooks/ragie` - Returns Ragie endpoint info
+- `GET /webhooks/ragie` - Ragie endpoint info
 - `POST /webhooks/recall` - Recall.ai webhook endpoint
-- `GET /webhooks/recall` - Returns Recall endpoint info
+- `GET /webhooks/recall` - Recall endpoint info
 - `GET /health` - Health check
+- `GET /stats` - In-memory webhook stats
 
-## Testing Locally
+## Signed Testing
 
-Without signature verification (for testing):
+Unsigned requests are rejected (`401`) because verification is required by
+default. Sign test payloads with the same secret configured in your env vars.
 
 ```bash
-curl -X POST http://localhost:3003/webhooks/github \
+SECRET="your-github-secret"
+PAYLOAD='{"ref":"refs/heads/main","repository":{"id":1,"name":"test","full_name":"org/test","private":false},"commits":[{"id":"abc123","message":"Test commit","timestamp":"2024-01-01T00:00:00Z","url":"https://example.com","author":{"name":"Test","email":"test@example.com"},"committer":{"name":"Test","email":"test@example.com"}}],"head_commit":null,"before":"000","after":"abc","created":false,"deleted":false,"forced":false,"base_ref":null,"compare":"https://example.com","pusher":{"name":"test"},"sender":{"login":"test","id":1,"type":"User"}}'
+SIGNATURE=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')
+
+curl -X POST "http://localhost:3003/webhooks/github" \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: push" \
   -H "X-GitHub-Delivery: test-123" \
-  -d '{"ref":"refs/heads/main","repository":{"id":1,"name":"test","full_name":"org/test","private":false},"commits":[{"id":"abc123","message":"Test commit","timestamp":"2024-01-01T00:00:00Z","url":"https://example.com","author":{"name":"Test","email":"test@example.com"},"committer":{"name":"Test","email":"test@example.com"}}],"head_commit":null,"before":"000","after":"abc","created":false,"deleted":false,"forced":false,"base_ref":null,"compare":"https://example.com","pusher":{"name":"test"},"sender":{"login":"test","id":1,"type":"User"}}'
+  -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+  -d "$PAYLOAD"
 ```
 
-## Raw Body Configuration
+For dev-only unsigned testing, use a custom provider configured with
+`verification: "disabled"`. Do not use disabled verification in production.
 
-This example uses NestJS's built-in raw body support. The `rawBody: true` option is set in `main.ts`:
+## Replay Strategy Notes
 
-```typescript
-const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-  rawBody: true,
-});
-```
+This controller demonstrates manual in-memory dedupe on selected handlers:
 
-This ensures the raw request body is available for webhook signature verification.
+- GitHub and Recall use `context.deliveryId`
+- Ragie uses `payload.nonce` from the signed envelope
 
-## Project Structure
+For production, use a shared replay store so duplicate detection works across
+multiple instances.
 
-```
-nestjs-example/
-├── src/
-│   ├── app.module.ts
-│   ├── main.ts
-│   └── webhooks.controller.ts
-├── nest-cli.json
-├── package.json
-└── tsconfig.json
-```
+For side-by-side examples of manual checks, `createInMemoryReplayStore`, and a
+custom `ReplayStore`, see `apps/examples/nextjs-example/app/api/webhooks`.
+
+## Troubleshooting
+
+- `401` responses: verify secrets match the sender and your local env vars.
+- Raw body support: keep `rawBody: true` in `main.ts`.
+- `204` responses: expected for verified but unhandled event types.
+- Replays after restart: expected with in-memory dedupe; switch to shared storage.

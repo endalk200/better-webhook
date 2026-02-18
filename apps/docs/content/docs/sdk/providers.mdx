@@ -204,9 +204,11 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET }).event(
 
 <Callout type="info">
   Ragie webhooks use an envelope structure where the event type is in
-  `body.type` and the actual payload is in `body.payload`. Ragie also includes a
-  `body.nonce` for idempotency — the SDK attaches this onto the unwrapped
-  payload as `payload.nonce` for convenience.
+  `body.type` and the actual payload is in `body.payload`. Ragie includes a
+  required `body.nonce` for idempotency, and the SDK attaches it onto the
+  unwrapped payload as `payload.nonce` for convenience. Deduplication is not
+  enforced unless you enable replay protection in core or implement your own
+  dedupe storage.
 </Callout>
 
 ### Events
@@ -225,6 +227,8 @@ import {
   partition_limit_exceeded,
 } from "@better-webhook/ragie/events";
 ```
+
+All Ragie event payloads include `nonce` as a required idempotency key.
 
 #### document_status_updated
 
@@ -611,12 +615,40 @@ verifies HMAC-SHA256 signatures automatically when `RECALL_WEBHOOK_SECRET` (or
 
 ---
 
-## Custom Providers
+## Replay and Idempotency
 
-For webhook sources not covered by built-in providers, you can create custom providers using `@better-webhook/core`:
+Core replay protection uses provider-specific replay keys:
+
+- GitHub: `x-github-delivery`
+- Ragie: `body.nonce` (exposed as `payload.nonce`)
+- Recall.ai: `webhook-id`/`svix-id`
+
+When replay protection is enabled and a duplicate key is detected, the default
+response is `409`.
 
 ```ts
-import { createProvider, createHmacVerifier, z, defineEvent } from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+
+const webhook = github()
+  .withReplayProtection({
+    store: createInMemoryReplayStore(),
+  })
+  .event(push, async (payload) => {
+    await processPush(payload);
+  });
+```
+
+## Custom Providers
+
+For webhook sources not covered by built-in providers, create a provider in
+`@better-webhook/core` and then register events on a webhook builder.
+
+### 1) Define event schemas and event definitions
+
+```ts
+import { defineEvent, z } from "@better-webhook/core";
 
 const OrderSchema = z.object({
   orderId: z.string(),
@@ -636,9 +668,14 @@ export const orderUpdated = defineEvent({
   schema: OrderSchema,
   provider: "my-ecommerce" as const,
 });
+```
 
-// Create the provider
-const myProvider = createProvider({
+### 2) Create a provider
+
+```ts
+import { createProvider, createHmacVerifier } from "@better-webhook/core";
+
+export const myProvider = createProvider({
   name: "my-ecommerce",
   getEventType: (headers) => headers["x-event-type"],
   getDeliveryId: (headers) => headers["x-delivery-id"],
@@ -648,6 +685,29 @@ const myProvider = createProvider({
     signaturePrefix: "sha256=",
   }),
 });
+```
+
+### 3) Create a webhook builder and register handlers
+
+```ts
+import { createWebhook } from "@better-webhook/core";
+import { myProvider, orderCreated, orderUpdated } from "./provider";
+
+const webhook = createWebhook(myProvider)
+  .event(orderCreated, async (payload) => {
+    await handleOrderCreated(payload.orderId);
+  })
+  .event(orderUpdated, async (payload) => {
+    await handleOrderUpdated(payload.orderId, payload.status);
+  });
+```
+
+### 4) Attach to an adapter
+
+```ts
+import { toNextJS } from "@better-webhook/nextjs";
+
+export const POST = toNextJS(webhook);
 ```
 
 <Callout type="info">

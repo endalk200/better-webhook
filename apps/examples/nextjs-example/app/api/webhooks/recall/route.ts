@@ -30,6 +30,8 @@ import {
 } from "@better-webhook/recall/events";
 
 const stats = createWebhookStats();
+// Manual if-based dedupe strategy example (no core replay store)
+const processedDeliveryIds = new Set<string>();
 
 const loggingObserver: WebhookObserver = {
   onRequestReceived: (event) => {
@@ -48,6 +50,13 @@ const webhook = recall()
   .observe(stats.observer)
   .observe(loggingObserver)
   .event(participant_events_join, async (payload, context) => {
+    if (context.deliveryId && processedDeliveryIds.has(context.deliveryId)) {
+      console.log(`Duplicate Recall delivery detected: ${context.deliveryId}`);
+      return;
+    }
+    if (context.deliveryId) {
+      processedDeliveryIds.add(context.deliveryId);
+    }
     console.log("🟢 participant joined", {
       eventType: context.eventType,
       participantId: payload.data.participant.id,

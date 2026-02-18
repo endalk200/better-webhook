@@ -10,9 +10,41 @@ import {
   partition_limit_exceeded,
 } from "@better-webhook/ragie/events";
 import { toNextJS } from "@better-webhook/nextjs";
+import type { ReplayContext, ReplayStore } from "@better-webhook/core";
 
-// Create a Ragie webhook handler
+class ExampleReplayStore {
+  private readonly entries = new Map<string, number>();
+
+  reserve(key: string, inFlightTtlSeconds: number): "reserved" | "duplicate" {
+    const expiresAt = this.entries.get(key);
+    if (!expiresAt || expiresAt <= Date.now()) {
+      this.entries.set(key, Date.now() + inFlightTtlSeconds * 1000);
+      return "reserved";
+    }
+    return "duplicate";
+  }
+
+  commit(key: string, ttlSeconds: number): void {
+    this.entries.set(key, Date.now() + ttlSeconds * 1000);
+  }
+
+  release(key: string): void {
+    this.entries.delete(key);
+  }
+}
+
+// Custom replay store strategy example
+const customReplayStore: ReplayStore = new ExampleReplayStore();
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
+  .withReplayProtection({
+    store: customReplayStore,
+    policy: {
+      ttlSeconds: 60 * 60,
+      key: (context: ReplayContext): string | undefined =>
+        context.replayKey ? `ragie:${context.replayKey}` : undefined,
+      onDuplicate: "conflict",
+    },
+  })
   .event(document_status_updated, async (payload, context) => {
     console.log("📄 Document status updated!");
     console.log(`   Received at: ${context.receivedAt.toISOString()}`);
