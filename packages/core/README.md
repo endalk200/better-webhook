@@ -138,25 +138,112 @@ const webhook = github().event(push, async (payload, context) => {
 | `rawBody`    | `string`                            | The raw request body as a string                                |
 | `receivedAt` | `Date`                              | Timestamp when the webhook was received                         |
 
-### Using Context for Deduplication
+### Replay Protection (Built-In)
 
-The `deliveryId` is extracted from provider-specific headers (e.g., `X-GitHub-Delivery` for GitHub):
+Use replay protection to enforce deduplication in core with a pluggable store.
+By default, duplicate deliveries return `409`.
+
+Replay protection now follows a lifecycle:
+
+1. Reserve replay key before schema/handler execution
+2. Commit key after success (`200`) or intentional unhandled response (`204`)
+3. Release reservation on processing failures (`400`/`500`)
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+
+const replayStore = createInMemoryReplayStore({
+  maxEntries: 10000,
+  cleanupIntervalMs: 60_000,
+});
+
+const webhook = github()
+  .withReplayProtection({
+    store: replayStore,
+  })
+  .event(push, async (payload) => {
+    await processWebhook(payload);
+  });
+```
+
+Use a shared store (for example Redis) in production so deduplication works
+across all app instances.
+
+### Custom Store (Bring Your Own)
+
+If you want your own backend (Redis, SQL, DynamoDB, etc.), implement the
+atomic replay store contract:
+
+```ts
+import type { ReplayStore } from "@better-webhook/core";
+
+class RedisReplayStore implements ReplayStore {
+  async reserve(
+    key: string,
+    inFlightTtlSeconds: number,
+  ): Promise<"reserved" | "duplicate"> {
+    const result = await redis.set(key, "1", {
+      NX: true,
+      EX: inFlightTtlSeconds,
+    });
+    return result === "OK" ? "reserved" : "duplicate";
+  }
+
+  async commit(key: string, ttlSeconds: number): Promise<void> {
+    await redis.expire(key, ttlSeconds);
+  }
+
+  async release(key: string): Promise<void> {
+    await redis.del(key);
+  }
+}
+
+const webhook = github()
+  .withReplayProtection({
+    store: new RedisReplayStore(),
+  })
+  .event(push, handler);
+```
+
+### Optional Replay Freshness Policy
+
+You can enforce a replay timestamp tolerance when providers expose signed
+timestamps:
+
+```ts
+const webhook = recall()
+  .withReplayProtection({
+    store: createInMemoryReplayStore(),
+    policy: {
+      ttlSeconds: 24 * 60 * 60,
+      timestampToleranceSeconds: 5 * 60,
+      key: (context) => context.replayKey ?? context.deliveryId,
+    },
+  })
+  .event(bot_done, handler);
+```
+
+Provider timestamp support in this repository:
+
+- `@better-webhook/recall`: includes signed timestamp metadata
+- `@better-webhook/github`: replay key (`x-github-delivery`) only
+- `@better-webhook/ragie`: replay key (`nonce`) only
+
+### Manual Deduplication (Fallback)
+
+If you do not enable replay protection, you can still dedupe manually with
+`context.deliveryId`:
 
 ```ts
 const processedIds = new Set<string>();
 
 const webhook = github().event(push, async (payload, context) => {
-  // Skip if we've already processed this webhook
   if (context.deliveryId && processedIds.has(context.deliveryId)) {
-    console.log(`Skipping duplicate delivery: ${context.deliveryId}`);
     return;
   }
-
-  // Mark as processed
   if (context.deliveryId) {
     processedIds.add(context.deliveryId);
   }
-
   await processWebhook(payload);
 });
 ```
@@ -211,6 +298,9 @@ Secrets are resolved automatically in this order:
 
 Verification is required by default. If no secret can be resolved, the request
 is rejected unless verification is explicitly disabled.
+
+Verification runs before unhandled-event routing, so unknown/unsupported events
+must still pass signature verification before a `204` is returned.
 
 ```ts
 // Option 1: Environment variable (recommended)
@@ -325,6 +415,7 @@ import {
   createProvider,
   createWebhook,
   createHmacVerifier,
+  defineEvent,
   z,
 } from "@better-webhook/core";
 
@@ -345,10 +436,17 @@ export const PaymentFailedSchema = z.object({
 });
 
 // provider.ts
-const PaymentSchemas = {
-  "payment.succeeded": PaymentSucceededSchema,
-  "payment.failed": PaymentFailedSchema,
-} as const;
+const paymentSucceeded = defineEvent({
+  name: "payment.succeeded",
+  schema: PaymentSucceededSchema,
+  provider: "payment-gateway" as const,
+});
+
+const paymentFailed = defineEvent({
+  name: "payment.failed",
+  schema: PaymentFailedSchema,
+  provider: "payment-gateway" as const,
+});
 
 export interface PaymentGatewayOptions {
   secret?: string;
@@ -358,7 +456,6 @@ function createPaymentGatewayProvider(options?: PaymentGatewayOptions) {
   return createProvider({
     name: "payment-gateway",
     secret: options?.secret,
-    schemas: PaymentSchemas,
     getEventType: (headers) => headers["x-event-type"],
     getDeliveryId: (headers) => headers["x-request-id"],
     verify: createHmacVerifier({
@@ -373,14 +470,15 @@ export function paymentGateway(options?: PaymentGatewayOptions) {
   return createWebhook(createPaymentGatewayProvider(options));
 }
 
-// Usage is identical to built-in providers!
-const webhook = paymentGateway({ secret: "sk_..." }).event(
-  "payment.succeeded",
-  async (payload) => {
+// Usage is identical to built-in providers.
+const webhook = paymentGateway({ secret: "sk_..." })
+  .event(paymentSucceeded, async (payload) => {
     await fulfillOrder(payload.id);
     await sendReceipt(payload.customer_email);
-  },
-);
+  })
+  .event(paymentFailed, async (payload) => {
+    await flagPaymentFailure(payload.id, payload.error_code);
+  });
 ```
 
 ### Verification Helpers
@@ -454,15 +552,36 @@ For development or trusted internal services, you must explicitly disable
 verification:
 
 ```ts
+import { customWebhook, defineEvent, z } from "@better-webhook/core";
+
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+});
+
+const userCreated = defineEvent({
+  name: "user.created",
+  schema: UserSchema,
+  provider: "internal-service" as const,
+});
+
+const userDeleted = defineEvent({
+  name: "user.deleted",
+  schema: UserSchema,
+  provider: "internal-service" as const,
+});
+
 const webhook = customWebhook({
   name: "internal-service",
-  schemas: {
-    "user.created": UserSchema,
-    "user.deleted": UserSchema,
-  },
   getEventType: (headers) => headers["x-event-type"],
   verification: "disabled",
-});
+})
+  .event(userCreated, async (payload) => {
+    await indexUser(payload.id);
+  })
+  .event(userDeleted, async (payload) => {
+    await removeUser(payload.id);
+  });
 ```
 
 ## Observability
@@ -621,7 +740,7 @@ webhook_handler_duration_ms; // Labels: provider, eventType, handler_index
 webhook_body_bytes; // Labels: provider
 ```
 
-### Error Handling
+### Observer Error Isolation
 
 Observer errors are automatically caught and swallowed—they will never break your webhook processing:
 
@@ -648,17 +767,22 @@ const webhook = github().observe(faultyObserver).event(push, handler);
 | `createHmacVerifier(options)` | Create an HMAC verification function               |
 | `verifyHmac(options)`         | Low-level HMAC verification                        |
 | `createWebhookStats()`        | Create an in-memory stats collector with observer  |
+| `createInMemoryReplayStore()` | Create an in-memory replay/idempotency store       |
 
 ### Types
 
 ```ts
-interface ProviderConfig<EventMap> {
+interface ProviderConfig {
   name: string;
-  schemas: EventMap;
   secret?: string;
   verification?: "required" | "disabled";
-  getEventType: (headers: Headers) => string | undefined;
+  getEventType: (headers: Headers, body?: unknown) => string | undefined;
   getDeliveryId?: (headers: Headers) => string | undefined;
+  getPayload?: (body: unknown) => unknown;
+  getReplayContext?: (
+    headers: Headers,
+    body?: unknown,
+  ) => { replayKey?: string; timestamp?: number };
   verify?: (
     rawBody: string | Buffer,
     headers: Headers,
@@ -688,11 +812,46 @@ interface ErrorContext {
   payload: unknown;
 }
 
+interface ReplayContext {
+  provider: string;
+  eventType?: string;
+  deliveryId?: string;
+  replayKey?: string;
+  timestamp?: number;
+}
+
+type ReplayReserveResult = "reserved" | "duplicate";
+
+interface AtomicReplayStore {
+  reserve(
+    key: string,
+    inFlightTtlSeconds: number,
+  ): Promise<ReplayReserveResult> | ReplayReserveResult;
+  commit(key: string, ttlSeconds: number): Promise<void> | void;
+  release(key: string): Promise<void> | void;
+}
+
+type ReplayStore = AtomicReplayStore;
+
+interface ReplayPolicy {
+  ttlSeconds: number;
+  inFlightTtlSeconds?: number;
+  timestampToleranceSeconds?: number;
+  key(context: ReplayContext): string | undefined;
+  onDuplicate?: "conflict" | "ignore";
+}
+
 // Event handler signature
 type EventHandler<T> = (
   payload: T,
   context: HandlerContext,
 ) => Promise<void> | void;
+
+// Enable replay protection on a webhook builder
+webhook.withReplayProtection({
+  store: replayStore,
+  policy: optionalPolicy,
+});
 
 // Observer interface for webhook lifecycle events
 interface WebhookObserver {
@@ -707,6 +866,12 @@ interface WebhookObserver {
   onHandlerStarted?: (event: HandlerStartedEvent) => void;
   onHandlerSucceeded?: (event: HandlerSucceededEvent) => void;
   onHandlerFailed?: (event: HandlerFailedEvent) => void;
+  onReplaySkipped?: (event: ReplaySkippedEvent) => void;
+  onReplayFreshnessRejected?: (event: ReplayFreshnessRejectedEvent) => void;
+  onReplayReserved?: (event: ReplayReservedEvent) => void;
+  onReplayDuplicate?: (event: ReplayDuplicateEvent) => void;
+  onReplayCommitted?: (event: ReplayCommittedEvent) => void;
+  onReplayReleased?: (event: ReplayReleasedEvent) => void;
   onCompleted?: (event: CompletedEvent) => void;
 }
 
