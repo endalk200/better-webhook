@@ -1,5 +1,27 @@
 # @better-webhook/core
 
+## 0.11.0
+
+### Minor Changes
+
+- Add first-class replay protection contracts (`ReplayStore`, `ReplayPolicy`,
+  `ReplayContext`) and `WebhookBuilder.withReplayProtection(...)`.
+- Add `createInMemoryReplayStore()` for local/single-instance replay
+  deduplication.
+- Run signature verification before unhandled-event routing by default.
+- Return `409` for duplicate replay keys by default when replay protection is
+  enabled.
+- Harden replay semantics with reservation lifecycle support:
+  - Reserve before processing, commit on `200/204`, release on processing
+    failures.
+  - Atomic replay stores now use `reserve/commit/release`.
+- Add replay observability events:
+  `onReplaySkipped`, `onReplayFreshnessRejected`, `onReplayReserved`,
+  `onReplayDuplicate`, `onReplayCommitted`, and `onReplayReleased`.
+- Add optional `ReplayPolicy.timestampToleranceSeconds` freshness guard.
+- Add bounded cleanup/capacity options for `createInMemoryReplayStore(...)`:
+  `maxEntries`, `cleanupIntervalMs`, and `cleanupBatchSize`.
+
 ## 0.10.0
 
 ### Minor Changes

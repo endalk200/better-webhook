@@ -126,6 +126,17 @@ export interface HandlerContext {
 }
 
 /**
+ * Optional replay metadata extracted by providers.
+ */
+export interface ProviderReplayContext {
+  /** Stable provider-specific replay identifier */
+  replayKey?: string;
+
+  /** Unix timestamp (seconds) when available from signed metadata */
+  timestamp?: number;
+}
+
+/**
  * Provider interface that webhook sources must implement.
  *
  * @template TProviderBrand - The provider brand type for type-safe event constraints
@@ -170,6 +181,14 @@ export interface Provider<TProviderBrand extends string = string> {
    * If not provided, the entire body is used as the payload
    */
   getPayload?(body: unknown): unknown;
+
+  /**
+   * Optional: Extract provider-specific replay metadata used by core replay protection.
+   */
+  getReplayContext?(
+    headers: Headers,
+    body?: unknown,
+  ): ProviderReplayContext | undefined;
 }
 
 // ============================================================================
@@ -227,6 +246,14 @@ export interface ProviderConfig<TProviderBrand extends string = string> {
    * If not provided, the entire body is used as the payload
    */
   getPayload?: (body: unknown) => unknown;
+
+  /**
+   * Optional: Extract provider-specific replay metadata used by core replay protection.
+   */
+  getReplayContext?: (
+    headers: Headers,
+    body?: unknown,
+  ) => ProviderReplayContext | undefined;
 }
 
 /**
@@ -310,6 +337,75 @@ export interface ProcessOptions {
   rawBody: string | Buffer;
   secret?: string;
   maxBodyBytes?: number;
+}
+
+/**
+ * Normalized context used to compute replay/idempotency keys.
+ */
+export interface ReplayContext {
+  provider: string;
+  eventType?: string;
+  deliveryId?: string;
+  replayKey?: string;
+  timestamp?: number;
+}
+
+/**
+ * Storage contract for replay protection.
+ */
+export type ReplayReserveResult = "reserved" | "duplicate";
+
+/**
+ * Replay store contract with atomic reservation semantics.
+ */
+export interface AtomicReplayStore {
+  reserve(
+    key: string,
+    inFlightTtlSeconds: number,
+  ): Promise<ReplayReserveResult> | ReplayReserveResult;
+  commit(key: string, ttlSeconds: number): Promise<void> | void;
+  release(key: string): Promise<void> | void;
+}
+
+/**
+ * Replay store contract.
+ */
+export type ReplayStore = AtomicReplayStore;
+
+/**
+ * Duplicate behavior when replay key already exists.
+ */
+export type ReplayDuplicateBehavior = "conflict" | "ignore";
+
+/**
+ * Policy for building replay keys and determining duplicate behavior.
+ */
+export interface ReplayPolicy {
+  /** TTL for stored replay keys */
+  ttlSeconds: number;
+
+  /** TTL for in-flight reservations before processing completes */
+  inFlightTtlSeconds?: number;
+
+  /**
+   * Optional freshness tolerance (in seconds) for provider replay timestamps.
+   * If configured, requests older/newer than this window are rejected.
+   */
+  timestampToleranceSeconds?: number;
+
+  /** Build a canonical key from replay context */
+  key(context: ReplayContext): string | undefined;
+
+  /** Duplicate behavior (default: "conflict") */
+  onDuplicate?: ReplayDuplicateBehavior;
+}
+
+/**
+ * Replay protection configuration.
+ */
+export interface ReplayProtectionOptions {
+  store: ReplayStore;
+  policy?: ReplayPolicy;
 }
 
 // ============================================================================
@@ -455,6 +551,60 @@ export interface HandlerFailedEvent extends ObservationBase {
 }
 
 /**
+ * Emitted when replay protection is skipped because no replay key can be derived
+ */
+export interface ReplaySkippedEvent extends ObservationBase {
+  type: "replay_skipped";
+  reason: "missing_key";
+}
+
+/**
+ * Emitted when replay freshness policy rejects a timestamp
+ */
+export interface ReplayFreshnessRejectedEvent extends ObservationBase {
+  type: "replay_freshness_rejected";
+  timestamp: number;
+  toleranceSeconds: number;
+}
+
+/**
+ * Emitted when replay key reservation succeeds
+ */
+export interface ReplayReservedEvent extends ObservationBase {
+  type: "replay_reserved";
+  replayKey: string;
+  inFlightTtlSeconds: number;
+  storeMode: "atomic";
+}
+
+/**
+ * Emitted when replay protection detects a duplicate delivery
+ */
+export interface ReplayDuplicateEvent extends ObservationBase {
+  type: "replay_duplicate";
+  replayKey: string;
+  behavior: ReplayDuplicateBehavior;
+}
+
+/**
+ * Emitted when replay key is committed after successful processing
+ */
+export interface ReplayCommittedEvent extends ObservationBase {
+  type: "replay_committed";
+  replayKey: string;
+  ttlSeconds: number;
+}
+
+/**
+ * Emitted when replay key reservation is released after failed processing
+ */
+export interface ReplayReleasedEvent extends ObservationBase {
+  type: "replay_released";
+  replayKey: string;
+  reason: "processing_failed";
+}
+
+/**
  * Emitted when webhook processing completes (always emitted)
  */
 export interface CompletedEvent extends ObservationBase {
@@ -482,6 +632,12 @@ export type ObservationEvent =
   | HandlerStartedEvent
   | HandlerSucceededEvent
   | HandlerFailedEvent
+  | ReplaySkippedEvent
+  | ReplayFreshnessRejectedEvent
+  | ReplayReservedEvent
+  | ReplayDuplicateEvent
+  | ReplayCommittedEvent
+  | ReplayReleasedEvent
   | CompletedEvent;
 
 /**
@@ -541,6 +697,24 @@ export interface WebhookObserver {
 
   /** Called when a handler throws an error */
   onHandlerFailed?: (event: HandlerFailedEvent) => void;
+
+  /** Called when replay protection is skipped due to missing key material */
+  onReplaySkipped?: (event: ReplaySkippedEvent) => void;
+
+  /** Called when replay freshness policy rejects a stale/future timestamp */
+  onReplayFreshnessRejected?: (event: ReplayFreshnessRejectedEvent) => void;
+
+  /** Called when replay key reservation succeeds */
+  onReplayReserved?: (event: ReplayReservedEvent) => void;
+
+  /** Called when a duplicate replay key is detected */
+  onReplayDuplicate?: (event: ReplayDuplicateEvent) => void;
+
+  /** Called when replay key is committed after successful processing */
+  onReplayCommitted?: (event: ReplayCommittedEvent) => void;
+
+  /** Called when replay reservation is released after failed processing */
+  onReplayReleased?: (event: ReplayReleasedEvent) => void;
 
   /** Called when webhook processing completes (always called) */
   onCompleted?: (event: CompletedEvent) => void;
@@ -651,6 +825,186 @@ export function createWebhookStats(): {
   };
 
   return { observer, snapshot, reset };
+}
+
+const DEFAULT_REPLAY_TTL_SECONDS = 24 * 60 * 60;
+const DEFAULT_REPLAY_IN_FLIGHT_TTL_SECONDS = 60;
+const DEFAULT_REPLAY_SWEEP_INTERVAL_MS = 60_000;
+const DEFAULT_REPLAY_SWEEP_BATCH_SIZE = 128;
+const DUPLICATE_WEBHOOK_ERROR = "Duplicate webhook delivery";
+const REPLAY_TIMESTAMP_OUTSIDE_TOLERANCE_ERROR =
+  "Webhook timestamp outside replay tolerance";
+const REPLAY_PROTECTION_FAILED_ERROR = "Replay protection failed";
+
+interface ResolvedReplayPolicy {
+  ttlSeconds: number;
+  inFlightTtlSeconds: number;
+  timestampToleranceSeconds?: number;
+  key: (context: ReplayContext) => string | undefined;
+  onDuplicate: ReplayDuplicateBehavior;
+}
+
+export interface InMemoryReplayStoreOptions {
+  /**
+   * Max number of entries retained in memory.
+   * When exceeded, the store evicts soonest-to-expire entries.
+   */
+  maxEntries?: number;
+
+  /**
+   * Minimum interval between opportunistic cleanup sweeps.
+   * Defaults to 60 seconds.
+   */
+  cleanupIntervalMs?: number;
+
+  /**
+   * Max number of expired entries removed per cleanup sweep.
+   * Defaults to 128.
+   */
+  cleanupBatchSize?: number;
+}
+
+function createDefaultReplayPolicy(): ReplayPolicy {
+  return {
+    ttlSeconds: DEFAULT_REPLAY_TTL_SECONDS,
+    inFlightTtlSeconds: DEFAULT_REPLAY_IN_FLIGHT_TTL_SECONDS,
+    key: (context: ReplayContext): string | undefined => {
+      const candidate = context.replayKey ?? context.deliveryId;
+      if (!candidate) {
+        return undefined;
+      }
+      return `${context.provider}:${candidate}`;
+    },
+    onDuplicate: "conflict",
+  };
+}
+
+/**
+ * In-memory replay store implementation.
+ * Useful for local development and single-instance deployments.
+ */
+class InMemoryReplayStore implements AtomicReplayStore {
+  private readonly entries = new Map<string, number>();
+  private readonly maxEntries?: number;
+  private readonly cleanupIntervalMs: number;
+  private readonly cleanupBatchSize: number;
+  private lastCleanupAt = 0;
+
+  constructor(options?: InMemoryReplayStoreOptions) {
+    if (
+      options?.maxEntries !== undefined &&
+      (!Number.isInteger(options.maxEntries) || options.maxEntries <= 0)
+    ) {
+      throw new RangeError("maxEntries must be a positive integer");
+    }
+    if (
+      options?.cleanupIntervalMs !== undefined &&
+      (!Number.isInteger(options.cleanupIntervalMs) ||
+        options.cleanupIntervalMs <= 0)
+    ) {
+      throw new RangeError("cleanupIntervalMs must be a positive integer");
+    }
+    if (
+      options?.cleanupBatchSize !== undefined &&
+      (!Number.isInteger(options.cleanupBatchSize) ||
+        options.cleanupBatchSize <= 0)
+    ) {
+      throw new RangeError("cleanupBatchSize must be a positive integer");
+    }
+    this.maxEntries = options?.maxEntries;
+    this.cleanupIntervalMs =
+      options?.cleanupIntervalMs ?? DEFAULT_REPLAY_SWEEP_INTERVAL_MS;
+    this.cleanupBatchSize =
+      options?.cleanupBatchSize ?? DEFAULT_REPLAY_SWEEP_BATCH_SIZE;
+  }
+
+  reserve(key: string, inFlightTtlSeconds: number): ReplayReserveResult {
+    this.assertPositiveInteger(
+      inFlightTtlSeconds,
+      "Replay store inFlightTtlSeconds must be a positive integer",
+    );
+    this.cleanupExpiredEntries(false);
+    const expiresAt = this.entries.get(key);
+    if (expiresAt === undefined) {
+      this.entries.set(key, Date.now() + inFlightTtlSeconds * 1000);
+      this.enforceMaxEntries();
+      return "reserved";
+    }
+    if (expiresAt <= Date.now()) {
+      this.entries.set(key, Date.now() + inFlightTtlSeconds * 1000);
+      this.enforceMaxEntries();
+      return "reserved";
+    }
+    return "duplicate";
+  }
+
+  commit(key: string, ttlSeconds: number): void {
+    this.assertPositiveInteger(
+      ttlSeconds,
+      "Replay store ttlSeconds must be a positive integer",
+    );
+    this.cleanupExpiredEntries(false);
+    this.entries.set(key, Date.now() + ttlSeconds * 1000);
+    this.enforceMaxEntries();
+  }
+
+  release(key: string): void {
+    this.entries.delete(key);
+  }
+
+  private assertPositiveInteger(value: number, message: string): void {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new RangeError(message);
+    }
+  }
+
+  private cleanupExpiredEntries(force: boolean): void {
+    const now = Date.now();
+    if (!force && now - this.lastCleanupAt < this.cleanupIntervalMs) {
+      return;
+    }
+    let removed = 0;
+    for (const [key, expiresAt] of this.entries) {
+      if (expiresAt <= now) {
+        this.entries.delete(key);
+        removed++;
+      }
+      if (removed >= this.cleanupBatchSize) {
+        break;
+      }
+    }
+    this.lastCleanupAt = now;
+  }
+
+  private enforceMaxEntries(): void {
+    if (this.maxEntries === undefined || this.entries.size <= this.maxEntries) {
+      return;
+    }
+    this.cleanupExpiredEntries(true);
+    if (this.entries.size <= this.maxEntries) {
+      return;
+    }
+
+    const sortedByExpiry = [...this.entries.entries()].sort((left, right) => {
+      return left[1] - right[1];
+    });
+    const entriesToRemove = this.entries.size - this.maxEntries;
+    for (let index = 0; index < entriesToRemove; index++) {
+      const candidate = sortedByExpiry[index];
+      if (candidate) {
+        this.entries.delete(candidate[0]);
+      }
+    }
+  }
+}
+
+/**
+ * Create an in-memory replay store for replay/idempotency protection.
+ */
+export function createInMemoryReplayStore(
+  options?: InMemoryReplayStoreOptions,
+): ReplayStore {
+  return new InMemoryReplayStore(options);
 }
 
 /**
@@ -865,6 +1219,7 @@ export function createProvider<TProviderBrand extends string = string>(
     getDeliveryId = () => undefined,
     verify,
     getPayload,
+    getReplayContext,
     verification = "required",
   } = config;
 
@@ -881,6 +1236,7 @@ export function createProvider<TProviderBrand extends string = string>(
     getDeliveryId,
     verify: verify ?? (() => true),
     getPayload,
+    getReplayContext,
     verification,
   };
 }
@@ -970,6 +1326,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   private verificationFailedHandler?: VerificationFailedHandler;
   private maxBodyBytesLimit?: number;
   private readonly observers: WebhookObserver[] = [];
+  private replayProtection?: {
+    store: ReplayStore;
+    policy: ResolvedReplayPolicy;
+  };
 
   constructor(provider: Provider<TProviderBrand>) {
     this.provider = provider;
@@ -1108,6 +1468,61 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   }
 
   /**
+   * Enable replay/idempotency protection using a pluggable store and policy.
+   */
+  withReplayProtection(
+    options: ReplayProtectionOptions,
+  ): WebhookBuilder<TProviderBrand> {
+    const { store, policy } = options;
+    const resolvedPolicy = policy ?? createDefaultReplayPolicy();
+    const duplicateBehavior = resolvedPolicy.onDuplicate ?? "conflict";
+    const inFlightTtlSeconds =
+      resolvedPolicy.inFlightTtlSeconds ??
+      Math.min(resolvedPolicy.ttlSeconds, DEFAULT_REPLAY_IN_FLIGHT_TTL_SECONDS);
+
+    if (
+      !Number.isInteger(resolvedPolicy.ttlSeconds) ||
+      resolvedPolicy.ttlSeconds <= 0
+    ) {
+      throw new RangeError(
+        "replay policy ttlSeconds must be a positive integer",
+      );
+    }
+    if (!Number.isInteger(inFlightTtlSeconds) || inFlightTtlSeconds <= 0) {
+      throw new RangeError(
+        "replay policy inFlightTtlSeconds must be a positive integer",
+      );
+    }
+    if (
+      resolvedPolicy.timestampToleranceSeconds !== undefined &&
+      (!Number.isInteger(resolvedPolicy.timestampToleranceSeconds) ||
+        resolvedPolicy.timestampToleranceSeconds <= 0)
+    ) {
+      throw new RangeError(
+        "replay policy timestampToleranceSeconds must be a positive integer",
+      );
+    }
+    if (duplicateBehavior !== "conflict" && duplicateBehavior !== "ignore") {
+      throw new RangeError(
+        'replay policy onDuplicate must be either "conflict" or "ignore"',
+      );
+    }
+
+    const newBuilder = this.clone();
+    newBuilder.replayProtection = {
+      store,
+      policy: {
+        ttlSeconds: resolvedPolicy.ttlSeconds,
+        inFlightTtlSeconds,
+        timestampToleranceSeconds: resolvedPolicy.timestampToleranceSeconds,
+        key: resolvedPolicy.key,
+        onDuplicate: duplicateBehavior,
+      },
+    };
+    return newBuilder;
+  }
+
+  /**
    * Process an incoming webhook request
    * Used by adapters to handle the webhook lifecycle
    */
@@ -1137,6 +1552,11 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       receivedAt,
     });
 
+    let parsedBody: unknown;
+    let reservedReplayKey: string | undefined;
+    let replayStoreForRequest: ReplayStore | undefined;
+    let replayPolicyForRequest: ResolvedReplayPolicy | undefined;
+
     // Helper to emit completed event and return result
     const complete = (
       status: number,
@@ -1153,6 +1573,87 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         success: status === 200,
       });
       return { status, eventType, body };
+    };
+
+    const failReplayProtection = async (
+      error: unknown,
+      eventType?: string,
+      deliveryId?: string,
+    ): Promise<ProcessResult> => {
+      const replayError =
+        error instanceof Error
+          ? error
+          : new Error(REPLAY_PROTECTION_FAILED_ERROR);
+      if (this.errorHandler) {
+        try {
+          await this.errorHandler(replayError, {
+            eventType: eventType ?? "unknown",
+            deliveryId,
+            payload: parsedBody,
+          });
+        } catch {
+          // Ignore errors from error handler
+        }
+      }
+      return complete(500, eventType, deliveryId, {
+        ok: false,
+        error: REPLAY_PROTECTION_FAILED_ERROR,
+      });
+    };
+
+    const finalizeReplay = async (
+      status: number,
+      eventType?: string,
+      deliveryId?: string,
+    ): Promise<ProcessResult | undefined> => {
+      if (
+        !reservedReplayKey ||
+        !replayStoreForRequest ||
+        !replayPolicyForRequest
+      ) {
+        return undefined;
+      }
+
+      const replayKey = reservedReplayKey;
+      const replayStore = replayStoreForRequest;
+      const replayPolicy = replayPolicyForRequest;
+      reservedReplayKey = undefined;
+
+      try {
+        if (status === 200 || status === 204) {
+          await replayStore.commit(replayKey, replayPolicy.ttlSeconds);
+          this.emit("onReplayCommitted", {
+            ...createBase(eventType, deliveryId),
+            type: "replay_committed",
+            replayKey,
+            ttlSeconds: replayPolicy.ttlSeconds,
+          });
+        } else {
+          await replayStore.release(replayKey);
+          this.emit("onReplayReleased", {
+            ...createBase(eventType, deliveryId),
+            type: "replay_released",
+            replayKey,
+            reason: "processing_failed",
+          });
+        }
+        return undefined;
+      } catch (error) {
+        return failReplayProtection(error, eventType, deliveryId);
+      }
+    };
+
+    const completeWithReplay = async (
+      status: number,
+      eventType?: string,
+      deliveryId?: string,
+      body?: { ok: boolean; error?: string },
+    ): Promise<ProcessResult> => {
+      const replayFailure = await finalizeReplay(status, eventType, deliveryId);
+      if (replayFailure) {
+        return replayFailure;
+      }
+      return complete(status, eventType, deliveryId, body);
     };
 
     // Emit request received
@@ -1189,7 +1690,6 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
 
     // Parse JSON body early (needed for getEventType and getPayload)
-    let parsedBody: unknown;
     const parseStartTime = performance.now();
     try {
       parsedBody = JSON.parse(bodyString);
@@ -1210,17 +1710,6 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
 
     // Get event type (pass parsed body for providers that extract type from body)
     const eventType = this.provider.getEventType(headers, parsedBody);
-
-    // No event type or no handlers for this event → 204
-    if (!eventType || !this.handlerEntries.has(eventType)) {
-      const durationMs = performance.now() - startTime;
-      this.emit("onEventUnhandled", {
-        ...createBase(eventType, deliveryId),
-        type: "event_unhandled",
-        durationMs,
-      });
-      return complete(204, eventType, deliveryId);
-    }
 
     // Resolve secret: options.secret → provider.secret → env vars
     const resolvedSecret =
@@ -1287,6 +1776,105 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       });
     }
 
+    const providerReplayContext = this.provider.getReplayContext?.(
+      headers,
+      parsedBody,
+    );
+    if (this.replayProtection) {
+      const replayPolicy = this.replayProtection.policy;
+      const replayStore = this.replayProtection.store;
+      try {
+        const replayContext: ReplayContext = {
+          provider: this.provider.name,
+          eventType,
+          deliveryId,
+          replayKey: providerReplayContext?.replayKey,
+          timestamp: providerReplayContext?.timestamp,
+        };
+
+        if (
+          replayPolicy.timestampToleranceSeconds !== undefined &&
+          replayContext.timestamp !== undefined
+        ) {
+          const nowSeconds = Math.floor(Date.now() / 1000);
+          const ageInSeconds = Math.abs(nowSeconds - replayContext.timestamp);
+          if (ageInSeconds > replayPolicy.timestampToleranceSeconds) {
+            this.emit("onReplayFreshnessRejected", {
+              ...createBase(eventType, deliveryId),
+              type: "replay_freshness_rejected",
+              timestamp: replayContext.timestamp,
+              toleranceSeconds: replayPolicy.timestampToleranceSeconds,
+            });
+            return complete(409, eventType, deliveryId, {
+              ok: false,
+              error: REPLAY_TIMESTAMP_OUTSIDE_TOLERANCE_ERROR,
+            });
+          }
+        }
+
+        const replayKey = replayPolicy.key(replayContext);
+        if (!replayKey) {
+          this.emit("onReplaySkipped", {
+            ...createBase(eventType, deliveryId),
+            type: "replay_skipped",
+            reason: "missing_key",
+          });
+        } else {
+          const reserveResult = await replayStore.reserve(
+            replayKey,
+            replayPolicy.inFlightTtlSeconds,
+          );
+          if (reserveResult === "duplicate") {
+            this.emit("onReplayDuplicate", {
+              ...createBase(eventType, deliveryId),
+              type: "replay_duplicate",
+              replayKey,
+              behavior: replayPolicy.onDuplicate,
+            });
+            if (replayPolicy.onDuplicate === "ignore") {
+              return complete(200, eventType, deliveryId, { ok: true });
+            }
+            return complete(409, eventType, deliveryId, {
+              ok: false,
+              error: DUPLICATE_WEBHOOK_ERROR,
+            });
+          }
+
+          reservedReplayKey = replayKey;
+          replayStoreForRequest = replayStore;
+          replayPolicyForRequest = replayPolicy;
+          this.emit("onReplayReserved", {
+            ...createBase(eventType, deliveryId),
+            type: "replay_reserved",
+            replayKey,
+            inFlightTtlSeconds: replayPolicy.inFlightTtlSeconds,
+            storeMode: "atomic",
+          });
+        }
+      } catch (error) {
+        if (reservedReplayKey && replayStoreForRequest) {
+          try {
+            await replayStoreForRequest.release(reservedReplayKey);
+          } catch {
+            // Ignore release failures after replay errors.
+          }
+          reservedReplayKey = undefined;
+        }
+        return failReplayProtection(error, eventType, deliveryId);
+      }
+    }
+
+    // No event type or no handlers for this event → 204
+    if (!eventType || !this.handlerEntries.has(eventType)) {
+      const durationMs = performance.now() - startTime;
+      this.emit("onEventUnhandled", {
+        ...createBase(eventType, deliveryId),
+        type: "event_unhandled",
+        durationMs,
+      });
+      return completeWithReplay(204, eventType, deliveryId);
+    }
+
     // Extract payload from body (for providers with envelope structures like Ragie)
     // If getPayload is not defined, use the entire parsed body
     const payloadToValidate = this.provider.getPayload
@@ -1325,7 +1913,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
           }
         }
 
-        return complete(400, eventType, deliveryId, {
+        return completeWithReplay(400, eventType, deliveryId, {
           ok: false,
           error: "Schema validation failed",
         });
@@ -1407,14 +1995,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
           }
         }
 
-        return complete(500, eventType, deliveryId, {
+        return completeWithReplay(500, eventType, deliveryId, {
           ok: false,
           error: "Handler execution failed",
         });
       }
     }
 
-    return complete(200, eventType, deliveryId, { ok: true });
+    return completeWithReplay(200, eventType, deliveryId, { ok: true });
   }
 
   /**
@@ -1442,6 +2030,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     newBuilder.errorHandler = this.errorHandler;
     newBuilder.verificationFailedHandler = this.verificationFailedHandler;
     newBuilder.maxBodyBytesLimit = this.maxBodyBytesLimit;
+    newBuilder.replayProtection = this.replayProtection;
 
     // Copy observers
     newBuilder.observers.push(...this.observers);

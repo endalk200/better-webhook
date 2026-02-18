@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   WebhookBuilder,
   createWebhook,
+  createInMemoryReplayStore,
   normalizeHeaders,
   secureCompare,
   verifyHmac,
@@ -14,6 +15,7 @@ import {
   type Provider,
   type Headers,
   type HandlerContext,
+  type ReplayContext,
   type WebhookEvent,
 } from "./index.js";
 
@@ -432,6 +434,16 @@ describe("WebhookBuilder", () => {
       expect(builder1).not.toBe(builder2);
     });
 
+    it("should return a new builder instance on .withReplayProtection()", () => {
+      const provider = createTestProvider();
+      const builder1 = createWebhook(provider);
+      const builder2 = builder1.withReplayProtection({
+        store: createInMemoryReplayStore(),
+      });
+
+      expect(builder1).not.toBe(builder2);
+    });
+
     it("should throw when .maxBodyBytes() is not a positive integer", () => {
       const provider = createTestProvider();
       const builder = createWebhook(provider);
@@ -439,6 +451,127 @@ describe("WebhookBuilder", () => {
       expect(() => builder.maxBodyBytes(0)).toThrow(RangeError);
       expect(() => builder.maxBodyBytes(-1)).toThrow(RangeError);
       expect(() => builder.maxBodyBytes(1.5)).toThrow(RangeError);
+    });
+
+    it("should throw when replay policy ttlSeconds is not a positive integer", () => {
+      const provider = createTestProvider();
+      const builder = createWebhook(provider);
+      const store = createInMemoryReplayStore();
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 0,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: -1,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 1.5,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+    });
+
+    it("should throw when replay policy inFlightTtlSeconds is not a positive integer", () => {
+      const provider = createTestProvider();
+      const builder = createWebhook(provider);
+      const store = createInMemoryReplayStore();
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            inFlightTtlSeconds: 0,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            inFlightTtlSeconds: -1,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            inFlightTtlSeconds: 1.5,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+    });
+
+    it("should throw when replay policy timestampToleranceSeconds is not a positive integer", () => {
+      const provider = createTestProvider();
+      const builder = createWebhook(provider);
+      const store = createInMemoryReplayStore();
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            timestampToleranceSeconds: 0,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            timestampToleranceSeconds: -1,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
+
+      expect(() =>
+        builder.withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            timestampToleranceSeconds: 1.5,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+          },
+        }),
+      ).toThrow(RangeError);
     });
   });
 
@@ -450,6 +583,7 @@ describe("WebhookBuilder", () => {
       const result = await webhook.process({
         headers: {},
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(result.status).toBe(204);
@@ -462,9 +596,338 @@ describe("WebhookBuilder", () => {
       const result = await webhook.process({
         headers: { "x-test-event": "unknown.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(result.status).toBe(204);
+    });
+
+    it("should verify before returning unhandled responses", async () => {
+      const provider = createTestProvider({ verifyResult: false });
+      const verifyMock = vi.spyOn(provider, "verify");
+      const webhook = createWebhook(provider);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(401);
+      expect(verifyMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should fail unknown events when no secret is available", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(result.status).toBe(401);
+      expect(result.body?.error).toBe("Missing webhook secret");
+    });
+
+    it("should return 409 when replay protection detects duplicates", async () => {
+      const provider = createTestProvider();
+      const store = createInMemoryReplayStore();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store })
+        .event(testEvent, () => {});
+
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "duplicate-id",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      const firstResult = await webhook.process(request);
+      const secondResult = await webhook.process(request);
+
+      expect(firstResult.status).toBe(200);
+      expect(secondResult.status).toBe(409);
+      expect(secondResult.body?.error).toBe("Duplicate webhook delivery");
+    });
+
+    it("should skip replay checks when replay key is unavailable", async () => {
+      const provider = createTestProvider();
+      const store = createInMemoryReplayStore();
+      const handler = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store })
+        .event(testEvent, handler);
+
+      const firstResult = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+      const secondResult = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(firstResult.status).toBe(200);
+      expect(secondResult.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it("should support custom replay duplicate behavior", async () => {
+      const provider = createTestProvider();
+      const store = createInMemoryReplayStore();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store,
+          policy: {
+            ttlSeconds: 60,
+            key: (context: ReplayContext): string | undefined =>
+              context.deliveryId,
+            onDuplicate: "ignore",
+          },
+        })
+        .event(testEvent, () => {});
+
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "duplicate-id-ignore",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      const firstResult = await webhook.process(request);
+      const secondResult = await webhook.process(request);
+
+      expect(firstResult.status).toBe(200);
+      expect(secondResult.status).toBe(200);
+    });
+
+    it("should process only one request when duplicate deliveries arrive in parallel", async () => {
+      const provider = createTestProvider();
+      const handler = vi.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .event(testEvent, handler);
+
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "parallel-duplicate-id",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      const [firstResult, secondResult] = await Promise.all([
+        webhook.process(request),
+        webhook.process(request),
+      ]);
+
+      const statuses = [firstResult.status, secondResult.status].sort(
+        (left, right) => left - right,
+      );
+      expect(statuses).toEqual([200, 409]);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("should release replay reservation on handler failure and allow retry", async () => {
+      const provider = createTestProvider();
+      const handler = vi
+        .fn()
+        .mockImplementationOnce(() => {
+          throw new Error("transient failure");
+        })
+        .mockImplementationOnce(() => {});
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .event(testEvent, handler);
+
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "retry-after-failure",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      const firstResult = await webhook.process(request);
+      const secondResult = await webhook.process(request);
+
+      expect(firstResult.status).toBe(500);
+      expect(firstResult.body?.error).toBe("Handler execution failed");
+      expect(secondResult.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it("should return 500 when replay reservation fails", async () => {
+      const provider = createTestProvider();
+      const replayError = new Error("reserve failed");
+      const onError = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: {
+            reserve: () => {
+              throw replayError;
+            },
+            commit: () => {},
+            release: () => {},
+          },
+        })
+        .event(testEvent, () => {})
+        .onError(onError);
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "reserve-error",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Replay protection failed");
+      expect(onError).toHaveBeenCalledWith(
+        replayError,
+        expect.objectContaining({
+          eventType: "test.event",
+          payload: validPayload,
+        }),
+      );
+    });
+
+    it("should return 500 when replay commit fails", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: {
+            reserve: () => "reserved",
+            commit: () => {
+              throw new Error("commit failed");
+            },
+            release: () => {},
+          },
+        })
+        .event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "commit-error",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Replay protection failed");
+    });
+
+    it("should return 500 when replay release fails", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: {
+            reserve: () => "reserved",
+            commit: () => {},
+            release: () => {
+              throw new Error("release failed");
+            },
+          },
+        })
+        .event(testEvent, () => {
+          throw new Error("handler failure");
+        });
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "release-error",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Replay protection failed");
+    });
+
+    it("should apply replay timestamp tolerance when configured", async () => {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getReplayContext() {
+          return {
+            replayKey: "stale-replay-key",
+            timestamp: nowSeconds - 120,
+          };
+        },
+      };
+      const handler = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: createInMemoryReplayStore(),
+          policy: {
+            ttlSeconds: 60,
+            timestampToleranceSeconds: 30,
+            key: (context: ReplayContext): string | undefined =>
+              context.replayKey,
+          },
+        })
+        .event(testEvent, handler);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(409);
+      expect(result.body?.error).toBe(
+        "Webhook timestamp outside replay tolerance",
+      );
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("should evict older replay keys when maxEntries is exceeded", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: createInMemoryReplayStore({ maxEntries: 1 }),
+        })
+        .event(testEvent, () => {});
+
+      const requestA = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "capacity-a",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+      const requestB = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "capacity-b",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      expect((await webhook.process(requestA)).status).toBe(200);
+      expect((await webhook.process(requestB)).status).toBe(200);
+      expect((await webhook.process(requestB)).status).toBe(409);
+      expect((await webhook.process(requestA)).status).toBe(200);
     });
 
     it("should return 401 when verification fails", async () => {
@@ -1408,6 +1871,12 @@ import {
   type HandlerStartedEvent,
   type HandlerSucceededEvent,
   type HandlerFailedEvent,
+  type ReplaySkippedEvent,
+  type ReplayFreshnessRejectedEvent,
+  type ReplayReservedEvent,
+  type ReplayDuplicateEvent,
+  type ReplayCommittedEvent,
+  type ReplayReleasedEvent,
   createWebhookStats,
 } from "./index.js";
 
@@ -1548,6 +2017,158 @@ describe("WebhookBuilder observability", () => {
       expect(event.eventType).toBe("test.event");
     });
 
+    it("should emit onReplaySkipped when replay key is unavailable", async () => {
+      const provider = createTestProvider();
+      const onReplaySkipped = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .observe({ onReplaySkipped })
+        .event(testEvent, () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onReplaySkipped).toHaveBeenCalledTimes(1);
+      const event = onReplaySkipped.mock.calls[0]![0] as ReplaySkippedEvent;
+      expect(event.type).toBe("replay_skipped");
+      expect(event.reason).toBe("missing_key");
+    });
+
+    it("should emit replay reservation and commit events for successful requests", async () => {
+      const provider = createTestProvider();
+      const onReplayReserved = vi.fn();
+      const onReplayCommitted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .observe({ onReplayReserved, onReplayCommitted })
+        .event(testEvent, () => {});
+
+      await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "replay-observation-success",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onReplayReserved).toHaveBeenCalledTimes(1);
+      const reservedEvent = onReplayReserved.mock
+        .calls[0]![0] as ReplayReservedEvent;
+      expect(reservedEvent.type).toBe("replay_reserved");
+      expect(reservedEvent.replayKey).toBe("test:replay-observation-success");
+      expect(reservedEvent.storeMode).toBe("atomic");
+
+      expect(onReplayCommitted).toHaveBeenCalledTimes(1);
+      const committedEvent = onReplayCommitted.mock
+        .calls[0]![0] as ReplayCommittedEvent;
+      expect(committedEvent.type).toBe("replay_committed");
+      expect(committedEvent.replayKey).toBe("test:replay-observation-success");
+      expect(committedEvent.ttlSeconds).toBeGreaterThan(0);
+    });
+
+    it("should emit onReplayDuplicate when duplicate is detected", async () => {
+      const provider = createTestProvider();
+      const onReplayDuplicate = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .observe({ onReplayDuplicate })
+        .event(testEvent, () => {});
+
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "replay-observation-duplicate",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      await webhook.process(request);
+      await webhook.process(request);
+
+      expect(onReplayDuplicate).toHaveBeenCalledTimes(1);
+      const duplicateEvent = onReplayDuplicate.mock
+        .calls[0]![0] as ReplayDuplicateEvent;
+      expect(duplicateEvent.type).toBe("replay_duplicate");
+      expect(duplicateEvent.replayKey).toBe(
+        "test:replay-observation-duplicate",
+      );
+      expect(duplicateEvent.behavior).toBe("conflict");
+    });
+
+    it("should emit onReplayReleased when processing fails after reservation", async () => {
+      const provider = createTestProvider();
+      const onReplayReleased = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .observe({ onReplayReleased })
+        .event(testEvent, () => {
+          throw new Error("handler failed");
+        });
+
+      await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "replay-observation-release",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onReplayReleased).toHaveBeenCalledTimes(1);
+      const releasedEvent = onReplayReleased.mock
+        .calls[0]![0] as ReplayReleasedEvent;
+      expect(releasedEvent.type).toBe("replay_released");
+      expect(releasedEvent.reason).toBe("processing_failed");
+      expect(releasedEvent.replayKey).toBe("test:replay-observation-release");
+    });
+
+    it("should emit onReplayFreshnessRejected when timestamp is outside tolerance", async () => {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getReplayContext() {
+          return {
+            replayKey: "replay-freshness-observation",
+            timestamp: nowSeconds - 90,
+          };
+        },
+      };
+      const onReplayFreshnessRejected = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({
+          store: createInMemoryReplayStore(),
+          policy: {
+            ttlSeconds: 60,
+            timestampToleranceSeconds: 30,
+            key: (context: ReplayContext): string | undefined =>
+              context.replayKey,
+          },
+        })
+        .observe({ onReplayFreshnessRejected })
+        .event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(409);
+      expect(onReplayFreshnessRejected).toHaveBeenCalledTimes(1);
+      const freshnessEvent = onReplayFreshnessRejected.mock
+        .calls[0]![0] as ReplayFreshnessRejectedEvent;
+      expect(freshnessEvent.type).toBe("replay_freshness_rejected");
+      expect(freshnessEvent.timestamp).toBe(nowSeconds - 90);
+      expect(freshnessEvent.toleranceSeconds).toBe(30);
+    });
+
     it("should emit onJsonParseFailed for invalid JSON", async () => {
       const provider = createTestProvider();
       const onJsonParseFailed = vi.fn();
@@ -1586,6 +2207,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: { "x-test-event": "unknown.event" },
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onEventUnhandled).toHaveBeenCalledTimes(1);
@@ -1609,6 +2231,7 @@ describe("WebhookBuilder observability", () => {
       await webhook.process({
         headers: {},
         rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
       });
 
       expect(onEventUnhandled).toHaveBeenCalledTimes(1);
