@@ -1,10 +1,16 @@
 import { github } from "@better-webhook/github";
 import { push, pull_request, issues } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
-import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
+import {
+  createWebhookStats,
+  createInMemoryReplayStore,
+  type WebhookObserver,
+} from "@better-webhook/core";
 
 // Create an in-memory stats collector for observability
 const stats = createWebhookStats();
+// Core replay protection with built-in in-memory store
+const replayStore = createInMemoryReplayStore();
 
 // Custom observer for logging lifecycle events
 const loggingObserver: WebhookObserver = {
@@ -31,6 +37,9 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
   // Add observers for metrics and logging
   .observe(stats.observer)
   .observe(loggingObserver)
+  .withReplayProtection({
+    store: replayStore,
+  })
   .event(push, async (payload, context) => {
     console.log("📦 Push event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);

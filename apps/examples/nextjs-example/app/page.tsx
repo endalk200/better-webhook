@@ -3,8 +3,8 @@ export default function Home() {
     <main style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
       <h1>Better Webhook - Next.js Example</h1>
       <p>
-        This example demonstrates how to use <code>@better-webhook/github</code>,{" "}
-        <code>@better-webhook/ragie</code>, and{" "}
+        This example demonstrates how to use <code>@better-webhook/github</code>
+        , <code>@better-webhook/ragie</code>, and{" "}
         <code>@better-webhook/recall</code> with{" "}
         <code>@better-webhook/nextjs</code>.
       </p>
@@ -15,16 +15,26 @@ export default function Home() {
           <code>POST /api/webhooks/github</code> - GitHub webhook endpoint
         </li>
         <li>
+          <code>GET /api/webhooks/github</code> - GitHub endpoint info
+        </li>
+        <li>
           <code>POST /api/webhooks/ragie</code> - Ragie webhook endpoint
+        </li>
+        <li>
+          <code>GET /api/webhooks/ragie</code> - Ragie endpoint info
         </li>
         <li>
           <code>POST /api/webhooks/recall</code> - Recall.ai webhook endpoint
         </li>
+        <li>
+          <code>GET /api/webhooks/recall</code> - Recall endpoint info
+        </li>
       </ul>
 
-      <h2>Testing</h2>
+      <h2>Signed Testing</h2>
       <p>
-        Use the following curl command to test (without signature verification):
+        Unsigned requests are rejected by default. Sign test payloads with the
+        same secret configured in your environment.
       </p>
       <pre
         style={{
@@ -34,11 +44,16 @@ export default function Home() {
           overflow: "auto",
         }}
       >
-        {`curl -X POST http://localhost:3002/api/webhooks/github \\
+        {`SECRET="your-github-secret"
+PAYLOAD='{"ref":"refs/heads/main","repository":{"id":1,"name":"test","full_name":"org/test","private":false},"commits":[{"id":"abc123","message":"Test commit","timestamp":"2024-01-01T00:00:00Z","url":"https://example.com","author":{"name":"Test","email":"test@example.com"},"committer":{"name":"Test","email":"test@example.com"}}],"head_commit":null,"before":"000","after":"abc","created":false,"deleted":false,"forced":false,"base_ref":null,"compare":"https://example.com","pusher":{"name":"test"},"sender":{"login":"test","id":1,"type":"User"}}'
+SIGNATURE=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')
+
+curl -X POST http://localhost:3002/api/webhooks/github \\
   -H "Content-Type: application/json" \\
   -H "X-GitHub-Event: push" \\
   -H "X-GitHub-Delivery: test-123" \\
-  -d '{"ref":"refs/heads/main","repository":{"id":1,"name":"test","full_name":"org/test","private":false},"commits":[{"id":"abc123","message":"Test commit","timestamp":"2024-01-01T00:00:00Z","url":"https://example.com","author":{"name":"Test","email":"test@example.com"},"committer":{"name":"Test","email":"test@example.com"}}],"head_commit":null,"before":"000","after":"abc","created":false,"deleted":false,"forced":false,"base_ref":null,"compare":"https://example.com","pusher":{"name":"test"},"sender":{"login":"test","id":1,"type":"User"}}'`}
+  -H "X-Hub-Signature-256: sha256=$SIGNATURE" \\
+  -d "$PAYLOAD"`}
       </pre>
     </main>
   );

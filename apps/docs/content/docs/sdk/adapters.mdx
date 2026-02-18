@@ -68,7 +68,8 @@ export const POST = toNextJS(webhook, {
 | Status | Condition                                     |
 | ------ | --------------------------------------------- |
 | `200`  | Handler executed successfully                 |
-| `204`  | No handler registered for this event type     |
+| `204`  | No handler registered for this event type (after verification) |
+| `409`  | Duplicate replay key detected (when replay protection is enabled) |
 | `400`  | Invalid JSON body or schema validation failed |
 | `401`  | Signature verification failed                 |
 | `405`  | Request method is not POST                    |
@@ -214,7 +215,10 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: Request, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }
 ```
@@ -255,7 +259,10 @@ async handleGitHub(@Req() req: Request, @Res() res: Response) {
   });
 
   const result = await handler(req);
-  return res.status(result.statusCode).json(result.body);
+  if (result.body) {
+    return res.status(result.statusCode).json(result.body);
+  }
+  return res.status(result.statusCode).end();
 }
 ```
 
@@ -270,6 +277,7 @@ interface NestJSResult {
 }
 ```
 
+`body` is omitted for `204` responses, so use `.end()` when `result.body` is not present.
 This gives you control over the response, allowing you to add headers, transform the body, or perform additional logic before responding.
 
 ---
@@ -495,7 +503,8 @@ Deno.serve(app.fetch);
 | Status | Condition                                     |
 | ------ | --------------------------------------------- |
 | `200`  | Handler executed successfully                 |
-| `204`  | No handler registered for this event type     |
+| `204`  | No handler registered for this event type (after verification) |
+| `409`  | Duplicate replay key detected (when replay protection is enabled) |
 | `400`  | Invalid JSON body or schema validation failed |
 | `401`  | Signature verification failed                 |
 | `405`  | Request method is not POST                    |
@@ -524,6 +533,9 @@ All adapters accept the same options:
 | `maxBodyBytes` | `number`                                    | Optional request body size guard in bytes. Returns `413` when exceeded.                                          |
 | `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored.                      |
 | `observer`  | `WebhookObserver \| WebhookObserver[]`         | Observer(s) for webhook lifecycle events. Add metrics, logging, or tracing without modifying the webhook builder. |
+
+If core replay protection is enabled on the webhook builder, adapters pass
+through duplicate responses as `409` by default.
 
 <Callout type="warn">
   Use `maxBodyBytes` as an app-layer guard. Keep edge/proxy and framework body

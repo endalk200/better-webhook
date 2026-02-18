@@ -369,7 +369,10 @@ export class CaptureServer {
 
     // Recall.ai realtime webhook endpoints (Standard Webhooks + Recall-specific hints)
     if (this.hasStandardWebhookHeaders(headers)) {
-      const recallUserAgent = this.headerIncludes(headers["user-agent"], "recall");
+      const recallUserAgent = this.headerIncludes(
+        headers["user-agent"],
+        "recall",
+      );
       if (recallUserAgent || this.hasRecallStandardWebhookShape(body)) {
         return "recall";
       }
@@ -479,7 +482,9 @@ export class CaptureServer {
     );
   }
 
-  private hasRecallResourceCombination(payload: Record<string, unknown>): boolean {
+  private hasRecallResourceCombination(
+    payload: Record<string, unknown>,
+  ): boolean {
     const hasRealtimeEndpoint = "realtime_endpoint" in payload;
     const hasRecording = "recording" in payload;
     const hasParticipantEvents = "participant_events" in payload;
