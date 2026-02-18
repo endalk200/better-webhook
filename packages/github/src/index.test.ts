@@ -321,6 +321,15 @@ describe("github()", () => {
     expect(webhook.getProvider().secret).toBe("my-secret");
   });
 
+  it("should expose replay context from delivery header", () => {
+    const provider = github().getProvider();
+    const replayContext = provider.getReplayContext?.({
+      "x-github-delivery": "delivery-123",
+    });
+
+    expect(replayContext).toEqual({ replayKey: "delivery-123" });
+  });
+
   describe("event handlers", () => {
     it("should handle push events", async () => {
       const secret = "test-secret";

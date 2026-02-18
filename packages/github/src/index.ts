@@ -67,6 +67,12 @@ function createGitHubProvider(options?: GitHubOptions): Provider<"github"> {
       return headers["x-github-delivery"];
     },
 
+    getReplayContext(headers: Headers) {
+      return {
+        replayKey: headers["x-github-delivery"],
+      };
+    },
+
     /**
      * Verify the webhook signature using HMAC-SHA256.
      * GitHub sends the signature in the X-Hub-Signature-256 header.
