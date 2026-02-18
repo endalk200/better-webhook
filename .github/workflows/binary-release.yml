@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
@@ -25,6 +25,8 @@ env:
 jobs:
   build-binaries:
     name: Build ${{ matrix.artifact }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +54,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -108,6 +111,8 @@ jobs:
     name: Upload to Release
     needs: build-binaries
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
