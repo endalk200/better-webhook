@@ -1,5 +1,16 @@
 # @better-webhook/recall
 
+## 0.2.0
+
+### Minor Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.11.0
+- Expose normalized replay metadata (`webhook-id`/`svix-id` and timestamp) for
+  core replay protection.
+- Updated dependencies
+  - @better-webhook/core (replay protection + strict verification ordering)
+
 ## 0.1.1
 
 ### Patch Changes
