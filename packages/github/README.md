@@ -26,6 +26,7 @@ const webhook = github().event(push, async (payload) => {
 - **Fully typed payloads** — TypeScript knows every field on every event
 - **Schema validated** — Malformed payloads are caught and rejected
 - **Multiple events** — Handle `push`, `pull_request`, `issues`, and more
+- **Replay key support** — Exposes `x-github-delivery` for deduplication and replay protection
 
 ## Installation
 
@@ -44,6 +45,8 @@ You'll also need a framework adapter:
 npm install @better-webhook/nextjs   # Next.js App Router
 npm install @better-webhook/express  # Express.js
 npm install @better-webhook/nestjs   # NestJS
+npm install @better-webhook/hono     # Hono (Node/Workers/Bun/Deno)
+npm install @better-webhook/gcp-functions # GCP Cloud Functions
 ```
 
 ## Quick Start
@@ -342,6 +345,29 @@ export const POST = toNextJS(webhook, {
   },
 });
 ```
+
+## Replay Protection and Idempotency
+
+GitHub includes `x-github-delivery`, which is exposed as `context.deliveryId`.
+You can use this with core replay protection for storage-backed deduplication:
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+
+const webhook = github()
+  .withReplayProtection({
+    store: createInMemoryReplayStore(),
+  })
+  .event(push, async (payload) => {
+    await processPush(payload);
+  });
+```
+
+With replay protection enabled, duplicate deliveries return `409` by default.
+
+For production, use a shared replay store that supports atomic reservation
+semantics (`reserve/commit/release`). If you use Redis, implement reservation
+with `SET key value NX EX ttl`.
 
 ## TypeScript Types
 
