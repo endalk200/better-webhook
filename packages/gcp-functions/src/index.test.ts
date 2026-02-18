@@ -270,6 +270,38 @@ describe("toGCPFunction", () => {
       expect((state.jsonBody as { ok: boolean }).ok).toBe(true);
     });
 
+    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const processSpy = vi.spyOn(webhook, "process");
+      processSpy.mockResolvedValueOnce({
+        status: 200,
+        eventType: "test.event",
+        body: { ok: true },
+      });
+      processSpy.mockResolvedValueOnce({
+        status: 409,
+        eventType: "test.event",
+        body: { ok: false, error: "Duplicate webhook delivery" },
+      });
+      const handler = toGCPFunction(webhook);
+
+      const req = createMockRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-duplicate",
+        },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+      expect(state.statusCode).toBe(200);
+
+      await handler(req, res);
+      expect(state.statusCode).toBe(409);
+    });
+
     it("should return 400 for invalid JSON body", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});

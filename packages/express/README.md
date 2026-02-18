@@ -261,14 +261,15 @@ Use adapter-level `maxBodyBytes` as an app-layer guard. Keep your
 
 ## Response Codes
 
-| Code  | Meaning                                   |
-| ----- | ----------------------------------------- |
-| `200` | Webhook processed successfully            |
-| `204` | No handler registered for this event type |
-| `400` | Invalid body or schema validation failed  |
-| `401` | Signature verification failed             |
-| `413` | Request body exceeds `maxBodyBytes`       |
-| `500` | Handler threw an error                    |
+| Code  | Meaning                                                           |
+| ----- | ----------------------------------------------------------------- |
+| `200` | Webhook processed successfully                                    |
+| `204` | No handler registered for this event type (after verification)    |
+| `409` | Duplicate replay key detected (when replay protection is enabled) |
+| `400` | Invalid body or schema validation failed                          |
+| `401` | Signature verification failed                                     |
+| `413` | Request body exceeds `maxBodyBytes`                               |
+| `500` | Handler threw an error                                            |
 
 ## TypeScript
 

@@ -41,10 +41,13 @@ yarn add @better-webhook/nextjs @better-webhook/core
 
 ## Quick Start
 
-### 1. Install a provider
+### 1. Install a provider package
 
 ```bash
+# Pick one (or more):
 npm install @better-webhook/github
+npm install @better-webhook/ragie
+npm install @better-webhook/recall
 ```
 
 ### 2. Create your route handler
@@ -111,7 +114,7 @@ const webhook = github().event(push, async (payload, context) => {
 
   // Access headers (including provider-specific ones like delivery ID)
   console.log(`User-Agent: ${context.headers["user-agent"]}`);
-  console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
+  console.log(`Delivery ID: ${context.deliveryId}`);
 
   // Timestamp when webhook was received
   console.log(`Received at: ${context.receivedAt.toISOString()}`);
@@ -124,13 +127,14 @@ export const POST = toNextJS(webhook);
 
 ### Context Properties
 
-| Property     | Type      | Description                               |
-| ------------ | --------- | ----------------------------------------- |
-| `eventType`  | `string`  | Event type (e.g., "push", "pull_request") |
-| `provider`   | `string`  | Provider name (e.g., "github")            |
-| `headers`    | `Headers` | Request headers (lowercase keys)          |
-| `rawBody`    | `string`  | Raw request body                          |
-| `receivedAt` | `Date`    | Timestamp when webhook was received       |
+| Property     | Type                                  | Description                                          |
+| ------------ | ------------------------------------- | ---------------------------------------------------- |
+| `eventType`  | `string`                              | Event type (e.g., "push", "pull_request")            |
+| `provider`   | `string`                              | Provider name (e.g., "github")                       |
+| `deliveryId` | `string \| undefined`                 | Delivery ID extracted by the provider (if available) |
+| `headers`    | `Record<string, string \| undefined>` | Request headers (lowercase keys)                     |
+| `rawBody`    | `string`                              | Raw request body                                     |
+| `receivedAt` | `Date`                                | Timestamp when webhook was received                  |
 
 ## Error Handling
 
@@ -202,15 +206,16 @@ limits configured as the first line of defense.
 
 The adapter returns appropriate HTTP status codes:
 
-| Code  | Meaning                                       |
-| ----- | --------------------------------------------- |
-| `200` | Webhook processed successfully                |
-| `204` | No handler registered for this event type     |
-| `400` | Invalid JSON body or schema validation failed |
-| `401` | Signature verification failed                 |
-| `405` | Method not allowed (non-POST request)         |
-| `413` | Request body exceeds `maxBodyBytes`           |
-| `500` | Handler threw an error                        |
+| Code  | Meaning                                                           |
+| ----- | ----------------------------------------------------------------- |
+| `200` | Webhook processed successfully                                    |
+| `204` | No handler registered for this event type (after verification)    |
+| `409` | Duplicate replay key detected (when replay protection is enabled) |
+| `400` | Invalid JSON body or schema validation failed                     |
+| `401` | Signature verification failed                                     |
+| `405` | Method not allowed (non-POST request)                             |
+| `413` | Request body exceeds `maxBodyBytes`                               |
+| `500` | Handler threw an error                                            |
 
 ## Custom Providers
 

@@ -1,5 +1,16 @@
 # @better-webhook/gcp-functions
 
+## 0.5.0
+
+### Minor Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.11.0
+- Propagate duplicate replay responses (`409`) from core when replay protection
+  is enabled.
+- Updated dependencies
+  - @better-webhook/core (replay protection + strict verification ordering)
+
 ## 0.4.0
 
 ### Minor Changes

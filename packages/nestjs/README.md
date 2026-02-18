@@ -23,7 +23,10 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }
 ```
@@ -104,7 +107,10 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }
 ```
@@ -157,7 +163,10 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }
 ```
@@ -189,13 +198,19 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: any, @Res() res: Response) {
     const result = await toNestJS(this.githubWebhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 
   @Post("stripe")
   async handleStripe(@Req() req: any, @Res() res: Response) {
     const result = await toNestJS(this.stripeWebhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }
 ```
@@ -241,7 +256,10 @@ Wrap in try-catch for NestJS exception handling:
 async handleGitHub(@Req() req: any, @Res() res: Response) {
   try {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   } catch (error) {
     // Will be caught by NestJS exception filters
     throw new InternalServerErrorException("Webhook processing failed");
@@ -259,7 +277,10 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
   const result = await toNestJS(this.webhook, {
     secret: this.configService.get("GITHUB_SECRET"),
   })(req);
-  return res.status(result.statusCode).json(result.body);
+  if (result.body) {
+    return res.status(result.statusCode).json(result.body);
+  }
+  return res.status(result.statusCode).end();
 }
 ```
 
@@ -276,7 +297,10 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
       });
     },
   })(req);
-  return res.status(result.statusCode).json(result.body);
+  if (result.body) {
+    return res.status(result.statusCode).json(result.body);
+  }
+  return res.status(result.statusCode).end();
 }
 ```
 
@@ -288,7 +312,10 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
   const result = await toNestJS(this.webhook, {
     maxBodyBytes: 1024 * 1024, // 1MB
   })(req);
-  return res.status(result.statusCode).json(result.body);
+  if (result.body) {
+    return res.status(result.statusCode).json(result.body);
+  }
+  return res.status(result.statusCode).end();
 }
 ```
 
@@ -297,14 +324,15 @@ limits configured for earlier rejection.
 
 ## Response Codes
 
-| Code  | Meaning                                   |
-| ----- | ----------------------------------------- |
-| `200` | Webhook processed successfully            |
-| `204` | No handler registered for this event type |
-| `400` | Invalid body or schema validation failed  |
-| `401` | Signature verification failed             |
-| `413` | Request body exceeds `maxBodyBytes`       |
-| `500` | Handler threw an error                    |
+| Code  | Meaning                                                           |
+| ----- | ----------------------------------------------------------------- |
+| `200` | Webhook processed successfully                                    |
+| `204` | No handler registered for this event type (after verification)    |
+| `409` | Duplicate replay key detected (when replay protection is enabled) |
+| `400` | Invalid body or schema validation failed                          |
+| `401` | Signature verification failed                                     |
+| `413` | Request body exceeds `maxBodyBytes`                               |
+| `500` | Handler threw an error                                            |
 
 ## Module Registration
 
