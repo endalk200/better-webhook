@@ -353,13 +353,15 @@ You can use this with core replay protection for storage-backed deduplication:
 
 ```ts
 import { createInMemoryReplayStore } from "@better-webhook/core";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 
 const webhook = github()
   .withReplayProtection({
     store: createInMemoryReplayStore(),
   })
   .event(push, async (payload) => {
-    await processPush(payload);
+    console.log(`Push to ${payload.repository.full_name}`);
   });
 ```
 

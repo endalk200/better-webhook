@@ -41,6 +41,8 @@ import { Hono } from "hono";
 
 const app = new Hono();
 const port = Number(process.env.PORT ?? "3004");
+// Example-only manual dedupe cache: unbounded in-memory Set.
+// For production, prefer withReplayProtection + createInMemoryReplayStore (or a shared persistent store).
 const processedReplayKeys = new Set<string>();
 
 function isDuplicateReplay(key: string | undefined): boolean {
@@ -140,7 +142,8 @@ const ragieWebhook = ragie()
   .observe(ragieStats.observer)
   .observe(loggingObserver)
   .event(document_status_updated, async (payload) => {
-    if (isDuplicateReplay(`ragie:${payload.nonce}`)) {
+    const replayKey = payload.nonce ? `ragie:${payload.nonce}` : undefined;
+    if (isDuplicateReplay(replayKey)) {
       console.log("Duplicate Ragie nonce detected, skipping");
       return;
     }

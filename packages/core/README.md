@@ -217,7 +217,10 @@ const webhook = recall()
     policy: {
       ttlSeconds: 24 * 60 * 60,
       timestampToleranceSeconds: 5 * 60,
-      key: (context) => context.replayKey ?? context.deliveryId,
+      key: (context) => {
+        const candidate = context.replayKey ?? context.deliveryId;
+        return candidate ? `${context.provider}:${candidate}` : undefined;
+      },
     },
   })
   .event(bot_done, handler);

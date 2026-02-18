@@ -52,6 +52,9 @@
   "dependencies": {
     "@better-webhook/core": "workspace:*"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "peerDependencies": {
     "hono": "^4.0.0"
   },

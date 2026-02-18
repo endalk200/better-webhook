@@ -48,6 +48,8 @@ interface RawBodyRequest extends Request {
 const githubStats = createWebhookStats();
 const ragieStats = createWebhookStats();
 const recallStats = createWebhookStats();
+// Example-only manual dedupe cache: unbounded in-memory Set.
+// For production, prefer withReplayProtection + createInMemoryReplayStore (or a shared persistent store).
 const processedReplayKeys = new Set<string>();
 
 function isDuplicateReplay(key: string | undefined): boolean {
@@ -153,8 +155,9 @@ export class WebhooksController {
   private ragieWebhook = ragie()
     .observe(ragieStats.observer)
     .observe(loggingObserver)
-    .event(document_status_updated, async (payload, context) => {
-      if (isDuplicateReplay(`ragie:${payload.nonce}`)) {
+    .event(document_status_updated, async (payload) => {
+      const replayKey = payload.nonce ? `ragie:${payload.nonce}` : undefined;
+      if (isDuplicateReplay(replayKey)) {
         console.log("Duplicate Ragie nonce detected, skipping");
         return;
       }
@@ -163,13 +166,13 @@ export class WebhooksController {
       console.log(`   Status: ${payload.status}`);
       console.log(`   Partition: ${payload.partition}`);
     })
-    .event(connection_sync_finished, async (payload, context) => {
+    .event(connection_sync_finished, async (payload) => {
       console.log("✅ Connection sync finished!");
       console.log(`   Connection ID: ${payload.connection_id}`);
       console.log(`   Sync ID: ${payload.sync_id}`);
       console.log(`   Partition: ${payload.partition}`);
     })
-    .event(entity_extracted, async (payload, context) => {
+    .event(entity_extracted, async (payload) => {
       console.log("🔍 Entity extraction completed!");
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Partition: ${payload.partition}`);

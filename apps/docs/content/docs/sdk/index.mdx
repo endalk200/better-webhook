@@ -355,12 +355,16 @@ Use core replay protection to enforce deduplication with a pluggable store:
 
 ```ts
 import { createInMemoryReplayStore } from "@better-webhook/core";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
 
 const replayStore = createInMemoryReplayStore();
 
 const webhook = github()
   .withReplayProtection({ store: replayStore })
-  .event(push, handler);
+  .event(push, async (payload) => {
+    console.log(`Push to ${payload.repository.full_name}`);
+  });
 ```
 
 Default duplicate behavior is `409`.

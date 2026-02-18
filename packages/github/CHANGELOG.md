@@ -5,11 +5,9 @@
 ### Minor Changes
 
 - Updated dependencies
-  - @better-webhook/core@0.11.0
+  - @better-webhook/core@0.11.0 (replay protection + strict verification ordering)
 - Expose normalized replay metadata (`x-github-delivery`) for core replay
   protection.
-- Updated dependencies
-  - @better-webhook/core (replay protection + strict verification ordering)
 
 ## 0.8.1
 
