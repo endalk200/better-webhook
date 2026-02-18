@@ -18,7 +18,12 @@ yarn add @better-webhook/recall @better-webhook/core
 Install one adapter package too:
 
 ```bash
-npm install @better-webhook/nextjs
+# Pick one:
+npm install @better-webhook/nextjs        # Next.js App Router
+npm install @better-webhook/express       # Express.js
+npm install @better-webhook/nestjs        # NestJS
+npm install @better-webhook/hono          # Hono (Node/Workers/Bun/Deno)
+npm install @better-webhook/gcp-functions # GCP Cloud Functions
 ```
 
 ## Quick Start
@@ -93,6 +98,30 @@ Recall webhook verification is enabled by default. Provide a workspace secret wi
 - `webhook-signature` / `svix-signature`
 
 using HMAC-SHA256 over `id.timestamp.rawBody`. Requests with stale timestamps are rejected to limit replay attacks.
+
+## Replay Protection and Idempotency
+
+Recall exposes the delivery identifier as `context.deliveryId` from
+`webhook-id`/`svix-id`. The SDK also validates request timestamps, but duplicate
+delivery blocking is enforced only when replay protection is enabled:
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+
+const webhook = recall({ secret: process.env.RECALL_WEBHOOK_SECRET })
+  .withReplayProtection({
+    store: createInMemoryReplayStore(),
+  })
+  .event(bot_done, async (payload) => {
+    await handleBotDone(payload);
+  });
+```
+
+With replay protection enabled, duplicate deliveries return `409` by default.
+The provider already validates signed timestamps during verification; you can
+also configure core `timestampToleranceSeconds` as an additional replay guard.
+For production deduplication, use a shared replay store with atomic reservation
+semantics (`reserve/commit/release`).
 
 ## License
 

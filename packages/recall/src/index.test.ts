@@ -211,6 +211,19 @@ describe("recall()", () => {
     expect(webhook.getProvider().name).toBe("recall");
   });
 
+  it("exposes replay context from recall headers", () => {
+    const provider = recall().getProvider();
+    const replayContext = provider.getReplayContext?.({
+      "webhook-id": "msg_123",
+      "webhook-timestamp": "1700000000",
+    });
+
+    expect(replayContext).toEqual({
+      replayKey: "msg_123",
+      timestamp: 1700000000,
+    });
+  });
+
   it("routes participant events", async () => {
     const body = JSON.stringify(participantEnvelope);
     const headers = createHeaders(body, secret);

@@ -156,6 +156,22 @@ function createRecallProvider(options?: RecallOptions): Provider<"recall"> {
     getDeliveryId(headers: Headers): string | undefined {
       return headers["webhook-id"] ?? headers["svix-id"];
     },
+    getReplayContext(headers: Headers) {
+      const replayKey = headers["webhook-id"] ?? headers["svix-id"];
+      const timestampHeader =
+        headers["webhook-timestamp"] ?? headers["svix-timestamp"];
+      let timestamp: number | undefined;
+      if (timestampHeader) {
+        const parsedTimestamp = Number.parseInt(timestampHeader, 10);
+        if (Number.isFinite(parsedTimestamp) && parsedTimestamp > 0) {
+          timestamp = parsedTimestamp;
+        }
+      }
+      return {
+        replayKey,
+        timestamp,
+      };
+    },
     verify(
       rawBody: string | Buffer,
       headers: Headers,
