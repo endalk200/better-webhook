@@ -26,7 +26,7 @@ export const RagieDocumentStatusUpdatedEventSchema = z.object({
   /** The unique identifier for the document */
   document_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** Current status of the document */
   status: z.enum(["indexed", "keyword_indexed", "ready", "failed"]),
   /** Partition key for the document */
@@ -58,7 +58,7 @@ export const RagieDocumentDeletedEventSchema = z.object({
   /** The unique identifier for the deleted document */
   document_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** Partition key for the document */
   partition: z.string(),
   /** User-defined metadata for the document */
@@ -86,7 +86,7 @@ export const RagieEntityExtractedEventSchema = z.object({
   /** The unique identifier for the extracted entity */
   entity_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** The unique identifier for the source document */
   document_id: z.string(),
   /** The instruction ID used for entity extraction */
@@ -118,7 +118,7 @@ export const RagieConnectionSyncStartedEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -148,7 +148,7 @@ export const RagieConnectionSyncProgressEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -188,7 +188,7 @@ export const RagieConnectionSyncFinishedEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** The unique identifier for this sync */
   sync_id: z.string(),
   /** Partition key for the sync */
@@ -210,7 +210,7 @@ export const RagieConnectionLimitExceededEventSchema = z.object({
   /** The unique identifier for the connection */
   connection_id: z.string(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
   /** Partition key for the sync */
   partition: z.string(),
   /** Additional metadata about the connection */
@@ -234,7 +234,7 @@ export const RagiePartitionLimitExceededEventSchema = z.object({
   /** The type of limit that was exceeded (if provided) */
   limit_type: z.string().optional(),
   /** Unique nonce for idempotency (from the webhook envelope) */
-  nonce: z.string().optional(),
+  nonce: z.string(),
 });
 
 // ============================================================================

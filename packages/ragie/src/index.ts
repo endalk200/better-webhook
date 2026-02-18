@@ -77,6 +77,7 @@ function createRagieProvider(options?: RagieOptions): Provider<"ragie"> {
      * Extract the actual payload from the envelope structure
      * Ragie wraps the payload in { type, payload, nonce }.
      * The SDK unwraps `payload` and attaches `nonce` onto the payload as `payload.nonce`.
+     * Ragie event schemas require `payload.nonce`, so malformed envelopes are rejected.
      */
     getPayload(body: unknown): unknown {
       if (body && typeof body === "object" && "payload" in body) {
@@ -96,6 +97,16 @@ function createRagieProvider(options?: RagieOptions): Provider<"ragie"> {
         return payload;
       }
       return body;
+    },
+
+    getReplayContext(_headers: Headers, body?: unknown) {
+      if (body && typeof body === "object" && "nonce" in body) {
+        const nonceValue = (body as { nonce: unknown }).nonce;
+        if (typeof nonceValue === "string") {
+          return { replayKey: nonceValue };
+        }
+      }
+      return undefined;
     },
 
     /**
