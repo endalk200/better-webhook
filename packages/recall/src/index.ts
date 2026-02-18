@@ -157,7 +157,8 @@ function createRecallProvider(options?: RecallOptions): Provider<"recall"> {
       return headers["webhook-id"] ?? headers["svix-id"];
     },
     getReplayContext(headers: Headers) {
-      const replayKey = headers["webhook-id"] ?? headers["svix-id"];
+      const replayKeyHeader = headers["webhook-id"] ?? headers["svix-id"];
+      const replayKey = replayKeyHeader?.trim();
       const timestampHeader =
         headers["webhook-timestamp"] ?? headers["svix-timestamp"];
       let timestamp: number | undefined;
@@ -168,7 +169,7 @@ function createRecallProvider(options?: RecallOptions): Provider<"recall"> {
         }
       }
       return {
-        replayKey,
+        replayKey: replayKey && replayKey.length > 0 ? replayKey : undefined,
         timestamp,
       };
     },

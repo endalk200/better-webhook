@@ -151,7 +151,7 @@ describe("toNextJS", () => {
       expect(body.ok).toBe(true);
     });
 
-    it("should return 409 for duplicate deliveries when replay protection is enabled", async () => {
+    it("should pass through a 409 duplicate-delivery response from process()", async () => {
       const provider = createTestProvider();
       const webhook = createWebhook(provider).event(testEvent, () => {});
       const processSpy = vi.spyOn(webhook, "process");

@@ -146,8 +146,8 @@ By default, duplicate deliveries return `409`.
 Replay protection now follows a lifecycle:
 
 1. Reserve replay key before schema/handler execution
-2. Commit key after success (`200`) or intentional unhandled response (`204`)
-3. Release reservation on processing failures (`400`/`500`)
+2. By default, commit the key only after a successful handled response (e.g. `200`)
+3. Release the reservation for unhandled responses (e.g. `204`) or processing failures (`4xx`/`5xx`)
 
 ```ts
 import { createInMemoryReplayStore } from "@better-webhook/core";

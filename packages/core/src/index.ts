@@ -971,7 +971,7 @@ class InMemoryReplayStore implements AtomicReplayStore {
         this.entries.delete(key);
         removed++;
       }
-      if (removed >= this.cleanupBatchSize) {
+      if (!force && removed >= this.cleanupBatchSize) {
         break;
       }
     }
