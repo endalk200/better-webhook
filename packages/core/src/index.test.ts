@@ -707,6 +707,34 @@ describe("WebhookBuilder", () => {
       expect(secondResult.body?.error).toBe("Duplicate webhook delivery");
     });
 
+    it("should release replay keys for unhandled events", async () => {
+      const provider = createTestProvider();
+      const store = createInMemoryReplayStore();
+      const request = {
+        headers: {
+          "x-test-event": "another.event",
+          "x-test-delivery-id": "unhandled-replay-key",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      };
+
+      const unhandledWebhook = createWebhook(provider).withReplayProtection({
+        store,
+      });
+      const unhandledResult = await unhandledWebhook.process(request);
+      expect(unhandledResult.status).toBe(204);
+
+      const handler = vi.fn();
+      const handledWebhook = createWebhook(provider)
+        .withReplayProtection({ store })
+        .event(anotherEvent, handler);
+      const handledResult = await handledWebhook.process(request);
+
+      expect(handledResult.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
     it("should skip replay checks when replay key is unavailable", async () => {
       const provider = createTestProvider();
       const store = createInMemoryReplayStore();
@@ -2180,6 +2208,33 @@ describe("WebhookBuilder observability", () => {
       expect(releasedEvent.type).toBe("replay_released");
       expect(releasedEvent.reason).toBe("processing_failed");
       expect(releasedEvent.replayKey).toBe("test:replay-observation-release");
+    });
+
+    it("should emit onReplayReleased for unhandled events without committing", async () => {
+      const provider = createTestProvider();
+      const onReplayCommitted = vi.fn();
+      const onReplayReleased = vi.fn();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .observe({ onReplayCommitted, onReplayReleased });
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "unknown.event",
+          "x-test-delivery-id": "replay-observation-unhandled",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(204);
+      expect(onReplayCommitted).not.toHaveBeenCalled();
+      expect(onReplayReleased).toHaveBeenCalledTimes(1);
+      const releasedEvent = onReplayReleased.mock
+        .calls[0]![0] as ReplayReleasedEvent;
+      expect(releasedEvent.type).toBe("replay_released");
+      expect(releasedEvent.reason).toBe("event_unhandled");
+      expect(releasedEvent.replayKey).toBe("test:replay-observation-unhandled");
     });
 
     it("should emit onReplayFreshnessRejected when timestamp is outside tolerance", async () => {

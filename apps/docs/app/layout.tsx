@@ -2,6 +2,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import "./global.css";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -65,6 +66,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
     >
       <body className="flex flex-col min-h-screen font-sans antialiased">
         <RootProvider>{children}</RootProvider>
+        <Analytics />
       </body>
     </html>
   );

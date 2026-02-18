@@ -595,13 +595,15 @@ export interface ReplayCommittedEvent extends ObservationBase {
   ttlSeconds: number;
 }
 
+export type ReplayReleaseReason = "processing_failed" | "event_unhandled";
+
 /**
- * Emitted when replay key reservation is released after failed processing
+ * Emitted when replay key reservation is released after processing does not commit
  */
 export interface ReplayReleasedEvent extends ObservationBase {
   type: "replay_released";
   replayKey: string;
-  reason: "processing_failed";
+  reason: ReplayReleaseReason;
 }
 
 /**
@@ -1605,6 +1607,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       status: number,
       eventType?: string,
       deliveryId?: string,
+      options?: {
+        commitReplayKey?: boolean;
+        releaseReason?: ReplayReleaseReason;
+      },
     ): Promise<ProcessResult | undefined> => {
       if (
         !reservedReplayKey ||
@@ -1620,7 +1626,9 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       reservedReplayKey = undefined;
 
       try {
-        if (status === 200 || status === 204) {
+        const shouldCommitReplay =
+          options?.commitReplayKey ?? (status === 200 || status === 204);
+        if (shouldCommitReplay) {
           await replayStore.commit(replayKey, replayPolicy.ttlSeconds);
           this.emit("onReplayCommitted", {
             ...createBase(eventType, deliveryId),
@@ -1629,12 +1637,13 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
             ttlSeconds: replayPolicy.ttlSeconds,
           });
         } else {
+          const releaseReason = options?.releaseReason ?? "processing_failed";
           await replayStore.release(replayKey);
           this.emit("onReplayReleased", {
             ...createBase(eventType, deliveryId),
             type: "replay_released",
             replayKey,
-            reason: "processing_failed",
+            reason: releaseReason,
           });
         }
         return undefined;
@@ -1648,8 +1657,17 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       eventType?: string,
       deliveryId?: string,
       body?: { ok: boolean; error?: string },
+      options?: {
+        commitReplayKey?: boolean;
+        releaseReason?: ReplayReleaseReason;
+      },
     ): Promise<ProcessResult> => {
-      const replayFailure = await finalizeReplay(status, eventType, deliveryId);
+      const replayFailure = await finalizeReplay(
+        status,
+        eventType,
+        deliveryId,
+        options,
+      );
       if (replayFailure) {
         return replayFailure;
       }
@@ -1872,7 +1890,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         type: "event_unhandled",
         durationMs,
       });
-      return completeWithReplay(204, eventType, deliveryId);
+      return completeWithReplay(204, eventType, deliveryId, undefined, {
+        commitReplayKey: false,
+        releaseReason: "event_unhandled",
+      });
     }
 
     // Extract payload from body (for providers with envelope structures like Ragie)
