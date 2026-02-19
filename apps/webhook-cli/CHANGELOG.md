@@ -1,5 +1,11 @@
 # @better-webhook/cli
 
+## 3.10.1
+
+### Patch Changes
+
+- chore: no noticeable changes other than code comment and docs update
+
 ## 3.10.0
 
 ### Minor Changes
