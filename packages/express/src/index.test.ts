@@ -382,7 +382,7 @@ describe("toExpress", () => {
         expect.objectContaining({
           type: "completed",
           status: 204,
-          success: false,
+          success: true,
         }),
       );
     });
