@@ -256,6 +256,23 @@ describe("toExpress", () => {
       expect(onSuccess).toHaveBeenCalledWith("test.event");
     });
 
+    it("should not call onSuccess on 204 responses", async () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+      const onSuccess = vi.fn();
+      const middleware = toExpress(webhook, { onSuccess });
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res } = createMockResponse();
+
+      await middleware(req as Request, res as Response);
+
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
     it("should not call onSuccess on error responses", async () => {
       const provider = createTestProvider({ verifyResult: false });
       const webhook = createWebhook(provider).event(testEvent, () => {});

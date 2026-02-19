@@ -2075,6 +2075,29 @@ describe("WebhookBuilder observability", () => {
       expect(event.durationMs).toBeGreaterThanOrEqual(0);
     });
 
+    it("should emit onCompleted with success for 204 response", async () => {
+      const provider = createTestProvider();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider)
+        .observe({ onCompleted })
+        .event(testEvent, () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(event.type).toBe("completed");
+      expect(event.status).toBe(204);
+      expect(event.success).toBe(true);
+      expect(event.eventType).toBe("unknown.event");
+      expect(event.durationMs).toBeGreaterThanOrEqual(0);
+    });
+
     it("should include deliveryId in observation events when available", async () => {
       const provider = createTestProvider();
       const onCompleted = vi.fn();

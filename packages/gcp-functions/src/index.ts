@@ -56,7 +56,7 @@ export interface GCPFunctionAdapterOptions {
   /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
   maxBodyBytes?: number;
 
-  /** Callback invoked on successful webhook processing */
+  /** Callback invoked on successful handled processing (status 200 only) */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
   /**

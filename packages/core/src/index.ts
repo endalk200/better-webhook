@@ -615,7 +615,7 @@ export interface CompletedEvent extends ObservationBase {
   status: number;
   /** Total duration in milliseconds */
   durationMs: number;
-  /** Whether processing was successful (status 200) */
+  /** Whether processing was successful (status 200 or 204) */
   success: boolean;
 }
 
