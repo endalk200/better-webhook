@@ -1,0 +1,41 @@
+name: Security Cache Refresh
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh-trivy-cache:
+    name: Refresh Trivy DB cache
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Get cache key date
+        id: cache-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Download Trivy vulnerability DB
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.cache/trivy/db"
+          oras pull ghcr.io/aquasecurity/trivy-db:2
+          tar -xzf db.tar.gz -C "$GITHUB_WORKSPACE/.cache/trivy/db"
+          rm -f db.tar.gz
+
+      - name: Download Trivy Java DB
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.cache/trivy/java-db"
+          oras pull ghcr.io/aquasecurity/trivy-java-db:1
+          tar -xzf javadb.tar.gz -C "$GITHUB_WORKSPACE/.cache/trivy/java-db"
+          rm -f javadb.tar.gz
+
+      - name: Save Trivy cache
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.cache/trivy
+          key: cache-trivy-${{ steps.cache-date.outputs.date }}

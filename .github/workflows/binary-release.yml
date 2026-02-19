@@ -100,11 +100,48 @@ jobs:
         env:
           CLI_VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Trivy binary gate
+        if: ${{ vars.TRIVY_ENFORCE == '1' }}
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          format: table
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
+      - name: Trivy binary report
+        if: ${{ vars.TRIVY_ENFORCE != '1' }}
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          format: table
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0
+
+      - name: Generate binary SBOM
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          format: cyclonedx
+          output: apps/webhook-cli/bin/${{ matrix.artifact }}.sbom.cdx.json
+          scanners: vuln
+          exit-code: 0
+          skip-setup-trivy: true
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: apps/webhook-cli/bin/${{ matrix.artifact }}
+          path: |
+            apps/webhook-cli/bin/${{ matrix.artifact }}
+            apps/webhook-cli/bin/${{ matrix.artifact }}.sbom.cdx.json
           if-no-files-found: error
 
   release:
