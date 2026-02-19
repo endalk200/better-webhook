@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Generate Trivy SARIF report
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: fs
           scan-ref: .
@@ -43,7 +43,7 @@ jobs:
 
       - name: Enforce Trivy policy
         if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: fs
           scan-ref: .
@@ -54,7 +54,7 @@ jobs:
 
       - name: Advisory Trivy table report
         if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: fs
           scan-ref: .

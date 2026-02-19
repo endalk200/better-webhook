@@ -20,10 +20,16 @@ pnpm test
 pnpm build
 ```
 
-1. Run security scans before opening a pull request:
+1. (Recommended) Install Devbox so `just` and `trivy` are available:
 
 ```bash
+# Install instructions: https://www.jetify.com/docs/devbox/installing-devbox/
 devbox shell
+```
+
+1. Run security scans before opening a pull request (CI runs the same checks):
+
+```bash
 just security-scan
 ```
 

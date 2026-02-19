@@ -89,7 +89,7 @@
         }
       }
     },
-    "trivy@latest": {
+    "trivy@0.69.0": {
       "last_modified": "2026-02-10T02:06:53Z",
       "resolved": "github:NixOS/nixpkgs/49d75834011c94a120a9cb874ac1c4d8b7bfc767#trivy",
       "source": "devbox-search",

@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
   "packages": [
     "just@latest",
-    "trivy@latest"
+    "trivy@0.69.0"
   ],
   "env": {
     "TRIVY_CACHE_DIR": "$PWD/.cache/trivy"
@@ -12,12 +12,12 @@
       "mkdir -p .cache/trivy"
     ],
     "scripts": {
-      "security-scan": "just security-scan",
+      "security-scan":          "just security-scan",
       "security-scan-blocking": "just security-scan-blocking",
-      "security-scan-sarif": "just security-scan-sarif",
-      "security-scan-secret": "just security-scan-secret",
-      "security-scan-sbom": "just security-scan-sbom",
-      "security-scan-license": "just security-scan-license"
+      "security-scan-sarif":    "just security-scan-sarif",
+      "security-scan-secret":   "just security-scan-secret",
+      "security-scan-sbom":     "just security-scan-sbom",
+      "security-scan-license":  "just security-scan-license"
     }
   }
 }
