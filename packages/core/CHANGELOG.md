@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- chore: no noticeable changes other than code comment and docs update
+- `CompletedEvent.success` now returns `true` for HTTP `204` responses (in addition to `200`), which affects observer output and `createWebhookStats()` success metrics such as `success` and `successCount`.
 
 ## 0.11.0
 

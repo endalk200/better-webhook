@@ -57,7 +57,7 @@
     "@better-webhook/core": "workspace:*"
   },
   "peerDependencies": {
-    "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0"
+    "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || >=16.0.7 <17.0.0"
   },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",

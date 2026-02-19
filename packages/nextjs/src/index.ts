@@ -18,7 +18,10 @@ export interface NextJSAdapterOptions {
   /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
   maxBodyBytes?: number;
 
-  /** Callback invoked on successful handled processing (status 200 only) */
+  /**
+   * Callback invoked only when `result.status === 200`.
+   * Observer `CompletedEvent.success` can still be `true` for both 200 and 204.
+   */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
   /**
