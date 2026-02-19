@@ -1572,7 +1572,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         type: "completed",
         status,
         durationMs,
-        success: status === 200,
+        success: status === 200 || status === 204,
       });
       return { status, eventType, body };
     };

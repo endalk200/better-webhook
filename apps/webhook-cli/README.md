@@ -47,13 +47,13 @@ These providers are auto-detected from headers but signature generation is not y
 
 Download a standalone binary - no Node.js required:
 
-**macOS (Homebrew)**
+#### macOS (Homebrew)
 
 ```bash
 brew install endalk200/tap/better-webhook
 ```
 
-**Manual Download**
+#### Manual Download
 
 Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
 
@@ -507,7 +507,7 @@ better-webhook run github-push --url http://localhost:3000/webhooks/github
 
 All CLI data is stored in `~/.better-webhook/`:
 
-```
+```text
 ~/.better-webhook/
 ├── captures/                    # Captured webhook requests
 │   ├── 2024-01-15_10-30-00_abc12345.json
@@ -644,6 +644,19 @@ if [ $? -eq 0 ]; then
   echo "Webhook test passed"
 fi
 ```
+
+## Security scan matrix
+
+The CLI release path is covered by Trivy checks in both standard CI and binary release workflows.
+
+| Artifact Scope | Workflow | Trivy Mode | Output |
+| -------------- | -------- | ---------- | ------ |
+| Repository source | `.github/workflows/security.yml` | `trivy fs` (vuln, secret, misconfig) | SARIF + table |
+| NPM release path | `.github/workflows/release.yml` | `trivy fs` gate/report before publish | table |
+| Compiled CLI binary per platform | `.github/workflows/binary-release.yml` | `trivy fs` on built binary before upload | table |
+| Distributed binary artifacts | `.github/workflows/binary-release.yml` | `trivy fs --format cyclonedx` | per-artifact SBOM (`*.sbom.cdx.json`) |
+
+By default, these workflows run in advisory mode. Maintainers can set repository variable `TRIVY_ENFORCE=1` to make HIGH/CRITICAL findings fail release jobs.
 
 ---
 

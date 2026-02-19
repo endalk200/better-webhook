@@ -87,6 +87,52 @@ If you only want to work on docs:
 pnpm dev:docs
 ```
 
+## Security scanning (Trivy)
+
+Security checks are standardized with shared Trivy config so local and CI behavior stays aligned.
+
+```bash
+# Enter the reproducible security toolchain
+devbox shell
+
+# Advisory scan (HIGH/CRITICAL findings reported, does not fail)
+just security-scan
+
+# Generate SARIF locally
+just security-scan-sarif
+```
+
+You can also run the same commands through package scripts:
+
+```bash
+pnpm security:scan
+pnpm security:scan:sarif
+```
+
+To run blocking mode locally:
+
+```bash
+just security-scan-blocking
+```
+
+Suppression policy:
+
+- Keep suppressions minimal and temporary in `.trivyignore`
+- Keep secret tuning in `trivy-secret.yaml` scoped to examples/docs/templates only
+- Remove ignores as soon as fixes are available
+
+CI rollout:
+
+- `Security` workflow is advisory by default and always uploads SARIF
+- Set repository variable `TRIVY_ENFORCE=1` to enforce HIGH/CRITICAL failures in `security.yml`, `release.yml`, and `binary-release.yml`
+- Optional `Security Cache Refresh` workflow warms Trivy DB cache daily; run it manually if CI DB downloads become slow or rate-limited
+
+Code scanning signals in GitHub:
+
+- `Trivy` findings are generated in `security.yml` and uploaded as SARIF to GitHub Code Scanning.
+- `CodeQL` runs separately in `codeql.yml` and performs semantic source analysis for JavaScript/TypeScript.
+- Seeing alerts from both sources is expected; they cover different risk classes.
+
 ## Repository map
 
 ### Package directory
