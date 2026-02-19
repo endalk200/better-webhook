@@ -1,5 +1,13 @@
 # @better-webhook/hono
 
+## 0.3.1
+
+### Patch Changes
+
+- chore: no noticeable changes other than code comment and docs update
+- Updated dependencies
+  - @better-webhook/core@0.11.1
+
 ## 0.3.0
 
 ### Minor Changes

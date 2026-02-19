@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.11.1
+
+### Patch Changes
+
+- chore: no noticeable changes other than code comment and docs update
+
 ## 0.11.0
 
 ### Minor Changes
