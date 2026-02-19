@@ -4,7 +4,8 @@
 
 ### Patch Changes
 
-- chore: no noticeable changes other than code comment and docs update
+- Updated `@better-webhook/core` to `0.11.1`, where `CompletedEvent.success` treats HTTP `204` (and `200`) as successful, which can increase observer and metrics success counts.
+- Clarified Hono adapter `onSuccess` semantics: the callback runs only for handled `200` responses.
 - Updated dependencies
   - @better-webhook/core@0.11.1
 

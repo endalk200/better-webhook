@@ -2730,6 +2730,23 @@ describe("createWebhookStats", () => {
     expect(snapshot.errorCount).toBe(1);
   });
 
+  it("should count unhandled 204 responses as successful", async () => {
+    const provider = createTestProvider();
+    const stats = createWebhookStats();
+    const webhook = createWebhook(provider).observe(stats.observer);
+
+    await webhook.process({
+      headers: { "x-test-event": "unknown.event" },
+      rawBody: JSON.stringify(validPayload),
+      secret: "test-secret",
+    });
+
+    const snapshot = stats.snapshot();
+    expect(snapshot.totalRequests).toBe(1);
+    expect(snapshot.successCount).toBe(1);
+    expect(snapshot.errorCount).toBe(0);
+  });
+
   it("should not track by event type when event type is unknown", async () => {
     const provider = createTestProvider();
     const stats = createWebhookStats();

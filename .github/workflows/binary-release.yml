@@ -102,11 +102,13 @@ jobs:
 
       - name: Trivy binary gate
         if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           scan-type: fs
-          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          scan-ref: .
+          cache: ${{ runner.os != 'Windows' }}
           trivy-config: trivy.yaml
+          trivy-version: 0.69.0
           format: table
           scanners: vuln
           severity: HIGH,CRITICAL
@@ -115,11 +117,13 @@ jobs:
 
       - name: Trivy binary report
         if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           scan-type: fs
-          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          scan-ref: .
+          cache: ${{ runner.os != 'Windows' }}
           trivy-config: trivy.yaml
+          trivy-version: 0.69.0
           format: table
           scanners: vuln
           severity: HIGH,CRITICAL
@@ -127,10 +131,11 @@ jobs:
           exit-code: 0
 
       - name: Generate binary SBOM
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           scan-type: fs
-          scan-ref: apps/webhook-cli/bin/${{ matrix.artifact }}
+          scan-ref: .
+          cache: ${{ runner.os != 'Windows' }}
           trivy-config: trivy.yaml
           format: cyclonedx
           output: apps/webhook-cli/bin/${{ matrix.artifact }}.sbom.cdx.json

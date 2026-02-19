@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- With `@better-webhook/core@0.11.1`, `CompletedEvent.success` now returns `true` for HTTP `204` responses (as well as `200`), so downstream logic that inspects this flag may observe additional successful completions.
 - Updated dependencies
   - @better-webhook/core@0.11.1
 

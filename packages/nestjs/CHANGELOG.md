@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- chore: no noticeable changes other than code comment and docs update
+- Updated `@better-webhook/core` to `0.11.1`; `CompletedEvent.success` now treats HTTP `204` (in addition to `200`) as successful, so observable webhook completion behavior and success-based metrics change accordingly.
 - Updated dependencies
   - @better-webhook/core@0.11.1
 

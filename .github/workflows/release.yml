@@ -40,21 +40,23 @@ jobs:
 
       - name: Trivy release gate
         if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           scan-type: fs
           scan-ref: .
           trivy-config: trivy.yaml
+          trivy-version: 0.69.0
           format: table
           exit-code: 1
 
       - name: Trivy release report
         if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           scan-type: fs
           scan-ref: .
           trivy-config: trivy.yaml
+          trivy-version: 0.69.0
           format: table
           exit-code: 0
 
