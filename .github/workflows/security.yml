@@ -30,7 +30,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           trivy-config: trivy.yaml
-          trivy-version: 0.69.0
+          version: 0.69.0
           format: sarif
           output: trivy-results.sarif
           exit-code: 0
