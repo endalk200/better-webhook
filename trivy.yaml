@@ -1,0 +1,24 @@
+format: table
+severity:
+  - HIGH
+  - CRITICAL
+exit-code: 0
+ignorefile: .trivyignore
+scan:
+  scanners:
+    - vuln
+    - misconfig
+    - secret
+  skip-dirs:
+    - .git
+    - .pnpm-store
+    - .turbo
+    - .next
+    - node_modules
+    - coverage
+    - dist
+    - build
+vulnerability:
+  ignore-unfixed: true
+secret:
+  config: trivy-secret.yaml

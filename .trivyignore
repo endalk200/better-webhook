@@ -1,0 +1,5 @@
+# Add temporary suppressions here by finding ID, one per line.
+# Example:
+# CVE-2099-12345
+#
+# Keep suppressions minimal and remove them after remediation.

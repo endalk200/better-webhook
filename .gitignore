@@ -45,3 +45,8 @@ yarn-error.log*
 **/*/tsconfig.tsbuildinfo
 
 .opencode/plans/**/*.md
+
+# Trivy local cache and reports
+.cache/
+trivy-results.sarif
+trivy-sbom.cdx.json
