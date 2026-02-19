@@ -20,7 +20,7 @@ security-scan-sbom output="trivy-sbom.cdx.json":
 
 security-scan-ci:
     if [ "${TRIVY_ENFORCE:-0}" = "1" ]; then \
-      trivy fs --config trivy.yaml --format sarif --output trivy-results.sarif --exit-code 1 .; \
+      TRIVY_SKIP_DB_UPDATE=true TRIVY_SKIP_JAVA_DB_UPDATE=true trivy fs --config trivy.yaml --format sarif --output trivy-results.sarif --exit-code 1 .; \
     else \
-      trivy fs --config trivy.yaml --format sarif --output trivy-results.sarif --exit-code 0 .; \
+      TRIVY_SKIP_DB_UPDATE=true TRIVY_SKIP_JAVA_DB_UPDATE=true trivy fs --config trivy.yaml --format sarif --output trivy-results.sarif --exit-code 0 .; \
     fi
