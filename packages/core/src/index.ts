@@ -1028,15 +1028,28 @@ export interface WebhookStatsSnapshot {
 // Utility Functions
 // ============================================================================
 
+const blockedHeaderKeys = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
+
 /**
  * Normalize headers to lowercase keys with string values
  */
 export function normalizeHeaders(
   headers: Record<string, string | string[] | undefined>,
 ): Headers {
-  const normalized: Headers = {};
+  const normalized: Headers = Object.create(null) as Headers;
   for (const [key, value] of Object.entries(headers)) {
     const normalizedKey = key.toLowerCase();
+    if (
+      blockedHeaderKeys.has(normalizedKey) ||
+      normalizedKey.startsWith("__")
+    ) {
+      continue;
+    }
+
     if (Array.isArray(value)) {
       normalized[normalizedKey] = value[0];
     } else {
