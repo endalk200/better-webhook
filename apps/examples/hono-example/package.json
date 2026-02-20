@@ -17,7 +17,7 @@
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "@hono/node-server": "^1.19.7",
-    "hono": "4.11.4"
+    "hono": "4.12.0"
   },
   "devDependencies": {
     "@better-webhook/typescript-config": "workspace:*",
