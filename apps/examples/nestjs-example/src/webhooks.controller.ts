@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Req, Res, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Get, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { github } from "@better-webhook/github";
 import { push, pull_request, issues } from "@better-webhook/github/events";
