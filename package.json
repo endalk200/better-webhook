@@ -24,7 +24,11 @@
     "release:publish": "turbo run build && changeset publish",
     "release": "changeset version && pnpm install && turbo run build && changeset publish",
     "prerelease": "pnpm build && pnpm check-types && pnpm lint",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "cli:lint": "turbo run lint --filter=@better-webhook/cli-go",
+    "cli:check-types": "turbo run check-types --filter=@better-webhook/cli-go",
+    "cli:test": "turbo run test --filter=@better-webhook/cli-go",
+    "cli:build": "turbo run build --filter=@better-webhook/cli-go"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
@@ -32,6 +36,16 @@
     "turbo": "^2.5.6",
     "typescript": "^5.6.3",
     "vitest": "^4.0.16"
+  },
+  "pnpm": {
+    "overrides": {
+      "@isaacs/brace-expansion@5.0.0": "5.0.1",
+      "@modelcontextprotocol/sdk@1.25.1": "1.26.0",
+      "hono": "4.11.4",
+      "minimatch@10.1.1": "10.2.1",
+      "qs@6.13.0": "6.14.1",
+      "qs@6.14.0": "6.14.1"
+    }
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {

@@ -120,7 +120,7 @@ const cliFeatures = [
 
 export function CLISection() {
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
-  const [currentCommandIndex, setCurrentCommandIndex] = useState(0);
+  const [, setCurrentCommandIndex] = useState(0);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
