@@ -115,12 +115,19 @@ describe("normalizeHeaders", () => {
   });
 
   it("should skip blocked prototype pollution keys", () => {
-    const normalized = normalizeHeaders({
-      "__proto__": "polluted",
-      constructor: "polluted",
-      prototype: "polluted",
-      "X-Safe": "ok",
+    const headers: Record<string, string | string[] | undefined> =
+      Object.create(null);
+    Object.defineProperty(headers, "__proto__", {
+      value: "polluted",
+      enumerable: true,
+      configurable: true,
+      writable: true,
     });
+    headers["constructor"] = "polluted";
+    headers["prototype"] = "polluted";
+    headers["X-Safe"] = "ok";
+
+    const normalized = normalizeHeaders(headers);
 
     expect(normalized["x-safe"]).toBe("ok");
     expect("__proto__" in normalized).toBe(false);
