@@ -105,6 +105,40 @@ describe("normalizeHeaders", () => {
 
     expect(normalized["x-undefined"]).toBeUndefined();
   });
+
+  it("should return a null-prototype object", () => {
+    const normalized = normalizeHeaders({
+      "Content-Type": "application/json",
+    });
+
+    expect(Object.getPrototypeOf(normalized)).toBeNull();
+  });
+
+  it("should skip blocked prototype pollution keys", () => {
+    const normalized = normalizeHeaders({
+      "__proto__": "polluted",
+      constructor: "polluted",
+      prototype: "polluted",
+      "X-Safe": "ok",
+    });
+
+    expect(normalized["x-safe"]).toBe("ok");
+    expect("__proto__" in normalized).toBe(false);
+    expect("constructor" in normalized).toBe(false);
+    expect("prototype" in normalized).toBe(false);
+  });
+
+  it("should skip internal magic keys that start with double underscores", () => {
+    const normalized = normalizeHeaders({
+      "__defineGetter__": "polluted",
+      "__lookupSetter__": "polluted",
+      "X-Safe": "ok",
+    });
+
+    expect(normalized["x-safe"]).toBe("ok");
+    expect("__definegetter__" in normalized).toBe(false);
+    expect("__lookupsetter__" in normalized).toBe(false);
+  });
 });
 
 // ============================================================================
