@@ -1,5 +1,12 @@
 # @better-webhook/express
 
+## 0.12.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.11.2
+
 ## 0.12.1
 
 ### Patch Changes
