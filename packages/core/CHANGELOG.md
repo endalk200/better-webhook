@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.11.2
+
+### Patch Changes
+
+- fix: hardened header normalization for remote property injection in packages/core
+
 ## 0.11.1
 
 ### Patch Changes
