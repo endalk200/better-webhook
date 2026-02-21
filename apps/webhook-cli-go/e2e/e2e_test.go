@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,6 +74,106 @@ func TestCaptureLifecycle(t *testing.T) {
 	}
 	if !strings.Contains(emptyListOutput, "No captures found.") {
 		t.Fatalf("expected empty list output, got:\n%s", emptyListOutput)
+	}
+}
+
+func TestReplayCapturedWebhook(t *testing.T) {
+	binaryPath := buildBinary(t)
+	capturesDir := t.TempDir()
+	configPath := writeConfig(t, capturesDir)
+
+	serverCmd, address, outputLog, stopStreams := startCaptureServer(t, binaryPath, configPath)
+	defer func() {
+		stopCaptureServer(t, serverCmd, outputLog, stopStreams)
+	}()
+
+	requestBody := `{"event":"push","ok":true}`
+	request, err := http.NewRequest(http.MethodPost, "http://"+address+"/webhooks/e2e?source=github", strings.NewReader(requestBody))
+	if err != nil {
+		t.Fatalf("create capture request: %v", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-GitHub-Event", "push")
+	request.Header.Set("X-Hub-Signature-256", "sha256=testsignature")
+	request.Header.Set("User-Agent", "GitHub-Hookshot/test")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("post webhook: %v", err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200 from capture endpoint, got %d", response.StatusCode)
+	}
+
+	stopCaptureServer(t, serverCmd, outputLog, stopStreams)
+
+	listOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "captures", "list", "--limit", "10")
+	if err != nil {
+		t.Fatalf("list captures: %v\noutput:\n%s", err, listOutput)
+	}
+	id := extractCaptureID(t, listOutput)
+
+	type replayCapture struct {
+		Method            string
+		RequestURI        string
+		Body              string
+		GitHubEvent       string
+		GitHubSignature   string
+		GitHubUserAgent   string
+		ContentTypeHeader string
+	}
+	receivedCh := make(chan replayCapture, 1)
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bodyBytes, readErr := io.ReadAll(req.Body)
+		if readErr != nil {
+			t.Errorf("read replay request body: %v", readErr)
+		}
+		receivedCh <- replayCapture{
+			Method:            req.Method,
+			RequestURI:        req.URL.RequestURI(),
+			Body:              string(bodyBytes),
+			GitHubEvent:       req.Header.Get("X-GitHub-Event"),
+			GitHubSignature:   req.Header.Get("X-Hub-Signature-256"),
+			GitHubUserAgent:   req.Header.Get("User-Agent"),
+			ContentTypeHeader: req.Header.Get("Content-Type"),
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer targetServer.Close()
+
+	replayOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "replay", id, "--base-url", targetServer.URL)
+	if err != nil {
+		t.Fatalf("replay command: %v\noutput:\n%s", err, replayOutput)
+	}
+	if !strings.Contains(replayOutput, "Status: 204 No Content") {
+		t.Fatalf("expected replay status output, got:\n%s", replayOutput)
+	}
+
+	select {
+	case received := <-receivedCh:
+		if received.Method != http.MethodPost {
+			t.Fatalf("expected POST replay method, got %q", received.Method)
+		}
+		if received.RequestURI != "/webhooks/e2e?source=github" {
+			t.Fatalf("expected replayed URI to include query, got %q", received.RequestURI)
+		}
+		if strings.TrimSpace(received.Body) != requestBody {
+			t.Fatalf("expected replay body %q, got %q", requestBody, received.Body)
+		}
+		if received.GitHubEvent != "push" {
+			t.Fatalf("expected GitHub event header to be preserved, got %q", received.GitHubEvent)
+		}
+		if received.GitHubSignature != "sha256=testsignature" {
+			t.Fatalf("expected GitHub signature header to be preserved, got %q", received.GitHubSignature)
+		}
+		if !strings.Contains(strings.ToLower(received.GitHubUserAgent), "github-hookshot") {
+			t.Fatalf("expected GitHub user-agent to be preserved, got %q", received.GitHubUserAgent)
+		}
+		if received.ContentTypeHeader != "application/json" {
+			t.Fatalf("expected content-type header to be preserved, got %q", received.ContentTypeHeader)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatalf("timed out waiting for replay target request")
 	}
 }
 

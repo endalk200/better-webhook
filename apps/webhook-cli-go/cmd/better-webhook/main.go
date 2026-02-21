@@ -2,17 +2,21 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
-	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
-	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/config/toml"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider/github"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/jsonc"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
+	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
+	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
+	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 	rootcmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/root"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/version"
 )
@@ -27,6 +31,9 @@ func main() {
 		},
 		CapturesDependencies: capturescmd.Dependencies{
 			ServiceFactory: newCapturesService,
+		},
+		ReplayDependencies: replaycmd.Dependencies{
+			ServiceFactory: newReplayService,
 		},
 	})
 
@@ -57,4 +64,13 @@ func newCapturesService(capturesDir string) (*appcaptures.Service, error) {
 		return nil, err
 	}
 	return appcaptures.NewService(store), nil
+}
+
+func newReplayService(capturesDir string) (*appreplay.Service, error) {
+	store, err := newStore(capturesDir)
+	if err != nil {
+		return nil, err
+	}
+	dispatcher := httpreplay.NewClient(&http.Client{})
+	return appreplay.NewService(store, dispatcher), nil
 }

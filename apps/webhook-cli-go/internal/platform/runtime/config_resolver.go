@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +24,8 @@ const (
 	DefaultCaptureHost          = "127.0.0.1"
 	DefaultCapturePort          = 3001
 	DefaultCaptureVerbose       = false
+	DefaultReplayBaseURL        = "http://localhost:3000"
+	DefaultReplayTimeout        = 30 * time.Second
 	DefaultLogLevel             = LogLevelInfo
 	defaultConfigRelativePath   = ".better-webhook/config.toml"
 	defaultCapturesRelativePath = ".better-webhook/captures"
@@ -55,6 +59,22 @@ type CapturesDeleteArgs struct {
 	CapturesDir string
 	Selector    string
 	Force       bool
+}
+
+type ReplayHeaderOverride struct {
+	Key   string
+	Value string
+}
+
+type ReplayArgs struct {
+	CapturesDir     string
+	Selector        string
+	TargetURL       string
+	BaseURL         string
+	Method          string
+	HeaderOverrides []ReplayHeaderOverride
+	Timeout         time.Duration
+	Verbose         bool
 }
 
 func DefaultConfigPath(homeDir string) string {
@@ -211,6 +231,89 @@ func ResolveCapturesDeleteArgs(cmd *cobra.Command, selector string) (CapturesDel
 	}, nil
 }
 
+func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	capturesDir, err := resolveCapturesDir(cmd, loadedConfig.CapturesDir)
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	if len(args) == 0 {
+		return ReplayArgs{}, errors.New("capture selector cannot be empty")
+	}
+	selector := strings.TrimSpace(args[0])
+	if selector == "" {
+		return ReplayArgs{}, errors.New("capture selector cannot be empty")
+	}
+
+	targetURL := ""
+	if len(args) > 1 {
+		targetURL = strings.TrimSpace(args[1])
+	}
+
+	baseURL, err := cmd.Flags().GetString("base-url")
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		return ReplayArgs{}, errors.New("base URL cannot be empty")
+	}
+
+	method, err := cmd.Flags().GetString("method")
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	method = strings.ToUpper(strings.TrimSpace(method))
+	if method != "" && !isValidHTTPMethod(method) {
+		return ReplayArgs{}, errors.New("method contains invalid characters")
+	}
+
+	rawHeaders, err := cmd.Flags().GetStringArray("header")
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	headerOverrides, err := parseReplayHeaderOverrides(rawHeaders)
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+
+	timeout, err := cmd.Flags().GetDuration("timeout")
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+	if timeout <= 0 {
+		return ReplayArgs{}, errors.New("timeout must be greater than 0")
+	}
+
+	verbose, err := cmd.Flags().GetBool("verbose")
+	if err != nil {
+		return ReplayArgs{}, err
+	}
+
+	if targetURL != "" {
+		if err := validateAbsoluteURL(targetURL); err != nil {
+			return ReplayArgs{}, fmt.Errorf("target URL is invalid: %w", err)
+		}
+	}
+	if err := validateAbsoluteURL(baseURL); err != nil {
+		return ReplayArgs{}, fmt.Errorf("base URL is invalid: %w", err)
+	}
+
+	return ReplayArgs{
+		CapturesDir:     capturesDir,
+		Selector:        selector,
+		TargetURL:       targetURL,
+		BaseURL:         baseURL,
+		Method:          method,
+		HeaderOverrides: headerOverrides,
+		Timeout:         timeout,
+		Verbose:         verbose,
+	}, nil
+}
+
 func IsValidLogLevel(level string) bool {
 	switch strings.ToLower(strings.TrimSpace(level)) {
 	case LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError:
@@ -276,4 +379,50 @@ func expandPath(pathValue, homeDir string) (string, error) {
 		return filepath.Clean(trimmed), nil
 	}
 	return filepath.Abs(trimmed)
+}
+
+func validateAbsoluteURL(rawURL string) error {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return err
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return errors.New("must include scheme and host")
+	}
+	return nil
+}
+
+func parseReplayHeaderOverrides(raw []string) ([]ReplayHeaderOverride, error) {
+	overrides := make([]ReplayHeaderOverride, 0, len(raw))
+	for _, entry := range raw {
+		trimmed := strings.TrimSpace(entry)
+		if trimmed == "" {
+			return nil, errors.New("header override cannot be empty")
+		}
+		parts := strings.SplitN(trimmed, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("header override must use key:value format: %s", trimmed)
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		if key == "" || value == "" {
+			return nil, fmt.Errorf("header override must include key and value: %s", trimmed)
+		}
+		overrides = append(overrides, ReplayHeaderOverride{
+			Key:   key,
+			Value: value,
+		})
+	}
+	return overrides, nil
+}
+
+func isValidHTTPMethod(method string) bool {
+	for _, r := range method {
+		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+		isTokenPunctuation := strings.ContainsRune("!#$%&'*+-.^_`|~", r)
+		if !isAlphaNum && !isTokenPunctuation {
+			return false
+		}
+	}
+	return true
 }

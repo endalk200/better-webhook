@@ -3,15 +3,17 @@ package root
 import (
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
+	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 	"github.com/spf13/cobra"
 )
 
 type Dependencies struct {
-	Version             string
-	ConfigLoader        runtime.Loader
-	CaptureDependencies capturecmd.Dependencies
+	Version              string
+	ConfigLoader         runtime.Loader
+	CaptureDependencies  capturecmd.Dependencies
 	CapturesDependencies capturescmd.Dependencies
+	ReplayDependencies   replaycmd.Dependencies
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {
@@ -32,6 +34,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	rootCmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
 	rootCmd.AddCommand(capturecmd.NewCommand(deps.CaptureDependencies))
 	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDependencies))
+	rootCmd.AddCommand(replaycmd.NewCommand(deps.ReplayDependencies))
 
 	return rootCmd
 }

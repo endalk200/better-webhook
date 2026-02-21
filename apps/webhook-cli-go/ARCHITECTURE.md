@@ -33,18 +33,24 @@ flowchart TD
   mainCmd[cmd/better-webhook/main.go] --> cliRoot[internal/cli/root]
   cliRoot --> cliCapture[internal/cli/capture]
   cliRoot --> cliCaptures[internal/cli/captures]
+  cliRoot --> cliReplay[internal/cli/replay]
 
   cliCapture --> appCapture[internal/app/capture]
   cliCaptures --> appCaptures[internal/app/captures]
+  cliReplay --> appReplay[internal/app/replay]
 
   appCapture --> repoPort[CaptureRepository]
   appCapture --> detectorPort[ProviderDetector]
   appCapture --> relayPort[RelayDispatcher]
   appCaptures --> repoPort
+  appReplay --> replayRepoPort[CaptureRepository]
+  appReplay --> replayDispatchPort[ReplayDispatcher]
 
   repoPort --> jsoncStore[internal/adapters/storage/jsonc]
+  replayRepoPort --> jsoncStore
   detectorPort --> providerRegistry[internal/adapters/provider]
   providerRegistry --> githubDetector[internal/adapters/provider/github]
+  replayDispatchPort --> replayTransport[internal/adapters/transport/httpreplay]
 
   httpTransport[internal/adapters/transport/httpcapture] --> appCapture
   configAdapter[internal/adapters/config/toml] --> runtimePlatform[internal/platform/runtime]
@@ -78,6 +84,11 @@ flowchart TD
 - Read/manage captures use cases (list/filter/resolve/delete).
 - Depends on repository ports and domain types.
 
+### `internal/app/replay`
+
+- Replay use case orchestration (resolve capture, reconstruct outbound request, dispatch, return response summary).
+- Depends on repository + dispatch ports and domain types.
+
 ### `internal/adapters/config/toml`
 
 - TOML loader with environment override support.
@@ -98,7 +109,12 @@ flowchart TD
 - HTTP server lifecycle and request/response transport logic.
 - Delegates capture business processing to `app/capture.Service`.
 
-### `internal/cli/root`, `internal/cli/capture`, `internal/cli/captures`
+### `internal/adapters/transport/httpreplay`
+
+- Outbound HTTP transport used by replay use case.
+- Applies request timeout, sends reconstructed request, captures response metadata/body.
+
+### `internal/cli/root`, `internal/cli/capture`, `internal/cli/captures`, `internal/cli/replay`
 
 - Cobra command definitions.
 - Parse flags/args, call app services, format output, map errors for users.
@@ -149,6 +165,14 @@ These rules are mandatory:
 1. CLI resolves `captures-dir`/flags from runtime config.
 2. App captures service calls repository operations.
 3. CLI formats output and maps domain/app errors to user-facing messages.
+
+### Replay flow
+
+1. CLI `replay` resolves selector and replay options (`target-url` or `base-url` + captured URI, method/header overrides, timeout).
+2. App replay service resolves capture from repository and reconstructs outbound request bytes/headers.
+3. App replay service dispatches through replay transport adapter.
+4. Adapter performs outbound HTTP request and returns response status/headers/body summary.
+5. CLI formats replay result and maps replay/domain errors for users.
 
 ## Configuration Model
 
