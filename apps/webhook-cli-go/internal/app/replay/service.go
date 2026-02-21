@@ -168,7 +168,7 @@ func applyHeaderOverrides(headers []domain.HeaderEntry, overrides []domain.Heade
 	for _, override := range overrides {
 		key := strings.TrimSpace(override.Key)
 		value := strings.TrimSpace(override.Value)
-		if key == "" || value == "" {
+		if key == "" || value == "" || shouldSkipHeader(key) {
 			continue
 		}
 		lowerKey := strings.ToLower(key)

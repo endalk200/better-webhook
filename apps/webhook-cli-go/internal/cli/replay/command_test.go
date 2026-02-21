@@ -46,7 +46,7 @@ func TestMapReplayCommandErrorForDeadlineExceeded(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected mapped error")
 	}
-	if got := err.Error(); got != "operation cancelled" {
+	if got := err.Error(); got != "operation timed out" {
 		t.Fatalf("unexpected error message: %q", got)
 	}
 }

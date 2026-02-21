@@ -156,7 +156,10 @@ func mapReplayCommandError(err error, selector string) error {
 	if errors.Is(err, appreplay.ErrInvalidBody) {
 		return fmt.Errorf("captured payload is invalid and cannot be replayed")
 	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("operation timed out")
+	}
+	if errors.Is(err, context.Canceled) {
 		return fmt.Errorf("operation cancelled")
 	}
 	return err
