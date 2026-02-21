@@ -118,6 +118,41 @@ func TestResolveReplayArgsUsesBaseURLWhenTargetMissing(t *testing.T) {
 	}
 }
 
+func TestResolveReplayArgsEnablesVerboseForDebugLogLevel(t *testing.T) {
+	command := newReplayTestCommand(t)
+	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
+		CapturesDir: t.TempDir(),
+		LogLevel:    LogLevelDebug,
+	}))
+
+	args, err := ResolveReplayArgs(command, []string{"deadbeef"})
+	if err != nil {
+		t.Fatalf("resolve replay args: %v", err)
+	}
+	if !args.Verbose {
+		t.Fatalf("expected verbose mode to be enabled for debug log level")
+	}
+}
+
+func TestResolveReplayArgsUsesVerboseFlagPrecedence(t *testing.T) {
+	command := newReplayTestCommand(t)
+	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
+		CapturesDir: t.TempDir(),
+		LogLevel:    LogLevelDebug,
+	}))
+	if err := command.Flags().Set("verbose", "false"); err != nil {
+		t.Fatalf("set verbose flag: %v", err)
+	}
+
+	args, err := ResolveReplayArgs(command, []string{"deadbeef"})
+	if err != nil {
+		t.Fatalf("resolve replay args: %v", err)
+	}
+	if args.Verbose {
+		t.Fatalf("expected explicit --verbose flag to take precedence over log level")
+	}
+}
+
 func TestResolveReplayArgsRejectsInvalidTargetURL(t *testing.T) {
 	command := newReplayTestCommand(t)
 	_, err := ResolveReplayArgs(command, []string{"deadbeef", "not-a-url"})

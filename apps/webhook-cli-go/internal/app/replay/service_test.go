@@ -116,6 +116,51 @@ func TestReplayAppliesMethodAndHeaderOverrides(t *testing.T) {
 	}
 }
 
+func TestReplaySkipsHopByHopHeaderOverrides(t *testing.T) {
+	capture := domain.CaptureFile{
+		Capture: domain.CaptureRecord{
+			ID:            "cab005e5-0000-0000-0000-000000000001",
+			Method:        "POST",
+			URL:           "/webhooks/test",
+			RawBodyBase64: base64.StdEncoding.EncodeToString([]byte(`{"ok":true}`)),
+			Headers: []domain.HeaderEntry{
+				{Key: "Content-Type", Value: "application/json"},
+			},
+		},
+	}
+	repo := &repoStub{capture: capture}
+	dispatcher := &dispatcherStub{result: DispatchResult{StatusCode: 202, StatusText: "Accepted"}}
+	service := NewService(repo, dispatcher)
+
+	_, err := service.Replay(context.Background(), ReplayRequest{
+		Selector:  "cab005e5",
+		TargetURL: "https://example.com/hook",
+		HeaderOverrides: []domain.HeaderEntry{
+			{Key: "Host", Value: "evil.example"},
+			{Key: "Content-Length", Value: "999"},
+			{Key: "Connection", Value: "keep-alive"},
+			{Key: "X-New", Value: "added"},
+		},
+		Timeout: 20 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("replay capture: %v", err)
+	}
+
+	if containsHeader(dispatcher.request.Headers, "Host") {
+		t.Fatalf("expected host override to be skipped")
+	}
+	if containsHeader(dispatcher.request.Headers, "Content-Length") {
+		t.Fatalf("expected content-length override to be skipped")
+	}
+	if containsHeader(dispatcher.request.Headers, "Connection") {
+		t.Fatalf("expected connection override to be skipped")
+	}
+	if headerValue(dispatcher.request.Headers, "x-new") != "added" {
+		t.Fatalf("expected non-hop-by-hop override to be applied")
+	}
+}
+
 func TestReplayReturnsInvalidBodyError(t *testing.T) {
 	repo := &repoStub{
 		capture: domain.CaptureFile{

@@ -288,7 +288,7 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 		return ReplayArgs{}, errors.New("timeout must be greater than 0")
 	}
 
-	verbose, err := cmd.Flags().GetBool("verbose")
+	verbose, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
 	if err != nil {
 		return ReplayArgs{}, err
 	}
