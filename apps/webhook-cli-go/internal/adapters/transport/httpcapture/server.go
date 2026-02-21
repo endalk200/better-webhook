@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +22,7 @@ import (
 const maxRequestBodyBytes int64 = 1 << 20
 
 var errRequestBodyTooLarge = errors.New("request body exceeds maximum size")
+var errServerNotStarted = errors.New("server not started")
 
 type Logger interface {
 	Printf(format string, values ...interface{})
@@ -56,14 +58,12 @@ type Server struct {
 	serveErrOnce  sync.Once
 	serveErrMu    sync.RWMutex
 	serveErr      error
+	started       bool
 }
 
 func NewServer(options ServerOptions) (*Server, error) {
 	if options.CaptureSvc == nil {
 		return nil, errors.New("capture service cannot be nil")
-	}
-	if err := options.CaptureSvc.EnsureStorageDir(context.Background()); err != nil {
-		return nil, err
 	}
 
 	logger := options.Logger
@@ -86,6 +86,10 @@ func NewServer(options ServerOptions) (*Server, error) {
 }
 
 func (s *Server) Start() (int, error) {
+	if err := s.captureSvc.EnsureStorageDir(context.Background()); err != nil {
+		return 0, err
+	}
+
 	address := fmt.Sprintf("%s:%d", s.options.Host, s.options.Port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -98,8 +102,14 @@ func (s *Server) Start() (int, error) {
 	s.httpServer = &http.Server{
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 	s.listener = listener
+	s.serveErrMu.Lock()
+	s.started = true
+	s.serveErrMu.Unlock()
 
 	go func() {
 		serveErr := s.httpServer.Serve(listener)
@@ -122,6 +132,13 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) Wait() error {
+	s.serveErrMu.RLock()
+	started := s.started
+	s.serveErrMu.RUnlock()
+	if !started {
+		return errServerNotStarted
+	}
+
 	<-s.serveErrCh
 	s.serveErrMu.RLock()
 	defer s.serveErrMu.RUnlock()
@@ -243,8 +260,15 @@ func (s *Server) setServeErr(err error) {
 }
 
 func normalizeHeaders(source http.Header) []domain.HeaderEntry {
+	keys := make([]string, 0, len(source))
+	for key := range source {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	headers := make([]domain.HeaderEntry, 0, len(source))
-	for key, values := range source {
+	for _, key := range keys {
+		values := source[key]
 		for _, value := range values {
 			headers = append(headers, domain.HeaderEntry{
 				Key:   key,

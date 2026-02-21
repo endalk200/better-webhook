@@ -16,14 +16,16 @@ func NewRegistry(detectors ...Detector) *Registry {
 
 func (r *Registry) Detect(ctx domain.DetectionContext) domain.DetectionResult {
 	best := domain.DetectionResult{Provider: domain.ProviderUnknown}
+	hasMatch := false
 
 	for _, detector := range r.detectors {
 		result, matched := detector.Detect(ctx)
 		if !matched {
 			continue
 		}
-		if result.Confidence > best.Confidence {
+		if !hasMatch || result.Confidence > best.Confidence {
 			best = result
+			hasMatch = true
 		}
 	}
 

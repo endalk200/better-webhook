@@ -26,9 +26,9 @@ type CaptureRecord struct {
 }
 
 type CaptureMeta struct {
-	StoredAt     string `json:"stored_at"`
-	BodyEncoding string `json:"body_encoding"`
-	CaptureTool  string `json:"capture_tool_version"`
+	StoredAt           string `json:"stored_at"`
+	BodyEncoding       string `json:"body_encoding"`
+	CaptureToolVersion string `json:"capture_tool_version"`
 }
 
 type CaptureFile struct {

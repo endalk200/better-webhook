@@ -3,6 +3,7 @@ package httpcapture
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -143,6 +144,30 @@ func TestServerWaitCanBeCalledMultipleTimes(t *testing.T) {
 	}
 }
 
+func TestServerWaitReturnsErrorWhenNotStarted(t *testing.T) {
+	store, err := jsonc.NewStore(t.TempDir(), nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	captureService := appcapture.NewService(store, provider.NewRegistry(githubdetector.NewDetector()), nil, "test-version")
+	server, err := NewServer(ServerOptions{
+		Host:       "127.0.0.1",
+		Port:       0,
+		CaptureSvc: captureService,
+	})
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+
+	waitErr := server.Wait()
+	if waitErr == nil {
+		t.Fatalf("expected wait to fail when server is not started")
+	}
+	if !errors.Is(waitErr, errServerNotStarted) {
+		t.Fatalf("expected %v error, got %v", errServerNotStarted, waitErr)
+	}
+}
+
 func TestServerReturnsTimeoutWhenStoreSaveCancelled(t *testing.T) {
 	captureService := appcapture.NewService(&saveCanceledStore{}, nil, nil, "test-version")
 	server, err := NewServer(ServerOptions{
@@ -229,9 +254,9 @@ func (s *saveCanceledStore) BuildBaseRecord(string) domain.CaptureRecord {
 		Timestamp: "2026-02-21T12:00:00Z",
 		Provider:  domain.ProviderUnknown,
 		Meta: domain.CaptureMeta{
-			StoredAt:     "2026-02-21T12:00:00Z",
-			BodyEncoding: domain.BodyEncodingBase64,
-			CaptureTool:  "test",
+			StoredAt:           "2026-02-21T12:00:00Z",
+			BodyEncoding:       domain.BodyEncodingBase64,
+			CaptureToolVersion: "test",
 		},
 	}
 }

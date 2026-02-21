@@ -17,6 +17,9 @@ type ListRequest struct {
 }
 
 func NewService(repo CaptureRepository) *Service {
+	if repo == nil {
+		panic("repo cannot be nil")
+	}
 	return &Service{repo: repo}
 }
 
@@ -49,4 +52,11 @@ func (s *Service) Resolve(ctx context.Context, selector string) (domain.CaptureF
 
 func (s *Service) Delete(ctx context.Context, selector string) (domain.CaptureFile, error) {
 	return s.repo.DeleteByIDOrPrefix(ctx, selector)
+}
+
+func (s *Service) DeleteResolved(ctx context.Context, target domain.CaptureFile) (domain.CaptureFile, error) {
+	if err := s.repo.DeleteByFile(ctx, target.File); err != nil {
+		return domain.CaptureFile{}, err
+	}
+	return target, nil
 }

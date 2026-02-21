@@ -37,9 +37,9 @@ flowchart TD
   cliCapture --> appCapture[internal/app/capture]
   cliCaptures --> appCaptures[internal/app/captures]
 
-  appCapture --> repoPort[CaptureRepositoryPort]
-  appCapture --> detectorPort[ProviderDetectorPort]
-  appCapture --> relayPort[RelayDispatcherPort]
+  appCapture --> repoPort[CaptureRepository]
+  appCapture --> detectorPort[ProviderDetector]
+  appCapture --> relayPort[RelayDispatcher]
   appCaptures --> repoPort
 
   repoPort --> jsoncStore[internal/adapters/storage/jsonc]

@@ -9,7 +9,7 @@ import (
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 )
 
-func TestLoadConfigSupportsTOMLAndEnvPrecedence(t *testing.T) {
+func TestLoadConfigSupportsTOMLAndEnvPrecedenceWithLogLevelNormalization(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "config.toml")
 
