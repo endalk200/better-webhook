@@ -25,7 +25,7 @@ func main() {
 			ServiceFactory: newCaptureService,
 			ServerFactory:  httpcapture.NewServer,
 		},
-		CapturesDeps: capturescmd.Dependencies{
+		CapturesDependencies: capturescmd.Dependencies{
 			ServiceFactory: newCapturesService,
 		},
 	})
@@ -36,8 +36,12 @@ func main() {
 	}
 }
 
+func newStore(capturesDir string) (*jsonc.Store, error) {
+	return jsonc.NewStore(capturesDir, nil, nil)
+}
+
 func newCaptureService(capturesDir string) (*appcapture.Service, error) {
-	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	store, err := newStore(capturesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +52,7 @@ func newCaptureService(capturesDir string) (*appcapture.Service, error) {
 }
 
 func newCapturesService(capturesDir string) (*appcaptures.Service, error) {
-	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	store, err := newStore(capturesDir)
 	if err != nil {
 		return nil, err
 	}

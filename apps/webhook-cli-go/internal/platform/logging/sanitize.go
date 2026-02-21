@@ -5,6 +5,8 @@ import (
 	"unicode"
 )
 
+// SanitizeForLog replaces control characters with spaces and trims leading and
+// trailing whitespace from the final value.
 func SanitizeForLog(value string) string {
 	var b strings.Builder
 	b.Grow(len(value))
@@ -26,5 +28,9 @@ func TruncateForLog(value string, maxLength int) string {
 	if len(runes) <= maxLength {
 		return value
 	}
-	return string(runes[:maxLength]) + "..."
+	const ellipsis = "..."
+	if maxLength <= len(ellipsis) {
+		return string(runes[:maxLength])
+	}
+	return string(runes[:maxLength-len(ellipsis)]) + ellipsis
 }

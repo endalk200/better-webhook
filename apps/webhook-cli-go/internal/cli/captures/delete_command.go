@@ -55,9 +55,9 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 				}
 			}
 
-			deleted, err := capturesService.Delete(ctx, deleteArgs.Selector)
+			deleted, err := capturesService.DeleteResolved(ctx, target)
 			if err != nil {
-				return mapCaptureCommandError(err, deleteArgs.Selector)
+				return mapCaptureCommandError(err, target.Capture.ID)
 			}
 
 			shortID := deleted.Capture.ID

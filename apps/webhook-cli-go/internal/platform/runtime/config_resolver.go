@@ -103,6 +103,9 @@ func RuntimeConfigFromCommand(cmd *cobra.Command) (AppConfig, error) {
 	return loadedConfig, nil
 }
 
+// ResolveConfigPathFlag returns the config flag value when present.
+// If no config flag exists on the command, it returns an empty string and nil.
+// Callers should treat an empty value as "use default config path".
 func ResolveConfigPathFlag(cmd *cobra.Command) (string, error) {
 	if cmd == nil {
 		return "", errors.New("command cannot be nil")

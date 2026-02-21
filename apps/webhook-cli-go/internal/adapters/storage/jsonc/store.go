@@ -1,7 +1,6 @@
 package jsonc
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -51,9 +50,9 @@ func (s *Store) BuildBaseRecord(toolVersion string) domain.CaptureRecord {
 		Timestamp: now.Format(time.RFC3339Nano),
 		Provider:  domain.ProviderUnknown,
 		Meta: domain.CaptureMeta{
-			StoredAt:     now.Format(time.RFC3339Nano),
-			BodyEncoding: domain.BodyEncodingBase64,
-			CaptureTool:  toolVersion,
+			StoredAt:           now.Format(time.RFC3339Nano),
+			BodyEncoding:       domain.BodyEncodingBase64,
+			CaptureToolVersion: toolVersion,
 		},
 	}
 }
@@ -66,7 +65,7 @@ func (s *Store) Save(ctx context.Context, capture domain.CaptureRecord) (domain.
 		return domain.CaptureFile{}, err
 	}
 
-	filename := storageFileName(capture.Timestamp, capture.ID)
+	filename := s.storageFileName(capture.Timestamp, capture.ID)
 	content, err := marshalJSONC(capture)
 	if err != nil {
 		return domain.CaptureFile{}, fmt.Errorf("marshal capture: %w", err)
@@ -94,7 +93,6 @@ func (s *Store) Save(ctx context.Context, capture domain.CaptureRecord) (domain.
 		return domain.CaptureFile{}, err
 	}
 	if err := os.Rename(tempPath, targetPath); err != nil {
-		_ = os.Remove(tempPath)
 		return domain.CaptureFile{}, fmt.Errorf("persist capture file: %w", err)
 	}
 	renameSucceeded = true
@@ -167,16 +165,18 @@ func (s *Store) ResolveByIDOrPrefix(ctx context.Context, selector string) (domai
 
 		if captureFile.Capture.ID == trimmedSelector || strings.HasPrefix(captureFile.Capture.ID, trimmedSelector) {
 			matches = append(matches, captureFile)
+			if len(matches) > 1 {
+				if err := checkContext(ctx); err != nil {
+					return domain.CaptureFile{}, err
+				}
+				return domain.CaptureFile{}, domain.ErrAmbiguousSelector
+			}
 		}
 	}
 
 	if len(matches) == 0 {
 		return domain.CaptureFile{}, domain.ErrCaptureNotFound
 	}
-	if len(matches) > 1 {
-		return domain.CaptureFile{}, domain.ErrAmbiguousSelector
-	}
-
 	return matches[0], nil
 }
 
@@ -204,6 +204,28 @@ func (s *Store) DeleteByIDOrPrefix(ctx context.Context, selector string) (domain
 	}
 
 	return captureFile, nil
+}
+
+func (s *Store) DeleteByFile(ctx context.Context, file string) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
+
+	targetPath, err := s.safeCapturePath(file)
+	if err != nil {
+		return err
+	}
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
+	if err := os.Remove(targetPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return domain.ErrCaptureNotFound
+		}
+		return fmt.Errorf("delete capture file: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Store) EnsureStorageDir(ctx context.Context) error {
@@ -287,7 +309,7 @@ func (s *Store) readCaptureFile(ctx context.Context, file string) (domain.Captur
 }
 
 func (s *Store) safeCapturePath(file string) (string, error) {
-	if strings.Contains(file, string(filepath.Separator)) {
+	if strings.ContainsAny(file, string(filepath.Separator)+"/") {
 		return "", fmt.Errorf("invalid file name: %q", file)
 	}
 
@@ -308,10 +330,10 @@ func checkContext(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func storageFileName(timestamp, id string) string {
+func (s *Store) storageFileName(timestamp, id string) string {
 	parsedTime, err := time.Parse(time.RFC3339Nano, timestamp)
 	if err != nil {
-		parsedTime = time.Now().UTC()
+		parsedTime = s.clock.Now().UTC()
 	}
 	shortID := id
 	if len(shortID) > 8 {
@@ -325,13 +347,5 @@ func marshalJSONC(captureRecord domain.CaptureRecord) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var out bytes.Buffer
-	if _, err := out.Write(raw); err != nil {
-		return nil, err
-	}
-	if err := out.WriteByte('\n'); err != nil {
-		return nil, err
-	}
-	return out.Bytes(), nil
+	return append(raw, '\n'), nil
 }

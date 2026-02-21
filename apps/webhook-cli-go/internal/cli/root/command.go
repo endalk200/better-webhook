@@ -11,7 +11,7 @@ type Dependencies struct {
 	Version             string
 	ConfigLoader        runtime.Loader
 	CaptureDependencies capturecmd.Dependencies
-	CapturesDeps        capturescmd.Dependencies
+	CapturesDependencies capturescmd.Dependencies
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {
@@ -31,7 +31,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	rootCmd.PersistentFlags().String("config", "", "Path to config TOML file")
 	rootCmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
 	rootCmd.AddCommand(capturecmd.NewCommand(deps.CaptureDependencies))
-	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDeps))
+	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDependencies))
 
 	return rootCmd
 }

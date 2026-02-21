@@ -152,7 +152,7 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
 			},
 			ServerFactory: httpcapture.NewServer,
 		},
-		CapturesDeps: capturescmd.Dependencies{
+		CapturesDependencies: capturescmd.Dependencies{
 			ServiceFactory: func(capturesDir string) (*appcaptures.Service, error) {
 				store, err := jsonc.NewStore(capturesDir, nil, nil)
 				if err != nil {
@@ -192,9 +192,9 @@ func testCommandCapture(id string, providerName string) domain.CaptureRecord {
 		RawBodyBase64: base64.StdEncoding.EncodeToString(body),
 		Provider:      providerName,
 		Meta: domain.CaptureMeta{
-			StoredAt:     now,
-			BodyEncoding: domain.BodyEncodingBase64,
-			CaptureTool:  "test",
+			StoredAt:           now,
+			BodyEncoding:       domain.BodyEncodingBase64,
+			CaptureToolVersion: "test",
 		},
 	}
 }

@@ -5,7 +5,6 @@ package e2e
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -220,5 +219,5 @@ func extractCaptureID(t *testing.T, listOutput string) string {
 	if len(matches) < 2 {
 		t.Fatalf("failed to extract capture ID from output:\n%s", listOutput)
 	}
-	return fmt.Sprintf("%s", matches[1])
+	return matches[1]
 }

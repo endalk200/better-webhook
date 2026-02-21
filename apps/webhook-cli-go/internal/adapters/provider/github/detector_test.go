@@ -23,6 +23,53 @@ func TestGitHubDetectorWithSignatureHeaders(t *testing.T) {
 	if result.Provider != domain.ProviderGitHub {
 		t.Fatalf("provider mismatch: got %q want %q", result.Provider, domain.ProviderGitHub)
 	}
+	if result.Confidence != 1.0 {
+		t.Fatalf("confidence mismatch: got %v want %v", result.Confidence, 1.0)
+	}
+}
+
+func TestGitHubDetectorWithSignature256Header(t *testing.T) {
+	detector := NewDetector()
+	result, matched := detector.Detect(domain.DetectionContext{
+		Method: "POST",
+		Path:   "/webhooks",
+		Headers: []domain.HeaderEntry{
+			{Key: "X-Hub-Signature-256", Value: "sha256=abc123"},
+		},
+		Body: []byte(`{"action":"opened"}`),
+	})
+
+	if !matched {
+		t.Fatalf("expected detector to match GitHub request via signature header")
+	}
+	if result.Provider != domain.ProviderGitHub {
+		t.Fatalf("provider mismatch: got %q want %q", result.Provider, domain.ProviderGitHub)
+	}
+	if result.Confidence != 1.0 {
+		t.Fatalf("confidence mismatch: got %v want %v", result.Confidence, 1.0)
+	}
+}
+
+func TestGitHubDetectorWithHookshotUserAgent(t *testing.T) {
+	detector := NewDetector()
+	result, matched := detector.Detect(domain.DetectionContext{
+		Method: "POST",
+		Path:   "/webhooks",
+		Headers: []domain.HeaderEntry{
+			{Key: "User-Agent", Value: "GitHub-Hookshot/abc123"},
+		},
+		Body: []byte(`{"action":"opened"}`),
+	})
+
+	if !matched {
+		t.Fatalf("expected detector to match GitHub request via user-agent header")
+	}
+	if result.Provider != domain.ProviderGitHub {
+		t.Fatalf("provider mismatch: got %q want %q", result.Provider, domain.ProviderGitHub)
+	}
+	if result.Confidence != 0.8 {
+		t.Fatalf("confidence mismatch: got %v want %v", result.Confidence, 0.8)
+	}
 }
 
 func TestGitHubDetectorRejectsUnknownTraffic(t *testing.T) {

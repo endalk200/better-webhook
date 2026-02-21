@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
@@ -159,7 +160,7 @@ func expandPath(pathValue, homeDir string) (string, error) {
 		if homeDir == "" {
 			return "", errors.New("home directory is not available for '~' expansion")
 		}
-		return runtime.ExpandPath(strings.Replace(trimmed, "~", homeDir, 1))
+		return filepath.Join(homeDir, strings.TrimPrefix(trimmed, "~/")), nil
 	}
 	if strings.HasPrefix(trimmed, "~") {
 		return "", fmt.Errorf("unsupported home expansion in %q", trimmed)

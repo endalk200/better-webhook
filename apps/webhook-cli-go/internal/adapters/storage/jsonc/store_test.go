@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +35,28 @@ func TestStoreDeleteByExactID(t *testing.T) {
 	_, err = store.ResolveByIDOrPrefix(context.Background(), record.ID)
 	if !errors.Is(err, domain.ErrCaptureNotFound) {
 		t.Fatalf("expected not found after delete, got %v", err)
+	}
+}
+
+func TestStoreDeleteByFile(t *testing.T) {
+	store, err := NewStore(t.TempDir(), nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+
+	record := testCaptureRecord("cab005e5-0000-0000-0000-000000000000", "2026-02-20T12:00:00Z")
+	saved, err := store.Save(context.Background(), record)
+	if err != nil {
+		t.Fatalf("save capture: %v", err)
+	}
+
+	if err := store.DeleteByFile(context.Background(), saved.File); err != nil {
+		t.Fatalf("delete capture by file: %v", err)
+	}
+
+	_, err = store.ResolveByIDOrPrefix(context.Background(), record.ID)
+	if !errors.Is(err, domain.ErrCaptureNotFound) {
+		t.Fatalf("expected not found after delete by file, got %v", err)
 	}
 }
 
@@ -140,6 +163,28 @@ func TestStoreSaveListResolveRoundTrip(t *testing.T) {
 	}
 }
 
+func TestStoreSaveUsesInjectedClockWhenTimestampInvalid(t *testing.T) {
+	fallbackNow := time.Date(2026, time.February, 21, 15, 4, 5, 123456789, time.UTC)
+	store, err := NewStore(t.TempDir(), fixedClock{now: fallbackNow}, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+
+	record := testCaptureRecord("feedbeef-0000-0000-0000-000000000000", "not-a-timestamp")
+	saved, err := store.Save(context.Background(), record)
+	if err != nil {
+		t.Fatalf("save capture: %v", err)
+	}
+
+	expectedPrefix := fallbackNow.Format("2006-01-02T15-04-05.000000000Z")
+	if filepath.Ext(saved.File) != ".jsonc" {
+		t.Fatalf("expected .jsonc file extension, got %q", saved.File)
+	}
+	if !strings.HasPrefix(filepath.Base(saved.File), expectedPrefix) {
+		t.Fatalf("expected filename to use injected clock timestamp prefix %q, got %q", expectedPrefix, saved.File)
+	}
+}
+
 func TestStoreResolveRejectsEmptySelector(t *testing.T) {
 	store, err := NewStore(t.TempDir(), nil, nil)
 	if err != nil {
@@ -180,9 +225,17 @@ func testCaptureRecord(id string, timestamp string) domain.CaptureRecord {
 		RawBodyBase64: base64.StdEncoding.EncodeToString(body),
 		Provider:      domain.ProviderUnknown,
 		Meta: domain.CaptureMeta{
-			StoredAt:     time.Now().UTC().Format(time.RFC3339Nano),
-			BodyEncoding: domain.BodyEncodingBase64,
-			CaptureTool:  "test",
+			StoredAt:           time.Now().UTC().Format(time.RFC3339Nano),
+			BodyEncoding:       domain.BodyEncodingBase64,
+			CaptureToolVersion: "test",
 		},
 	}
+}
+
+type fixedClock struct {
+	now time.Time
+}
+
+func (c fixedClock) Now() time.Time {
+	return c.now
 }

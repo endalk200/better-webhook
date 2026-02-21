@@ -16,9 +16,9 @@ func TestServiceIngestBuildsAndStoresCapture(t *testing.T) {
 			Timestamp: time.Date(2026, time.February, 21, 12, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
 			Provider:  domain.ProviderUnknown,
 			Meta: domain.CaptureMeta{
-				StoredAt:     time.Date(2026, time.February, 21, 12, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
-				BodyEncoding: domain.BodyEncodingBase64,
-				CaptureTool:  "test",
+				StoredAt:           time.Date(2026, time.February, 21, 12, 0, 0, 0, time.UTC).Format(time.RFC3339Nano),
+				BodyEncoding:       domain.BodyEncodingBase64,
+				CaptureToolVersion: "test",
 			},
 		},
 	}
@@ -60,7 +60,6 @@ func TestServiceIngestBuildsAndStoresCapture(t *testing.T) {
 }
 
 func TestNewServicePanicsWhenRepoNil(t *testing.T) {
-	t.Helper()
 	defer func() {
 		if recovered := recover(); recovered == nil {
 			t.Fatalf("expected panic when repo is nil")
@@ -71,7 +70,6 @@ func TestNewServicePanicsWhenRepoNil(t *testing.T) {
 
 type captureRepoStub struct {
 	baseRecord domain.CaptureRecord
-	saved      domain.CaptureRecord
 }
 
 func (s *captureRepoStub) EnsureStorageDir(context.Context) error {
@@ -83,7 +81,6 @@ func (s *captureRepoStub) BuildBaseRecord(string) domain.CaptureRecord {
 }
 
 func (s *captureRepoStub) Save(_ context.Context, capture domain.CaptureRecord) (domain.CaptureFile, error) {
-	s.saved = capture
 	return domain.CaptureFile{
 		File:    "capture.jsonc",
 		Capture: capture,

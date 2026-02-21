@@ -5,12 +5,12 @@
   "description": "Local-only Go CLI experiment for better-webhook",
   "scripts": {
     "lint": "go vet ./...",
-    "check-types": "go vet ./...",
+    "check-types": "go test ./... -run=^$",
     "test": "go test ./...",
     "test:race": "go test ./... -race",
     "test:cover": "go test ./... -coverprofile=coverage.out -covermode=atomic",
     "test:e2e": "go test ./e2e -tags=e2e",
-    "build": "mkdir -p bin && go build -o bin/better-webhook ./cmd/better-webhook",
+    "build": "VERSION=${VERSION:-$(git describe --tags --always --dirty)} && mkdir -p bin && go build -ldflags \"-X github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/version.Version=${VERSION}\" -o bin/better-webhook ./cmd/better-webhook",
     "clean": "rm -rf bin"
   }
 }
