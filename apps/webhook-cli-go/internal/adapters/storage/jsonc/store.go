@@ -97,6 +97,7 @@ func (s *Store) Save(ctx context.Context, capture domain.CaptureRecord) (domain.
 	}
 	renameSucceeded = true
 	if err := os.Chmod(targetPath, 0o600); err != nil {
+		_ = os.Remove(targetPath)
 		return domain.CaptureFile{}, fmt.Errorf("set capture file permissions: %w", err)
 	}
 

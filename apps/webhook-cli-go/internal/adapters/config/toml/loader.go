@@ -165,5 +165,8 @@ func expandPath(pathValue, homeDir string) (string, error) {
 	if strings.HasPrefix(trimmed, "~") {
 		return "", fmt.Errorf("unsupported home expansion in %q", trimmed)
 	}
-	return runtime.ExpandPath(trimmed)
+	if filepath.IsAbs(trimmed) {
+		return filepath.Clean(trimmed), nil
+	}
+	return filepath.Abs(trimmed)
 }
