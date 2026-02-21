@@ -127,6 +127,8 @@ func TestReplayCapturedWebhook(t *testing.T) {
 		bodyBytes, readErr := io.ReadAll(req.Body)
 		if readErr != nil {
 			t.Errorf("read replay request body: %v", readErr)
+			http.Error(w, "read error", http.StatusInternalServerError)
+			return
 		}
 		receivedCh <- replayCapture{
 			Method:            req.Method,

@@ -258,7 +258,7 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 		return ReplayArgs{}, err
 	}
 	baseURL = strings.TrimSpace(baseURL)
-	if baseURL == "" {
+	if targetURL == "" && baseURL == "" {
 		return ReplayArgs{}, errors.New("base URL cannot be empty")
 	}
 
@@ -297,9 +297,10 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 		if err := validateAbsoluteURL(targetURL); err != nil {
 			return ReplayArgs{}, fmt.Errorf("target URL is invalid: %w", err)
 		}
-	}
-	if err := validateAbsoluteURL(baseURL); err != nil {
-		return ReplayArgs{}, fmt.Errorf("base URL is invalid: %w", err)
+	} else {
+		if err := validateAbsoluteURL(baseURL); err != nil {
+			return ReplayArgs{}, fmt.Errorf("base URL is invalid: %w", err)
+		}
 	}
 
 	return ReplayArgs{
