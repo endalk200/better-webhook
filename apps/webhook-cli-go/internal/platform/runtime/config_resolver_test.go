@@ -182,6 +182,12 @@ func TestResolveReplayArgsRejectsInvalidMethodCharacters(t *testing.T) {
 	}
 }
 
+func TestIsValidHTTPMethodRejectsEmpty(t *testing.T) {
+	if isValidHTTPMethod("") {
+		t.Fatalf("expected empty method to be invalid")
+	}
+}
+
 func newReplayTestCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 	command := &cobra.Command{Use: "replay"}

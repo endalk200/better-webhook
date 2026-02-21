@@ -163,6 +163,12 @@ func TestReplayReturnsInvalidMethodError(t *testing.T) {
 	}
 }
 
+func TestIsValidHTTPMethodRejectsEmpty(t *testing.T) {
+	if isValidHTTPMethod("") {
+		t.Fatalf("expected empty method to be invalid")
+	}
+}
+
 func TestReplayReturnsInvalidBaseURLError(t *testing.T) {
 	repo := &repoStub{
 		capture: domain.CaptureFile{

@@ -218,6 +218,9 @@ func validateAbsoluteURL(rawURL string) error {
 }
 
 func isValidHTTPMethod(method string) bool {
+	if len(method) == 0 {
+		return false
+	}
 	for _, r := range method {
 		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
 		isTokenPunctuation := strings.ContainsRune("!#$%&'*+-.^_`|~", r)

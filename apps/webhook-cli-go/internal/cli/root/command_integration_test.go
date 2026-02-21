@@ -157,19 +157,33 @@ func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
 		t.Fatalf("seed capture: %v", err)
 	}
 
-	var receivedPath string
-	var receivedMethod string
-	var receivedBody string
-	var githubEvent string
+	type receivedReplayRequest struct {
+		Path        string
+		Method      string
+		Body        string
+		GitHubEvent string
+	}
+	receivedRequestCh := make(chan receivedReplayRequest, 1)
+	handlerErrCh := make(chan error, 1)
 	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		bodyBytes, readErr := io.ReadAll(req.Body)
 		if readErr != nil {
-			t.Fatalf("read replay request body: %v", readErr)
+			select {
+			case handlerErrCh <- readErr:
+			default:
+			}
+			http.Error(w, "read error", http.StatusInternalServerError)
+			return
 		}
-		receivedPath = req.URL.RequestURI()
-		receivedMethod = req.Method
-		receivedBody = string(bodyBytes)
-		githubEvent = req.Header.Get("X-GitHub-Event")
+		select {
+		case receivedRequestCh <- receivedReplayRequest{
+			Path:        req.URL.RequestURI(),
+			Method:      req.Method,
+			Body:        string(bodyBytes),
+			GitHubEvent: req.Header.Get("X-GitHub-Event"),
+		}:
+		default:
+		}
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))
@@ -185,17 +199,28 @@ func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute replay command: %v", err)
 	}
-	if receivedPath != "/webhooks/test?attempt=1" {
-		t.Fatalf("expected replay path with query, got %q", receivedPath)
+	select {
+	case handlerErr := <-handlerErrCh:
+		t.Fatalf("replay target handler error: %v", handlerErr)
+	default:
 	}
-	if receivedMethod != "POST" {
-		t.Fatalf("expected replay method POST, got %q", receivedMethod)
-	}
-	if strings.TrimSpace(receivedBody) != `{"ok":true}` {
-		t.Fatalf("expected replay body to match capture, got %q", receivedBody)
-	}
-	if githubEvent != "push" {
-		t.Fatalf("expected GitHub header to be preserved, got %q", githubEvent)
+
+	select {
+	case received := <-receivedRequestCh:
+		if received.Path != "/webhooks/test?attempt=1" {
+			t.Fatalf("expected replay path with query, got %q", received.Path)
+		}
+		if received.Method != "POST" {
+			t.Fatalf("expected replay method POST, got %q", received.Method)
+		}
+		if strings.TrimSpace(received.Body) != `{"ok":true}` {
+			t.Fatalf("expected replay body to match capture, got %q", received.Body)
+		}
+		if received.GitHubEvent != "push" {
+			t.Fatalf("expected GitHub header to be preserved, got %q", received.GitHubEvent)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for replay request")
 	}
 
 	output := out.String()
