@@ -41,6 +41,16 @@ func TestMapReplayCommandErrorForCancellation(t *testing.T) {
 	}
 }
 
+func TestMapReplayCommandErrorForDeadlineExceeded(t *testing.T) {
+	err := mapReplayCommandError(context.DeadlineExceeded, "deadbeef")
+	if err == nil {
+		t.Fatalf("expected mapped error")
+	}
+	if got := err.Error(); got != "operation cancelled" {
+		t.Fatalf("unexpected error message: %q", got)
+	}
+}
+
 func TestMapReplayCommandErrorPassThrough(t *testing.T) {
 	rootErr := errors.New("raw transport failure")
 	err := mapReplayCommandError(rootErr, "deadbeef")

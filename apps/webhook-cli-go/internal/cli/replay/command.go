@@ -129,9 +129,6 @@ func mapReplayCommandError(err error, selector string) error {
 	if err == nil {
 		return nil
 	}
-	if strings.TrimSpace(selector) == "" {
-		selector = ""
-	}
 	if errors.Is(err, domain.ErrCaptureNotFound) {
 		if selector == "" {
 			return fmt.Errorf("capture not found")

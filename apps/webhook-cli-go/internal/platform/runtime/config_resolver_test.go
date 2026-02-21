@@ -90,6 +90,9 @@ func TestResolveReplayArgsParsesFlagsAndArguments(t *testing.T) {
 	if args.TargetURL != "http://localhost:5000/hook" {
 		t.Fatalf("target URL mismatch: got %q", args.TargetURL)
 	}
+	if args.BaseURL != "http://localhost:4000" {
+		t.Fatalf("base URL mismatch: got %q", args.BaseURL)
+	}
 	if args.Timeout != 45*time.Second {
 		t.Fatalf("timeout mismatch: got %s", args.Timeout)
 	}
@@ -140,6 +143,20 @@ func TestResolveReplayArgsRejectsInvalidBaseURL(t *testing.T) {
 	}
 }
 
+func TestResolveReplayArgsAllowsInvalidBaseURLWhenTargetProvided(t *testing.T) {
+	command := newReplayTestCommand(t)
+	if err := command.Flags().Set("base-url", "localhost:3000"); err != nil {
+		t.Fatalf("set base-url: %v", err)
+	}
+	args, err := ResolveReplayArgs(command, []string{"deadbeef", "http://localhost:5000/hook"})
+	if err != nil {
+		t.Fatalf("resolve replay args: %v", err)
+	}
+	if args.TargetURL != "http://localhost:5000/hook" {
+		t.Fatalf("target URL mismatch: got %q", args.TargetURL)
+	}
+}
+
 func TestResolveReplayArgsRejectsInvalidHeaderOverride(t *testing.T) {
 	command := newReplayTestCommand(t)
 	if err := command.Flags().Set("header", "invalid-header"); err != nil {
@@ -185,6 +202,17 @@ func TestResolveReplayArgsRejectsInvalidMethodCharacters(t *testing.T) {
 func TestIsValidHTTPMethodRejectsEmpty(t *testing.T) {
 	if isValidHTTPMethod("") {
 		t.Fatalf("expected empty method to be invalid")
+	}
+}
+
+func TestResolveReplayArgsRejectsWhitespaceSelector(t *testing.T) {
+	command := newReplayTestCommand(t)
+	_, err := ResolveReplayArgs(command, []string{"   "})
+	if err == nil {
+		t.Fatalf("expected selector validation error")
+	}
+	if !strings.Contains(err.Error(), "capture selector cannot be empty") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
