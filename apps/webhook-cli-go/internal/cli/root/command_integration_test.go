@@ -4,21 +4,27 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
-	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/config/toml"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider/github"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/jsonc"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
+	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
+	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
+	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	"github.com/spf13/cobra"
 )
@@ -36,8 +42,8 @@ func TestRootCommandShowsHelpByDefault(t *testing.T) {
 	}
 
 	out := output.String()
-	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") {
-		t.Fatalf("expected default help output to include capture commands, got %q", out)
+	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") || !strings.Contains(out, "replay") {
+		t.Fatalf("expected default help output to include capture commands and replay, got %q", out)
 	}
 }
 
@@ -134,6 +140,89 @@ func TestCapturesDeleteCommandMapsNotFoundError(t *testing.T) {
 	}
 }
 
+func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
+	capturesDir := t.TempDir()
+	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	record := testCommandCapture("beadfeed-0000-0000-0000-000000000000", domain.ProviderGitHub)
+	record.URL = "/webhooks/test?attempt=1"
+	record.Path = "/webhooks/test"
+	record.Headers = append(record.Headers,
+		domain.HeaderEntry{Key: "X-GitHub-Event", Value: "push"},
+		domain.HeaderEntry{Key: "X-Hub-Signature-256", Value: "sha256=abc"},
+	)
+	if _, err := store.Save(context.Background(), record); err != nil {
+		t.Fatalf("seed capture: %v", err)
+	}
+
+	var receivedPath string
+	var receivedMethod string
+	var receivedBody string
+	var githubEvent string
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		bodyBytes, readErr := io.ReadAll(req.Body)
+		if readErr != nil {
+			t.Fatalf("read replay request body: %v", readErr)
+		}
+		receivedPath = req.URL.RequestURI()
+		receivedMethod = req.Method
+		receivedBody = string(bodyBytes)
+		githubEvent = req.Header.Get("X-GitHub-Event")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer targetServer.Close()
+
+	configPath := writeCommandTestConfig(t, capturesDir)
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{"--config", configPath, "replay", "beadfeed", "--base-url", targetServer.URL})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute replay command: %v", err)
+	}
+	if receivedPath != "/webhooks/test?attempt=1" {
+		t.Fatalf("expected replay path with query, got %q", receivedPath)
+	}
+	if receivedMethod != "POST" {
+		t.Fatalf("expected replay method POST, got %q", receivedMethod)
+	}
+	if strings.TrimSpace(receivedBody) != `{"ok":true}` {
+		t.Fatalf("expected replay body to match capture, got %q", receivedBody)
+	}
+	if githubEvent != "push" {
+		t.Fatalf("expected GitHub header to be preserved, got %q", githubEvent)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Status: 201 Created") {
+		t.Fatalf("expected replay status output, got %q", output)
+	}
+	if !strings.Contains(output, "Duration:") {
+		t.Fatalf("expected replay duration output, got %q", output)
+	}
+}
+
+func TestReplayCommandMapsNotFoundError(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"--config", configPath, "replay", "missing", "http://localhost:9999"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected replay command to fail for missing capture")
+	}
+	if !strings.Contains(err.Error(), "capture not found") {
+		t.Fatalf("expected not found error, got %v", err)
+	}
+}
+
 func newTestRootCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 	return NewCommand(Dependencies{
@@ -159,6 +248,16 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
 					return nil, err
 				}
 				return appcaptures.NewService(store), nil
+			},
+		},
+		ReplayDependencies: replaycmd.Dependencies{
+			ServiceFactory: func(capturesDir string) (*appreplay.Service, error) {
+				store, err := jsonc.NewStore(capturesDir, nil, nil)
+				if err != nil {
+					return nil, err
+				}
+				dispatcher := httpreplay.NewClient(&http.Client{})
+				return appreplay.NewService(store, dispatcher), nil
 			},
 		},
 	})
