@@ -328,6 +328,20 @@ func TestResolveTemplatesDownloadArgsAllowsAllWithoutID(t *testing.T) {
 	}
 }
 
+func TestResolveTemplatesDownloadArgsRejectsAllWithTemplateID(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("all", "true"); err != nil {
+		t.Fatalf("set all: %v", err)
+	}
+	_, err := ResolveTemplatesDownloadArgs(command, []string{"github-push"})
+	if err == nil {
+		t.Fatalf("expected mutually exclusive --all and template id to fail")
+	}
+	if !strings.Contains(err.Error(), "cannot be provided with --all") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestResolveTemplatesSearchArgsRequiresQuery(t *testing.T) {
 	command := newTemplatesTestCommand(t)
 	_, err := ResolveTemplatesSearchArgs(command, nil)

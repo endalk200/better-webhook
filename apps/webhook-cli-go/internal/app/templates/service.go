@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -49,13 +50,24 @@ func NewService(
 }
 
 func (s *Service) ListRemote(ctx context.Context, provider string, forceRefresh bool) ([]domain.RemoteTemplate, error) {
+	return s.listRemote(ctx, provider, forceRefresh, nil)
+}
+
+func (s *Service) listRemote(
+	ctx context.Context,
+	provider string,
+	forceRefresh bool,
+	locals []domain.LocalTemplate,
+) ([]domain.RemoteTemplate, error) {
 	index, err := s.loadIndex(ctx, forceRefresh)
 	if err != nil {
 		return nil, err
 	}
-	locals, err := s.localStore.List(ctx)
-	if err != nil {
-		return nil, err
+	if locals == nil {
+		locals, err = s.localStore.List(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 	localByID := make(map[string]bool, len(locals))
 	for _, item := range locals {
@@ -182,16 +194,28 @@ func (s *Service) Search(
 	if trimmedQuery == "" {
 		return SearchResult{}, domain.ErrInvalidTemplateQuery
 	}
-	remoteItems, err := s.ListRemote(ctx, provider, forceRefresh)
+
+	allLocalItems, err := s.localStore.List(ctx)
 	if err != nil {
 		return SearchResult{}, err
 	}
-	localItems, err := s.ListLocal(ctx, provider)
+	remoteItems, err := s.listRemote(ctx, provider, forceRefresh, allLocalItems)
 	if err != nil {
 		return SearchResult{}, err
 	}
+	localItems := allLocalItems
+	trimmedProvider := strings.TrimSpace(provider)
+	if trimmedProvider != "" {
+		filtered := make([]domain.LocalTemplate, 0, len(allLocalItems))
+		for _, item := range allLocalItems {
+			if strings.EqualFold(item.Metadata.Provider, trimmedProvider) {
+				filtered = append(filtered, item)
+			}
+		}
+		localItems = filtered
+	}
+	queryLower := strings.ToLower(trimmedQuery)
 	matches := func(metadata domain.TemplateMetadata) bool {
-		queryLower := strings.ToLower(trimmedQuery)
 		return strings.Contains(strings.ToLower(metadata.ID), queryLower) ||
 			strings.Contains(strings.ToLower(metadata.Name), queryLower) ||
 			strings.Contains(strings.ToLower(metadata.Provider), queryLower) ||
@@ -235,10 +259,21 @@ func (s *Service) loadIndex(ctx context.Context, forceRefresh bool) (domain.Temp
 
 	index, err := s.remoteStore.FetchIndex(ctx)
 	if err == nil {
-		_ = s.cacheStore.Set(ctx, CachedIndex{
+		cachedAt := s.clock.Now().UTC()
+		if setErr := s.cacheStore.Set(ctx, CachedIndex{
 			Index:    index,
-			CachedAt: s.clock.Now().UTC(),
-		})
+			CachedAt: cachedAt,
+		}); setErr != nil {
+			slog.Warn(
+				"failed to update templates index cache",
+				"error",
+				setErr,
+				"templates_count",
+				len(index.Templates),
+				"cached_at",
+				cachedAt.Format(time.RFC3339Nano),
+			)
+		}
 		return index, nil
 	}
 

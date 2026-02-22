@@ -205,16 +205,32 @@ func (s *Store) Save(
 		return domain.LocalTemplate{}, fmt.Errorf("marshal template file: %w", err)
 	}
 	content = append(content, '\n')
-	tempPath := filePath + ".tmp"
-	if err := os.WriteFile(tempPath, content, 0o600); err != nil {
-		return domain.LocalTemplate{}, fmt.Errorf("write template temp file: %w", err)
+
+	tempFile, err := os.CreateTemp(filepath.Dir(filePath), ".template-*.tmp")
+	if err != nil {
+		return domain.LocalTemplate{}, fmt.Errorf("create template temp file: %w", err)
 	}
+	tempPath := tempFile.Name()
 	renameSucceeded := false
+	tempClosed := false
 	defer func() {
+		if !tempClosed {
+			_ = tempFile.Close()
+		}
 		if !renameSucceeded {
 			_ = os.Remove(tempPath)
 		}
 	}()
+	if _, err := tempFile.Write(content); err != nil {
+		return domain.LocalTemplate{}, fmt.Errorf("write template temp file: %w", err)
+	}
+	if err := tempFile.Sync(); err != nil {
+		return domain.LocalTemplate{}, fmt.Errorf("sync template temp file: %w", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		return domain.LocalTemplate{}, fmt.Errorf("close template temp file: %w", err)
+	}
+	tempClosed = true
 	if err := os.Rename(tempPath, filePath); err != nil {
 		return domain.LocalTemplate{}, fmt.Errorf("persist template file: %w", err)
 	}
