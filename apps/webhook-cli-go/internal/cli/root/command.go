@@ -4,6 +4,7 @@ import (
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
+	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 	"github.com/spf13/cobra"
 )
@@ -14,6 +15,7 @@ type Dependencies struct {
 	CaptureDependencies  capturecmd.Dependencies
 	CapturesDependencies capturescmd.Dependencies
 	ReplayDependencies   replaycmd.Dependencies
+	TemplateDependencies templatescmd.Dependencies
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {
@@ -35,6 +37,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	rootCmd.AddCommand(capturecmd.NewCommand(deps.CaptureDependencies))
 	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDependencies))
 	rootCmd.AddCommand(replaycmd.NewCommand(deps.ReplayDependencies))
+	rootCmd.AddCommand(templatescmd.NewCommand(deps.TemplateDependencies))
 
 	return rootCmd
 }

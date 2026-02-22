@@ -14,8 +14,9 @@ import (
 const envPrefix = "BETTER_WEBHOOK"
 
 type fileConfig struct {
-	CapturesDir *string `toml:"captures_dir"`
-	LogLevel    *string `toml:"log_level"`
+	CapturesDir  *string `toml:"captures_dir"`
+	TemplatesDir *string `toml:"templates_dir"`
+	LogLevel     *string `toml:"log_level"`
 }
 
 type Loader struct{}
@@ -43,6 +44,9 @@ func (Loader) Load(configPath string) (runtime.AppConfig, error) {
 	if tomlConfig.CapturesDir != nil {
 		loadedConfig.CapturesDir = *tomlConfig.CapturesDir
 	}
+	if tomlConfig.TemplatesDir != nil {
+		loadedConfig.TemplatesDir = *tomlConfig.TemplatesDir
+	}
 	if tomlConfig.LogLevel != nil {
 		loadedConfig.LogLevel = *tomlConfig.LogLevel
 	}
@@ -63,6 +67,9 @@ func (Loader) Load(configPath string) (runtime.AppConfig, error) {
 func validate(cfg runtime.AppConfig) error {
 	if strings.TrimSpace(cfg.CapturesDir) == "" {
 		return errors.New("captures_dir cannot be empty")
+	}
+	if strings.TrimSpace(cfg.TemplatesDir) == "" {
+		return errors.New("templates_dir cannot be empty")
 	}
 	if !runtime.IsValidLogLevel(cfg.LogLevel) {
 		return errors.New("log_level must be one of: debug, info, warn, error")
@@ -110,7 +117,7 @@ func validateTopLevelKeys(content []byte, path string) error {
 	}
 	for key := range parsed {
 		switch key {
-		case "captures_dir", "log_level":
+		case "captures_dir", "templates_dir", "log_level":
 			continue
 		default:
 			return fmt.Errorf("unsupported config key %q in %q", key, path)
@@ -128,6 +135,11 @@ func normalizeConfig(cfg runtime.AppConfig, homeDir string) (runtime.AppConfig, 
 		return runtime.AppConfig{}, fmt.Errorf("expand captures_dir: %w", err)
 	}
 	cfg.CapturesDir = expandedCapturesDir
+	expandedTemplatesDir, err := expandPath(cfg.TemplatesDir, homeDir)
+	if err != nil {
+		return runtime.AppConfig{}, fmt.Errorf("expand templates_dir: %w", err)
+	}
+	cfg.TemplatesDir = expandedTemplatesDir
 
 	return cfg, nil
 }
@@ -138,6 +150,9 @@ func applyEnvOverrides(cfg *runtime.AppConfig) {
 	}
 	if capturesDir, ok := os.LookupEnv(envPrefix + "_CAPTURES_DIR"); ok {
 		cfg.CapturesDir = capturesDir
+	}
+	if templatesDir, ok := os.LookupEnv(envPrefix + "_TEMPLATES_DIR"); ok {
+		cfg.TemplatesDir = templatesDir
 	}
 	if logLevel, ok := os.LookupEnv(envPrefix + "_LOG_LEVEL"); ok {
 		cfg.LogLevel = logLevel

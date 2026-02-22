@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,15 +18,20 @@ import (
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider/github"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/jsonc"
+	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	httptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplates"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
+	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/templates"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
+	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
+	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
 	"github.com/spf13/cobra"
 )
 
@@ -248,7 +254,238 @@ func TestReplayCommandMapsNotFoundError(t *testing.T) {
 	}
 }
 
+func TestTemplatesListCommandFromRemote(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "list",
+		"--templates-dir", templatesDir,
+	})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute templates list: %v", err)
+	}
+	output := out.String()
+	if !strings.Contains(output, "Available templates:") {
+		t.Fatalf("expected templates list output, got %q", output)
+	}
+	if !strings.Contains(output, "github-push") {
+		t.Fatalf("expected github-push template in list output, got %q", output)
+	}
+}
+
+func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	downloadCmd := newTestRootCommand(t)
+	var downloadOut bytes.Buffer
+	downloadCmd.SetOut(&downloadOut)
+	downloadCmd.SetErr(&downloadOut)
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download: %v", err)
+	}
+	if !strings.Contains(downloadOut.String(), "Downloaded template github-push") {
+		t.Fatalf("expected download output, got %q", downloadOut.String())
+	}
+
+	localCmd := newTestRootCommand(t)
+	var localOut bytes.Buffer
+	localCmd.SetOut(&localOut)
+	localCmd.SetErr(&localOut)
+	localCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "local",
+		"--templates-dir", templatesDir,
+	})
+	if err := localCmd.Execute(); err != nil {
+		t.Fatalf("execute templates local: %v", err)
+	}
+	if !strings.Contains(localOut.String(), "github-push") {
+		t.Fatalf("expected local template output, got %q", localOut.String())
+	}
+
+	searchCmd := newTestRootCommand(t)
+	var searchOut bytes.Buffer
+	searchCmd.SetOut(&searchOut)
+	searchCmd.SetErr(&searchOut)
+	searchCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "search", "push",
+		"--templates-dir", templatesDir,
+	})
+	if err := searchCmd.Execute(); err != nil {
+		t.Fatalf("execute templates search: %v", err)
+	}
+	if !strings.Contains(searchOut.String(), "Search results for \"push\":") {
+		t.Fatalf("expected search output, got %q", searchOut.String())
+	}
+
+	cleanCmd := newTestRootCommand(t)
+	var cleanOut bytes.Buffer
+	cleanCmd.SetOut(&cleanOut)
+	cleanCmd.SetErr(&cleanOut)
+	cleanCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "clean", "--force",
+		"--templates-dir", templatesDir,
+	})
+	if err := cleanCmd.Execute(); err != nil {
+		t.Fatalf("execute templates clean: %v", err)
+	}
+	if !strings.Contains(cleanOut.String(), "Removed 1 template(s)") {
+		t.Fatalf("expected clean output, got %q", cleanOut.String())
+	}
+
+	cacheCmd := newTestRootCommand(t)
+	var cacheOut bytes.Buffer
+	cacheCmd.SetOut(&cacheOut)
+	cacheCmd.SetErr(&cacheOut)
+	cacheCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "cache", "clear",
+		"--templates-dir", templatesDir,
+	})
+	if err := cacheCmd.Execute(); err != nil {
+		t.Fatalf("execute templates cache clear: %v", err)
+	}
+	if !strings.Contains(cacheOut.String(), "Template cache cleared.") {
+		t.Fatalf("expected cache clear output, got %q", cacheOut.String())
+	}
+}
+
+func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
+	var indexRequests int32
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.json":
+			atomic.AddInt32(&indexRequests, 1)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {
+      "id":"github-push",
+      "name":"GitHub Push",
+      "provider":"github",
+      "event":"push",
+      "file":"github/github-push.json"
+    }
+  ]
+}`))
+		case "/templates/github/github-push.json":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"method":"POST","body":{"ok":true}}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	listCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	listCmd.SetOut(&bytes.Buffer{})
+	listCmd.SetErr(&bytes.Buffer{})
+	listCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "list",
+		"--templates-dir", templatesDir,
+	})
+	if err := listCmd.Execute(); err != nil {
+		t.Fatalf("execute templates list: %v", err)
+	}
+	if got := atomic.LoadInt32(&indexRequests); got != 1 {
+		t.Fatalf("expected one index request after list, got %d", got)
+	}
+
+	downloadCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	downloadCmd.SetOut(&bytes.Buffer{})
+	downloadCmd.SetErr(&bytes.Buffer{})
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "--all",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download --all: %v", err)
+	}
+	if got := atomic.LoadInt32(&indexRequests); got != 1 {
+		t.Fatalf("expected download --all without --refresh to use cache, got %d index requests", got)
+	}
+
+	refreshCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	refreshCmd.SetOut(&bytes.Buffer{})
+	refreshCmd.SetErr(&bytes.Buffer{})
+	refreshCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "--all", "--refresh",
+		"--templates-dir", templatesDir,
+	})
+	if err := refreshCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download --all --refresh: %v", err)
+	}
+	if got := atomic.LoadInt32(&indexRequests); got != 2 {
+		t.Fatalf("expected --refresh to force second index request, got %d", got)
+	}
+}
+
 func newTestRootCommand(t *testing.T) *cobra.Command {
+	t.Helper()
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.json":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {
+      "id":"github-push",
+      "name":"GitHub Push",
+      "provider":"github",
+      "event":"push",
+      "file":"github/github-push.json"
+    },
+    {
+      "id":"github-issues",
+      "name":"GitHub Issues",
+      "provider":"github",
+      "event":"issues",
+      "file":"github/github-issues.json"
+    }
+  ]
+}`))
+		case "/templates/github/github-push.json":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"method":"POST","headers":[{"key":"X-GitHub-Event","value":"push"}],"body":{"ok":true}}`))
+		case "/templates/github/github-issues.json":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"method":"POST","headers":[{"key":"X-GitHub-Event","value":"issues"}],"body":{"ok":true}}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	t.Cleanup(templateServer.Close)
+
+	return newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+}
+
+func newTestRootCommandWithTemplateRemote(
+	t *testing.T,
+	templateBaseURL string,
+	templateHTTPClient *http.Client,
+) *cobra.Command {
 	t.Helper()
 	return NewCommand(Dependencies{
 		Version:      "test-version",
@@ -283,6 +520,26 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
 				}
 				dispatcher := httpreplay.NewClient(&http.Client{})
 				return appreplay.NewService(store, dispatcher), nil
+			},
+		},
+		TemplateDependencies: templatescmd.Dependencies{
+			ServiceFactory: func(templatesDir string) (*apptemplates.Service, error) {
+				localStore, err := templatestore.NewStore(templatesDir)
+				if err != nil {
+					return nil, err
+				}
+				cacheStore, err := templatestore.NewCache(filepath.Join(templatesDir, ".index-cache.json"))
+				if err != nil {
+					return nil, err
+				}
+				remoteStore, err := httptemplates.NewClient(httptemplates.ClientOptions{
+					BaseURL:    templateBaseURL,
+					HTTPClient: templateHTTPClient,
+				})
+				if err != nil {
+					return nil, err
+				}
+				return apptemplates.NewService(localStore, remoteStore, cacheStore, platformtime.SystemClock{}), nil
 			},
 		},
 	})

@@ -4,20 +4,26 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/config/toml"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider/github"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/jsonc"
+	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	httptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplates"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
+	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/templates"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 	rootcmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/root"
+	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
+	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/version"
 )
 
@@ -34,6 +40,9 @@ func main() {
 		},
 		ReplayDependencies: replaycmd.Dependencies{
 			ServiceFactory: newReplayService,
+		},
+		TemplateDependencies: templatescmd.Dependencies{
+			ServiceFactory: newTemplateService,
 		},
 	})
 
@@ -73,4 +82,23 @@ func newReplayService(capturesDir string) (*appreplay.Service, error) {
 	}
 	dispatcher := httpreplay.NewClient(&http.Client{})
 	return appreplay.NewService(store, dispatcher), nil
+}
+
+func newTemplateService(templatesDir string) (*apptemplates.Service, error) {
+	localStore, err := templatestore.NewStore(templatesDir)
+	if err != nil {
+		return nil, err
+	}
+	cacheStore, err := templatestore.NewCache(filepath.Join(templatesDir, ".index-cache.json"))
+	if err != nil {
+		return nil, err
+	}
+	remoteStore, err := httptemplates.NewClient(httptemplates.ClientOptions{
+		BaseURL:    httptemplates.DefaultBaseURL,
+		HTTPClient: &http.Client{Timeout: httptemplates.DefaultHTTPTimeout},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return apptemplates.NewService(localStore, remoteStore, cacheStore, platformtime.SystemClock{}), nil
 }

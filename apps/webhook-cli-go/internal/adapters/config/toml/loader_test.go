@@ -57,6 +57,43 @@ func TestLoadConfigExpandsEnvCapturesDir(t *testing.T) {
 	}
 }
 
+func TestLoadConfigExpandsTemplatesDir(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.toml")
+
+	if err := os.WriteFile(configPath, []byte(`templates_dir = "$BW_TEMPLATES_DIR"`), 0o600); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
+	expandedDir := filepath.Join(tempDir, "templates")
+	t.Setenv("BW_TEMPLATES_DIR", expandedDir)
+
+	cfg, err := NewLoader().Load(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.TemplatesDir != expandedDir {
+		t.Fatalf("templates dir mismatch: got %q want %q", cfg.TemplatesDir, expandedDir)
+	}
+}
+
+func TestLoadConfigEnvTemplatesDirOverridesTOML(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(`templates_dir = "~/templates-from-config"`), 0o600); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
+	envTemplatesDir := filepath.Join(tempDir, "templates-from-env")
+	t.Setenv("BETTER_WEBHOOK_TEMPLATES_DIR", envTemplatesDir)
+
+	cfg, err := NewLoader().Load(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.TemplatesDir != envTemplatesDir {
+		t.Fatalf("templates dir mismatch: got %q want %q", cfg.TemplatesDir, envTemplatesDir)
+	}
+}
+
 func TestLoadConfigRejectsUnsupportedKey(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "config.toml")

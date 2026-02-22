@@ -1,0 +1,208 @@
+package template
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
+)
+
+func TestStoreSaveAndListRoundTrip(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	saved, err := store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "github-push",
+		Name:     "GitHub Push",
+		Provider: "github",
+		Event:    "push",
+		File:     "github/github-push.json",
+	}, domain.WebhookTemplate{
+		Method: "POST",
+		Headers: []domain.HeaderEntry{
+			{Key: "X-GitHub-Event", Value: "push"},
+		},
+		Body: []byte(`{"ok":true}`),
+	}, "2026-02-22T10:00:00Z")
+	if err != nil {
+		t.Fatalf("save template: %v", err)
+	}
+	if saved.ID != "github-push" {
+		t.Fatalf("saved id mismatch: got %q", saved.ID)
+	}
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 template, got %d", len(items))
+	}
+	if items[0].Metadata.Provider != "github" {
+		t.Fatalf("provider mismatch: got %q", items[0].Metadata.Provider)
+	}
+}
+
+func TestStoreSaveRejectsInvalidTemplateID(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	_, err = store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "../escape",
+		Name:     "Bad",
+		Provider: "github",
+		Event:    "push",
+	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z")
+	if err == nil {
+		t.Fatalf("expected invalid id error")
+	}
+}
+
+func TestStoreDeleteAllRemovesTemplates(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	_, err = store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "github-push",
+		Name:     "GitHub Push",
+		Provider: "github",
+		Event:    "push",
+		File:     "github/github-push.json",
+	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z")
+	if err != nil {
+		t.Fatalf("save template: %v", err)
+	}
+	deleted, err := store.DeleteAll(context.Background())
+	if err != nil {
+		t.Fatalf("delete all templates: %v", err)
+	}
+	if deleted != 1 {
+		t.Fatalf("deleted count mismatch: got %d", deleted)
+	}
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected no templates, got %d", len(items))
+	}
+}
+
+func TestStoreDeleteAllSkipsUnmanagedJSONFiles(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	if _, err := store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "github-push",
+		Name:     "GitHub Push",
+		Provider: "github",
+		Event:    "push",
+		File:     "github/github-push.json",
+	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z"); err != nil {
+		t.Fatalf("save template: %v", err)
+	}
+
+	rootJSON := filepath.Join(baseDir, "unrelated.json")
+	if err := os.WriteFile(rootJSON, []byte(`{"keep":true}`), 0o600); err != nil {
+		t.Fatalf("write root json: %v", err)
+	}
+	nestedDir := filepath.Join(baseDir, "github", "nested")
+	if err := os.MkdirAll(nestedDir, 0o700); err != nil {
+		t.Fatalf("mkdir nested dir: %v", err)
+	}
+	providerJSON := filepath.Join(baseDir, "github", "unmanaged.json")
+	if err := os.WriteFile(providerJSON, []byte(`{"keep":true}`), 0o600); err != nil {
+		t.Fatalf("write provider json: %v", err)
+	}
+	nestedJSON := filepath.Join(nestedDir, "keep.json")
+	if err := os.WriteFile(nestedJSON, []byte(`{"keep":true}`), 0o600); err != nil {
+		t.Fatalf("write nested json: %v", err)
+	}
+
+	deleted, err := store.DeleteAll(context.Background())
+	if err != nil {
+		t.Fatalf("delete all templates: %v", err)
+	}
+	if deleted != 1 {
+		t.Fatalf("deleted count mismatch: got %d want 1", deleted)
+	}
+	if _, err := os.Stat(rootJSON); err != nil {
+		t.Fatalf("expected root json to remain, got stat error: %v", err)
+	}
+	if _, err := os.Stat(providerJSON); err != nil {
+		t.Fatalf("expected unmanaged provider json to remain, got stat error: %v", err)
+	}
+	if _, err := os.Stat(nestedJSON); err != nil {
+		t.Fatalf("expected nested json to remain, got stat error: %v", err)
+	}
+}
+
+func TestStoreListSkipsMalformedFiles(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(providerDir, "bad.json"), []byte("{not json"), 0o600); err != nil {
+		t.Fatalf("write malformed template file: %v", err)
+	}
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected malformed file to be skipped")
+	}
+}
+
+func TestStoreListUsesFileModTimeWhenDownloadedAtMissing(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+	templatePath := filepath.Join(providerDir, "legacy.json")
+	payload := `{
+  "method": "POST",
+  "_metadata": {
+    "id": "legacy",
+    "name": "Legacy",
+    "provider": "github",
+    "event": "push",
+    "file": "github/legacy.json"
+  }
+}`
+	if err := os.WriteFile(templatePath, []byte(payload), 0o600); err != nil {
+		t.Fatalf("write template: %v", err)
+	}
+	expected := time.Date(2024, time.December, 1, 3, 4, 5, 0, time.UTC)
+	if err := os.Chtimes(templatePath, expected, expected); err != nil {
+		t.Fatalf("set file mod time: %v", err)
+	}
+
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected one template, got %d", len(items))
+	}
+	if items[0].DownloadedAt != expected.Format(time.RFC3339Nano) {
+		t.Fatalf("downloadedAt mismatch: got %q want %q", items[0].DownloadedAt, expected.Format(time.RFC3339Nano))
+	}
+}
