@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"regexp"
 	"strings"
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	DefaultBaseURL     = "https://raw.githubusercontent.com/endalk200/better-webhook/main"
+	DefaultBaseURL     = "https://raw.githubusercontent.com/endalk200/better-webhook/e5cdb9f82b140098ed1b3ab11a27311bc6e1c522"
 	DefaultHTTPTimeout = 15 * time.Second
+	maxTemplateBytes   = 5 * 1024 * 1024
 )
 
 var safeTemplateFilePattern = regexp.MustCompile(`^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$`)
@@ -38,6 +40,17 @@ func NewClient(options ClientOptions) (*Client, error) {
 		baseURL = DefaultBaseURL
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
+	parsedBaseURL, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid templates base URL: %w", err)
+	}
+	if parsedBaseURL.Scheme != "http" && parsedBaseURL.Scheme != "https" {
+		return nil, errors.New("invalid templates base URL: scheme must be http or https")
+	}
+	if strings.TrimSpace(parsedBaseURL.Host) == "" {
+		return nil, errors.New("invalid templates base URL: host cannot be empty")
+	}
+
 	var httpClient *http.Client
 	if options.HTTPClient == nil {
 		httpClient = &http.Client{Timeout: DefaultHTTPTimeout}
@@ -103,14 +116,20 @@ func (c *Client) fetch(ctx context.Context, relativePath string) ([]byte, error)
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request template content: unexpected status %d", response.StatusCode)
 	}
-	body, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxTemplateBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read template response body: %w", err)
+	}
+	if int64(len(body)) > maxTemplateBytes {
+		return nil, fmt.Errorf("read template response body: payload exceeds %d bytes", maxTemplateBytes)
 	}
 	return body, nil
 }
 
 func validateIndex(index domain.TemplatesIndex) error {
+	if len(index.Templates) == 0 {
+		return errors.New("templates list cannot be empty")
+	}
 	for _, metadata := range index.Templates {
 		if strings.TrimSpace(metadata.ID) == "" {
 			return errors.New("template metadata id cannot be empty")

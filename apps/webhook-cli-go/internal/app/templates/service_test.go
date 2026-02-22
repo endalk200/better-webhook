@@ -139,6 +139,42 @@ func TestSearchReturnsMatchesFromLocalAndRemote(t *testing.T) {
 	}
 }
 
+func TestSearchReadsLocalStoreOnce(t *testing.T) {
+	localStore := &localStoreStub{
+		items: []domain.LocalTemplate{
+			{
+				ID: "github-push",
+				Metadata: domain.TemplateMetadata{
+					ID:       "github-push",
+					Name:     "GitHub Push",
+					Provider: "github",
+					Event:    "push",
+					File:     "github/github-push.json",
+				},
+			},
+		},
+	}
+	service := NewService(
+		localStore,
+		&remoteStoreStub{
+			index: domain.TemplatesIndex{
+				Version: "1.0.0",
+				Templates: []domain.TemplateMetadata{
+					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.json"},
+				},
+			},
+		},
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+	if _, err := service.Search(context.Background(), "github", "", false); err != nil {
+		t.Fatalf("search templates: %v", err)
+	}
+	if localStore.listCalls != 1 {
+		t.Fatalf("expected one local store list call, got %d", localStore.listCalls)
+	}
+}
+
 func TestListRemoteFallsBackToStaleCacheWhenRemoteFails(t *testing.T) {
 	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
 	cache := &cacheStoreStub{
@@ -171,20 +207,49 @@ func TestListRemoteFallsBackToStaleCacheWhenRemoteFails(t *testing.T) {
 }
 
 func TestNewServicePanicsOnNilDependencies(t *testing.T) {
-	defer func() {
-		if recovered := recover(); recovered == nil {
-			t.Fatalf("expected panic when dependencies are nil")
-		}
-	}()
-	_ = NewService(nil, &remoteStoreStub{}, &cacheStoreStub{}, clockStub{now: time.Now().UTC()})
+	validLocal := &localStoreStub{}
+	validRemote := &remoteStoreStub{}
+	validCache := &cacheStoreStub{}
+	validClock := clockStub{now: time.Now().UTC()}
+
+	assertPanics := func(t *testing.T, name string, fn func()) {
+		t.Helper()
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if recovered := recover(); recovered == nil {
+					t.Fatalf("expected panic")
+				}
+			}()
+			fn()
+		})
+	}
+
+	assertPanics(t, "nil local store", func() {
+		_ = NewService(nil, validRemote, validCache, validClock)
+	})
+	assertPanics(t, "nil remote store", func() {
+		_ = NewService(validLocal, nil, validCache, validClock)
+	})
+	assertPanics(t, "nil cache store", func() {
+		_ = NewService(validLocal, validRemote, nil, validClock)
+	})
+}
+
+func TestNewServiceAllowsNilClock(t *testing.T) {
+	service := NewService(&localStoreStub{}, &remoteStoreStub{}, &cacheStoreStub{}, nil)
+	if service.clock == nil {
+		t.Fatalf("expected nil clock to fall back to a system clock")
+	}
 }
 
 type localStoreStub struct {
 	items       []domain.LocalTemplate
 	saveErrByID map[string]error
+	listCalls   int
 }
 
 func (s *localStoreStub) List(context.Context) ([]domain.LocalTemplate, error) {
+	s.listCalls++
 	return s.items, nil
 }
 

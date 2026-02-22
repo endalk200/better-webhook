@@ -39,21 +39,21 @@ func mapTemplateCommandError(err error, templateID string) error {
 	}
 	if errors.Is(err, domain.ErrTemplateNotFound) {
 		if strings.TrimSpace(templateID) == "" {
-			return fmt.Errorf("template not found")
+			return fmt.Errorf("%w", domain.ErrTemplateNotFound)
 		}
-		return fmt.Errorf("template not found: %s", strings.TrimSpace(templateID))
+		return fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, strings.TrimSpace(templateID))
 	}
 	if errors.Is(err, domain.ErrInvalidTemplateID) {
-		return fmt.Errorf("template id is invalid")
+		return fmt.Errorf("%w", domain.ErrInvalidTemplateID)
 	}
 	if errors.Is(err, domain.ErrInvalidTemplateQuery) {
-		return fmt.Errorf("search query cannot be empty")
+		return fmt.Errorf("search query cannot be empty: %w", err)
 	}
 	if errors.Is(err, domain.ErrTemplateIndexUnavailable) {
-		return fmt.Errorf("template index is unavailable")
+		return fmt.Errorf("%w", domain.ErrTemplateIndexUnavailable)
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return fmt.Errorf("operation cancelled")
+		return fmt.Errorf("operation cancelled: %w", err)
 	}
 	return err
 }

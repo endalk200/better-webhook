@@ -2,6 +2,7 @@ package httptemplates
 
 import (
 	"context"
+	"strings"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -100,7 +101,7 @@ func TestFetchTemplateRejectsUnsafePath(t *testing.T) {
 	}
 }
 
-func TestFetchIndexAllowsEmptyTemplateList(t *testing.T) {
+func TestFetchIndexRejectsEmptyTemplateList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/templates/templates.json" {
 			http.NotFound(w, req)
@@ -118,12 +119,32 @@ func TestFetchIndexAllowsEmptyTemplateList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new client: %v", err)
 	}
-	index, err := client.FetchIndex(context.Background())
-	if err != nil {
-		t.Fatalf("fetch index: %v", err)
+	if _, err := client.FetchIndex(context.Background()); err == nil {
+		t.Fatalf("expected empty template list to fail validation")
 	}
-	if len(index.Templates) != 0 {
-		t.Fatalf("expected empty template list, got %d", len(index.Templates))
+}
+
+func TestFetchRejectsOversizedPayload(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/templates/templates.json" {
+			http.NotFound(w, req)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		oversized := strings.Repeat("a", maxTemplateBytes+1)
+		_, _ = w.Write([]byte(`{"version":"1.0.0","templates":[{"id":"github-push","name":"GitHub Push","provider":"github","event":"push","file":"github/github-push.json"}],"padding":"` + oversized + `"}`))
+	}))
+	defer server.Close()
+
+	client, err := NewClient(ClientOptions{
+		BaseURL:    server.URL,
+		HTTPClient: server.Client(),
+	})
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	if _, err := client.FetchIndex(context.Background()); err == nil {
+		t.Fatalf("expected oversized payload to fail")
 	}
 }
 
@@ -155,5 +176,17 @@ func TestNewClientAppliesDefaultTimeout(t *testing.T) {
 	}
 	if client.httpClient.Timeout != explicit {
 		t.Fatalf("expected explicit timeout %s, got %s", explicit, client.httpClient.Timeout)
+	}
+}
+
+func TestNewClientRejectsInvalidBaseURL(t *testing.T) {
+	if _, err := NewClient(ClientOptions{BaseURL: "localhost:8080"}); err == nil {
+		t.Fatalf("expected base URL without scheme to fail")
+	}
+	if _, err := NewClient(ClientOptions{BaseURL: "ftp://example.com"}); err == nil {
+		t.Fatalf("expected unsupported scheme to fail")
+	}
+	if _, err := NewClient(ClientOptions{BaseURL: "https://"}); err == nil {
+		t.Fatalf("expected base URL without host to fail")
 	}
 }

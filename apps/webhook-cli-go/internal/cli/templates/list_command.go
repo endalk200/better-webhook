@@ -54,7 +54,7 @@ func newListCommand(deps Dependencies) *cobra.Command {
 					if item.IsDownloaded {
 						status = "downloaded"
 					}
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s [%s]\n", item.Metadata.ID, status)
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    - %s [%s]\n", item.Metadata.ID, status)
 				}
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total: %d template(s)\n", len(templates))

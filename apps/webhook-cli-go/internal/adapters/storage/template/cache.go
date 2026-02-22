@@ -75,16 +75,32 @@ func (c *Cache) Set(ctx context.Context, value apptemplates.CachedIndex) error {
 		return fmt.Errorf("marshal templates cache: %w", err)
 	}
 	content = append(content, '\n')
-	tempPath := c.cacheFile + ".tmp"
-	if err := os.WriteFile(tempPath, content, 0o600); err != nil {
-		return fmt.Errorf("write templates cache temp file: %w", err)
+
+	tempFile, err := os.CreateTemp(filepath.Dir(c.cacheFile), ".index-cache-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create templates cache temp file: %w", err)
 	}
+	tempPath := tempFile.Name()
 	renameSucceeded := false
+	tempClosed := false
 	defer func() {
+		if !tempClosed {
+			_ = tempFile.Close()
+		}
 		if !renameSucceeded {
 			_ = os.Remove(tempPath)
 		}
 	}()
+	if _, err := tempFile.Write(content); err != nil {
+		return fmt.Errorf("write templates cache temp file: %w", err)
+	}
+	if err := tempFile.Sync(); err != nil {
+		return fmt.Errorf("sync templates cache temp file: %w", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("close templates cache temp file: %w", err)
+	}
+	tempClosed = true
 	if err := os.Rename(tempPath, c.cacheFile); err != nil {
 		return fmt.Errorf("persist templates cache file: %w", err)
 	}
