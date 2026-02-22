@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
 	"github.com/spf13/cobra"
 )
 
@@ -331,11 +331,11 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 	}
 
 	if targetURL != "" {
-		if err := validateAbsoluteURL(targetURL); err != nil {
+		if err := httpurl.ValidateAbsolute(targetURL); err != nil {
 			return ReplayArgs{}, fmt.Errorf("target URL is invalid: %w", err)
 		}
 	} else {
-		if err := validateAbsoluteURL(baseURL); err != nil {
+		if err := httpurl.ValidateAbsolute(baseURL); err != nil {
 			return ReplayArgs{}, fmt.Errorf("base URL is invalid: %w", err)
 		}
 	}
@@ -574,17 +574,6 @@ func expandPath(pathValue, homeDir string) (string, error) {
 		return filepath.Clean(trimmed), nil
 	}
 	return filepath.Abs(trimmed)
-}
-
-func validateAbsoluteURL(rawURL string) error {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return err
-	}
-	if parsed.Scheme == "" || parsed.Host == "" {
-		return errors.New("must include scheme and host")
-	}
-	return nil
 }
 
 func parseReplayHeaderOverrides(raw []string) ([]ReplayHeaderOverride, error) {

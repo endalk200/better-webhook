@@ -164,6 +164,17 @@ func TestResolveReplayArgsRejectsInvalidTargetURL(t *testing.T) {
 	}
 }
 
+func TestResolveReplayArgsRejectsUnsupportedTargetURLScheme(t *testing.T) {
+	command := newReplayTestCommand(t)
+	_, err := ResolveReplayArgs(command, []string{"deadbeef", "ftp://localhost:5000/hook"})
+	if err == nil {
+		t.Fatalf("expected unsupported target URL scheme error")
+	}
+	if !strings.Contains(err.Error(), "target URL is invalid") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestResolveReplayArgsRejectsInvalidBaseURL(t *testing.T) {
 	command := newReplayTestCommand(t)
 	if err := command.Flags().Set("base-url", "localhost:3000"); err != nil {
@@ -172,6 +183,20 @@ func TestResolveReplayArgsRejectsInvalidBaseURL(t *testing.T) {
 	_, err := ResolveReplayArgs(command, []string{"deadbeef"})
 	if err == nil {
 		t.Fatalf("expected invalid base URL error")
+	}
+	if !strings.Contains(err.Error(), "base URL is invalid") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveReplayArgsRejectsUnsupportedBaseURLScheme(t *testing.T) {
+	command := newReplayTestCommand(t)
+	if err := command.Flags().Set("base-url", "ftp://localhost:3000"); err != nil {
+		t.Fatalf("set base-url: %v", err)
+	}
+	_, err := ResolveReplayArgs(command, []string{"deadbeef"})
+	if err == nil {
+		t.Fatalf("expected unsupported base URL scheme error")
 	}
 	if !strings.Contains(err.Error(), "base URL is invalid") {
 		t.Fatalf("unexpected error: %v", err)

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
 )
 
 type Service struct {
@@ -79,14 +80,14 @@ func (s *Service) Replay(ctx context.Context, request ReplayRequest) (ReplayResu
 func resolveTargetURL(request ReplayRequest, captureFile domain.CaptureFile) (string, error) {
 	trimmedTarget := strings.TrimSpace(request.TargetURL)
 	if trimmedTarget != "" {
-		if err := validateAbsoluteURL(trimmedTarget); err != nil {
+		if err := httpurl.ValidateAbsolute(trimmedTarget); err != nil {
 			return "", fmt.Errorf("%w: %v", ErrInvalidTargetURL, err)
 		}
 		return trimmedTarget, nil
 	}
 
 	baseURL := strings.TrimSpace(request.BaseURL)
-	if err := validateAbsoluteURL(baseURL); err != nil {
+	if err := httpurl.ValidateAbsolute(baseURL); err != nil {
 		return "", fmt.Errorf("%w: %v", ErrInvalidBaseURL, err)
 	}
 
@@ -204,17 +205,6 @@ func applyHeaderOverrides(headers []domain.HeaderEntry, overrides []domain.Heade
 	}
 
 	return result
-}
-
-func validateAbsoluteURL(rawURL string) error {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return err
-	}
-	if parsed.Scheme == "" || parsed.Host == "" {
-		return fmt.Errorf("must include scheme and host")
-	}
-	return nil
 }
 
 func isValidHTTPMethod(method string) bool {
