@@ -7,7 +7,7 @@
       "description": "GitHub push event triggered when commits are pushed to a repository branch or tag",
       "provider": "github",
       "event": "push",
-      "file": "github/github-push.json",
+      "file": "github/github-push.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#push"
     },
@@ -17,7 +17,7 @@
       "description": "GitHub pull request event triggered when a PR is opened, closed, reopened, edited, assigned, labeled, synchronized, etc.",
       "provider": "github",
       "event": "pull_request",
-      "file": "github/github-pull_request.json",
+      "file": "github/github-pull_request.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request"
     },
@@ -27,7 +27,7 @@
       "description": "GitHub issues event triggered when an issue is opened, edited, deleted, pinned, closed, reopened, assigned, labeled, etc.",
       "provider": "github",
       "event": "issues",
-      "file": "github/github-issues.json",
+      "file": "github/github-issues.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues"
     },
@@ -37,7 +37,7 @@
       "description": "GitHub App installation event triggered when the app is installed, uninstalled, suspended, or has permissions changed",
       "provider": "github",
       "event": "installation",
-      "file": "github/github-installation.json",
+      "file": "github/github-installation.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation"
     },
@@ -47,7 +47,7 @@
       "description": "GitHub App installation repositories event triggered when repositories are added to or removed from an installation",
       "provider": "github",
       "event": "installation_repositories",
-      "file": "github/github-installation_repositories.json",
+      "file": "github/github-installation_repositories.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories"
     },
@@ -57,7 +57,7 @@
       "description": "Ragie document status updated event triggered when a document enters indexed, keyword_indexed, ready, or failed state",
       "provider": "ragie",
       "event": "document_status_updated",
-      "file": "ragie/ragie-document_status_updated.json",
+      "file": "ragie/ragie-document_status_updated.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_status_updated"
     },
@@ -67,7 +67,7 @@
       "description": "Ragie document deleted event triggered when a document is deleted",
       "provider": "ragie",
       "event": "document_deleted",
-      "file": "ragie/ragie-document_deleted.json",
+      "file": "ragie/ragie-document_deleted.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_deleted"
     },
@@ -77,7 +77,7 @@
       "description": "Ragie entity extracted event triggered when entity extraction completes for a document",
       "provider": "ragie",
       "event": "entity_extracted",
-      "file": "ragie/ragie-entity_extracted.json",
+      "file": "ragie/ragie-entity_extracted.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#entity_extracted"
     },
@@ -87,7 +87,7 @@
       "description": "Ragie connection sync started event triggered when a connection sync begins",
       "provider": "ragie",
       "event": "connection_sync_started",
-      "file": "ragie/ragie-connection_sync_started.json",
+      "file": "ragie/ragie-connection_sync_started.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
     },
@@ -97,7 +97,7 @@
       "description": "Ragie connection sync progress event triggered periodically during a sync to report progress",
       "provider": "ragie",
       "event": "connection_sync_progress",
-      "file": "ragie/ragie-connection_sync_progress.json",
+      "file": "ragie/ragie-connection_sync_progress.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
     },
@@ -107,7 +107,7 @@
       "description": "Ragie connection sync finished event triggered when a connection sync completes",
       "provider": "ragie",
       "event": "connection_sync_finished",
-      "file": "ragie/ragie-connection_sync_finished.json",
+      "file": "ragie/ragie-connection_sync_finished.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
     },
@@ -117,7 +117,7 @@
       "description": "Ragie connection limit exceeded event triggered when a connection exceeds its page limit",
       "provider": "ragie",
       "event": "connection_limit_exceeded",
-      "file": "ragie/ragie-connection_limit_exceeded.json",
+      "file": "ragie/ragie-connection_limit_exceeded.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#connection_limit_exceeded"
     },
@@ -127,7 +127,7 @@
       "description": "Ragie partition limit exceeded event triggered when a partition exceeds its document limit",
       "provider": "ragie",
       "event": "partition_limit_exceeded",
-      "file": "ragie/ragie-partition_limit_exceeded.json",
+      "file": "ragie/ragie-partition_limit_exceeded.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.ragie.ai/docs/webhooks#partition_limit_exceeded"
     },
@@ -137,7 +137,7 @@
       "description": "Recall participant joined event",
       "provider": "recall",
       "event": "participant_events.join",
-      "file": "recall/recall-participant_events_join.json",
+      "file": "recall/recall-participant_events_join.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -147,7 +147,7 @@
       "description": "Recall participant left event",
       "provider": "recall",
       "event": "participant_events.leave",
-      "file": "recall/recall-participant_events_leave.json",
+      "file": "recall/recall-participant_events_leave.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -157,7 +157,7 @@
       "description": "Recall participant updated details event",
       "provider": "recall",
       "event": "participant_events.update",
-      "file": "recall/recall-participant_events_update.json",
+      "file": "recall/recall-participant_events_update.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -167,7 +167,7 @@
       "description": "Recall participant speech on event",
       "provider": "recall",
       "event": "participant_events.speech_on",
-      "file": "recall/recall-participant_events_speech_on.json",
+      "file": "recall/recall-participant_events_speech_on.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -177,7 +177,7 @@
       "description": "Recall participant speech off event",
       "provider": "recall",
       "event": "participant_events.speech_off",
-      "file": "recall/recall-participant_events_speech_off.json",
+      "file": "recall/recall-participant_events_speech_off.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -187,7 +187,7 @@
       "description": "Recall participant webcam on event",
       "provider": "recall",
       "event": "participant_events.webcam_on",
-      "file": "recall/recall-participant_events_webcam_on.json",
+      "file": "recall/recall-participant_events_webcam_on.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -197,7 +197,7 @@
       "description": "Recall participant webcam off event",
       "provider": "recall",
       "event": "participant_events.webcam_off",
-      "file": "recall/recall-participant_events_webcam_off.json",
+      "file": "recall/recall-participant_events_webcam_off.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -207,7 +207,7 @@
       "description": "Recall participant screenshare on event",
       "provider": "recall",
       "event": "participant_events.screenshare_on",
-      "file": "recall/recall-participant_events_screenshare_on.json",
+      "file": "recall/recall-participant_events_screenshare_on.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -217,7 +217,7 @@
       "description": "Recall participant screenshare off event",
       "provider": "recall",
       "event": "participant_events.screenshare_off",
-      "file": "recall/recall-participant_events_screenshare_off.json",
+      "file": "recall/recall-participant_events_screenshare_off.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -227,7 +227,7 @@
       "description": "Recall participant chat message event",
       "provider": "recall",
       "event": "participant_events.chat_message",
-      "file": "recall/recall-participant_events_chat_message.json",
+      "file": "recall/recall-participant_events_chat_message.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
     },
@@ -237,7 +237,7 @@
       "description": "Recall transcript data event",
       "provider": "recall",
       "event": "transcript.data",
-      "file": "recall/recall-transcript_data.json",
+      "file": "recall/recall-transcript_data.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
     },
@@ -247,7 +247,7 @@
       "description": "Recall transcript partial data event",
       "provider": "recall",
       "event": "transcript.partial_data",
-      "file": "recall/recall-transcript_partial_data.json",
+      "file": "recall/recall-transcript_partial_data.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
     },
@@ -257,7 +257,7 @@
       "description": "Recall bot joining call status event",
       "provider": "recall",
       "event": "bot.joining_call",
-      "file": "recall/recall-bot_joining_call.json",
+      "file": "recall/recall-bot_joining_call.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -267,7 +267,7 @@
       "description": "Recall bot in waiting room status event",
       "provider": "recall",
       "event": "bot.in_waiting_room",
-      "file": "recall/recall-bot_in_waiting_room.json",
+      "file": "recall/recall-bot_in_waiting_room.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -277,7 +277,7 @@
       "description": "Recall bot in call not recording status event",
       "provider": "recall",
       "event": "bot.in_call_not_recording",
-      "file": "recall/recall-bot_in_call_not_recording.json",
+      "file": "recall/recall-bot_in_call_not_recording.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -287,7 +287,7 @@
       "description": "Recall bot recording permission allowed status event",
       "provider": "recall",
       "event": "bot.recording_permission_allowed",
-      "file": "recall/recall-bot_recording_permission_allowed.json",
+      "file": "recall/recall-bot_recording_permission_allowed.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -297,7 +297,7 @@
       "description": "Recall bot recording permission denied status event",
       "provider": "recall",
       "event": "bot.recording_permission_denied",
-      "file": "recall/recall-bot_recording_permission_denied.json",
+      "file": "recall/recall-bot_recording_permission_denied.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -307,7 +307,7 @@
       "description": "Recall bot in call recording status event",
       "provider": "recall",
       "event": "bot.in_call_recording",
-      "file": "recall/recall-bot_in_call_recording.json",
+      "file": "recall/recall-bot_in_call_recording.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -317,7 +317,7 @@
       "description": "Recall bot call ended status event",
       "provider": "recall",
       "event": "bot.call_ended",
-      "file": "recall/recall-bot_call_ended.json",
+      "file": "recall/recall-bot_call_ended.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -327,7 +327,7 @@
       "description": "Recall bot done status event",
       "provider": "recall",
       "event": "bot.done",
-      "file": "recall/recall-bot_done.json",
+      "file": "recall/recall-bot_done.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -337,7 +337,7 @@
       "description": "Recall bot fatal status event",
       "provider": "recall",
       "event": "bot.fatal",
-      "file": "recall/recall-bot_fatal.json",
+      "file": "recall/recall-bot_fatal.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -347,7 +347,7 @@
       "description": "Recall bot breakout room entered status event",
       "provider": "recall",
       "event": "bot.breakout_room_entered",
-      "file": "recall/recall-bot_breakout_room_entered.json",
+      "file": "recall/recall-bot_breakout_room_entered.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -357,7 +357,7 @@
       "description": "Recall bot breakout room left status event",
       "provider": "recall",
       "event": "bot.breakout_room_left",
-      "file": "recall/recall-bot_breakout_room_left.json",
+      "file": "recall/recall-bot_breakout_room_left.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -367,7 +367,7 @@
       "description": "Recall bot breakout room opened status event",
       "provider": "recall",
       "event": "bot.breakout_room_opened",
-      "file": "recall/recall-bot_breakout_room_opened.json",
+      "file": "recall/recall-bot_breakout_room_opened.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     },
@@ -377,7 +377,7 @@
       "description": "Recall bot breakout room closed status event",
       "provider": "recall",
       "event": "bot.breakout_room_closed",
-      "file": "recall/recall-bot_breakout_room_closed.json",
+      "file": "recall/recall-bot_breakout_room_closed.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
     }
