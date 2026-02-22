@@ -11,10 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tailscale/hujson"
+
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	platformid "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/id"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
-	"github.com/tailscale/hujson"
 )
 
 type Store struct {

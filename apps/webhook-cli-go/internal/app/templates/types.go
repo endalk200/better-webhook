@@ -23,3 +23,31 @@ type SearchResult struct {
 	Local  []domain.LocalTemplate
 	Remote []domain.RemoteTemplate
 }
+
+type RunRequest struct {
+	TemplateID           string
+	TargetURL            string
+	Secret               string
+	AllowEnvPlaceholders bool
+	HeaderOverrides      []domain.HeaderEntry
+	Timeout              time.Duration
+}
+
+type RunResult struct {
+	TemplateID  string
+	Provider    string
+	Event       string
+	TargetURL   string
+	Method      string
+	SentHeaders []domain.HeaderEntry
+	Response    RunResponse
+}
+
+type RunResponse struct {
+	StatusCode    int
+	StatusText    string
+	Headers       []domain.HeaderEntry
+	Body          []byte
+	BodyTruncated bool
+	Duration      time.Duration
+}

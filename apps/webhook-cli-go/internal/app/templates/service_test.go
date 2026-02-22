@@ -2,11 +2,17 @@ package templates
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
+	platformplaceholders "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/placeholders"
 )
 
 func TestListRemoteMarksDownloadedTemplates(t *testing.T) {
@@ -18,8 +24,8 @@ func TestListRemoteMarksDownloadedTemplates(t *testing.T) {
 			index: domain.TemplatesIndex{
 				Version: "1.0.0",
 				Templates: []domain.TemplateMetadata{
-					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.json"},
-					{ID: "github-issues", Name: "GitHub Issues", Provider: "github", Event: "issues", File: "github/github-issues.json"},
+					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.jsonc"},
+					{ID: "github-issues", Name: "GitHub Issues", Provider: "github", Event: "issues", File: "github/github-issues.jsonc"},
 				},
 			},
 		},
@@ -68,14 +74,14 @@ func TestDownloadAllCountsSkippedDownloadedAndFailed(t *testing.T) {
 			index: domain.TemplatesIndex{
 				Version: "1.0.0",
 				Templates: []domain.TemplateMetadata{
-					{ID: "already-downloaded", Name: "A", Provider: "github", Event: "push", File: "github/a.json"},
-					{ID: "good", Name: "B", Provider: "github", Event: "issues", File: "github/b.json"},
-					{ID: "fetch-fails", Name: "C", Provider: "github", Event: "pull_request", File: "github/c.json"},
-					{ID: "save-fails", Name: "D", Provider: "github", Event: "installation", File: "github/d.json"},
+					{ID: "already-downloaded", Name: "A", Provider: "github", Event: "push", File: "github/a.jsonc"},
+					{ID: "good", Name: "B", Provider: "github", Event: "issues", File: "github/b.jsonc"},
+					{ID: "fetch-fails", Name: "C", Provider: "github", Event: "pull_request", File: "github/c.jsonc"},
+					{ID: "save-fails", Name: "D", Provider: "github", Event: "installation", File: "github/d.jsonc"},
 				},
 			},
 			templateErrByFile: map[string]error{
-				"github/c.json": errors.New("network"),
+				"github/c.jsonc": errors.New("network"),
 			},
 		},
 		&cacheStoreStub{},
@@ -110,7 +116,7 @@ func TestSearchReturnsMatchesFromLocalAndRemote(t *testing.T) {
 						Name:     "GitHub Push",
 						Provider: "github",
 						Event:    "push",
-						File:     "github/github-push.json",
+						File:     "github/github-push.jsonc",
 					},
 				},
 			},
@@ -119,8 +125,8 @@ func TestSearchReturnsMatchesFromLocalAndRemote(t *testing.T) {
 			index: domain.TemplatesIndex{
 				Version: "1.0.0",
 				Templates: []domain.TemplateMetadata{
-					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.json"},
-					{ID: "github-issues", Name: "GitHub Issues", Provider: "github", Event: "issues", File: "github/github-issues.json"},
+					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.jsonc"},
+					{ID: "github-issues", Name: "GitHub Issues", Provider: "github", Event: "issues", File: "github/github-issues.jsonc"},
 				},
 			},
 		},
@@ -149,7 +155,7 @@ func TestSearchReadsLocalStoreOnce(t *testing.T) {
 					Name:     "GitHub Push",
 					Provider: "github",
 					Event:    "push",
-					File:     "github/github-push.json",
+					File:     "github/github-push.jsonc",
 				},
 			},
 		},
@@ -160,7 +166,7 @@ func TestSearchReadsLocalStoreOnce(t *testing.T) {
 			index: domain.TemplatesIndex{
 				Version: "1.0.0",
 				Templates: []domain.TemplateMetadata{
-					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.json"},
+					{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.jsonc"},
 				},
 			},
 		},
@@ -182,7 +188,7 @@ func TestListRemoteFallsBackToStaleCacheWhenRemoteFails(t *testing.T) {
 			Index: domain.TemplatesIndex{
 				Version: "1.0.0",
 				Templates: []domain.TemplateMetadata{
-					{ID: "from-cache", Name: "From Cache", Provider: "github", Event: "push", File: "github/from-cache.json"},
+					{ID: "from-cache", Name: "From Cache", Provider: "github", Event: "push", File: "github/from-cache.jsonc"},
 				},
 			},
 			CachedAt: now.Add(-2 * time.Hour),
@@ -239,6 +245,250 @@ func TestNewServiceAllowsNilClock(t *testing.T) {
 	service := NewService(&localStoreStub{}, &remoteStoreStub{}, &cacheStoreStub{}, nil)
 	if service.clock == nil {
 		t.Fatalf("expected nil clock to fall back to a system clock")
+	}
+}
+
+func TestRunResolvesPlaceholdersAndSignsGitHubPayload(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{
+		result: DispatchResult{
+			StatusCode: 200,
+			StatusText: "OK",
+		},
+	}
+	lookupEnv := mapLookup(map[string]string{
+		"PAYLOAD_SOURCE": "tests",
+		"HEADER_VALUE":   "header-from-env",
+	})
+	resolver := platformplaceholders.NewResolver(clockStub{now: now}, idGeneratorStub{id: "delivery-uuid"}, lookupEnv)
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "github",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-GitHub-Delivery", Value: "$uuid"},
+							{Key: "X-From-Env", Value: "$env:HEADER_VALUE"},
+							{Key: "X-Hub-Signature-256", Value: "$github:x-hub-signature-256"},
+						},
+						Body: []byte(`{"source":"$env:PAYLOAD_SOURCE","sent_at":"$time:rfc3339"}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(resolver),
+		WithEnvironmentLookup(func(string) (string, bool) { return "", false }),
+	)
+	result, err := service.Run(context.Background(), RunRequest{
+		TemplateID:           "github-push",
+		TargetURL:            "http://localhost:3000/webhooks/github",
+		Secret:               "top-secret",
+		AllowEnvPlaceholders: true,
+		Timeout:              5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("run template: %v", err)
+	}
+	if dispatcher.calls != 1 {
+		t.Fatalf("expected one dispatch call, got %d", dispatcher.calls)
+	}
+	if result.Response.StatusCode != 200 {
+		t.Fatalf("status mismatch: got %d", result.Response.StatusCode)
+	}
+	body := map[string]string{}
+	if err := json.Unmarshal(dispatcher.lastRequest.Body, &body); err != nil {
+		t.Fatalf("unmarshal resolved body: %v", err)
+	}
+	if body["source"] != "tests" {
+		t.Fatalf("expected source from env, got %q", body["source"])
+	}
+	if body["sent_at"] != now.Format(time.RFC3339) {
+		t.Fatalf("expected RFC3339 time, got %q", body["sent_at"])
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-GitHub-Delivery"); got != "delivery-uuid" {
+		t.Fatalf("delivery header mismatch: got %q", got)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-From-Env"); got != "header-from-env" {
+		t.Fatalf("env header mismatch: got %q", got)
+	}
+	expectedSignature := computeSignatureHex(dispatcher.lastRequest.Body, "top-secret")
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Hub-Signature-256"); got != expectedSignature {
+		t.Fatalf("signature mismatch: got %q want %q", got, expectedSignature)
+	}
+}
+
+func TestRunInterpolatesPlaceholdersInBodyAndHeaders(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{
+		result: DispatchResult{
+			StatusCode: 200,
+			StatusText: "OK",
+		},
+	}
+	lookupEnv := mapLookup(map[string]string{
+		"BW_SOURCE": "tests",
+	})
+	resolver := platformplaceholders.NewResolver(clockStub{now: now}, idGeneratorStub{id: "delivery-uuid"}, lookupEnv)
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "github",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-Request-ID", Value: "req-$uuid"},
+						},
+						Body: []byte(`{"source":"src-$env:BW_SOURCE","sent_at":"at-$time:rfc3339","escaped":"\\$uuid"}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(resolver),
+		WithEnvironmentLookup(func(string) (string, bool) { return "", false }),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID:           "github-push",
+		TargetURL:            "http://localhost:3000/webhooks/github",
+		AllowEnvPlaceholders: true,
+		Timeout:              5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("run template: %v", err)
+	}
+
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Request-ID"); got != "req-delivery-uuid" {
+		t.Fatalf("interpolated request id mismatch: got %q", got)
+	}
+
+	body := map[string]string{}
+	if err := json.Unmarshal(dispatcher.lastRequest.Body, &body); err != nil {
+		t.Fatalf("unmarshal interpolated body: %v", err)
+	}
+	if body["source"] != "src-tests" {
+		t.Fatalf("interpolated source mismatch: got %q", body["source"])
+	}
+	if body["sent_at"] != "at-"+now.Format(time.RFC3339) {
+		t.Fatalf("interpolated sent_at mismatch: got %q", body["sent_at"])
+	}
+	if body["escaped"] != "$uuid" {
+		t.Fatalf("escaped placeholder mismatch: got %q", body["escaped"])
+	}
+}
+
+func TestRunReturnsSecretRequiredWhenGithubSignaturePlaceholderPresent(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "github",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-Hub-Signature-256", Value: "$github:x-hub-signature-256"},
+						},
+						Body: []byte(`{"ok":true}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, nil, func(string) (string, bool) { return "", false })),
+		WithEnvironmentLookup(func(string) (string, bool) { return "", false }),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "github-push",
+		TargetURL:  "http://localhost:3000/webhooks/github",
+		Timeout:    5 * time.Second,
+	})
+	if !errors.Is(err, ErrRunSecretRequired) {
+		t.Fatalf("expected ErrRunSecretRequired, got %v", err)
+	}
+	if dispatcher.calls != 0 {
+		t.Fatalf("expected no dispatch calls")
+	}
+}
+
+func TestRunAppliesHeaderOverrides(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{
+		result: DispatchResult{StatusCode: 202, StatusText: "Accepted"},
+	}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+					Template: domain.WebhookTemplate{
+						Method: "POST",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-Test", Value: "one"},
+						},
+						Body: []byte(`{"ok":true}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "github-push",
+		TargetURL:  "http://localhost:3000/webhooks/github",
+		Timeout:    5 * time.Second,
+		HeaderOverrides: []domain.HeaderEntry{
+			{Key: "X-Test", Value: "two"},
+			{Key: "X-New", Value: "three"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("run template: %v", err)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Test"); got != "two" {
+		t.Fatalf("expected overridden header, got %q", got)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-New"); got != "three" {
+		t.Fatalf("expected new header, got %q", got)
 	}
 }
 
@@ -323,4 +573,50 @@ type clockStub struct {
 
 func (c clockStub) Now() time.Time {
 	return c.now
+}
+
+type dispatcherStub struct {
+	lastRequest DispatchRequest
+	result      DispatchResult
+	err         error
+	calls       int
+}
+
+func (s *dispatcherStub) Dispatch(_ context.Context, request DispatchRequest) (DispatchResult, error) {
+	s.calls++
+	s.lastRequest = request
+	if s.err != nil {
+		return DispatchResult{}, s.err
+	}
+	return s.result, nil
+}
+
+type idGeneratorStub struct {
+	id string
+}
+
+func (s idGeneratorStub) NewID() string {
+	return s.id
+}
+
+func mapLookup(values map[string]string) func(string) (string, bool) {
+	return func(key string) (string, bool) {
+		value, ok := values[key]
+		return value, ok
+	}
+}
+
+func headerValue(headers []domain.HeaderEntry, key string) string {
+	for _, header := range headers {
+		if strings.EqualFold(header.Key, key) {
+			return header.Value
+		}
+	}
+	return ""
+}
+
+func computeSignatureHex(body []byte, secret string) string {
+	signature := hmac.New(sha256.New, []byte(secret))
+	_, _ = signature.Write(body)
+	return "sha256=" + hex.EncodeToString(signature.Sum(nil))
 }

@@ -13,11 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tailscale/hujson"
+
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
 )
 
 const (
-	DefaultBaseURL     = "https://raw.githubusercontent.com/endalk200/better-webhook/e5cdb9f82b140098ed1b3ab11a27311bc6e1c522"
+	DefaultBaseURL     = "https://raw.githubusercontent.com/endalk200/better-webhook/main"
 	DefaultHTTPTimeout = 15 * time.Second
 	maxTemplateBytes   = 5 * 1024 * 1024
 )
@@ -68,12 +70,12 @@ func NewClient(options ClientOptions) (*Client, error) {
 }
 
 func (c *Client) FetchIndex(ctx context.Context) (domain.TemplatesIndex, error) {
-	body, err := c.fetch(ctx, "/templates/templates.json")
+	body, err := c.fetch(ctx, "/templates/templates.jsonc")
 	if err != nil {
 		return domain.TemplatesIndex{}, err
 	}
 	var index domain.TemplatesIndex
-	if err := json.Unmarshal(body, &index); err != nil {
+	if err := unmarshalJSONC(body, &index); err != nil {
 		return domain.TemplatesIndex{}, fmt.Errorf("parse templates index: %w", err)
 	}
 	if err := validateIndex(index); err != nil {
@@ -92,7 +94,7 @@ func (c *Client) FetchTemplate(ctx context.Context, templateFile string) (domain
 		return domain.WebhookTemplate{}, err
 	}
 	var template domain.WebhookTemplate
-	if err := json.Unmarshal(body, &template); err != nil {
+	if err := unmarshalJSONC(body, &template); err != nil {
 		return domain.WebhookTemplate{}, fmt.Errorf("parse template payload: %w", err)
 	}
 	if strings.TrimSpace(template.Method) == "" {
@@ -102,8 +104,8 @@ func (c *Client) FetchTemplate(ctx context.Context, templateFile string) (domain
 }
 
 func (c *Client) fetch(ctx context.Context, relativePath string) ([]byte, error) {
-	url := c.baseURL + relativePath
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	requestURL := c.baseURL + relativePath
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create template request: %w", err)
 	}
@@ -111,7 +113,9 @@ func (c *Client) fetch(ctx context.Context, relativePath string) ([]byte, error)
 	if err != nil {
 		return nil, fmt.Errorf("request template content: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request template content: unexpected status %d", response.StatusCode)
@@ -139,6 +143,9 @@ func validateIndex(index domain.TemplatesIndex) error {
 		}
 		if strings.TrimSpace(metadata.Event) == "" {
 			return errors.New("template metadata event cannot be empty")
+		}
+		if !strings.HasSuffix(strings.ToLower(strings.TrimSpace(metadata.File)), ".jsonc") {
+			return errors.New("template metadata file must use .jsonc extension")
 		}
 		if _, err := sanitizeTemplateFile(metadata.File); err != nil {
 			return fmt.Errorf("template metadata file is invalid: %w", err)
@@ -169,6 +176,9 @@ func sanitizeTemplateFile(templateFile string) (string, error) {
 	if strings.TrimSpace(normalized) == "" || normalized == "." || strings.Contains(normalized, "..") {
 		return "", errors.New("template file path is invalid")
 	}
+	if !strings.HasSuffix(strings.ToLower(normalized), ".jsonc") {
+		return "", errors.New("template file must use .jsonc extension")
+	}
 	if !safeTemplateFilePattern.MatchString(normalized) {
 		return "", errors.New("template file contains unsupported characters")
 	}
@@ -182,4 +192,12 @@ func containsControlChars(value string) bool {
 		}
 	}
 	return false
+}
+
+func unmarshalJSONC(raw []byte, target interface{}) error {
+	standardized, err := hujson.Standardize(raw)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(standardized, target)
 }

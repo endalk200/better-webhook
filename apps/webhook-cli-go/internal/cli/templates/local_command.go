@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
-	"github.com/spf13/cobra"
 )
 
 func newLocalCommand(deps Dependencies) *cobra.Command {

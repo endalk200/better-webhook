@@ -37,7 +37,7 @@ func (c *Client) Dispatch(ctx context.Context, request appreplay.DispatchRequest
 	}
 
 	dispatchCtx := ctx
-	cancel := func() {}
+	var cancel context.CancelFunc
 	if dispatchCtx == nil {
 		dispatchCtx = context.Background()
 	}
@@ -60,7 +60,9 @@ func (c *Client) Dispatch(ctx context.Context, request appreplay.DispatchRequest
 	if err != nil {
 		return appreplay.DispatchResult{}, fmt.Errorf("send replay request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, bodyTruncated, err := readBoundedResponseBody(resp.Body, c.maxResponseBodyBytes)
 	if err != nil {

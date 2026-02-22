@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
-	"github.com/spf13/cobra"
+	platformplaceholders "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/placeholders"
 )
 
 type ServiceFactory func(templatesDir string) (*apptemplates.Service, error)
@@ -30,6 +32,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd.AddCommand(newSearchCommand(deps))
 	cmd.AddCommand(newCacheCommand(deps))
 	cmd.AddCommand(newCleanCommand(deps))
+	cmd.AddCommand(newRunCommand(deps))
 	return cmd
 }
 
@@ -52,8 +55,59 @@ func mapTemplateCommandError(err error, templateID string) error {
 	if errors.Is(err, domain.ErrTemplateIndexUnavailable) {
 		return fmt.Errorf("%w", domain.ErrTemplateIndexUnavailable)
 	}
+	if errors.Is(err, apptemplates.ErrRunNotConfigured) {
+		return fmt.Errorf("template execution is not configured")
+	}
+	if errors.Is(err, apptemplates.ErrRunTargetURLRequired) {
+		return fmt.Errorf("target URL is required: provide [target-url] or set template.url")
+	}
+	if errors.Is(err, apptemplates.ErrRunInvalidTargetURL) {
+		return fmt.Errorf("target URL is invalid")
+	}
+	if errors.Is(err, apptemplates.ErrRunInvalidMethod) {
+		return fmt.Errorf("template method is invalid")
+	}
+	if errors.Is(err, apptemplates.ErrRunInvalidBody) {
+		return mapRunInvalidBodyError(err)
+	}
+	if errors.Is(err, apptemplates.ErrRunTimeoutInvalid) {
+		return fmt.Errorf("timeout must be greater than 0")
+	}
+	if errors.Is(err, apptemplates.ErrRunSecretRequired) {
+		return fmt.Errorf("secret is required for provider signing placeholder")
+	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation cancelled: %w", err)
 	}
 	return err
+}
+
+func mapRunInvalidBodyError(err error) error {
+	cause := runInvalidBodyCause(err)
+	if cause == nil {
+		return fmt.Errorf("template body is invalid")
+	}
+	if errors.Is(cause, platformplaceholders.ErrEnvironmentPlaceholdersDisabled) {
+		return fmt.Errorf("template body is invalid: environment placeholders are disabled (use --allow-env-placeholders)")
+	}
+	if errors.Is(cause, platformplaceholders.ErrMissingEnvironmentVariable) ||
+		errors.Is(cause, platformplaceholders.ErrUnsupportedTimeFormat) ||
+		errors.Is(cause, platformplaceholders.ErrUnsupportedProviderToken) {
+		return fmt.Errorf("template body is invalid: %v", cause)
+	}
+	return fmt.Errorf("template body is invalid: %v", cause)
+}
+
+func runInvalidBodyCause(err error) error {
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return errors.Unwrap(err)
+	}
+	for _, wrapped := range joined.Unwrap() {
+		if errors.Is(wrapped, apptemplates.ErrRunInvalidBody) {
+			continue
+		}
+		return wrapped
+	}
+	return nil
 }

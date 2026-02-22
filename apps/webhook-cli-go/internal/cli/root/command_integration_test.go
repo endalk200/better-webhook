@@ -3,7 +3,10 @@ package root
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/config/toml"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/provider/github"
@@ -21,6 +26,7 @@ import (
 	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	httptemplaterun "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplaterun"
 	httptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplates"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
@@ -32,7 +38,6 @@ import (
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
-	"github.com/spf13/cobra"
 )
 
 func TestRootCommandShowsHelpByDefault(t *testing.T) {
@@ -364,11 +369,103 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	}
 }
 
+func TestTemplatesRunCommandGeneratesGitHubSignature(t *testing.T) {
+	type receivedTemplateRunRequest struct {
+		Body      []byte
+		Signature string
+	}
+	receiverCh := make(chan receivedTemplateRunRequest, 1)
+	receiverServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		body, _ := io.ReadAll(req.Body)
+		receiverCh <- receivedTemplateRunRequest{
+			Body:      body,
+			Signature: req.Header.Get("X-Hub-Signature-256"),
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer receiverServer.Close()
+
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {
+      "id":"github-push",
+      "name":"GitHub Push",
+      "provider":"github",
+      "event":"push",
+      "file":"github/github-push.jsonc"
+    }
+  ]
+}`))
+		case "/templates/github/github-push.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "method":"POST",
+  "provider":"github",
+  "headers":[
+    {"key":"Content-Type","value":"application/json"},
+    {"key":"X-Hub-Signature-256","value":"$github:x-hub-signature-256"}
+  ],
+  "body":{"ok":true}
+}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+	downloadCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	downloadCmd.SetOut(&bytes.Buffer{})
+	downloadCmd.SetErr(&bytes.Buffer{})
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download: %v", err)
+	}
+
+	runCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	var runOut bytes.Buffer
+	runCmd.SetOut(&runOut)
+	runCmd.SetErr(&runOut)
+	runCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "run", "github-push", receiverServer.URL,
+		"--templates-dir", templatesDir,
+		"--secret", "integration-secret",
+	})
+	if err := runCmd.Execute(); err != nil {
+		t.Fatalf("execute templates run: %v", err)
+	}
+	select {
+	case received := <-receiverCh:
+		expectedSignature := computeGitHubHMACSignature(received.Body, "integration-secret")
+		if received.Signature != expectedSignature {
+			t.Fatalf("signature mismatch: got %q want %q", received.Signature, expectedSignature)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for templates run request")
+	}
+
+	if !strings.Contains(runOut.String(), "Executed template github-push [github] POST ->") {
+		t.Fatalf("expected run output, got %q", runOut.String())
+	}
+}
+
 func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	var indexRequests int32
 	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
-		case "/templates/templates.json":
+		case "/templates/templates.jsonc":
 			atomic.AddInt32(&indexRequests, 1)
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{
@@ -379,11 +476,11 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
       "name":"GitHub Push",
       "provider":"github",
       "event":"push",
-      "file":"github/github-push.json"
+      "file":"github/github-push.jsonc"
     }
   ]
 }`))
-		case "/templates/github/github-push.json":
+		case "/templates/github/github-push.jsonc":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"method":"POST","body":{"ok":true}}`))
 		default:
@@ -445,7 +542,7 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
-		case "/templates/templates.json":
+		case "/templates/templates.jsonc":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{
   "version":"1.0.0",
@@ -455,21 +552,21 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
       "name":"GitHub Push",
       "provider":"github",
       "event":"push",
-      "file":"github/github-push.json"
+      "file":"github/github-push.jsonc"
     },
     {
       "id":"github-issues",
       "name":"GitHub Issues",
       "provider":"github",
       "event":"issues",
-      "file":"github/github-issues.json"
+      "file":"github/github-issues.jsonc"
     }
   ]
 }`))
-		case "/templates/github/github-push.json":
+		case "/templates/github/github-push.jsonc":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"method":"POST","headers":[{"key":"X-GitHub-Event","value":"push"}],"body":{"ok":true}}`))
-		case "/templates/github/github-issues.json":
+		case "/templates/github/github-issues.jsonc":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"method":"POST","headers":[{"key":"X-GitHub-Event","value":"issues"}],"body":{"ok":true}}`))
 		default:
@@ -539,7 +636,14 @@ func newTestRootCommandWithTemplateRemote(
 				if err != nil {
 					return nil, err
 				}
-				return apptemplates.NewService(localStore, remoteStore, cacheStore, platformtime.SystemClock{}), nil
+				dispatcher := httptemplaterun.NewDispatcher(httpreplay.NewClient(&http.Client{}))
+				return apptemplates.NewService(
+					localStore,
+					remoteStore,
+					cacheStore,
+					platformtime.SystemClock{},
+					apptemplates.WithDispatcher(dispatcher),
+				), nil
 			},
 		},
 	})
@@ -578,4 +682,10 @@ func testCommandCapture(id string, providerName string) domain.CaptureRecord {
 			CaptureToolVersion: "test",
 		},
 	}
+}
+
+func computeGitHubHMACSignature(body []byte, secret string) string {
+	signature := hmac.New(sha256.New, []byte(secret))
+	_, _ = signature.Write(body)
+	return "sha256=" + hex.EncodeToString(signature.Sum(nil))
 }

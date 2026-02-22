@@ -39,7 +39,7 @@ func TestCacheSetAndGetRoundTrip(t *testing.T) {
 					Name:     "GitHub Push",
 					Provider: "github",
 					Event:    "push",
-					File:     "github/github-push.json",
+					File:     "github/github-push.jsonc",
 				},
 			},
 		},

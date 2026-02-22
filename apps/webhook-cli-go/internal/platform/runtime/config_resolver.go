@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
 	"github.com/spf13/cobra"
+
+	platformhttprequest "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httprequest"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
 )
 
 const (
@@ -111,6 +113,17 @@ type TemplatesCleanArgs struct {
 
 type TemplatesCacheClearArgs struct {
 	TemplatesDir string
+}
+
+type TemplatesRunArgs struct {
+	TemplatesDir         string
+	TemplateID           string
+	TargetURL            string
+	Secret               string
+	AllowEnvPlaceholders bool
+	HeaderOverrides      []ReplayHeaderOverride
+	Timeout              time.Duration
+	Verbose              bool
 }
 
 func DefaultConfigPath(homeDir string) string {
@@ -493,6 +506,76 @@ func ResolveTemplatesCacheClearArgs(cmd *cobra.Command) (TemplatesCacheClearArgs
 	return TemplatesCacheClearArgs{TemplatesDir: templatesDir}, nil
 }
 
+func ResolveTemplatesRunArgs(cmd *cobra.Command, args []string) (TemplatesRunArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	if len(args) == 0 {
+		return TemplatesRunArgs{}, errors.New("template id is required")
+	}
+	if len(args) > 2 {
+		return TemplatesRunArgs{}, fmt.Errorf("too many arguments: expected <template-id> [target-url], received %d", len(args))
+	}
+	templateID := strings.TrimSpace(args[0])
+	if templateID == "" {
+		return TemplatesRunArgs{}, errors.New("template id cannot be empty")
+	}
+	targetURL := ""
+	if len(args) > 1 {
+		targetURL = strings.TrimSpace(args[1])
+		if targetURL == "" {
+			return TemplatesRunArgs{}, errors.New("target URL cannot be empty when provided")
+		}
+		if err := httpurl.ValidateAbsolute(targetURL); err != nil {
+			return TemplatesRunArgs{}, fmt.Errorf("target URL is invalid: %w", err)
+		}
+	}
+
+	secret, err := cmd.Flags().GetString("secret")
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	allowEnvPlaceholders, err := cmd.Flags().GetBool("allow-env-placeholders")
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	rawHeaders, err := cmd.Flags().GetStringArray("header")
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	headerOverrides, err := parseReplayHeaderOverrides(rawHeaders)
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	timeout, err := cmd.Flags().GetDuration("timeout")
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+	if timeout <= 0 {
+		return TemplatesRunArgs{}, errors.New("timeout must be greater than 0")
+	}
+	verbose, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
+	if err != nil {
+		return TemplatesRunArgs{}, err
+	}
+
+	return TemplatesRunArgs{
+		TemplatesDir:         templatesDir,
+		TemplateID:           templateID,
+		TargetURL:            targetURL,
+		Secret:               strings.TrimSpace(secret),
+		AllowEnvPlaceholders: allowEnvPlaceholders,
+		HeaderOverrides:      headerOverrides,
+		Timeout:              timeout,
+		Verbose:              verbose,
+	}, nil
+}
+
 func IsValidLogLevel(level string) bool {
 	switch strings.ToLower(strings.TrimSpace(level)) {
 	case LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError:
@@ -601,15 +684,5 @@ func parseReplayHeaderOverrides(raw []string) ([]ReplayHeaderOverride, error) {
 }
 
 func isValidHTTPMethod(method string) bool {
-	if len(method) == 0 {
-		return false
-	}
-	for _, r := range method {
-		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
-		isTokenPunctuation := strings.ContainsRune("!#$%&'*+-.^_`|~", r)
-		if !isAlphaNum && !isTokenPunctuation {
-			return false
-		}
-	}
-	return true
+	return platformhttprequest.IsValidHTTPMethod(method)
 }

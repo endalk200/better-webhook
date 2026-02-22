@@ -7,10 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
-	"github.com/spf13/cobra"
 )
 
 func newListCommand(deps Dependencies) *cobra.Command {

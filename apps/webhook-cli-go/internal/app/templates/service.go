@@ -2,13 +2,19 @@ package templates
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
+	platformhttprequest "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httprequest"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
+	platformplaceholders "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/placeholders"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
 )
 
@@ -18,8 +24,31 @@ type Service struct {
 	localStore  LocalTemplateStore
 	remoteStore RemoteTemplateSource
 	cacheStore  IndexCacheStore
+	dispatcher  Dispatcher
+	resolver    *platformplaceholders.Resolver
 	clock       platformtime.Clock
 	cacheTTL    time.Duration
+	envLookupFn func(string) (string, bool)
+}
+
+type ServiceOption func(*Service)
+
+func WithDispatcher(dispatcher Dispatcher) ServiceOption {
+	return func(service *Service) {
+		service.dispatcher = dispatcher
+	}
+}
+
+func WithPlaceholderResolver(resolver *platformplaceholders.Resolver) ServiceOption {
+	return func(service *Service) {
+		service.resolver = resolver
+	}
+}
+
+func WithEnvironmentLookup(lookupFn func(string) (string, bool)) ServiceOption {
+	return func(service *Service) {
+		service.envLookupFn = lookupFn
+	}
 }
 
 func NewService(
@@ -27,6 +56,7 @@ func NewService(
 	remoteStore RemoteTemplateSource,
 	cacheStore IndexCacheStore,
 	clock platformtime.Clock,
+	options ...ServiceOption,
 ) *Service {
 	if localStore == nil {
 		panic("local store cannot be nil")
@@ -40,13 +70,21 @@ func NewService(
 	if clock == nil {
 		clock = platformtime.SystemClock{}
 	}
-	return &Service{
+	service := &Service{
 		localStore:  localStore,
 		remoteStore: remoteStore,
 		cacheStore:  cacheStore,
 		clock:       clock,
 		cacheTTL:    defaultIndexCacheTTL,
+		envLookupFn: os.LookupEnv,
 	}
+	for _, option := range options {
+		option(service)
+	}
+	if service.resolver == nil {
+		service.resolver = platformplaceholders.NewResolver(service.clock, nil, service.envLookupFn)
+	}
+	return service
 }
 
 func (s *Service) ListRemote(ctx context.Context, provider string, forceRefresh bool) ([]domain.RemoteTemplate, error) {
@@ -247,6 +285,104 @@ func (s *Service) CleanLocal(ctx context.Context) (int, error) {
 	return s.localStore.DeleteAll(ctx)
 }
 
+func (s *Service) Run(ctx context.Context, request RunRequest) (RunResult, error) {
+	if s.dispatcher == nil {
+		return RunResult{}, ErrRunNotConfigured
+	}
+	trimmedTemplateID := strings.TrimSpace(request.TemplateID)
+	if trimmedTemplateID == "" {
+		return RunResult{}, domain.ErrInvalidTemplateID
+	}
+	if request.Timeout <= 0 {
+		return RunResult{}, ErrRunTimeoutInvalid
+	}
+	localTemplate, err := s.loadLocalTemplate(ctx, trimmedTemplateID)
+	if err != nil {
+		return RunResult{}, err
+	}
+	targetURL := strings.TrimSpace(request.TargetURL)
+	if targetURL == "" {
+		targetURL = strings.TrimSpace(localTemplate.Template.URL)
+	}
+	if targetURL == "" {
+		return RunResult{}, ErrRunTargetURLRequired
+	}
+	if err := httpurl.ValidateAbsolute(targetURL); err != nil {
+		return RunResult{}, fmt.Errorf("%w: %v", ErrRunInvalidTargetURL, err)
+	}
+	method := strings.ToUpper(strings.TrimSpace(localTemplate.Template.Method))
+	if method == "" {
+		method = http.MethodPost
+	}
+	if !platformhttprequest.IsValidHTTPMethod(method) {
+		return RunResult{}, ErrRunInvalidMethod
+	}
+
+	resolver := s.resolver.WithEnvironmentPlaceholdersEnabled(request.AllowEnvPlaceholders)
+	resolvedBody, err := s.resolveBody(localTemplate.Template.Body, resolver)
+	if err != nil {
+		return RunResult{}, err
+	}
+	mergedHeaders := toTemplateDomainHeaders(
+		platformhttprequest.ApplyHeaderOverrides(
+			toRequestHeaders(localTemplate.Template.Headers),
+			toRequestHeaders(request.HeaderOverrides),
+		),
+	)
+	provider := strings.TrimSpace(localTemplate.Template.Provider)
+	if provider == "" {
+		provider = strings.TrimSpace(localTemplate.Metadata.Provider)
+	}
+	resolvedSecret := s.resolveProviderSecret(provider, request.Secret)
+	resolvedHeaders := make([]domain.HeaderEntry, 0, len(mergedHeaders))
+	for _, header := range mergedHeaders {
+		headerKey := strings.TrimSpace(header.Key)
+		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {
+			continue
+		}
+		resolvedValue, resolveErr := resolver.ResolveHeaderValue(
+			headerKey,
+			header.Value,
+			platformplaceholders.HeaderContext{
+				Provider: provider,
+				Secret:   resolvedSecret,
+				Body:     resolvedBody,
+			},
+		)
+		if resolveErr != nil {
+			if errors.Is(resolveErr, platformplaceholders.ErrMissingSecret) {
+				return RunResult{}, ErrRunSecretRequired
+			}
+			return RunResult{}, resolveErr
+		}
+		resolvedHeaders = append(resolvedHeaders, domain.HeaderEntry{
+			Key:   headerKey,
+			Value: resolvedValue,
+		})
+	}
+
+	dispatched, err := s.dispatcher.Dispatch(ctx, DispatchRequest{
+		Method:  method,
+		URL:     targetURL,
+		Headers: resolvedHeaders,
+		Body:    resolvedBody,
+		Timeout: request.Timeout,
+	})
+	if err != nil {
+		return RunResult{}, err
+	}
+
+	return RunResult{
+		TemplateID:  localTemplate.ID,
+		Provider:    providerOrUnknown(provider),
+		Event:       localTemplate.Metadata.Event,
+		TargetURL:   targetURL,
+		Method:      method,
+		SentHeaders: resolvedHeaders,
+		Response:    RunResponse(dispatched),
+	}, nil
+}
+
 func (s *Service) loadIndex(ctx context.Context, forceRefresh bool) (domain.TemplatesIndex, error) {
 	if !forceRefresh {
 		cached, ok, err := s.cacheStore.Get(ctx)
@@ -284,6 +420,76 @@ func (s *Service) loadIndex(ctx context.Context, forceRefresh bool) (domain.Temp
 		}
 	}
 	return domain.TemplatesIndex{}, fmt.Errorf("%w: %v", domain.ErrTemplateIndexUnavailable, err)
+}
+
+func (s *Service) loadLocalTemplate(ctx context.Context, templateID string) (domain.LocalTemplate, error) {
+	templates, err := s.localStore.List(ctx)
+	if err != nil {
+		return domain.LocalTemplate{}, err
+	}
+	for _, templateItem := range templates {
+		if templateItem.ID == templateID {
+			return templateItem, nil
+		}
+	}
+	return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, templateID)
+}
+
+func (s *Service) resolveBody(body json.RawMessage, resolver *platformplaceholders.Resolver) ([]byte, error) {
+	if resolver == nil {
+		return nil, ErrRunInvalidBody
+	}
+	resolvedBody, err := resolver.ResolveBody(body)
+	if err != nil {
+		return nil, errors.Join(ErrRunInvalidBody, err)
+	}
+	return resolvedBody, nil
+}
+
+func (s *Service) resolveProviderSecret(provider string, fromRequest string) string {
+	trimmedFromRequest := strings.TrimSpace(fromRequest)
+	if trimmedFromRequest != "" {
+		return trimmedFromRequest
+	}
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "github":
+		if secret, ok := s.envLookupFn("GITHUB_WEBHOOK_SECRET"); ok && strings.TrimSpace(secret) != "" {
+			return strings.TrimSpace(secret)
+		}
+	}
+	if secret, ok := s.envLookupFn("WEBHOOK_SECRET"); ok && strings.TrimSpace(secret) != "" {
+		return strings.TrimSpace(secret)
+	}
+	return ""
+}
+
+func providerOrUnknown(provider string) string {
+	if strings.TrimSpace(provider) == "" {
+		return "unknown"
+	}
+	return provider
+}
+
+func toRequestHeaders(headers []domain.HeaderEntry) []platformhttprequest.HeaderEntry {
+	converted := make([]platformhttprequest.HeaderEntry, 0, len(headers))
+	for _, header := range headers {
+		converted = append(converted, platformhttprequest.HeaderEntry{
+			Key:   header.Key,
+			Value: header.Value,
+		})
+	}
+	return converted
+}
+
+func toTemplateDomainHeaders(headers []platformhttprequest.HeaderEntry) []domain.HeaderEntry {
+	converted := make([]domain.HeaderEntry, 0, len(headers))
+	for _, header := range headers {
+		converted = append(converted, domain.HeaderEntry{
+			Key:   header.Key,
+			Value: header.Value,
+		})
+	}
+	return converted
 }
 
 func IsTemplateNotFoundError(err error) bool {
