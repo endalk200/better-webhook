@@ -1,15 +1,28 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
+  "globalEnv": [
+    "WEBHOOK_SECRET",
+    "GITHUB_WEBHOOK_SECRET",
+    "RAGIE_WEBHOOK_SECRET",
+    "RECALL_WEBHOOK_SECRET",
+    "PORT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**"]
+      "outputs": [
+        "dist/**",
+        "build/**",
+        "bin/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".eslintrc*", ".eslintignore"]
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*"]
     },
     "check-types": {
       "dependsOn": ["^build"],
@@ -17,6 +30,7 @@
     },
     "test": {
       "dependsOn": ["^build", "^test"],
+      "env": ["TEST_WEBHOOK_SECRET"],
       "inputs": ["$TURBO_DEFAULT$", "jest.config.*", "vitest.config.*"]
     },
     "dev": {

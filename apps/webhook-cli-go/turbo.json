@@ -9,7 +9,13 @@
     },
     "lint": {
       "dependsOn": [],
-      "inputs": ["$TURBO_DEFAULT$", "go.mod", "go.sum", "**/*.go"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "go.mod",
+        "go.sum",
+        ".golangci.yml",
+        "**/*.go"
+      ]
     },
     "check-types": {
       "dependsOn": [],

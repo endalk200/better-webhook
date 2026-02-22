@@ -187,6 +187,9 @@ importers:
         specifier: ^4.21.2
         version: 4.21.2
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
@@ -196,6 +199,9 @@ importers:
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsx:
         specifier: ^4.20.5
         version: 4.20.5
@@ -227,12 +233,18 @@ importers:
         specifier: 4.12.0
         version: 4.12.0
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsx:
         specifier: ^4.20.5
         version: 4.20.5
@@ -273,6 +285,9 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
@@ -285,6 +300,9 @@ importers:
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       typescript:
         specifier: ^5.6.3
         version: 5.9.2
@@ -316,6 +334,9 @@ importers:
         specifier: ^19.0.0
         version: 19.2.0(react@19.2.0)
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
@@ -328,6 +349,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.7)
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       typescript:
         specifier: ^5.6.3
         version: 5.9.2
@@ -359,6 +383,9 @@ importers:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -377,6 +404,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.12
         version: 8.18.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.2)
@@ -395,12 +425,18 @@ importers:
         specifier: ^4.0.0
         version: 4.1.8
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.2)
@@ -444,6 +480,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -453,6 +492,9 @@ importers:
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       express:
         specifier: ^4.21.2
         version: 4.21.2
@@ -475,6 +517,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -484,6 +529,9 @@ importers:
       '@types/node':
         specifier: ^24.3.1
         version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.3)
@@ -506,12 +554,18 @@ importers:
         specifier: ^4.0.0
         version: 4.1.8
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.2)
@@ -528,12 +582,18 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       hono:
         specifier: 4.12.0
         version: 4.12.0
@@ -556,6 +616,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -568,6 +631,9 @@ importers:
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -590,12 +656,18 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       next:
         specifier: ^16.1.1
         version: 16.1.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -621,12 +693,18 @@ importers:
         specifier: ^4.0.0
         version: 4.1.8
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.3)
@@ -646,12 +724,18 @@ importers:
         specifier: 4.1.8
         version: 4.1.8
     devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@better-webhook/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
         specifier: ^24.3.1
         version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.3)
@@ -10083,7 +10167,7 @@ snapshots:
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.0.1(eslint@9.39.2(jiti@2.6.1))
@@ -10120,7 +10204,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -10134,7 +10218,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
