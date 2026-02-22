@@ -82,7 +82,7 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().String("secret", "", "Secret used for provider-specific signing placeholders")
 	cmd.Flags().Bool("allow-env-placeholders", false, "Allow resolving $env:* placeholders from template content")
 	cmd.Flags().StringArrayP("header", "H", nil, "Add or override header (format: key:value)")
-	cmd.Flags().Duration("timeout", runtime.DefaultReplayTimeout, "HTTP request timeout")
+	cmd.Flags().Duration("timeout", runtime.DefaultTemplateRunTimeout, "HTTP request timeout")
 	cmd.Flags().BoolP("verbose", "v", false, "Show detailed request/response information")
 	return cmd
 }

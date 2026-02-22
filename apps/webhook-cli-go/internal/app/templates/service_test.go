@@ -2,17 +2,16 @@ package templates
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
 	platformplaceholders "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/placeholders"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/testutil"
 )
 
 func TestListRemoteMarksDownloadedTemplates(t *testing.T) {
@@ -323,7 +322,7 @@ func TestRunResolvesPlaceholdersAndSignsGitHubPayload(t *testing.T) {
 	if got := headerValue(dispatcher.lastRequest.Headers, "X-From-Env"); got != "header-from-env" {
 		t.Fatalf("env header mismatch: got %q", got)
 	}
-	expectedSignature := computeSignatureHex(dispatcher.lastRequest.Body, "top-secret")
+	expectedSignature := testutil.ComputeSignatureHex(dispatcher.lastRequest.Body, "top-secret")
 	if got := headerValue(dispatcher.lastRequest.Headers, "X-Hub-Signature-256"); got != expectedSignature {
 		t.Fatalf("signature mismatch: got %q want %q", got, expectedSignature)
 	}
@@ -503,6 +502,15 @@ func (s *localStoreStub) List(context.Context) ([]domain.LocalTemplate, error) {
 	return s.items, nil
 }
 
+func (s *localStoreStub) Get(_ context.Context, templateID string) (domain.LocalTemplate, error) {
+	for _, item := range s.items {
+		if item.ID == templateID {
+			return item, nil
+		}
+	}
+	return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, templateID)
+}
+
 func (s *localStoreStub) Save(_ context.Context, metadata domain.TemplateMetadata, template domain.WebhookTemplate, downloadedAt string) (domain.LocalTemplate, error) {
 	if err, ok := s.saveErrByID[metadata.ID]; ok {
 		return domain.LocalTemplate{}, err
@@ -613,10 +621,4 @@ func headerValue(headers []domain.HeaderEntry, key string) string {
 		}
 	}
 	return ""
-}
-
-func computeSignatureHex(body []byte, secret string) string {
-	signature := hmac.New(sha256.New, []byte(secret))
-	_, _ = signature.Write(body)
-	return "sha256=" + hex.EncodeToString(signature.Sum(nil))
 }

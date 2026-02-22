@@ -28,6 +28,7 @@ const (
 	DefaultCaptureVerbose        = false
 	DefaultReplayBaseURL         = "http://localhost:3000"
 	DefaultReplayTimeout         = 30 * time.Second
+	DefaultTemplateRunTimeout    = 30 * time.Second
 	DefaultLogLevel              = LogLevelInfo
 	defaultConfigRelativePath    = ".better-webhook/config.toml"
 	defaultCapturesRelativePath  = ".better-webhook/captures"

@@ -245,3 +245,63 @@ func TestStoreListUsesFileModTimeWhenDownloadedAtMissing(t *testing.T) {
 		t.Fatalf("downloadedAt mismatch: got %q want %q", items[0].DownloadedAt, expected.Format(time.RFC3339Nano))
 	}
 }
+
+func TestStoreGetReturnsTemplateByID(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	_, err = store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "github-push",
+		Name:     "GitHub Push",
+		Provider: "github",
+		Event:    "push",
+		File:     "github/github-push.jsonc",
+	}, domain.WebhookTemplate{
+		Method: "POST",
+	}, "2026-02-22T10:00:00Z")
+	if err != nil {
+		t.Fatalf("save template: %v", err)
+	}
+
+	templateItem, err := store.Get(context.Background(), "github-push")
+	if err != nil {
+		t.Fatalf("get template: %v", err)
+	}
+	if templateItem.ID != "github-push" {
+		t.Fatalf("template id mismatch: got %q", templateItem.ID)
+	}
+}
+
+func TestStoreListTrimsUppercaseJSONCExtension(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(providerDir, "Upper.JSONC"), []byte(`{
+  "method": "POST",
+  "_metadata": {
+    "provider": "github",
+    "event": "push",
+    "file": "github/Upper.JSONC"
+  }
+}`), 0o600); err != nil {
+		t.Fatalf("write uppercase jsonc template: %v", err)
+	}
+
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected one template, got %d", len(items))
+	}
+	if items[0].ID != "Upper" {
+		t.Fatalf("expected template id without extension, got %q", items[0].ID)
+	}
+}

@@ -25,3 +25,11 @@ func TestRunCommandArgsRejectWhitespaceTemplateID(t *testing.T) {
 		t.Fatalf("expected whitespace template id error")
 	}
 }
+
+func TestRunCommandArgsRejectWhitespaceTargetURL(t *testing.T) {
+	cmd := newRunCommand(Dependencies{})
+	err := cmd.Args(cmd, []string{"github-push", "   "})
+	if err == nil {
+		t.Fatalf("expected whitespace target URL error")
+	}
+}

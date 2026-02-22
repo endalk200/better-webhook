@@ -42,6 +42,26 @@ func TestApplyHeaderOverridesReplacesAndAppends(t *testing.T) {
 	}
 }
 
+func TestApplyHeaderOverridesPreservesDuplicateHeaderCount(t *testing.T) {
+	base := []HeaderEntry{
+		{Key: "X-Multi", Value: "one"},
+		{Key: "X-Multi", Value: "two"},
+	}
+	overrides := []HeaderEntry{
+		{Key: "X-Multi", Value: "updated"},
+	}
+
+	merged := ApplyHeaderOverrides(base, overrides)
+	if len(merged) != 2 {
+		t.Fatalf("expected duplicate header count to be preserved, got %d", len(merged))
+	}
+	for idx, header := range merged {
+		if header.Key != "X-Multi" || header.Value != "updated" {
+			t.Fatalf("merged header %d mismatch: %#v", idx, header)
+		}
+	}
+}
+
 func TestIsValidHTTPMethod(t *testing.T) {
 	if !IsValidHTTPMethod("POST") {
 		t.Fatalf("expected POST to be valid")

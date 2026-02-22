@@ -409,6 +409,59 @@ func TestResolveTemplatesRunArgsRequiresTemplateID(t *testing.T) {
 	}
 }
 
+func TestResolveTemplatesRunArgsRejectsTooManyArguments(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesRunArgs(command, []string{"github-push", "http://localhost:4000/hook", "extra"})
+	if err == nil {
+		t.Fatalf("expected too many arguments error")
+	}
+	if !strings.Contains(err.Error(), "too many arguments") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesRunArgsRejectsWhitespaceTemplateID(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesRunArgs(command, []string{"   "})
+	if err == nil {
+		t.Fatalf("expected template id validation error")
+	}
+	if !strings.Contains(err.Error(), "template id cannot be empty") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesRunArgsAllowsMissingTargetURL(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	args, err := ResolveTemplatesRunArgs(command, []string{"github-push"})
+	if err != nil {
+		t.Fatalf("resolve templates run args: %v", err)
+	}
+	if args.TargetURL != "" {
+		t.Fatalf("expected empty target URL when omitted, got %q", args.TargetURL)
+	}
+}
+
+func TestResolveTemplatesRunArgsUsesVerboseFlagPrecedence(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: t.TempDir(),
+		LogLevel:     LogLevelInfo,
+	}))
+	if err := command.Flags().Set("verbose", "true"); err != nil {
+		t.Fatalf("set verbose flag: %v", err)
+	}
+
+	args, err := ResolveTemplatesRunArgs(command, []string{"github-push"})
+	if err != nil {
+		t.Fatalf("resolve templates run args: %v", err)
+	}
+	if !args.Verbose {
+		t.Fatalf("expected explicit --verbose flag to enable verbose output")
+	}
+}
+
 func TestResolveTemplatesRunArgsRejectsInvalidTargetURL(t *testing.T) {
 	command := newTemplatesTestCommand(t)
 	_, err := ResolveTemplatesRunArgs(command, []string{"github-push", "not-a-url"})
@@ -476,7 +529,7 @@ func newTemplatesTestCommand(t *testing.T) *cobra.Command {
 	command.Flags().String("secret", "", "")
 	command.Flags().Bool("allow-env-placeholders", false, "")
 	command.Flags().StringArrayP("header", "H", nil, "")
-	command.Flags().Duration("timeout", DefaultReplayTimeout, "")
+	command.Flags().Duration("timeout", DefaultTemplateRunTimeout, "")
 	command.Flags().BoolP("verbose", "v", false, "")
 	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
 		CapturesDir:  t.TempDir(),

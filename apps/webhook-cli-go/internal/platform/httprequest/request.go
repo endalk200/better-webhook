@@ -7,6 +7,9 @@ type HeaderEntry struct {
 	Value string
 }
 
+// ShouldSkipHopByHopHeader filters transport-managed headers for replay.
+// Besides standard hop-by-hop headers, it intentionally excludes host and
+// content-length to avoid replaying stale connection metadata.
 func ShouldSkipHopByHopHeader(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
 	case "host", "content-length", "connection", "accept-encoding", "transfer-encoding", "te", "trailer", "proxy-connection", "upgrade":
@@ -45,10 +48,8 @@ func ApplyHeaderOverrides(headers []HeaderEntry, overrides []HeaderEntry) []Head
 		lowerKey := strings.ToLower(strings.TrimSpace(header.Key))
 		override, hasOverride := overrideByKey[lowerKey]
 		if hasOverride {
-			if !applied[lowerKey] {
-				result = append(result, override)
-				applied[lowerKey] = true
-			}
+			result = append(result, override)
+			applied[lowerKey] = true
 			continue
 		}
 		result = append(result, header)
