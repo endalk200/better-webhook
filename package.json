@@ -2,10 +2,18 @@
   "name": "better-webhook",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
-    "dev:docs": "turbo run dev --filter=@better-webhook/docs",
-    "build": "turbo run build",
     "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version && pnpm install --lockfile-only",
+    "release": "turbo run build && changeset publish",
+    "release:publish": "changeset publish",
+    "prerelease": "pnpm build && pnpm check-types && pnpm lint",
+    "clean": "turbo run clean",
     "security:ensure:just": "node -e \"const {spawnSync}=require('node:child_process');const result=spawnSync('just',['--version'],{stdio:'ignore'});if(result.status!==0){console.error('Missing just command. Install Devbox (https://www.jetify.com/docs/devbox/installing-devbox/) and run devbox shell, or install just locally.');process.exit(1);}\"",
     "security:scan": "pnpm security:ensure:just && just security-scan",
     "security:scan:blocking": "pnpm security:ensure:just && just security-scan-blocking",
@@ -13,22 +21,8 @@
     "security:scan:secret": "pnpm security:ensure:just && just security-scan-secret",
     "security:scan:sbom": "pnpm security:ensure:just && just security-scan-sbom",
     "security:scan:license": "pnpm security:ensure:just && just security-scan-license",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx,md}\" --cache",
-    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx,md}\" --cache",
-    "check-types": "turbo run check-types",
-    "test": "turbo run test",
-    "changeset": "changeset",
-    "changeset:status": "changeset status",
-    "changeset:version": "changeset version && pnpm install --lockfile-only",
-    "release:version": "changeset version",
-    "release:publish": "turbo run build && changeset publish",
-    "release": "changeset version && pnpm install && turbo run build && changeset publish",
-    "prerelease": "pnpm build && pnpm check-types && pnpm lint",
-    "clean": "turbo run clean",
-    "cli:lint": "turbo run lint --filter=@better-webhook/cli-go",
-    "cli:check-types": "turbo run check-types --filter=@better-webhook/cli-go",
-    "cli:test": "turbo run test --filter=@better-webhook/cli-go",
-    "cli:build": "turbo run build --filter=@better-webhook/cli-go"
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
@@ -45,9 +39,12 @@
       "minimatch@10.1.1": "10.2.1",
       "qs@6.13.0": "6.14.1",
       "qs@6.14.0": "6.14.1"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@nestjs/core"
+    ]
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=18"
   }
