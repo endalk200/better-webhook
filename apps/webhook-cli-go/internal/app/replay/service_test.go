@@ -237,6 +237,29 @@ func TestReplayReturnsInvalidBaseURLError(t *testing.T) {
 	}
 }
 
+func TestReplayReturnsInvalidBaseURLErrorForUnsupportedScheme(t *testing.T) {
+	repo := &repoStub{
+		capture: domain.CaptureFile{
+			Capture: domain.CaptureRecord{
+				ID:            "12345678-0000-0000-0000-000000000000",
+				Method:        "POST",
+				URL:           "/hook",
+				RawBodyBase64: base64.StdEncoding.EncodeToString([]byte("{}")),
+			},
+		},
+	}
+	service := NewService(repo, &dispatcherStub{})
+
+	_, err := service.Replay(context.Background(), ReplayRequest{
+		Selector: "12345678",
+		BaseURL:  "ftp://localhost:3000",
+		Timeout:  5 * time.Second,
+	})
+	if !errors.Is(err, ErrInvalidBaseURL) {
+		t.Fatalf("expected invalid base URL error, got %v", err)
+	}
+}
+
 func TestReplayReturnsInvalidTargetURLError(t *testing.T) {
 	repo := &repoStub{
 		capture: domain.CaptureFile{
@@ -253,6 +276,29 @@ func TestReplayReturnsInvalidTargetURLError(t *testing.T) {
 	_, err := service.Replay(context.Background(), ReplayRequest{
 		Selector:  "12345678",
 		TargetURL: "not-a-url",
+		Timeout:   5 * time.Second,
+	})
+	if !errors.Is(err, ErrInvalidTargetURL) {
+		t.Fatalf("expected invalid target URL error, got %v", err)
+	}
+}
+
+func TestReplayReturnsInvalidTargetURLErrorForUnsupportedScheme(t *testing.T) {
+	repo := &repoStub{
+		capture: domain.CaptureFile{
+			Capture: domain.CaptureRecord{
+				ID:            "12345678-0000-0000-0000-000000000000",
+				Method:        "POST",
+				URL:           "/hook",
+				RawBodyBase64: base64.StdEncoding.EncodeToString([]byte("{}")),
+			},
+		},
+	}
+	service := NewService(repo, &dispatcherStub{})
+
+	_, err := service.Replay(context.Background(), ReplayRequest{
+		Selector:  "12345678",
+		TargetURL: "file://localhost/tmp/payload",
 		Timeout:   5 * time.Second,
 	})
 	if !errors.Is(err, ErrInvalidTargetURL) {
