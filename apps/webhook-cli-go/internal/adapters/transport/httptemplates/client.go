@@ -194,7 +194,7 @@ func containsControlChars(value string) bool {
 	return false
 }
 
-func unmarshalJSONC(raw []byte, target interface{}) error {
+func unmarshalJSONC(raw []byte, target any) error {
 	standardized, err := hujson.Standardize(raw)
 	if err != nil {
 		return err

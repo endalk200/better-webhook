@@ -99,32 +99,40 @@ func readTOMLConfig(path string) (fileConfig, error) {
 		return fileConfig{}, fmt.Errorf("read config file %q: %w", path, err)
 	}
 
-	if err := validateTopLevelKeys(data, path); err != nil {
-		return fileConfig{}, err
-	}
-
-	parsed := fileConfig{}
-	if err := pelletiertoml.Unmarshal(data, &parsed); err != nil {
+	topLevel := map[string]any{}
+	if err := pelletiertoml.Unmarshal(data, &topLevel); err != nil {
 		return fileConfig{}, fmt.Errorf("parse TOML config %q: %w", path, err)
 	}
-
-	return parsed, nil
+	return validateTopLevelKeys(topLevel, path)
 }
 
-func validateTopLevelKeys(content []byte, path string) error {
-	parsed := map[string]any{}
-	if err := pelletiertoml.Unmarshal(content, &parsed); err != nil {
-		return fmt.Errorf("parse TOML config %q: %w", path, err)
-	}
-	for key := range parsed {
+func validateTopLevelKeys(parsed map[string]any, path string) (fileConfig, error) {
+	result := fileConfig{}
+	for key, value := range parsed {
 		switch key {
-		case "captures_dir", "templates_dir", "log_level":
-			continue
+		case "captures_dir":
+			stringValue, ok := value.(string)
+			if !ok {
+				return fileConfig{}, fmt.Errorf("parse TOML config %q: captures_dir must be a string", path)
+			}
+			result.CapturesDir = pointerToString(stringValue)
+		case "templates_dir":
+			stringValue, ok := value.(string)
+			if !ok {
+				return fileConfig{}, fmt.Errorf("parse TOML config %q: templates_dir must be a string", path)
+			}
+			result.TemplatesDir = pointerToString(stringValue)
+		case "log_level":
+			stringValue, ok := value.(string)
+			if !ok {
+				return fileConfig{}, fmt.Errorf("parse TOML config %q: log_level must be a string", path)
+			}
+			result.LogLevel = pointerToString(stringValue)
 		default:
-			return fmt.Errorf("unsupported config key %q in %q", key, path)
+			return fileConfig{}, fmt.Errorf("unsupported config key %q in %q", key, path)
 		}
 	}
-	return nil
+	return result, nil
 }
 
 func normalizeConfig(cfg runtime.AppConfig, homeDir string) (runtime.AppConfig, error) {
@@ -185,4 +193,9 @@ func expandPath(pathValue, homeDir string) (string, error) {
 		return filepath.Clean(trimmed), nil
 	}
 	return filepath.Abs(trimmed)
+}
+
+func pointerToString(value string) *string {
+	copyValue := value
+	return &copyValue
 }

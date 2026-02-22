@@ -13,7 +13,7 @@ import (
 	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
-	httptemplaterun "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplaterun"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplaterun"
 	httptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplates"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
@@ -81,7 +81,7 @@ func newReplayService(capturesDir string) (*appreplay.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	dispatcher := httpreplay.NewClient(&http.Client{})
+	dispatcher := httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout})
 	return appreplay.NewService(store, dispatcher), nil
 }
 
@@ -101,7 +101,9 @@ func newTemplateService(templatesDir string) (*apptemplates.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	dispatcher := httptemplaterun.NewDispatcher(httpreplay.NewClient(&http.Client{}))
+	dispatcher := httptemplaterun.NewDispatcher(
+		httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout}),
+	)
 	return apptemplates.NewService(
 		localStore,
 		remoteStore,

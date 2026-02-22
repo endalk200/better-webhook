@@ -308,7 +308,7 @@ func (s *Service) Run(ctx context.Context, request RunRequest) (RunResult, error
 		return RunResult{}, ErrRunTargetURLRequired
 	}
 	if err := httpurl.ValidateAbsolute(targetURL); err != nil {
-		return RunResult{}, fmt.Errorf("%w: %v", ErrRunInvalidTargetURL, err)
+		return RunResult{}, fmt.Errorf("%w: %w", ErrRunInvalidTargetURL, err)
 	}
 	method := strings.ToUpper(strings.TrimSpace(localTemplate.Template.Method))
 	if method == "" {
@@ -423,22 +423,10 @@ func (s *Service) loadIndex(ctx context.Context, forceRefresh bool) (domain.Temp
 }
 
 func (s *Service) loadLocalTemplate(ctx context.Context, templateID string) (domain.LocalTemplate, error) {
-	templates, err := s.localStore.List(ctx)
-	if err != nil {
-		return domain.LocalTemplate{}, err
-	}
-	for _, templateItem := range templates {
-		if templateItem.ID == templateID {
-			return templateItem, nil
-		}
-	}
-	return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, templateID)
+	return s.localStore.Get(ctx, templateID)
 }
 
 func (s *Service) resolveBody(body json.RawMessage, resolver *platformplaceholders.Resolver) ([]byte, error) {
-	if resolver == nil {
-		return nil, ErrRunInvalidBody
-	}
 	resolvedBody, err := resolver.ResolveBody(body)
 	if err != nil {
 		return nil, errors.Join(ErrRunInvalidBody, err)

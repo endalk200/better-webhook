@@ -3,10 +3,7 @@ package root
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -38,6 +35,7 @@ import (
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/testutil"
 )
 
 func TestRootCommandShowsHelpByDefault(t *testing.T) {
@@ -448,7 +446,7 @@ func TestTemplatesRunCommandGeneratesGitHubSignature(t *testing.T) {
 	}
 	select {
 	case received := <-receiverCh:
-		expectedSignature := computeGitHubHMACSignature(received.Body, "integration-secret")
+		expectedSignature := testutil.ComputeSignatureHex(received.Body, "integration-secret")
 		if received.Signature != expectedSignature {
 			t.Fatalf("signature mismatch: got %q want %q", received.Signature, expectedSignature)
 		}
@@ -615,7 +613,7 @@ func newTestRootCommandWithTemplateRemote(
 				if err != nil {
 					return nil, err
 				}
-				dispatcher := httpreplay.NewClient(&http.Client{})
+				dispatcher := httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout})
 				return appreplay.NewService(store, dispatcher), nil
 			},
 		},
@@ -636,7 +634,9 @@ func newTestRootCommandWithTemplateRemote(
 				if err != nil {
 					return nil, err
 				}
-				dispatcher := httptemplaterun.NewDispatcher(httpreplay.NewClient(&http.Client{}))
+				dispatcher := httptemplaterun.NewDispatcher(
+					httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout}),
+				)
 				return apptemplates.NewService(
 					localStore,
 					remoteStore,
@@ -682,10 +682,4 @@ func testCommandCapture(id string, providerName string) domain.CaptureRecord {
 			CaptureToolVersion: "test",
 		},
 	}
-}
-
-func computeGitHubHMACSignature(body []byte, secret string) string {
-	signature := hmac.New(sha256.New, []byte(secret))
-	_, _ = signature.Write(body)
-	return "sha256=" + hex.EncodeToString(signature.Sum(nil))
 }

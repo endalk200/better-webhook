@@ -90,61 +90,75 @@ func (s *Store) List(ctx context.Context) ([]domain.LocalTemplate, error) {
 			if unmarshalErr := unmarshalJSONC(content, &parsed); unmarshalErr != nil {
 				continue
 			}
-			templateID := strings.TrimSpace(parsed.Metadata.ID)
-			if templateID == "" {
-				templateID = trimTemplateFileExtension(file.Name())
-			}
-			if !isValidTemplateToken(templateID) {
+			localTemplate, ok := toLocalTemplate(provider, file, fullPath, parsed)
+			if !ok {
 				continue
 			}
-			metaProvider := strings.TrimSpace(parsed.Metadata.Provider)
-			if metaProvider == "" {
-				metaProvider = provider
-			}
-			downloadedAt := strings.TrimSpace(parsed.Metadata.DownloadedAt)
-			if downloadedAt == "" {
-				downloadedAt = fallbackDownloadedAt(file)
-			}
-			method := strings.TrimSpace(parsed.Method)
-			if method == "" {
-				method = "POST"
-			}
-
-			metadata := parsed.Metadata.TemplateMetadata
-			if strings.TrimSpace(metadata.ID) == "" {
-				metadata.ID = templateID
-			}
-			if strings.TrimSpace(metadata.Name) == "" {
-				metadata.Name = templateID
-			}
-			if strings.TrimSpace(metadata.Provider) == "" {
-				metadata.Provider = metaProvider
-			}
-			if strings.TrimSpace(metadata.Event) == "" {
-				metadata.Event = "unknown"
-			}
-			if strings.TrimSpace(metadata.File) == "" {
-				metadata.File = filepath.ToSlash(filepath.Join(metaProvider, templateID+templateFileExtJSONC))
-			}
-
-			results = append(results, domain.LocalTemplate{
-				ID:       templateID,
-				Metadata: metadata,
-				Template: domain.WebhookTemplate{
-					URL:         parsed.URL,
-					Method:      method,
-					Headers:     parsed.Headers,
-					Body:        parsed.Body,
-					Provider:    parsed.Provider,
-					Event:       parsed.Event,
-					Description: parsed.Description,
-				},
-				DownloadedAt: downloadedAt,
-				FilePath:     fullPath,
-			})
+			results = append(results, localTemplate)
 		}
 	}
 	return results, nil
+}
+
+func (s *Store) Get(ctx context.Context, templateID string) (domain.LocalTemplate, error) {
+	if err := checkContext(ctx); err != nil {
+		return domain.LocalTemplate{}, err
+	}
+	trimmedTemplateID := strings.TrimSpace(templateID)
+	if trimmedTemplateID == "" {
+		return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, templateID)
+	}
+
+	entries, err := os.ReadDir(s.templatesDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedTemplateID)
+		}
+		return domain.LocalTemplate{}, fmt.Errorf("read templates directory: %w", err)
+	}
+	for _, entry := range entries {
+		if err := checkContext(ctx); err != nil {
+			return domain.LocalTemplate{}, err
+		}
+		if !entry.IsDir() {
+			continue
+		}
+		provider := entry.Name()
+		providerDir := filepath.Join(s.templatesDir, provider)
+		files, readErr := os.ReadDir(providerDir)
+		if readErr != nil {
+			continue
+		}
+		for _, file := range files {
+			if err := checkContext(ctx); err != nil {
+				return domain.LocalTemplate{}, err
+			}
+			if file.IsDir() || !isSupportedTemplateFile(file.Name()) {
+				continue
+			}
+			if trimTemplateFileExtension(file.Name()) != trimmedTemplateID {
+				continue
+			}
+			fullPath := filepath.Join(providerDir, file.Name())
+			content, fileErr := os.ReadFile(fullPath)
+			if fileErr != nil {
+				continue
+			}
+			var parsed storedTemplateFile
+			if unmarshalErr := unmarshalJSONC(content, &parsed); unmarshalErr != nil {
+				continue
+			}
+			localTemplate, ok := toLocalTemplate(provider, file, fullPath, parsed)
+			if !ok {
+				continue
+			}
+			if localTemplate.ID == trimmedTemplateID {
+				return localTemplate, nil
+			}
+		}
+	}
+
+	return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedTemplateID)
 }
 
 func (s *Store) Save(
@@ -390,8 +404,12 @@ func isSupportedTemplateFile(fileName string) bool {
 }
 
 func trimTemplateFileExtension(fileName string) string {
-	trimmed := strings.TrimSuffix(fileName, templateFileExtJSONC)
-	return trimmed
+	trimmedFileName := strings.TrimSpace(fileName)
+	extension := filepath.Ext(trimmedFileName)
+	if strings.EqualFold(extension, templateFileExtJSONC) {
+		return trimmedFileName[:len(trimmedFileName)-len(extension)]
+	}
+	return trimmedFileName
 }
 
 func unmarshalJSONC(raw []byte, target interface{}) error {
@@ -400,4 +418,64 @@ func unmarshalJSONC(raw []byte, target interface{}) error {
 		return err
 	}
 	return json.Unmarshal(standardized, target)
+}
+
+func toLocalTemplate(
+	provider string,
+	file os.DirEntry,
+	fullPath string,
+	parsed storedTemplateFile,
+) (domain.LocalTemplate, bool) {
+	metadata := parsed.Metadata.TemplateMetadata
+	templateID := strings.TrimSpace(metadata.ID)
+	if templateID == "" {
+		templateID = trimTemplateFileExtension(file.Name())
+	}
+	if !isValidTemplateToken(templateID) {
+		return domain.LocalTemplate{}, false
+	}
+	metaProvider := strings.TrimSpace(metadata.Provider)
+	if metaProvider == "" {
+		metaProvider = provider
+	}
+	downloadedAt := strings.TrimSpace(parsed.Metadata.DownloadedAt)
+	if downloadedAt == "" {
+		downloadedAt = fallbackDownloadedAt(file)
+	}
+	method := strings.TrimSpace(parsed.Method)
+	if method == "" {
+		method = "POST"
+	}
+
+	if strings.TrimSpace(metadata.ID) == "" {
+		metadata.ID = templateID
+	}
+	if strings.TrimSpace(metadata.Name) == "" {
+		metadata.Name = templateID
+	}
+	if strings.TrimSpace(metadata.Provider) == "" {
+		metadata.Provider = metaProvider
+	}
+	if strings.TrimSpace(metadata.Event) == "" {
+		metadata.Event = "unknown"
+	}
+	if strings.TrimSpace(metadata.File) == "" {
+		metadata.File = filepath.ToSlash(filepath.Join(metaProvider, templateID+templateFileExtJSONC))
+	}
+
+	return domain.LocalTemplate{
+		ID:       templateID,
+		Metadata: metadata,
+		Template: domain.WebhookTemplate{
+			URL:         parsed.URL,
+			Method:      method,
+			Headers:     parsed.Headers,
+			Body:        parsed.Body,
+			Provider:    parsed.Provider,
+			Event:       parsed.Event,
+			Description: parsed.Description,
+		},
+		DownloadedAt: downloadedAt,
+		FilePath:     fullPath,
+	}, true
 }

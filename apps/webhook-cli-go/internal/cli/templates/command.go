@@ -56,25 +56,25 @@ func mapTemplateCommandError(err error, templateID string) error {
 		return fmt.Errorf("%w", domain.ErrTemplateIndexUnavailable)
 	}
 	if errors.Is(err, apptemplates.ErrRunNotConfigured) {
-		return fmt.Errorf("template execution is not configured")
+		return fmt.Errorf("template execution is not configured: %w", err)
 	}
 	if errors.Is(err, apptemplates.ErrRunTargetURLRequired) {
-		return fmt.Errorf("target URL is required: provide [target-url] or set template.url")
+		return fmt.Errorf("target URL is required: provide [target-url] or set template.url: %w", err)
 	}
 	if errors.Is(err, apptemplates.ErrRunInvalidTargetURL) {
-		return fmt.Errorf("target URL is invalid")
+		return fmt.Errorf("target URL is invalid: %w", err)
 	}
 	if errors.Is(err, apptemplates.ErrRunInvalidMethod) {
-		return fmt.Errorf("template method is invalid")
+		return fmt.Errorf("template method is invalid: %w", err)
 	}
 	if errors.Is(err, apptemplates.ErrRunInvalidBody) {
 		return mapRunInvalidBodyError(err)
 	}
 	if errors.Is(err, apptemplates.ErrRunTimeoutInvalid) {
-		return fmt.Errorf("timeout must be greater than 0")
+		return fmt.Errorf("timeout must be greater than 0: %w", err)
 	}
 	if errors.Is(err, apptemplates.ErrRunSecretRequired) {
-		return fmt.Errorf("secret is required for provider signing placeholder")
+		return fmt.Errorf("secret is required for provider signing placeholder: %w", err)
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation cancelled: %w", err)
@@ -85,17 +85,15 @@ func mapTemplateCommandError(err error, templateID string) error {
 func mapRunInvalidBodyError(err error) error {
 	cause := runInvalidBodyCause(err)
 	if cause == nil {
-		return fmt.Errorf("template body is invalid")
+		return fmt.Errorf("template body is invalid: %w", err)
 	}
 	if errors.Is(cause, platformplaceholders.ErrEnvironmentPlaceholdersDisabled) {
-		return fmt.Errorf("template body is invalid: environment placeholders are disabled (use --allow-env-placeholders)")
+		return fmt.Errorf(
+			"template body is invalid: environment placeholders are disabled (use --allow-env-placeholders): %w",
+			err,
+		)
 	}
-	if errors.Is(cause, platformplaceholders.ErrMissingEnvironmentVariable) ||
-		errors.Is(cause, platformplaceholders.ErrUnsupportedTimeFormat) ||
-		errors.Is(cause, platformplaceholders.ErrUnsupportedProviderToken) {
-		return fmt.Errorf("template body is invalid: %v", cause)
-	}
-	return fmt.Errorf("template body is invalid: %v", cause)
+	return fmt.Errorf("template body is invalid: %w", err)
 }
 
 func runInvalidBodyCause(err error) error {

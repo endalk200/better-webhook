@@ -93,6 +93,20 @@ func TestDispatcherDispatchForwardsRequestAndMapsResponse(t *testing.T) {
 	}
 }
 
+func TestDispatcherDispatchPanicsOnNilReplayDispatcher(t *testing.T) {
+	dispatcher := &Dispatcher{}
+	defer func() {
+		if recover() == nil {
+			t.Fatalf("expected panic when replay dispatcher is nil")
+		}
+	}()
+	_, _ = dispatcher.Dispatch(context.Background(), apptemplates.DispatchRequest{
+		Method:  "POST",
+		URL:     "http://localhost:3000/webhooks/github",
+		Timeout: time.Second,
+	})
+}
+
 func TestDispatcherDispatchPropagatesError(t *testing.T) {
 	expectedErr := errors.New("dispatch failed")
 	stub := &replayDispatcherStub{err: expectedErr}

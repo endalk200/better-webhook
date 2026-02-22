@@ -99,3 +99,28 @@ func TestMapTemplateCommandErrorGuidesEnvPlaceholderOptIn(t *testing.T) {
 		t.Fatalf("expected opt-in guidance, got %q", err.Error())
 	}
 }
+
+func TestMapTemplateCommandErrorPreservesRunInvalidTargetURL(t *testing.T) {
+	root := fmt.Errorf("%w: %w", apptemplates.ErrRunInvalidTargetURL, errors.New("bad target"))
+	err := mapTemplateCommandError(root, "")
+	if err == nil {
+		t.Fatalf("expected mapped error")
+	}
+	if !errors.Is(err, apptemplates.ErrRunInvalidTargetURL) {
+		t.Fatalf("expected mapped error to preserve ErrRunInvalidTargetURL")
+	}
+}
+
+func TestMapTemplateCommandErrorPreservesRunInvalidBodySentinel(t *testing.T) {
+	root := errors.Join(
+		apptemplates.ErrRunInvalidBody,
+		fmt.Errorf("%w: HEADER_VALUE", platformplaceholders.ErrMissingEnvironmentVariable),
+	)
+	err := mapTemplateCommandError(root, "")
+	if err == nil {
+		t.Fatalf("expected mapped body error")
+	}
+	if !errors.Is(err, apptemplates.ErrRunInvalidBody) {
+		t.Fatalf("expected mapped error to preserve ErrRunInvalidBody")
+	}
+}

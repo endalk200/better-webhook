@@ -2,7 +2,6 @@ package httptemplaterun
 
 import (
 	"context"
-	"errors"
 
 	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/templates"
@@ -23,7 +22,7 @@ func NewDispatcher(replayDispatcher appreplay.Dispatcher) *Dispatcher {
 
 func (d *Dispatcher) Dispatch(ctx context.Context, request apptemplates.DispatchRequest) (apptemplates.DispatchResult, error) {
 	if d.replayDispatcher == nil {
-		return apptemplates.DispatchResult{}, errors.New("replay dispatcher cannot be nil")
+		panic("replay dispatcher cannot be nil")
 	}
 	replayHeaders := make([]capturedomain.HeaderEntry, 0, len(request.Headers))
 	for _, header := range request.Headers {

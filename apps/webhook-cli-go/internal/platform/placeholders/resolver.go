@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	platformid "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/id"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/time"
@@ -123,6 +124,7 @@ func (r *Resolver) ResolveHeaderValue(key string, value string, ctx HeaderContex
 	if err != nil {
 		return "", err
 	}
+	// Safety net in case resolution leaves a provider token unresolved.
 	if strings.HasPrefix(resolved, githubPrefixPlaceholder) {
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedProviderToken, resolved)
 	}
@@ -208,7 +210,7 @@ func (r *Resolver) resolveInterpolatedToken(value string) (string, int, bool, er
 	case hasTokenWithBoundary(value, timeUnixPlaceholder):
 		return fmt.Sprintf("%d", r.clock.Now().UTC().Unix()), len(timeUnixPlaceholder), true, nil
 	case hasTokenWithBoundary(value, timeRFC3339Placeholder):
-		return r.clock.Now().UTC().Format(timeFormatRFC3339), len(timeRFC3339Placeholder), true, nil
+		return r.clock.Now().UTC().Format(time.RFC3339), len(timeRFC3339Placeholder), true, nil
 	case strings.HasPrefix(value, genericEnvironmentPrefixPlaceholder):
 		return r.resolveEnvironmentToken(value)
 	case strings.HasPrefix(value, genericTimePrefixPlaceholder):
@@ -309,5 +311,3 @@ func buildGitHubSignature(body []byte, secret string) (string, error) {
 	}
 	return githubSignaturePrefix + hex.EncodeToString(signature.Sum(nil)), nil
 }
-
-const timeFormatRFC3339 = "2006-01-02T15:04:05Z07:00"
