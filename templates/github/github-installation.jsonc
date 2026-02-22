@@ -11,11 +11,11 @@
     },
     {
       "key": "X-GitHub-Delivery",
-      "value": "d4e5f6a7-b8c9-0123-def0-456789012345"
+      "value": "$uuid"
     },
     {
       "key": "X-Hub-Signature-256",
-      "value": "placeholder"
+      "value": "$github:x-hub-signature-256"
     },
     {
       "key": "X-GitHub-Hook-ID",
