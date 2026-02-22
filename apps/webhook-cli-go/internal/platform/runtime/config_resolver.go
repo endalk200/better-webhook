@@ -21,19 +21,21 @@ const (
 )
 
 const (
-	DefaultCaptureHost          = "127.0.0.1"
-	DefaultCapturePort          = 3001
-	DefaultCaptureVerbose       = false
-	DefaultReplayBaseURL        = "http://localhost:3000"
-	DefaultReplayTimeout        = 30 * time.Second
-	DefaultLogLevel             = LogLevelInfo
-	defaultConfigRelativePath   = ".better-webhook/config.toml"
-	defaultCapturesRelativePath = ".better-webhook/captures"
+	DefaultCaptureHost           = "127.0.0.1"
+	DefaultCapturePort           = 3001
+	DefaultCaptureVerbose        = false
+	DefaultReplayBaseURL         = "http://localhost:3000"
+	DefaultReplayTimeout         = 30 * time.Second
+	DefaultLogLevel              = LogLevelInfo
+	defaultConfigRelativePath    = ".better-webhook/config.toml"
+	defaultCapturesRelativePath  = ".better-webhook/captures"
+	defaultTemplatesRelativePath = ".better-webhook/templates"
 )
 
 type AppConfig struct {
-	CapturesDir string
-	LogLevel    string
+	CapturesDir  string
+	TemplatesDir string
+	LogLevel     string
 }
 
 type Loader interface {
@@ -77,14 +79,49 @@ type ReplayArgs struct {
 	Verbose         bool
 }
 
+type TemplatesListArgs struct {
+	TemplatesDir string
+	Provider     string
+	Refresh      bool
+}
+
+type TemplatesDownloadArgs struct {
+	TemplatesDir string
+	TemplateID   string
+	All          bool
+	Refresh      bool
+}
+
+type TemplatesLocalArgs struct {
+	TemplatesDir string
+	Provider     string
+}
+
+type TemplatesSearchArgs struct {
+	TemplatesDir string
+	Query        string
+	Provider     string
+	Refresh      bool
+}
+
+type TemplatesCleanArgs struct {
+	TemplatesDir string
+	Force        bool
+}
+
+type TemplatesCacheClearArgs struct {
+	TemplatesDir string
+}
+
 func DefaultConfigPath(homeDir string) string {
 	return filepath.Join(homeDir, defaultConfigRelativePath)
 }
 
 func DefaultConfig(homeDir string) AppConfig {
 	return AppConfig{
-		CapturesDir: filepath.Join(homeDir, defaultCapturesRelativePath),
-		LogLevel:    DefaultLogLevel,
+		CapturesDir:  filepath.Join(homeDir, defaultCapturesRelativePath),
+		TemplatesDir: filepath.Join(homeDir, defaultTemplatesRelativePath),
+		LogLevel:     DefaultLogLevel,
 	}
 }
 
@@ -315,6 +352,147 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 	}, nil
 }
 
+func ResolveTemplatesListArgs(cmd *cobra.Command) (TemplatesListArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesListArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesListArgs{}, err
+	}
+	provider, err := cmd.Flags().GetString("provider")
+	if err != nil {
+		return TemplatesListArgs{}, err
+	}
+	refresh, err := cmd.Flags().GetBool("refresh")
+	if err != nil {
+		return TemplatesListArgs{}, err
+	}
+	return TemplatesListArgs{
+		TemplatesDir: templatesDir,
+		Provider:     strings.TrimSpace(provider),
+		Refresh:      refresh,
+	}, nil
+}
+
+func ResolveTemplatesDownloadArgs(cmd *cobra.Command, args []string) (TemplatesDownloadArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesDownloadArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesDownloadArgs{}, err
+	}
+	all, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return TemplatesDownloadArgs{}, err
+	}
+	refresh, err := cmd.Flags().GetBool("refresh")
+	if err != nil {
+		return TemplatesDownloadArgs{}, err
+	}
+	templateID := ""
+	if len(args) > 0 {
+		templateID = strings.TrimSpace(args[0])
+	}
+	if all && templateID != "" {
+		return TemplatesDownloadArgs{}, errors.New("template id cannot be provided with --all")
+	}
+	if !all && templateID == "" {
+		return TemplatesDownloadArgs{}, errors.New("template id is required unless --all is provided")
+	}
+	return TemplatesDownloadArgs{
+		TemplatesDir: templatesDir,
+		TemplateID:   templateID,
+		All:          all,
+		Refresh:      refresh,
+	}, nil
+}
+
+func ResolveTemplatesLocalArgs(cmd *cobra.Command) (TemplatesLocalArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesLocalArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesLocalArgs{}, err
+	}
+	provider, err := cmd.Flags().GetString("provider")
+	if err != nil {
+		return TemplatesLocalArgs{}, err
+	}
+	return TemplatesLocalArgs{
+		TemplatesDir: templatesDir,
+		Provider:     strings.TrimSpace(provider),
+	}, nil
+}
+
+func ResolveTemplatesSearchArgs(cmd *cobra.Command, args []string) (TemplatesSearchArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesSearchArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesSearchArgs{}, err
+	}
+	if len(args) == 0 {
+		return TemplatesSearchArgs{}, errors.New("search query is required")
+	}
+	query := strings.TrimSpace(args[0])
+	if query == "" {
+		return TemplatesSearchArgs{}, errors.New("search query cannot be empty")
+	}
+	provider, err := cmd.Flags().GetString("provider")
+	if err != nil {
+		return TemplatesSearchArgs{}, err
+	}
+	refresh, err := cmd.Flags().GetBool("refresh")
+	if err != nil {
+		return TemplatesSearchArgs{}, err
+	}
+	return TemplatesSearchArgs{
+		TemplatesDir: templatesDir,
+		Query:        query,
+		Provider:     strings.TrimSpace(provider),
+		Refresh:      refresh,
+	}, nil
+}
+
+func ResolveTemplatesCleanArgs(cmd *cobra.Command) (TemplatesCleanArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesCleanArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesCleanArgs{}, err
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return TemplatesCleanArgs{}, err
+	}
+	return TemplatesCleanArgs{
+		TemplatesDir: templatesDir,
+		Force:        force,
+	}, nil
+}
+
+func ResolveTemplatesCacheClearArgs(cmd *cobra.Command) (TemplatesCacheClearArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesCacheClearArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesCacheClearArgs{}, err
+	}
+	return TemplatesCacheClearArgs{TemplatesDir: templatesDir}, nil
+}
+
 func IsValidLogLevel(level string) bool {
 	switch strings.ToLower(strings.TrimSpace(level)) {
 	case LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError:
@@ -344,6 +522,22 @@ func resolveCapturesDir(cmd *cobra.Command, fallbackDir string) (string, error) 
 	expanded, err := ExpandPath(rawDir)
 	if err != nil {
 		return "", fmt.Errorf("resolve captures directory: %w", err)
+	}
+	return expanded, nil
+}
+
+func resolveTemplatesDir(cmd *cobra.Command, fallbackDir string) (string, error) {
+	if cmd == nil {
+		return "", errors.New("command cannot be nil")
+	}
+	rawDir := fallbackDir
+	flag := cmd.Flags().Lookup("templates-dir")
+	if flag != nil && flag.Changed {
+		rawDir = flag.Value.String()
+	}
+	expanded, err := ExpandPath(rawDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve templates directory: %w", err)
 	}
 	return expanded, nil
 }

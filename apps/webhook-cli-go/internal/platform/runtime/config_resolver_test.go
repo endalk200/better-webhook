@@ -251,6 +251,69 @@ func TestResolveReplayArgsRejectsWhitespaceSelector(t *testing.T) {
 	}
 }
 
+func TestResolveTemplatesListArgsParsesFlags(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("provider", "github"); err != nil {
+		t.Fatalf("set provider: %v", err)
+	}
+	if err := command.Flags().Set("refresh", "true"); err != nil {
+		t.Fatalf("set refresh: %v", err)
+	}
+
+	args, err := ResolveTemplatesListArgs(command)
+	if err != nil {
+		t.Fatalf("resolve templates list args: %v", err)
+	}
+	if args.Provider != "github" {
+		t.Fatalf("provider mismatch: got %q", args.Provider)
+	}
+	if !args.Refresh {
+		t.Fatalf("expected refresh true")
+	}
+	if args.TemplatesDir == "" {
+		t.Fatalf("expected templates dir")
+	}
+}
+
+func TestResolveTemplatesDownloadArgsRequiresTemplateIDWithoutAll(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesDownloadArgs(command, nil)
+	if err == nil {
+		t.Fatalf("expected template id validation error")
+	}
+	if !strings.Contains(err.Error(), "template id is required") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesDownloadArgsAllowsAllWithoutID(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("all", "true"); err != nil {
+		t.Fatalf("set all: %v", err)
+	}
+	args, err := ResolveTemplatesDownloadArgs(command, nil)
+	if err != nil {
+		t.Fatalf("resolve templates download args: %v", err)
+	}
+	if !args.All {
+		t.Fatalf("expected all true")
+	}
+	if args.TemplateID != "" {
+		t.Fatalf("expected empty template id")
+	}
+}
+
+func TestResolveTemplatesSearchArgsRequiresQuery(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesSearchArgs(command, nil)
+	if err == nil {
+		t.Fatalf("expected search query validation error")
+	}
+	if !strings.Contains(err.Error(), "search query is required") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func newReplayTestCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 	command := &cobra.Command{Use: "replay"}
@@ -261,8 +324,25 @@ func newReplayTestCommand(t *testing.T) *cobra.Command {
 	command.Flags().Duration("timeout", DefaultReplayTimeout, "")
 	command.Flags().BoolP("verbose", "v", false, "")
 	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
-		CapturesDir: t.TempDir(),
-		LogLevel:    LogLevelInfo,
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: t.TempDir(),
+		LogLevel:     LogLevelInfo,
+	}))
+	return command
+}
+
+func newTemplatesTestCommand(t *testing.T) *cobra.Command {
+	t.Helper()
+	command := &cobra.Command{Use: "templates"}
+	command.Flags().String("templates-dir", "", "")
+	command.Flags().String("provider", "", "")
+	command.Flags().Bool("refresh", false, "")
+	command.Flags().Bool("all", false, "")
+	command.Flags().Bool("force", false, "")
+	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: t.TempDir(),
+		LogLevel:     LogLevelInfo,
 	}))
 	return command
 }
