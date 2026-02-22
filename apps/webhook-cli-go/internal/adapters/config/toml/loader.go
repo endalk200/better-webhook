@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 	pelletiertoml "github.com/pelletier/go-toml/v2"
+
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 )
 
 const envPrefix = "BETTER_WEBHOOK"

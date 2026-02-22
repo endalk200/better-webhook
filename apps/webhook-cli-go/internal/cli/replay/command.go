@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/replay"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
-	"github.com/spf13/cobra"
 )
 
 type ServiceFactory func(capturesDir string) (*appreplay.Service, error)

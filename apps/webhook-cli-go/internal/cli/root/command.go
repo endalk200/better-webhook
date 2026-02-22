@@ -1,12 +1,13 @@
 package root
 
 import (
+	"github.com/spf13/cobra"
+
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/captures"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/templates"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
-	"github.com/spf13/cobra"
 )
 
 type Dependencies struct {

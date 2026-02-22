@@ -13,6 +13,7 @@ import (
 	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/storage/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpcapture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httpreplay"
+	httptemplaterun "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplaterun"
 	httptemplates "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/adapters/transport/httptemplates"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/capture"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
@@ -100,5 +101,12 @@ func newTemplateService(templatesDir string) (*apptemplates.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return apptemplates.NewService(localStore, remoteStore, cacheStore, platformtime.SystemClock{}), nil
+	dispatcher := httptemplaterun.NewDispatcher(httpreplay.NewClient(&http.Client{}))
+	return apptemplates.NewService(
+		localStore,
+		remoteStore,
+		cacheStore,
+		platformtime.SystemClock{},
+		apptemplates.WithDispatcher(dispatcher),
+	), nil
 }

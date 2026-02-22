@@ -1,8 +1,9 @@
 package captures
 
 import (
-	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 	"github.com/spf13/cobra"
+
+	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
 )
 
 type ServiceFactory func(capturesDir string) (*appcaptures.Service, error)

@@ -353,6 +353,101 @@ func TestResolveTemplatesSearchArgsRequiresQuery(t *testing.T) {
 	}
 }
 
+func TestResolveTemplatesRunArgsParsesFlagsAndArguments(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("secret", "shhh"); err != nil {
+		t.Fatalf("set secret: %v", err)
+	}
+	if err := command.Flags().Set("allow-env-placeholders", "true"); err != nil {
+		t.Fatalf("set allow-env-placeholders: %v", err)
+	}
+	if err := command.Flags().Set("header", "X-Test: one"); err != nil {
+		t.Fatalf("set header: %v", err)
+	}
+	if err := command.Flags().Set("timeout", "45s"); err != nil {
+		t.Fatalf("set timeout: %v", err)
+	}
+	if err := command.Flags().Set("verbose", "true"); err != nil {
+		t.Fatalf("set verbose: %v", err)
+	}
+
+	args, err := ResolveTemplatesRunArgs(command, []string{"github-push", "http://localhost:4000/hook"})
+	if err != nil {
+		t.Fatalf("resolve templates run args: %v", err)
+	}
+	if args.TemplateID != "github-push" {
+		t.Fatalf("template id mismatch: got %q", args.TemplateID)
+	}
+	if args.TargetURL != "http://localhost:4000/hook" {
+		t.Fatalf("target URL mismatch: got %q", args.TargetURL)
+	}
+	if args.Secret != "shhh" {
+		t.Fatalf("secret mismatch: got %q", args.Secret)
+	}
+	if !args.AllowEnvPlaceholders {
+		t.Fatalf("expected allow env placeholders true")
+	}
+	if args.Timeout != 45*time.Second {
+		t.Fatalf("timeout mismatch: got %s", args.Timeout)
+	}
+	if !args.Verbose {
+		t.Fatalf("expected verbose true")
+	}
+	if len(args.HeaderOverrides) != 1 {
+		t.Fatalf("expected one header override, got %d", len(args.HeaderOverrides))
+	}
+}
+
+func TestResolveTemplatesRunArgsRequiresTemplateID(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesRunArgs(command, nil)
+	if err == nil {
+		t.Fatalf("expected template id validation error")
+	}
+	if !strings.Contains(err.Error(), "template id is required") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesRunArgsRejectsInvalidTargetURL(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesRunArgs(command, []string{"github-push", "not-a-url"})
+	if err == nil {
+		t.Fatalf("expected invalid target URL error")
+	}
+	if !strings.Contains(err.Error(), "target URL is invalid") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesRunArgsRejectsInvalidHeaderOverride(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("header", "invalid-header"); err != nil {
+		t.Fatalf("set header: %v", err)
+	}
+	_, err := ResolveTemplatesRunArgs(command, []string{"github-push"})
+	if err == nil {
+		t.Fatalf("expected invalid header override error")
+	}
+	if !strings.Contains(err.Error(), "key:value") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesRunArgsRejectsNonPositiveTimeout(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("timeout", "0s"); err != nil {
+		t.Fatalf("set timeout: %v", err)
+	}
+	_, err := ResolveTemplatesRunArgs(command, []string{"github-push"})
+	if err == nil {
+		t.Fatalf("expected timeout validation error")
+	}
+	if !strings.Contains(err.Error(), "timeout must be greater than 0") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func newReplayTestCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 	command := &cobra.Command{Use: "replay"}
@@ -378,6 +473,11 @@ func newTemplatesTestCommand(t *testing.T) *cobra.Command {
 	command.Flags().Bool("refresh", false, "")
 	command.Flags().Bool("all", false, "")
 	command.Flags().Bool("force", false, "")
+	command.Flags().String("secret", "", "")
+	command.Flags().Bool("allow-env-placeholders", false, "")
+	command.Flags().StringArrayP("header", "H", nil, "")
+	command.Flags().Duration("timeout", DefaultReplayTimeout, "")
+	command.Flags().BoolP("verbose", "v", false, "")
 	command.SetContext(context.WithValue(context.Background(), runtimeConfigContextKey{}, AppConfig{
 		CapturesDir:  t.TempDir(),
 		TemplatesDir: t.TempDir(),

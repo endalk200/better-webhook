@@ -20,7 +20,7 @@ func TestStoreSaveAndListRoundTrip(t *testing.T) {
 		Name:     "GitHub Push",
 		Provider: "github",
 		Event:    "push",
-		File:     "github/github-push.json",
+		File:     "github/github-push.jsonc",
 	}, domain.WebhookTemplate{
 		Method: "POST",
 		Headers: []domain.HeaderEntry{
@@ -72,7 +72,7 @@ func TestStoreDeleteAllRemovesTemplates(t *testing.T) {
 		Name:     "GitHub Push",
 		Provider: "github",
 		Event:    "push",
-		File:     "github/github-push.json",
+		File:     "github/github-push.jsonc",
 	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z")
 	if err != nil {
 		t.Fatalf("save template: %v", err)
@@ -104,7 +104,7 @@ func TestStoreDeleteAllSkipsUnmanagedJSONFiles(t *testing.T) {
 		Name:     "GitHub Push",
 		Provider: "github",
 		Event:    "push",
-		File:     "github/github-push.json",
+		File:     "github/github-push.jsonc",
 	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z"); err != nil {
 		t.Fatalf("save template: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestStoreListSkipsMalformedFiles(t *testing.T) {
 	if err := os.MkdirAll(providerDir, 0o700); err != nil {
 		t.Fatalf("mkdir provider dir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(providerDir, "bad.json"), []byte("{not json"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(providerDir, "bad.jsonc"), []byte("{not json"), 0o600); err != nil {
 		t.Fatalf("write malformed template file: %v", err)
 	}
 	items, err := store.List(context.Background())
@@ -163,6 +163,45 @@ func TestStoreListSkipsMalformedFiles(t *testing.T) {
 	}
 	if len(items) != 0 {
 		t.Fatalf("expected malformed file to be skipped")
+	}
+}
+
+func TestStoreListParsesJSONCFiles(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+	payload := `{
+  // local metadata
+  "method": "POST",
+  "headers": [
+    { "key": "X-Test", "value": "ok" },
+  ],
+  "_metadata": {
+    "id": "with-comments",
+    "name": "With Comments",
+    "provider": "github",
+    "event": "push",
+    "file": "github/with-comments.jsonc",
+  },
+}`
+	if err := os.WriteFile(filepath.Join(providerDir, "with-comments.jsonc"), []byte(payload), 0o600); err != nil {
+		t.Fatalf("write jsonc template: %v", err)
+	}
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected one jsonc template, got %d", len(items))
+	}
+	if items[0].ID != "with-comments" {
+		t.Fatalf("id mismatch: got %q", items[0].ID)
 	}
 }
 
@@ -176,7 +215,7 @@ func TestStoreListUsesFileModTimeWhenDownloadedAtMissing(t *testing.T) {
 	if err := os.MkdirAll(providerDir, 0o700); err != nil {
 		t.Fatalf("mkdir provider dir: %v", err)
 	}
-	templatePath := filepath.Join(providerDir, "legacy.json")
+	templatePath := filepath.Join(providerDir, "legacy.jsonc")
 	payload := `{
   "method": "POST",
   "_metadata": {
@@ -184,7 +223,7 @@ func TestStoreListUsesFileModTimeWhenDownloadedAtMissing(t *testing.T) {
     "name": "Legacy",
     "provider": "github",
     "event": "push",
-    "file": "github/legacy.json"
+    "file": "github/legacy.jsonc"
   }
 }`
 	if err := os.WriteFile(templatePath, []byte(payload), 0o600); err != nil {

@@ -8,8 +8,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 	"github.com/spf13/cobra"
+
+	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
 )
 
 func newDeleteCommand(deps Dependencies) *cobra.Command {

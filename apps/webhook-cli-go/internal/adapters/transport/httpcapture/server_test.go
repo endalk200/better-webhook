@@ -34,7 +34,9 @@ func TestServerCapturesRequestWithRawBodyAndMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send request: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	if response.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(response.Body)
@@ -77,7 +79,9 @@ func TestServerAcceptsLargePayload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send request: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 response, got %d", response.StatusCode)
 	}
@@ -92,7 +96,9 @@ func TestServerRejectsPayloadLargerThanLimit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send request: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	if response.StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatalf("expected 413 response, got %d", response.StatusCode)
 	}
@@ -107,7 +113,7 @@ func TestServerStoresAllCapturesWithoutRetentionLimit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("send request %d: %v", i, err)
 		}
-		response.Body.Close()
+		_ = response.Body.Close()
 	}
 
 	captures, err := store.List(context.Background(), 10)
@@ -187,7 +193,9 @@ func TestServerReturnsTimeoutWhenStoreSaveCancelled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send request: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	if response.StatusCode != http.StatusRequestTimeout {
 		t.Fatalf("expected 408 response when store save is cancelled, got %d", response.StatusCode)
 	}

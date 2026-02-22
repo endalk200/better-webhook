@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/capture"
+	platformhttprequest "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httprequest"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/httpurl"
 )
 
@@ -66,14 +67,7 @@ func (s *Service) Replay(ctx context.Context, request ReplayRequest) (ReplayResu
 		TargetURL:   targetURL,
 		Method:      method,
 		SentHeaders: headers,
-		Response: ReplayResponse{
-			StatusCode:    dispatched.StatusCode,
-			StatusText:    dispatched.StatusText,
-			Headers:       dispatched.Headers,
-			Body:          dispatched.Body,
-			BodyTruncated: dispatched.BodyTruncated,
-			Duration:      dispatched.Duration,
-		},
+		Response:    ReplayResponse(dispatched),
 	}, nil
 }
 
@@ -118,7 +112,7 @@ func resolveMethod(methodOverride string, fallback string) (string, error) {
 	if method == "" {
 		method = http.MethodPost
 	}
-	if !isValidHTTPMethod(method) {
+	if !platformhttprequest.IsValidHTTPMethod(method) {
 		return "", ErrInvalidMethod
 	}
 	return method, nil
@@ -142,81 +136,41 @@ func buildReplayHeaders(captured []domain.HeaderEntry, overrides []domain.Header
 		if strings.TrimSpace(header.Key) == "" {
 			continue
 		}
-		if shouldSkipHeader(header.Key) {
+		if platformhttprequest.ShouldSkipHopByHopHeader(header.Key) {
 			continue
 		}
 		filtered = append(filtered, header)
 	}
-	return applyHeaderOverrides(filtered, overrides)
+	return toCaptureHeaders(
+		platformhttprequest.ApplyHeaderOverrides(
+			toRequestHeaders(filtered),
+			toRequestHeaders(overrides),
+		),
+	)
 }
 
-func shouldSkipHeader(key string) bool {
-	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "host", "content-length", "connection", "accept-encoding", "transfer-encoding", "te", "trailer", "proxy-connection", "upgrade":
-		return true
-	default:
-		return false
-	}
-}
-
-func applyHeaderOverrides(headers []domain.HeaderEntry, overrides []domain.HeaderEntry) []domain.HeaderEntry {
-	if len(overrides) == 0 {
-		return headers
-	}
-
-	overrideByKey := make(map[string]domain.HeaderEntry, len(overrides))
-	overrideOrder := make([]string, 0, len(overrides))
-	for _, override := range overrides {
-		key := strings.TrimSpace(override.Key)
-		value := strings.TrimSpace(override.Value)
-		if key == "" || value == "" || shouldSkipHeader(key) {
-			continue
-		}
-		lowerKey := strings.ToLower(key)
-		if _, exists := overrideByKey[lowerKey]; !exists {
-			overrideOrder = append(overrideOrder, lowerKey)
-		}
-		overrideByKey[lowerKey] = domain.HeaderEntry{
-			Key:   key,
-			Value: value,
-		}
-	}
-
-	result := make([]domain.HeaderEntry, 0, len(headers)+len(overrideByKey))
-	applied := make(map[string]bool, len(overrideByKey))
+func toRequestHeaders(headers []domain.HeaderEntry) []platformhttprequest.HeaderEntry {
+	converted := make([]platformhttprequest.HeaderEntry, 0, len(headers))
 	for _, header := range headers {
-		lowerKey := strings.ToLower(strings.TrimSpace(header.Key))
-		override, hasOverride := overrideByKey[lowerKey]
-		if hasOverride {
-			if !applied[lowerKey] {
-				result = append(result, override)
-				applied[lowerKey] = true
-			}
-			continue
-		}
-		result = append(result, header)
+		converted = append(converted, platformhttprequest.HeaderEntry{
+			Key:   header.Key,
+			Value: header.Value,
+		})
 	}
+	return converted
+}
 
-	for _, lowerKey := range overrideOrder {
-		if applied[lowerKey] {
-			continue
-		}
-		result = append(result, overrideByKey[lowerKey])
+func toCaptureHeaders(headers []platformhttprequest.HeaderEntry) []domain.HeaderEntry {
+	converted := make([]domain.HeaderEntry, 0, len(headers))
+	for _, header := range headers {
+		converted = append(converted, domain.HeaderEntry{
+			Key:   header.Key,
+			Value: header.Value,
+		})
 	}
-
-	return result
+	return converted
 }
 
 func isValidHTTPMethod(method string) bool {
-	if len(method) == 0 {
-		return false
-	}
-	for _, r := range method {
-		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
-		isTokenPunctuation := strings.ContainsRune("!#$%&'*+-.^_`|~", r)
-		if !isAlphaNum && !isTokenPunctuation {
-			return false
-		}
-	}
-	return true
+	return platformhttprequest.IsValidHTTPMethod(method)
 }

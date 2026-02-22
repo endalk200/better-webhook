@@ -11,10 +11,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tailscale/hujson"
+
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
 )
 
 var safeTemplateTokenPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+
+const (
+	templateFileExtJSONC = ".jsonc"
+)
 
 type Store struct {
 	templatesDir string
@@ -72,7 +78,7 @@ func (s *Store) List(ctx context.Context) ([]domain.LocalTemplate, error) {
 			if err := checkContext(ctx); err != nil {
 				return nil, err
 			}
-			if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
+			if file.IsDir() || !isSupportedTemplateFile(file.Name()) {
 				continue
 			}
 			fullPath := filepath.Join(providerDir, file.Name())
@@ -81,12 +87,12 @@ func (s *Store) List(ctx context.Context) ([]domain.LocalTemplate, error) {
 				continue
 			}
 			var parsed storedTemplateFile
-			if unmarshalErr := json.Unmarshal(content, &parsed); unmarshalErr != nil {
+			if unmarshalErr := unmarshalJSONC(content, &parsed); unmarshalErr != nil {
 				continue
 			}
 			templateID := strings.TrimSpace(parsed.Metadata.ID)
 			if templateID == "" {
-				templateID = strings.TrimSuffix(file.Name(), ".json")
+				templateID = trimTemplateFileExtension(file.Name())
 			}
 			if !isValidTemplateToken(templateID) {
 				continue
@@ -118,7 +124,7 @@ func (s *Store) List(ctx context.Context) ([]domain.LocalTemplate, error) {
 				metadata.Event = "unknown"
 			}
 			if strings.TrimSpace(metadata.File) == "" {
-				metadata.File = filepath.ToSlash(filepath.Join(metaProvider, templateID+".json"))
+				metadata.File = filepath.ToSlash(filepath.Join(metaProvider, templateID+templateFileExtJSONC))
 			}
 
 			results = append(results, domain.LocalTemplate{
@@ -170,7 +176,7 @@ func (s *Store) Save(
 	metadata.ID = templateID
 	metadata.Provider = provider
 	if strings.TrimSpace(metadata.File) == "" {
-		metadata.File = filepath.ToSlash(filepath.Join(provider, templateID+".json"))
+		metadata.File = filepath.ToSlash(filepath.Join(provider, templateID+templateFileExtJSONC))
 	}
 	if strings.TrimSpace(template.Method) == "" {
 		template.Method = "POST"
@@ -286,10 +292,10 @@ func (s *Store) DeleteAll(ctx context.Context) (int, error) {
 			if err := checkContext(ctx); err != nil {
 				return 0, err
 			}
-			if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
+			if file.IsDir() || !isSupportedTemplateFile(file.Name()) {
 				continue
 			}
-			templateID := strings.TrimSuffix(file.Name(), ".json")
+			templateID := trimTemplateFileExtension(file.Name())
 			if !isValidTemplateToken(templateID) {
 				continue
 			}
@@ -317,7 +323,7 @@ func (s *Store) DeleteAll(ctx context.Context) (int, error) {
 
 func (s *Store) safeTemplatePath(provider string, templateID string) (string, error) {
 	baseDir := filepath.Clean(s.templatesDir)
-	targetPath := filepath.Clean(filepath.Join(baseDir, provider, templateID+".json"))
+	targetPath := filepath.Clean(filepath.Join(baseDir, provider, templateID+templateFileExtJSONC))
 	if targetPath != baseDir && !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
 		return "", fmt.Errorf("unsafe template path for provider %q and id %q", provider, templateID)
 	}
@@ -350,7 +356,7 @@ func isManagedTemplateFile(path string, provider string, templateID string) bool
 			Provider string `json:"provider"`
 		} `json:"_metadata"`
 	}
-	if err := json.Unmarshal(content, &parsed); err != nil {
+	if err := unmarshalJSONC(content, &parsed); err != nil {
 		return false
 	}
 	metadataID := strings.TrimSpace(parsed.Metadata.ID)
@@ -376,4 +382,22 @@ func isValidTemplateToken(value string) bool {
 		return false
 	}
 	return safeTemplateTokenPattern.MatchString(trimmed)
+}
+
+func isSupportedTemplateFile(fileName string) bool {
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(fileName)))
+	return ext == templateFileExtJSONC
+}
+
+func trimTemplateFileExtension(fileName string) string {
+	trimmed := strings.TrimSuffix(fileName, templateFileExtJSONC)
+	return trimmed
+}
+
+func unmarshalJSONC(raw []byte, target interface{}) error {
+	standardized, err := hujson.Standardize(raw)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(standardized, target)
 }
