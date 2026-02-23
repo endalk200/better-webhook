@@ -15,13 +15,23 @@ jobs:
     permissions:
       contents: read
       security-events: write
+
     strategy:
       fail-fast: false
       matrix:
-        language: ["javascript-typescript"]
+        # "javascript-typescript" handles both JS and TS files
+        language: ["javascript-typescript", "go"]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # Recommended: Ensure the Go environment is ready for the Go matrix leg
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -29,7 +39,9 @@ jobs:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
 
+      # Only run Autobuild for Go; JS/TS is interpreted and doesn't need it
       - name: Autobuild
+        if: matrix.language == 'go'
         uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis

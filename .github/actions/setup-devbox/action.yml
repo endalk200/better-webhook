@@ -1,0 +1,18 @@
+name: Setup Devbox
+description: Install and validate the Devbox toolchain for CI jobs.
+
+runs:
+  using: composite
+  steps:
+    - name: Install Devbox
+      uses: jetify-com/devbox-install-action@22b0f5500b14df4ea357ce673fbd4ced940ed6a1 # v0.13.0
+      with:
+        enable-cache: "true"
+
+    - name: Verify Devbox toolchain
+      shell: bash
+      run: |
+        devbox version
+        devbox run -- just --version
+        devbox run -- node --version
+        devbox run -- pnpm --version

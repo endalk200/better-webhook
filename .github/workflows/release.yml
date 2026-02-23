@@ -20,54 +20,52 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
 
-      - name: Setup Node.js
+      - name: Configure npm registry auth
         uses: actions/setup-node@v4
         with:
-          node-version: 22
           registry-url: "https://registry.npmjs.org"
-          cache: "pnpm"
-
-      - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: devbox run -- just ci-install
+
+      - name: Get cache key date
+        id: cache-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Trivy cache
+        id: trivy-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/.cache/trivy
+          key: cache-trivy-${{ steps.cache-date.outputs.date }}
+          restore-keys: |
+            cache-trivy-
 
       - name: Trivy release gate
         if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
-        with:
-          scan-type: fs
-          scan-ref: .
-          trivy-config: trivy.yaml
-          version: v0.69.0
-          format: table
-          exit-code: 1
+        run: devbox run -- just security-scan-blocking
+        env:
+          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
+          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Trivy release report
         if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
-        with:
-          scan-type: fs
-          scan-ref: .
-          trivy-config: trivy.yaml
-          version: v0.69.0
-          format: table
-          exit-code: 0
+        run: devbox run -- just security-scan
+        env:
+          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
+          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Build packages
-        run: pnpm build
+        run: devbox run -- just build
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf # v1.7.0
         with:
-          publish: pnpm release:publish
+          publish: devbox run -- pnpm release:publish
           title: "chore: release packages"
           commit: "chore: release packages"
           createGithubReleases: false
