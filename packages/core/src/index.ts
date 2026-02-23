@@ -1028,11 +1028,7 @@ export interface WebhookStatsSnapshot {
 // Utility Functions
 // ============================================================================
 
-const blockedHeaderKeys = new Set([
-  "__proto__",
-  "constructor",
-  "prototype",
-]);
+const blockedHeaderKeys = new Set(["__proto__", "constructor", "prototype"]);
 
 /**
  * Normalize headers to lowercase keys with string values

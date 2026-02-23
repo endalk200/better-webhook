@@ -7,7 +7,7 @@ import {
   type Provider,
   type Headers,
 } from "@better-webhook/core";
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 
 // ============================================================================
 // Test Utilities
@@ -216,10 +216,7 @@ describe("toExpress", () => {
 
       try {
         const { res: firstRes, state: firstState } = createMockResponse();
-        await middleware(
-          createDuplicateReq() as Request,
-          firstRes as Response,
-        );
+        await middleware(createDuplicateReq() as Request, firstRes as Response);
         expect(firstState.statusCode).toBe(200);
 
         const { res: secondRes, state: secondState } = createMockResponse();
@@ -249,7 +246,7 @@ describe("toExpress", () => {
         headers: { "x-test-event": "test.event" },
         body: Buffer.from(JSON.stringify(validPayload)),
       });
-      const { res, state } = createMockResponse();
+      const { res } = createMockResponse();
 
       await middleware(req as Request, res as Response);
 
@@ -283,7 +280,7 @@ describe("toExpress", () => {
         headers: { "x-test-event": "test.event" },
         body: Buffer.from(JSON.stringify(validPayload)),
       });
-      const { res, state } = createMockResponse();
+      const { res } = createMockResponse();
 
       await middleware(req as Request, res as Response);
 
