@@ -14,8 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Typecheck
+  quality:
+    name: Format, Lint, Typecheck, Test, Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,80 +23,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: devbox run -- just ci-install
+
+      - name: Format check
+        run: devbox run -- just format-check
 
       - name: Lint
-        run: pnpm lint
+        run: devbox run -- just lint
 
       - name: Type check
-        run: pnpm check-types
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: apps/*/dist/
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: devbox run -- just check-types
 
       - name: Test
-        run: pnpm test
+        run: devbox run -- just test
+
+      - name: Build
+        run: devbox run -- just build

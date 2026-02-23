@@ -24,20 +24,30 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Generate Trivy SARIF report
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Get cache key date
+        id: cache-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Trivy cache
+        id: trivy-cache
+        uses: actions/cache/restore@v4
         with:
-          scan-type: fs
-          scan-ref: .
-          trivy-config: trivy.yaml
-          version: v0.69.0
-          format: sarif
-          output: trivy-results.sarif
-          exit-code: 0
-          limit-severities-for-sarif: true
+          path: ${{ github.workspace }}/.cache/trivy
+          key: cache-trivy-${{ steps.cache-date.outputs.date }}
+          restore-keys: |
+            cache-trivy-
+
+      - name: Generate Trivy SARIF report
+        run: devbox run -- just security-scan-sarif
+        env:
+          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
+          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Upload Trivy SARIF report
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
@@ -45,22 +55,14 @@ jobs:
 
       - name: Enforce Trivy policy
         if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
-        with:
-          scan-type: fs
-          scan-ref: .
-          trivy-config: trivy.yaml
-          format: table
-          exit-code: 1
-          skip-setup-trivy: true
+        run: devbox run -- just security-scan-blocking
+        env:
+          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
+          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Advisory Trivy table report
         if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
-        with:
-          scan-type: fs
-          scan-ref: .
-          trivy-config: trivy.yaml
-          format: table
-          exit-code: 0
-          skip-setup-trivy: true
+        run: devbox run -- just security-scan
+        env:
+          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
+          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}

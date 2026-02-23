@@ -14,28 +14,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: devbox run -- just ci-install
+
+      - name: Ensure base branch ref exists
+        run: git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
 
       - name: Check for changesets
-        run: |
-          # Check if there are any changesets
-          if [ "$(pnpm changeset status --output=json | jq '.releases | length')" = "0" ]; then
-            echo "::warning::No changesets found. If this PR introduces user-facing changes, please add a changeset by running 'pnpm changeset'"
-            echo "::notice::To add a changeset: 1) Run 'pnpm changeset' 2) Select packages to release 3) Choose version bump type 4) Write summary"
-            # Uncomment the next line to make this a required check:
-            # exit 1
-          else
-            echo "✅ Changesets found - release will be triggered when merged"
-          fi
+        env:
+          CHANGESET_BASE_REF: origin/${{ github.base_ref }}
+        run: devbox run -- just changeset-check
