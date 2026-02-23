@@ -85,7 +85,7 @@ changeset-check:
     tmp_file=$(mktemp); \
     err_file=$(mktemp); \
     base_ref="${CHANGESET_BASE_REF:-main}"; \
-    if pnpm exec changeset status --output=json --since "$base_ref" > "$tmp_file" 2> "$err_file"; then \
+    if pnpm exec changeset status --output "$tmp_file" --since "$base_ref" 2> "$err_file"; then \
       if ! releases_count=$(node -e "const fs=require('node:fs');const status=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(String(status.releases.length));" "$tmp_file" 2>> "$err_file"); then \
         echo "::error::Failed to parse changeset status JSON."; \
         cat "$err_file"; \
