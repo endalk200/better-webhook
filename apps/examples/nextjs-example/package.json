@@ -9,7 +9,7 @@
     "build": "echo 'No build needed for example'",
     "start": "next start -p 3002",
     "lint": "eslint .",
-    "check-types": "tsc --noEmit"
+    "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@better-webhook/core": "workspace:*",
