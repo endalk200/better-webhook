@@ -123,8 +123,9 @@ Suppression policy:
 
 CI rollout:
 
+- `CI`, `Release`, and `Changeset Check` workflows run commands through `devbox run -- just ...` for local/CI parity.
 - `Security` workflow is advisory by default and always uploads SARIF
-- Set repository variable `TRIVY_ENFORCE=1` to enforce HIGH/CRITICAL failures in `security.yml`, `release.yml`, and `binary-release.yml`
+- Set repository variable `TRIVY_ENFORCE=1` to enforce HIGH/CRITICAL failures in `security.yml` and `release.yml`
 - Optional `Security Cache Refresh` workflow warms Trivy DB cache daily; run it manually if CI DB downloads become slow or rate-limited
 
 Code scanning signals in GitHub:

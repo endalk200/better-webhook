@@ -51,3 +51,5 @@ yarn-error.log*
 .cache/
 trivy-results.sarif
 trivy-sbom.cdx.json
+
+.tmp

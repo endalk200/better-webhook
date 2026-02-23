@@ -53,7 +53,8 @@ just security-scan
 
 - Security checks run in advisory mode by default.
 - Maintainers can flip CI to blocking mode by setting repository variable `TRIVY_ENFORCE=1`.
-- This toggle affects `security.yml`, `release.yml`, and `binary-release.yml`.
+- This toggle affects `security.yml` and `release.yml`.
+- CI command execution is standardized through `devbox run -- just ...` for local/CI parity.
 
 ## Pull requests
 
