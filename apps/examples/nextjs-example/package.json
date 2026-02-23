@@ -2,11 +2,13 @@
   "name": "@better-webhook/nextjs-example",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "description": "Next.js example for better-webhook",
   "scripts": {
     "dev": "next dev -p 3002",
-    "build": "next build",
+    "build": "echo 'No build needed for example'",
     "start": "next start -p 3002",
+    "lint": "eslint .",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,10 +22,12 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
     "@types/node": "^24.3.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^9.35.0",
     "typescript": "^5.6.3"
   },
   "engines": {

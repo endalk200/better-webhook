@@ -647,14 +647,12 @@ fi
 
 ## Security scan matrix
 
-The CLI release path is covered by Trivy checks in both standard CI and binary release workflows.
+The CLI release path is covered by Trivy checks in standard CI workflows.
 
-| Artifact Scope | Workflow | Trivy Mode | Output |
-| -------------- | -------- | ---------- | ------ |
-| Repository source | `.github/workflows/security.yml` | `trivy fs` (vuln, secret, misconfig) | SARIF + table |
-| NPM release path | `.github/workflows/release.yml` | `trivy fs` gate/report before publish | table |
-| Compiled CLI binary per platform | `.github/workflows/binary-release.yml` | `trivy fs` on built binary before upload | table |
-| Distributed binary artifacts | `.github/workflows/binary-release.yml` | `trivy fs --format cyclonedx` | per-artifact SBOM (`*.sbom.cdx.json`) |
+| Artifact Scope    | Workflow                         | Trivy Mode                            | Output        |
+| ----------------- | -------------------------------- | ------------------------------------- | ------------- |
+| Repository source | `.github/workflows/security.yml` | `trivy fs` (vuln, secret, misconfig)  | SARIF + table |
+| NPM release path  | `.github/workflows/release.yml`  | `trivy fs` gate/report before publish | table         |
 
 By default, these workflows run in advisory mode. Maintainers can set repository variable `TRIVY_ENFORCE=1` to make HIGH/CRITICAL findings fail release jobs.
 
