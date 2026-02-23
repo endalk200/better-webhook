@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -47,7 +48,7 @@ func newListCommand(deps Dependencies) *cobra.Command {
 
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Available templates:")
 			grouped := groupRemoteTemplatesByProvider(templates)
-			providers := sortedProviderKeys(grouped)
+			providers := slices.Sorted(maps.Keys(grouped))
 			for _, provider := range providers {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", strings.ToUpper(provider))
 				for _, item := range grouped[provider] {
@@ -79,13 +80,4 @@ func groupRemoteTemplatesByProvider(items []domain.RemoteTemplate) map[string][]
 		grouped[provider] = append(grouped[provider], item)
 	}
 	return grouped
-}
-
-func sortedProviderKeys(grouped map[string][]domain.RemoteTemplate) []string {
-	keys := make([]string, 0, len(grouped))
-	for key := range grouped {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }
