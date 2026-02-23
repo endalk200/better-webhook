@@ -25,6 +25,7 @@ export const config = [
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           destructuredArrayIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
         },
       ],
     },
