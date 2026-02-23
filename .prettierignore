@@ -1,1 +1,7 @@
 apps/docs/content/**/*.mdx
+apps/docs/.source
+
+.opencode/plans/**/*.md
+.opencode/package.json
+
+pnpm-lock.yaml
