@@ -7,9 +7,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/platform/runtime"
-	"github.com/spf13/cobra"
 )
 
 func newListCommand(deps Dependencies) *cobra.Command {
@@ -80,7 +81,7 @@ func groupRemoteTemplatesByProvider(items []domain.RemoteTemplate) map[string][]
 	return grouped
 }
 
-func sortedProviderKeys[T any](grouped map[string][]T) []string {
+func sortedProviderKeys(grouped map[string][]domain.RemoteTemplate) []string {
 	keys := make([]string, 0, len(grouped))
 	for key := range grouped {
 		keys = append(keys, key)
