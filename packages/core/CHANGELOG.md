@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.11.3
+
+### Patch Changes
+
+- config: linting and typecheck configuration tightening
+
 ## 0.11.2
 
 ### Patch Changes
