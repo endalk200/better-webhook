@@ -34,6 +34,9 @@ class ExampleReplayStore {
 }
 
 // Custom replay store strategy example
+// This in-memory Map is process-local and ephemeral: it resets on cold starts
+// and is not shared across instances. Use a shared store (Redis/DynamoDB/etc.)
+// for production-grade replay protection.
 const customReplayStore: ReplayStore = new ExampleReplayStore();
 const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
   .withReplayProtection({

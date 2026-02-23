@@ -6,7 +6,7 @@
   "scripts": {
     "install": "go mod tidy",
     "lint": "golangci-lint run ./...",
-    "format:check": "test -z \"$(goimports -l -local github.com/endalk200/better-webhook .)\"",
+    "format:check": "bash -euo pipefail -c 'files=$(goimports -l -local github.com/endalk200/better-webhook .); test -z \"$files\"'",
     "format:write": "goimports -w -local github.com/endalk200/better-webhook . && gofumpt -w .",
     "check-types": "go test ./... -run=^$",
     "test": "go test ./...",
