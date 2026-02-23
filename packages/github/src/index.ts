@@ -68,10 +68,7 @@ function createGitHubProvider(options?: GitHubOptions): Provider<"github"> {
       return headers["x-github-delivery"];
     },
 
-    getReplayContext(
-      headers: Headers,
-      _body?: unknown,
-    ): ProviderReplayContext {
+    getReplayContext(headers: Headers, _body?: unknown): ProviderReplayContext {
       const replayKey = headers["x-github-delivery"];
       return {
         replayKey,

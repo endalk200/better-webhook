@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "lint": "tsc --noEmit",
+    "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -60,8 +60,10 @@
     "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || >=16.0.7 <17.0.0"
   },
   "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
     "@types/node": "^24.3.1",
+    "eslint": "^9.35.0",
     "next": "^16.1.1",
     "tsup": "^8.5.0",
     "typescript": "^5.6.3",

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nest start --watch",
     "start": "nest start",
-    "build": "nest build",
+    "build": "echo 'No build needed for example'",
+    "lint": "eslint .",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,10 +24,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
     "@nestjs/cli": "^11.0.0",
     "@types/express": "^5.0.0",
     "@types/node": "^24.3.1",
+    "eslint": "^9.35.0",
     "typescript": "^5.6.3"
   },
   "engines": {

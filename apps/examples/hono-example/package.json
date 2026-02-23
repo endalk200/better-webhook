@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "build": "echo 'No build needed for example'",
+    "lint": "eslint .",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,8 +21,10 @@
     "hono": "4.12.0"
   },
   "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
     "@types/node": "^24.3.1",
+    "eslint": "^9.35.0",
     "tsx": "^4.20.5",
     "typescript": "^5.6.3"
   },
