@@ -21,7 +21,7 @@ jobs:
         run: devbox run -- just ci-install
 
       - name: Ensure base branch ref exists
-        run: git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+        run: git fetch --no-tags --depth=1 origin "refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
 
       - name: Check for changesets
         env:
