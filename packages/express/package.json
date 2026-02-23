@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/express",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "Express.js middleware for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",

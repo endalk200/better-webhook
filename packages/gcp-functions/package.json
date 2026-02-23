@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/gcp-functions",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "GCP Cloud Functions integration for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
