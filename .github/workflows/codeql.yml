@@ -31,18 +31,14 @@ jobs:
         if: matrix.language == 'go'
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.x"
+          go-version-file: apps/webhook-cli-go/go.mod
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
-
-      # Only run Autobuild for Go; JS/TS is interpreted and doesn't need it
-      - name: Autobuild
-        if: matrix.language == 'go'
-        uses: github/codeql-action/autobuild@v4
+          build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

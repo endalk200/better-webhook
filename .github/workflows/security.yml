@@ -40,9 +40,10 @@ jobs:
           restore-keys: |
             cache-trivy-
 
-      - name: Generate Trivy SARIF report
-        run: devbox run -- just security-scan-sarif
+      - name: Run Trivy filesystem scan
+        run: devbox run -- just security-scan-ci
         env:
+          TRIVY_ENFORCE: ${{ vars.TRIVY_ENFORCE == '1' && '1' || '0' }}
           TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
           TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
@@ -52,17 +53,3 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
           category: trivy
-
-      - name: Enforce Trivy policy
-        if: ${{ vars.TRIVY_ENFORCE == '1' }}
-        run: devbox run -- just security-scan-blocking
-        env:
-          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
-          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
-
-      - name: Advisory Trivy table report
-        if: ${{ vars.TRIVY_ENFORCE != '1' }}
-        run: devbox run -- just security-scan
-        env:
-          TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
-          TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
