@@ -115,17 +115,14 @@ describe("normalizeHeaders", () => {
   });
 
   it("should skip blocked prototype pollution keys", () => {
-    const headers: Record<string, string | string[] | undefined> =
-      Object.create(null);
-    Object.defineProperty(headers, "__proto__", {
-      value: "polluted",
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-    headers["constructor"] = "polluted";
-    headers["prototype"] = "polluted";
-    headers["X-Safe"] = "ok";
+    const headers = Object.fromEntries([
+      ["__proto__", "polluted"],
+      ["constructor", "polluted"],
+      ["prototype", "polluted"],
+      ["X-Safe", "ok"],
+    ]) as Record<string, string | string[] | undefined>;
+
+    expect(Object.hasOwn(headers, "__proto__")).toBe(true);
 
     const normalized = normalizeHeaders(headers);
 
@@ -137,8 +134,8 @@ describe("normalizeHeaders", () => {
 
   it("should skip internal magic keys that start with double underscores", () => {
     const normalized = normalizeHeaders({
-      "__defineGetter__": "polluted",
-      "__lookupSetter__": "polluted",
+      __defineGetter__: "polluted",
+      __lookupSetter__: "polluted",
       "X-Safe": "ok",
     });
 

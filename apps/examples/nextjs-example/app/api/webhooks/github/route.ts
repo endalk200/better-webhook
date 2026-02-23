@@ -75,7 +75,6 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
     console.error("🔐 Verification failed:", reason);
     console.log("Headers: ", headers);
     console.log("Received signature header: ", headers["x-hub-signature-256"]);
-    console.log("Note: The secret should not include the 'sha256=' prefix");
   });
 
 // Export the POST handler

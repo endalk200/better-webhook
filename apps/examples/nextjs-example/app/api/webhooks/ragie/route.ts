@@ -52,13 +52,13 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
     console.log(`   Status: ${payload.status}`);
     console.log(`   Partition: ${payload.partition || "default"}`);
   })
-  .event(connection_sync_started, async (payload, context) => {
+  .event(connection_sync_started, async (payload) => {
     console.log("🚀 Connection sync started!");
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
-  .event(connection_sync_progress, async (payload, context) => {
+  .event(connection_sync_progress, async (payload) => {
     console.log("⏳ Connection sync progress!");
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
@@ -72,29 +72,29 @@ const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
     console.log(`   Deletes: ${payload.deleted_count}/${payload.delete_count}`);
     console.log(`   Errors: ${payload.errored_count}`);
   })
-  .event(connection_sync_finished, async (payload, context) => {
+  .event(connection_sync_finished, async (payload) => {
     console.log("✅ Connection sync finished!");
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Sync ID: ${payload.sync_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
-  .event(entity_extracted, async (payload, context) => {
+  .event(entity_extracted, async (payload) => {
     console.log("🔍 Entity extraction completed!");
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Partition: ${payload.partition || "default"}`);
   })
-  .event(document_deleted, async (payload, context) => {
+  .event(document_deleted, async (payload) => {
     console.log("🗑️ Document deleted!");
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Partition: ${payload.partition}`);
   })
-  .event(connection_limit_exceeded, async (payload, context) => {
+  .event(connection_limit_exceeded, async (payload) => {
     console.log("⚠️ Connection limit exceeded!");
     console.log(`   Connection ID: ${payload.connection_id}`);
     console.log(`   Partition: ${payload.partition}`);
     console.log(`   Limit type: ${payload.limit_type}`);
   })
-  .event(partition_limit_exceeded, async (payload, context) => {
+  .event(partition_limit_exceeded, async (payload) => {
     console.log("⚠️ Partition limit exceeded!");
     console.log(`   Partition: ${payload.partition}`);
   })

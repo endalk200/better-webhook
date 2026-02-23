@@ -295,17 +295,11 @@ describe("toGCPFunction", () => {
         });
 
       try {
-        const {
-          res: firstRes,
-          state: firstState,
-        } = createMockResponse();
+        const { res: firstRes, state: firstState } = createMockResponse();
         await handler(createDuplicateReq(), firstRes);
         expect(firstState.statusCode).toBe(200);
 
-        const {
-          res: secondRes,
-          state: secondState,
-        } = createMockResponse();
+        const { res: secondRes, state: secondState } = createMockResponse();
         await handler(createDuplicateReq(), secondRes);
         expect(secondState.statusCode).toBe(409);
       } finally {

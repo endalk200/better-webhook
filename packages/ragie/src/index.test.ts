@@ -207,7 +207,7 @@ describe("Ragie Schemas", () => {
     });
 
     it("should require entity_id field", () => {
-      const { entity_id, ...rest } = validEntityExtractedPayload;
+      const { entity_id: _entity_id, ...rest } = validEntityExtractedPayload;
       const result = RagieEntityExtractedEventSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
@@ -222,7 +222,7 @@ describe("Ragie Schemas", () => {
     });
 
     it("should accept optional connection_metadata", () => {
-      const { connection_metadata, ...rest } =
+      const { connection_metadata: _connection_metadata, ...rest } =
         validConnectionSyncStartedPayload;
       const result = RagieConnectionSyncStartedEventSchema.safeParse(rest);
       expect(result.success).toBe(true);
@@ -238,7 +238,8 @@ describe("Ragie Schemas", () => {
     });
 
     it("should require errored_count field", () => {
-      const { errored_count, ...rest } = validConnectionSyncProgressPayload;
+      const { errored_count: _errored_count, ...rest } =
+        validConnectionSyncProgressPayload;
       const result = RagieConnectionSyncProgressEventSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
@@ -272,7 +273,8 @@ describe("Ragie Schemas", () => {
     });
 
     it("should require limit_type field", () => {
-      const { limit_type, ...rest } = validConnectionLimitExceededPayload;
+      const { limit_type: _limit_type, ...rest } =
+        validConnectionLimitExceededPayload;
       const result = RagieConnectionLimitExceededEventSchema.safeParse(rest);
       expect(result.success).toBe(false);
     });
