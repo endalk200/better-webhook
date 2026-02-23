@@ -12,24 +12,49 @@ import {
 import { toNextJS } from "@better-webhook/nextjs";
 import type { ReplayContext, ReplayStore } from "@better-webhook/core";
 
-class ExampleReplayStore {
+class ExampleReplayStore implements ReplayStore {
   private readonly entries = new Map<string, number>();
+  private readonly cleanupIntervalMs = 60_000;
+  private readonly cleanupBatchSize = 128;
+  private lastCleanupAt = 0;
 
   reserve(key: string, inFlightTtlSeconds: number): "reserved" | "duplicate" {
+    this.cleanupExpiredEntries();
+    const now = Date.now();
     const expiresAt = this.entries.get(key);
-    if (!expiresAt || expiresAt <= Date.now()) {
-      this.entries.set(key, Date.now() + inFlightTtlSeconds * 1000);
+    if (expiresAt === undefined || expiresAt <= now) {
+      this.entries.set(key, now + inFlightTtlSeconds * 1000);
       return "reserved";
     }
     return "duplicate";
   }
 
   commit(key: string, ttlSeconds: number): void {
+    this.cleanupExpiredEntries();
     this.entries.set(key, Date.now() + ttlSeconds * 1000);
   }
 
   release(key: string): void {
     this.entries.delete(key);
+  }
+
+  private cleanupExpiredEntries(): void {
+    const now = Date.now();
+    if (now - this.lastCleanupAt < this.cleanupIntervalMs) {
+      return;
+    }
+
+    let removed = 0;
+    for (const [entryKey, expiresAt] of this.entries) {
+      if (expiresAt <= now) {
+        this.entries.delete(entryKey);
+        removed++;
+      }
+      if (removed >= this.cleanupBatchSize) {
+        break;
+      }
+    }
+    this.lastCleanupAt = now;
   }
 }
 
