@@ -53,7 +53,7 @@
         }
       }
     },
-    "gofumpt@0.9.2": {
+    "gofumpt@latest": {
       "last_modified": "2026-01-23T17:20:52Z",
       "resolved": "github:NixOS/nixpkgs/a1bab9e494f5f4939442a57a58d0449a109593fe#gofumpt",
       "source": "devbox-search",
@@ -101,7 +101,7 @@
         }
       }
     },
-    "goimports@2021-01-13": {
+    "goimports@latest": {
       "last_modified": "2022-02-15T04:21:50Z",
       "resolved": "github:NixOS/nixpkgs/3a641defd170a4ef25ce8c7c64cb13f91f867fca#goimports",
       "source": "devbox-search",

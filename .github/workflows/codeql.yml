@@ -31,8 +31,8 @@ jobs:
         if: matrix.language == 'go'
         uses: actions/setup-go@v6.2.0
         with:
-          go-version-file: apps/webhook-cli-go/go.mod
-          cache-dependency-path: apps/webhook-cli-go/go.mod
+          go-version-file: apps/webhook-cli/go.mod
+          cache-dependency-path: apps/webhook-cli/go.mod
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
