@@ -31,6 +31,9 @@ jobs:
       - name: Setup Devbox
         uses: ./.github/actions/setup-devbox
 
+      - name: Install dependencies
+        run: devbox run -- just ci-install
+
       - name: Format check
         run: devbox run -- just format-check
 
