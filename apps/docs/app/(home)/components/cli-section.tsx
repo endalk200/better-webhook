@@ -2,28 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Radio,
-  RotateCcw,
-  FileCode,
-  LayoutDashboard,
-} from "lucide-react";
+import { ArrowRight, Radio, RotateCcw, FileCode } from "lucide-react";
 
 const commands = [
   {
     prompt: "$ ",
-    command: "better-webhook dashboard",
+    command: "better-webhook captures list",
     output: [
       "",
-      "🧭 Dashboard Server",
+      "📚 Captured webhooks:",
       "",
-      "   Dashboard: http://localhost:4000/",
-      "   API Base: http://localhost:4000/api",
-      "   WebSocket: ws://localhost:4000/ws",
-      "",
-      "🎣 Capture Server",
-      "   Capture: http://localhost:3001",
+      "   - abc12345 [github] POST /webhooks/github (2456 bytes)",
+      "   - def67890 [ragie] POST /webhooks/ragie (1821 bytes)",
       "",
     ],
     delay: 1200,
@@ -68,7 +58,7 @@ const commands = [
   {
     prompt: "$ ",
     command:
-      "better-webhook run github-push --url http://localhost:3000/api/webhooks/github",
+      "better-webhook templates run github-push http://localhost:3000/api/webhooks/github",
     output: [
       "",
       "🚀 Executing Webhook",
@@ -109,12 +99,6 @@ const cliFeatures = [
     description:
       "Download and run community templates for GitHub, Ragie, Recall.ai, and more",
     command: "better-webhook templates list",
-  },
-  {
-    icon: LayoutDashboard,
-    title: "Dashboard",
-    description: "Visual UI to manage captures, templates, and replay webhooks",
-    command: "better-webhook dashboard",
   },
 ];
 
@@ -212,7 +196,6 @@ export function CLISection() {
                   ) : line.includes("http://") || line.includes("ws://") ? (
                     <span className="lyra-terminal-info">{line}</span>
                   ) : line.startsWith("🎣") ||
-                    line.startsWith("🧭") ||
                     line.startsWith("🔄") ||
                     line.startsWith("🚀") ||
                     line.startsWith("📥") ? (
@@ -265,12 +248,12 @@ export function CLISection() {
         {/* Install command */}
         <div className="mt-16 text-center">
           <p className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider mb-4">
-            Install globally with npm
+            Install with Homebrew
           </p>
           <code className="inline-block px-6 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm">
             <span className="text-[var(--lyra-accent)]">$</span>{" "}
             <span className="text-white">
-              npm install -g @better-webhook/cli
+              brew install endalk200/tap/better-webhook
             </span>
           </code>
         </div>

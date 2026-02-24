@@ -4,7 +4,6 @@ import {
   Radio,
   RotateCcw,
   Shield,
-  LayoutDashboard,
   Layers,
   Zap,
   FileCode,
@@ -41,10 +40,10 @@ const features = [
     badge: "SDK",
   },
   {
-    icon: LayoutDashboard,
-    title: "Dashboard UI",
+    icon: Zap,
+    title: "Fast Native Binary",
     description:
-      "Beautiful local dashboard to view captures, manage templates, and replay webhooks with a visual interface.",
+      "Install a prebuilt Go binary from Homebrew or GitHub Releases with no Node.js runtime requirement.",
     badge: "CLI",
   },
   {
@@ -55,14 +54,14 @@ const features = [
     badge: "SDK",
   },
   {
-    icon: Zap,
+    icon: FileCode,
     title: "Auto Signatures",
     description:
       "CLI generates valid signatures when running templates. Test signature verification without manual setup.",
     badge: "CLI",
   },
   {
-    icon: FileCode,
+    icon: RotateCcw,
     title: "Community Templates",
     description:
       "Download and run webhook templates for GitHub, Ragie, and Recall.ai. Real payloads ready to use instantly.",

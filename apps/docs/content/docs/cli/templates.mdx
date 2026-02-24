@@ -127,15 +127,15 @@ better-webhook templates clean
 Clear the template cache (forces re-fetch of the index):
 
 ```bash
-better-webhook templates cache --clear
+better-webhook templates cache clear
 ```
 
 ## Running Templates
 
-Use the `run` command to execute a template against your endpoint:
+Use the `templates run` command to execute a template against your endpoint:
 
 ```bash
-better-webhook run github-push --url http://localhost:3000/api/webhooks/github
+better-webhook templates run github-push http://localhost:3000/api/webhooks/github
 ```
 
 ### With Signature Generation
@@ -143,8 +143,8 @@ better-webhook run github-push --url http://localhost:3000/api/webhooks/github
 To generate a valid signature, provide the webhook secret:
 
 ```bash
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
+better-webhook templates run github-push \
+  http://localhost:3000/api/webhooks/github \
   --secret "your-webhook-secret"
 ```
 
@@ -161,8 +161,8 @@ better-webhook run github-push \
 Add or override headers:
 
 ```bash
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
+better-webhook templates run github-push \
+  http://localhost:3000/api/webhooks/github \
   -H "X-Custom-Header:value"
 ```
 
@@ -171,8 +171,8 @@ better-webhook run github-push \
 See detailed request and response information:
 
 ```bash
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
+better-webhook templates run github-push \
+  http://localhost:3000/api/webhooks/github \
   --verbose
 ```
 
@@ -190,13 +190,13 @@ better-webhook templates download github-pull_request
 npm run dev
 
 # 3. Test your webhook handler
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
+better-webhook templates run github-push \
+  http://localhost:3000/api/webhooks/github \
   --secret $GITHUB_WEBHOOK_SECRET
 
 # 4. Iterate - run the same template while fixing issues
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
+better-webhook templates run github-push \
+  http://localhost:3000/api/webhooks/github \
   --secret $GITHUB_WEBHOOK_SECRET
 ```
 
@@ -227,16 +227,8 @@ Options:
 - `--description <text>` — Description
 - `--overwrite` — Replace existing template with same ID
 
-### From Dashboard
-
-1. Go to the **Captures** tab
-2. Select a captured webhook
-3. Click **Save as Template**
-4. Fill in the template details (ID is auto-suggested)
-5. Click **Save Template**
-
 The saved template will appear in your local templates and can be run with:
 
 ```bash
-better-webhook run github-push-custom --url http://localhost:3000/api/webhooks
+better-webhook templates run github-push-custom http://localhost:3000/api/webhooks
 ```

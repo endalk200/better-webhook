@@ -7,38 +7,6 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Command Reference
 
-## dashboard
-
-Start the full dashboard with UI, API, and integrated capture server.
-
-```bash
-better-webhook dashboard [options]
-```
-
-**Options:**
-
-| Option                  | Default     | Description                         |
-| ----------------------- | ----------- | ----------------------------------- |
-| `-p, --port <port>`     | `4000`      | Dashboard server port               |
-| `-h, --host <host>`     | `localhost` | Dashboard host                      |
-| `--capture-port <port>` | `3001`      | Capture server port                 |
-| `--capture-host <host>` | `0.0.0.0`   | Capture server host                 |
-| `--no-capture`          | —           | Don't start the capture server      |
-| `--captures-dir <dir>`  | —           | Override captures storage directory |
-| `--templates-dir <dir>` | —           | Override templates directory        |
-
-**Example:**
-
-```bash
-# Start with custom ports
-better-webhook dashboard --port 8080 --capture-port 9000
-
-# Dashboard only (no capture server)
-better-webhook dashboard --no-capture
-```
-
----
-
 ## capture
 
 Start a standalone server to capture incoming webhooks.
@@ -53,6 +21,7 @@ better-webhook capture [options]
 | ------------------- | --------- | ----------------- |
 | `-p, --port <port>` | `3001`    | Port to listen on |
 | `-h, --host <host>` | `0.0.0.0` | Host to bind to   |
+| `-v, --verbose`     | `false`   | Show verbose logs |
 
 **Example:**
 
@@ -60,7 +29,7 @@ better-webhook capture [options]
 better-webhook capture --port 3001
 ```
 
-Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `captures replay`.
+Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `replay` / `captures replay`.
 
 ---
 
@@ -142,20 +111,6 @@ better-webhook captures delete <captureId> [options]
 | ------------- | ------------------------ |
 | `-f, --force` | Skip confirmation prompt |
 
-### captures clean
-
-Remove all captured webhooks.
-
-```bash
-better-webhook captures clean [options]
-```
-
-**Options:**
-
-| Option        | Description              |
-| ------------- | ------------------------ |
-| `-f, --force` | Skip confirmation prompt |
-
 ---
 
 ### captures replay
@@ -193,40 +148,29 @@ better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/githu
 
 ---
 
-## run
+## replay
 
-Execute a webhook template against a target URL.
+Replay a captured webhook to a target URL.
 
 ```bash
-better-webhook run [templateId] --url <url> [options]
+better-webhook replay <capture-id> [target-url] [options]
 ```
 
 **Options:**
 
 | Option                  | Description                             |
 | ----------------------- | --------------------------------------- |
-| `-u, --url <url>`       | Target URL (required)                   |
-| `-s, --secret <secret>` | Secret for signature generation         |
-| `-H, --header <header>` | Add custom header (format: `key:value`) |
+| `--method <method>`     | Override HTTP method                    |
+| `-H, --header <header>` | Add/override header (format: `key:value`) |
+| `--timeout <duration>`  | HTTP timeout (for example `30s`)        |
 | `-v, --verbose`         | Show detailed request/response info     |
 
 **Example:**
 
 ```bash
-# Run a GitHub push template
-better-webhook run github-push --url http://localhost:3000/api/webhooks/github
-
-# With signature generation
-better-webhook run github-push \
-  --url http://localhost:3000/api/webhooks/github \
-  --secret "your-webhook-secret"
+# Replay a captured webhook
+better-webhook replay abc12345 http://localhost:3000/api/webhooks/github
 ```
-
-<Callout type="info">
-  If no `--secret` is provided, the CLI will look for provider-specific
-  environment variables like `GITHUB_WEBHOOK_SECRET`,
-  `RAGIE_WEBHOOK_SECRET`, or `RECALL_WEBHOOK_SECRET`.
-</Callout>
 
 ---
 
@@ -253,8 +197,29 @@ better-webhook templates local
 better-webhook templates search github
 
 # Clear template cache
-better-webhook templates cache --clear
+better-webhook templates cache clear
 
 # Remove all downloaded templates
 better-webhook templates clean
+
+# Execute a downloaded template
+better-webhook templates run github-push http://localhost:3000/api/webhooks/github
 ```
+
+### templates run options
+
+```bash
+better-webhook templates run <template-id> [target-url] [options]
+```
+
+| Option                            | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| `--secret <secret>`               | Secret used for provider-specific signing placeholders |
+| `--allow-env-placeholders`        | Allow `$env:*` placeholders in template content        |
+| `-H, --header <header>`           | Add/override header (format: `key:value`)             |
+| `--timeout <duration>`            | HTTP timeout (for example `30s`)                       |
+| `-v, --verbose`                   | Show detailed request/response info                    |
+
+<Callout type="info">
+  The command path is `templates run` (not top-level `run`) in the Go CLI.
+</Callout>

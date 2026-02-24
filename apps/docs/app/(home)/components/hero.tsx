@@ -35,7 +35,9 @@ export function Hero() {
   }, []);
 
   const copyCommand = async () => {
-    await navigator.clipboard.writeText("npm install -g @better-webhook/cli");
+    await navigator.clipboard.writeText(
+      "brew install endalk200/tap/better-webhook",
+    );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -103,7 +105,7 @@ export function Hero() {
                 <code className="flex-1 px-4 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm">
                   <span className="text-[var(--lyra-accent)]">$</span>{" "}
                   <span className="text-[var(--lyra-text)]">
-                    npm install -g @better-webhook/cli
+                    brew install endalk200/tap/better-webhook
                   </span>
                 </code>
                 <button

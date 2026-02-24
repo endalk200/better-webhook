@@ -4,7 +4,6 @@ description: Install the Better Webhook CLI and start capturing, replaying, and 
 ---
 
 import { Steps, Step } from "fumadocs-ui/components/steps";
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
 # CLI Getting Started
@@ -13,17 +12,25 @@ The Better Webhook CLI is a local development tool for capturing, replaying, and
 
 ## Installation
 
-### Standalone Binary (Recommended)
-
-Download a standalone binary - no Node.js required.
-
-**macOS (Homebrew)**
+### Homebrew (Recommended)
 
 ```bash
 brew install endalk200/tap/better-webhook
 ```
 
-**Manual Download**
+### Go install
+
+```bash
+go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
+```
+
+To install a pinned release:
+
+```bash
+go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@vX.Y.Z
+```
+
+### Manual download
 
 Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
 
@@ -42,32 +49,6 @@ chmod +x better-webhook
 sudo mv better-webhook /usr/local/bin/
 ```
 
-### NPM (Alternative)
-
-<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
-  <Tab value="npm">
-  ```bash
-  npm install -g @better-webhook/cli
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash
-  pnpm add -g @better-webhook/cli
-  ```
-  </Tab>
-  <Tab value="yarn">
-  ```bash
-  yarn global add @better-webhook/cli
-  ```
-  </Tab>
-</Tabs>
-
-Or use with npx (no installation required):
-
-```bash
-npx @better-webhook/cli --help
-```
-
 ### Verify Installation
 
 ```bash
@@ -76,20 +57,17 @@ better-webhook --version
 
 ## Quick Start
 
-The fastest way to get started is with the dashboard command, which starts both the UI and a capture server:
+Use a terminal-only workflow to capture and replay real webhook traffic:
 
 <Steps>
   <Step>
-    ### Start the Dashboard
+    ### Start capture server
 
     ```bash
-    better-webhook dashboard
+    better-webhook capture --port 3001
     ```
 
-    This starts:
-    - **Dashboard UI** at `http://localhost:4000`
-    - **Capture Server** at `http://localhost:3001`
-    - **WebSocket** at `ws://localhost:4000/ws`
+    The CLI listens on `http://localhost:3001` and stores captures in `~/.better-webhook/captures`.
 
   </Step>
 
@@ -113,16 +91,18 @@ The fastest way to get started is with the dashboard command, which starts both 
   <Step>
     ### Trigger a Webhook
 
-    Perform an action that triggers a webhook (push code, create an issue, etc.). The webhook will be captured and appear in the dashboard.
+    Perform an action that triggers a webhook (push code, create an issue, etc.). The webhook is saved locally.
 
   </Step>
 
   <Step>
-    ### Replay to Your Local Server
+    ### Replay to your local server
 
-    From the dashboard, select a captured webhook and replay it to your local development server:
+    In a second terminal, list captures and replay one to your app:
 
-    ```
+    ```bash
+    better-webhook captures list
+    better-webhook captures replay <capture-id> \
     http://localhost:3000/api/webhooks/github
     ```
 
@@ -130,21 +110,6 @@ The fastest way to get started is with the dashboard command, which starts both 
 
   </Step>
 </Steps>
-
-## Alternative: CLI-Only Workflow
-
-If you prefer working entirely in the terminal:
-
-```bash
-# Start the capture server
-better-webhook capture --port 3001
-
-# In another terminal, list captured webhooks
-better-webhook captures list
-
-# Replay a captured webhook
-better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github
-```
 
 ## Using Templates
 
@@ -158,10 +123,15 @@ better-webhook templates list
 better-webhook templates download github-push
 
 # Run a template against your endpoint
-better-webhook run github-push --url http://localhost:3000/api/webhooks/github
+better-webhook templates run github-push http://localhost:3000/api/webhooks/github
 ```
 
 Templates include proper headers and can generate valid signatures when you provide a secret.
+
+<Callout type="info">
+  The legacy npm-distributed CLI is being retired. Use Homebrew, manual binaries,
+  or `go install` for the Go CLI.
+</Callout>
 
 ## Next Steps
 

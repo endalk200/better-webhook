@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { BookOpen, Github, Package } from "lucide-react";
+import { BookOpen, Github, Download } from "lucide-react";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -18,9 +18,9 @@ export function baseOptions(): BaseLayoutProps {
         icon: <BookOpen className="size-4" />,
       },
       {
-        text: "NPM",
-        url: "https://www.npmjs.com/package/@better-webhook/cli",
-        icon: <Package className="size-4" />,
+        text: "Releases",
+        url: "https://github.com/endalk200/better-webhook/releases",
+        icon: <Download className="size-4" />,
         external: true,
       },
       {

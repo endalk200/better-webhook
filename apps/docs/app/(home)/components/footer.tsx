@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Github, Package, BookOpen } from "lucide-react";
+import { Github, Download, BookOpen } from "lucide-react";
 
 const footerLinks = {
   cli: [
     { name: "CLI Overview", href: "/docs/cli" },
-    { name: "Capture", href: "/docs/cli/capture" },
-    { name: "Replay", href: "/docs/cli/replay" },
+    { name: "Command Reference", href: "/docs/cli/commands" },
     { name: "Templates", href: "/docs/cli/templates" },
-    { name: "Dashboard", href: "/docs/cli/dashboard" },
   ],
   sdk: [
     { name: "SDK Overview", href: "/docs/sdk" },
@@ -28,8 +26,8 @@ const footerLinks = {
       external: true,
     },
     {
-      name: "NPM",
-      href: "https://www.npmjs.com/package/@better-webhook/cli",
+      name: "Releases",
+      href: "https://github.com/endalk200/better-webhook/releases",
       external: true,
     },
     {
@@ -46,10 +44,6 @@ const footerLinks = {
 };
 
 const packages = [
-  {
-    name: "@better-webhook/cli",
-    href: "https://www.npmjs.com/package/@better-webhook/cli",
-  },
   {
     name: "@better-webhook/core",
     href: "https://www.npmjs.com/package/@better-webhook/core",
@@ -109,13 +103,13 @@ export function Footer() {
                 <Github className="w-4 h-4" />
               </a>
               <a
-                href="https://www.npmjs.com/package/@better-webhook/cli"
+                href="https://github.com/endalk200/better-webhook/releases"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 border border-[var(--lyra-border)] hover:border-[var(--lyra-primary)] transition-colors"
-                title="NPM"
+                title="Releases"
               >
-                <Package className="w-4 h-4" />
+                <Download className="w-4 h-4" />
               </a>
               <Link
                 href="/docs"
@@ -222,7 +216,7 @@ export function Footer() {
         {/* Packages */}
         <div className="border-t border-[var(--lyra-border)] pt-8 mb-8">
           <h4 className="font-mono font-semibold text-xs uppercase tracking-wider mb-4 text-[var(--lyra-text-muted)]">
-            NPM Packages
+            SDK Packages
           </h4>
           <div className="flex flex-wrap gap-2">
             {packages.map((pkg) => (
