@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/cli-darwin-arm64",
-  "version": "0.0.0-dev",
+  "version": "3.11.0",
   "description": "darwin arm64 native binary for the better-webhook CLI.",
   "os": [
     "darwin"

@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/cli-windows-x64",
-  "version": "0.0.0-dev",
+  "version": "3.11.0",
   "description": "windows x64 native binary for the better-webhook CLI.",
   "os": [
     "win32"

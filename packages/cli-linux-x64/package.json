@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/cli-linux-x64",
-  "version": "0.0.0-dev",
+  "version": "3.11.0",
   "description": "linux x64 native binary for the better-webhook CLI.",
   "os": [
     "linux"
