@@ -60,7 +60,7 @@ better-webhook capture [options]
 better-webhook capture --port 3001
 ```
 
-Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `replay`.
+Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `captures replay`.
 
 ---
 
@@ -158,12 +158,12 @@ better-webhook captures clean [options]
 
 ---
 
-## replay
+### captures replay
 
 Replay a captured webhook to a target URL.
 
 ```bash
-better-webhook replay [captureId] [targetUrl] [options]
+better-webhook captures replay [captureId] [targetUrl] [options]
 ```
 
 If `captureId` or `targetUrl` are not provided, you'll be prompted to select interactively.
@@ -180,13 +180,13 @@ If `captureId` or `targetUrl` are not provided, you'll be prompted to select int
 
 ```bash
 # Interactive mode
-better-webhook replay
+better-webhook captures replay
 
 # Direct mode
-better-webhook replay abc12345 http://localhost:3000/api/webhooks/github
+better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github
 
 # With options
-better-webhook replay abc12345 http://localhost:3000/api/webhooks/github \
+better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github \
   -H "X-Custom-Header:value" \
   --verbose
 ```
