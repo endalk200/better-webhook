@@ -29,7 +29,7 @@ const cliSteps = [
     step: 4,
     title: "Replay captured webhooks",
     command:
-      "better-webhook replay <capture-id> http://localhost:3000/api/webhooks/github",
+      "better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github",
     note: "Replay to your local development server",
   },
 ];

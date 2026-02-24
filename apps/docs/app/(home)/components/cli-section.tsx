@@ -48,7 +48,7 @@ const commands = [
   {
     prompt: "$ ",
     command:
-      "better-webhook replay abc12345 http://localhost:3000/api/webhooks/github",
+      "better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github",
     output: [
       "",
       "🔄 Replaying Webhook",
@@ -101,7 +101,7 @@ const cliFeatures = [
     icon: RotateCcw,
     title: "Replay",
     description: "Re-send captured webhooks to any endpoint with full headers",
-    command: "better-webhook replay <id> <url>",
+    command: "better-webhook captures replay <id> <url>",
   },
   {
     icon: FileCode,

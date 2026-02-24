@@ -132,10 +132,10 @@ Replay a captured webhook to your local development server:
 
 ```bash
 # Interactive mode (select capture and enter URL)
-better-webhook replay
+better-webhook captures replay
 
 # Direct replay
-better-webhook replay abc123 http://localhost:3000/api/webhooks/github
+better-webhook captures replay abc123 http://localhost:3000/api/webhooks/github
 ```
 
 ### 4. Use Templates
@@ -411,12 +411,12 @@ better-webhook run github-push \
 
 ---
 
-### `better-webhook replay`
+### `better-webhook captures replay`
 
 Replay a captured webhook to a target URL. Preserves original headers (except connection-related ones) and allows overrides.
 
 ```bash
-better-webhook replay [captureId] [targetUrl] [options]
+better-webhook captures replay [captureId] [targetUrl] [options]
 ```
 
 | Option                  | Description                                  |
@@ -434,10 +434,10 @@ better-webhook replay [captureId] [targetUrl] [options]
 
 ```bash
 # Interactive mode
-better-webhook replay
+better-webhook captures replay
 
 # Direct replay with options
-better-webhook replay abc123 http://localhost:3000/webhooks \
+better-webhook captures replay abc123 http://localhost:3000/webhooks \
   --method POST \
   --header "X-Debug:true" \
   --verbose
@@ -604,7 +604,7 @@ better-webhook capture --port 4000
 # (use ngrok for external providers: ngrok http 4000)
 
 # Terminal 3: Replay captured webhooks to your app
-better-webhook replay abc123 http://localhost:3000/api/webhooks
+better-webhook captures replay abc123 http://localhost:3000/api/webhooks
 ```
 
 ### Debugging Webhook Issues
@@ -617,7 +617,7 @@ better-webhook capture
 better-webhook captures show abc123 --body
 
 # Replay to your local server with verbose output
-better-webhook replay abc123 http://localhost:3000/webhooks --verbose
+better-webhook captures replay abc123 http://localhost:3000/webhooks --verbose
 ```
 
 ### Testing Signature Verification
@@ -707,7 +707,7 @@ better-webhook run nonexistent-template --url http://localhost:3000
 better-webhook capture --port 99999
 # Invalid port number
 
-better-webhook replay abc123 invalid-url
+better-webhook captures replay abc123 invalid-url
 # Please enter a valid URL
 ```
 

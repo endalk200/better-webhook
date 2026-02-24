@@ -36,7 +36,7 @@ better-webhook dashboard
 
 # Replay a captured webhook to your app
 # (Copy <capture-id> from dashboard history)
-better-webhook replay <capture-id> http://localhost:3000/api/webhooks/github
+better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
 ### Path 2: Type-safe webhook handlers with the SDK
