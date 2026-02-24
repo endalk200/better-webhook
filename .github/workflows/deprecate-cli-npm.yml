@@ -1,0 +1,31 @@
+name: Deprecate Legacy npm CLI
+
+on:
+  workflow_dispatch:
+    inputs:
+      range:
+        description: "npm semver range to deprecate (for example: * or <4.0.0)"
+        required: false
+        default: "*"
+        type: string
+      message:
+        description: "Deprecation message shown on npm"
+        required: false
+        default: "The Node CLI has been replaced by the Go CLI. Install via Homebrew (`brew install endalk200/tap/better-webhook`), GitHub Releases, or `go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest`."
+        type: string
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Deprecate npm CLI versions
+        run: npm deprecate "@better-webhook/cli@${{ inputs.range }}" "${{ inputs.message }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

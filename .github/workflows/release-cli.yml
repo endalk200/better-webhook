@@ -1,0 +1,88 @@
+name: Release CLI Binary
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-cli:
+    name: Build and publish CLI binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: apps/webhook-cli/go.mod
+          cache-dependency-path: apps/webhook-cli/go.sum
+
+      - name: Run CLI tests
+        run: go test ./apps/webhook-cli/...
+
+      - name: Build release binaries
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          LDFLAGS="-s -w -X github.com/endalk200/better-webhook/apps/webhook-cli/internal/version.Version=${VERSION}"
+
+          mkdir -p dist
+
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "${LDFLAGS}" -o dist/better-webhook-darwin-arm64 ./apps/webhook-cli/cmd/better-webhook
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o dist/better-webhook-darwin-x64 ./apps/webhook-cli/cmd/better-webhook
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "${LDFLAGS}" -o dist/better-webhook-linux-arm64 ./apps/webhook-cli/cmd/better-webhook
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o dist/better-webhook-linux-x64 ./apps/webhook-cli/cmd/better-webhook
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o dist/better-webhook-windows-x64.exe ./apps/webhook-cli/cmd/better-webhook
+
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            sha256sum better-webhook-darwin-arm64 better-webhook-darwin-x64 better-webhook-linux-arm64 better-webhook-linux-x64 better-webhook-windows-x64.exe > checksums.txt
+          )
+
+      - name: Create companion Go module tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          MODULE_TAG="apps/webhook-cli/${GITHUB_REF_NAME}"
+          if git rev-parse --verify "refs/tags/${MODULE_TAG}" >/dev/null 2>&1; then
+            echo "Module tag ${MODULE_TAG} already exists."
+            exit 0
+          fi
+
+          git tag "${MODULE_TAG}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${MODULE_TAG}"
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          if ! gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes "CLI binaries for ${TAG}"
+          fi
+
+          gh release upload "${TAG}" \
+            dist/better-webhook-darwin-arm64 \
+            dist/better-webhook-darwin-x64 \
+            dist/better-webhook-linux-arm64 \
+            dist/better-webhook-linux-x64 \
+            dist/better-webhook-windows-x64.exe \
+            dist/checksums.txt \
+            --clobber
