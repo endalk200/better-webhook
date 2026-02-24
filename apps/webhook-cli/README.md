@@ -10,6 +10,12 @@ The `better-webhook` CLI helps you capture, inspect, replay, and run webhook tem
 brew install endalk200/tap/better-webhook
 ```
 
+### npm (wrapper package)
+
+```bash
+npm install -g @better-webhook/cli
+```
+
 ### Go install
 
 ```bash
@@ -111,6 +117,6 @@ By default, CLI data is stored under `~/.better-webhook/`:
 
 ```bash
 # From repo root
-pnpm --filter @better-webhook/cli build
-pnpm --filter @better-webhook/cli test
+pnpm --filter @better-webhook/cli-go build
+pnpm --filter @better-webhook/cli-go test
 ```

@@ -1,0 +1,19 @@
+{
+  "name": "@better-webhook/cli-linux-arm64",
+  "version": "0.0.0-dev",
+  "description": "linux arm64 native binary for the better-webhook CLI.",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin/better-webhook",
+    "README.md"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

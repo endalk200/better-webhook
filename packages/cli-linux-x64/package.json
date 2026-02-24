@@ -1,0 +1,19 @@
+{
+  "name": "@better-webhook/cli-linux-x64",
+  "version": "0.0.0-dev",
+  "description": "linux x64 native binary for the better-webhook CLI.",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/better-webhook",
+    "README.md"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

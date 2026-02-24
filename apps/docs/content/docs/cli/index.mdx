@@ -18,6 +18,12 @@ The Better Webhook CLI is a local development tool for capturing, replaying, and
 brew install endalk200/tap/better-webhook
 ```
 
+### npm
+
+```bash
+npm install -g @better-webhook/cli
+```
+
 ### Go install
 
 ```bash
@@ -129,8 +135,8 @@ better-webhook templates run github-push http://localhost:3000/api/webhooks/gith
 Templates include proper headers and can generate valid signatures when you provide a secret.
 
 <Callout type="info">
-  The legacy npm-distributed CLI is being retired. Use Homebrew, manual binaries,
-  or `go install` for the Go CLI.
+  You can install the CLI via Homebrew, npm (`@better-webhook/cli`), manual
+  binaries, or `go install`.
 </Callout>
 
 ## Next Steps

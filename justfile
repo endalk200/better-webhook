@@ -41,14 +41,14 @@ build-package package:
 # Runs format:check for the go code using go tooling and format:check at the root level using prettier
 format-check:
     # Run format:check for the go code using go tooling
-    pnpm --filter @better-webhook/cli run format:check
+    pnpm --filter @better-webhook/cli-go run format:check
     # Run format:check at the root level using prettier
     pnpm run format:check
 
 # Runs format:write for the go code using go tooling and format:write at the root level using prettier
 format-write:
     # Run format:write for the go code using go tooling
-    pnpm --filter @better-webhook/cli run format:write
+    pnpm --filter @better-webhook/cli-go run format:write
     # Run format:write at the root level using prettier
     pnpm run format:write
 

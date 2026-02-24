@@ -1,0 +1,51 @@
+version: 2
+
+project_name: better-webhook
+
+builds:
+  - id: better-webhook
+    main: ./apps/webhook-cli/cmd/better-webhook
+    binary: better-webhook
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    ldflags:
+      - -s -w -X github.com/endalk200/better-webhook/apps/webhook-cli/internal/version.Version={{ .Version }}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: binaries
+    ids:
+      - better-webhook
+    formats:
+      - binary
+    name_template: "{{ .Binary }}-{{ .Os }}-{{ if eq .Arch \"amd64\" }}x64{{ else }}{{ .Arch }}{{ end }}{{ .Ext }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  github:
+    owner: endalk200
+    name: better-webhook
+  prerelease: auto
+  replace_existing_artifacts: true
+  mode: replace

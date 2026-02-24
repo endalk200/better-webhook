@@ -1,0 +1,42 @@
+{
+  "name": "@better-webhook/cli",
+  "version": "0.0.0-dev",
+  "description": "Native binary wrapper for the better-webhook CLI.",
+  "bin": {
+    "better-webhook": "bin/better-webhook.cjs"
+  },
+  "files": [
+    "bin/better-webhook.cjs",
+    "README.md"
+  ],
+  "keywords": [
+    "webhook",
+    "cli",
+    "developer-tools",
+    "capture",
+    "replay"
+  ],
+  "license": "MIT",
+  "author": "Endalk <endalk200>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@better-webhook/cli-darwin-arm64": "0.0.0-dev",
+    "@better-webhook/cli-darwin-x64": "0.0.0-dev",
+    "@better-webhook/cli-linux-arm64": "0.0.0-dev",
+    "@better-webhook/cli-linux-x64": "0.0.0-dev",
+    "@better-webhook/cli-windows-x64": "0.0.0-dev"
+  }
+}

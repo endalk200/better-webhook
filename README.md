@@ -30,6 +30,9 @@ Most webhook workflows still require tunnel juggling, repeated provider triggers
 # Install once (Homebrew)
 brew install endalk200/tap/better-webhook
 
+# Alternative install (npm wrapper package)
+npm install -g @better-webhook/cli
+
 # Alternative install (Go)
 go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
 
@@ -41,7 +44,7 @@ better-webhook capture --port 3001
 better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
-The legacy npm-distributed CLI is deprecated. Use Homebrew, GitHub Releases, or `go install`.
+The CLI is available through Homebrew, npm (`@better-webhook/cli`), GitHub Releases binaries, and `go install`.
 
 ### Path 2: Type-safe webhook handlers with the SDK
 
@@ -66,6 +69,7 @@ export const POST = toNextJS(webhook);
 - **Docs source**: [`apps/docs`](apps/docs)
 - **CLI docs**: [`apps/webhook-cli/README.md`](apps/webhook-cli/README.md)
 - **SDK docs**: [`packages/core/README.md`](packages/core/README.md)
+- **Maintainer release runbook**: [`docs/cli-release-runbook.md`](docs/cli-release-runbook.md)
 
 For deep details, use the docs source and package-level READMEs. The root README stays intentionally lightweight.
 
