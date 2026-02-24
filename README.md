@@ -1,7 +1,6 @@
 # better-webhook
 
 [![CI](https://github.com/endalk200/better-webhook/actions/workflows/ci.yml/badge.svg)](https://github.com/endalk200/better-webhook/actions/workflows/ci.yml)
-[![npm CLI](https://img.shields.io/npm/v/@better-webhook/cli)](https://www.npmjs.com/package/@better-webhook/cli)
 [![npm Core](https://img.shields.io/npm/v/@better-webhook/core)](https://www.npmjs.com/package/@better-webhook/core)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -28,16 +27,21 @@ Most webhook workflows still require tunnel juggling, repeated provider triggers
 ### Path 1: Local webhook testing with the CLI
 
 ```bash
-# Install once
-npm install -g @better-webhook/cli
+# Install once (Homebrew)
+brew install endalk200/tap/better-webhook
 
-# Start dashboard + local capture API
-better-webhook dashboard
+# Alternative install (Go)
+go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
+
+# Start local capture API
+better-webhook capture --port 3001
 
 # Replay a captured webhook to your app
-# (Copy <capture-id> from dashboard history)
+# (Use `better-webhook captures list` to find a capture ID)
 better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
+
+The legacy npm-distributed CLI is deprecated. Use Homebrew, GitHub Releases, or `go install`.
 
 ### Path 2: Type-safe webhook handlers with the SDK
 
@@ -138,7 +142,7 @@ Code scanning signals in GitHub:
 
 ### Package directory
 
-- CLI: [`@better-webhook/cli`](apps/webhook-cli/README.md)
+- CLI: [`better-webhook` Go CLI](apps/webhook-cli/README.md)
 - Core SDK: [`@better-webhook/core`](packages/core/README.md)
 - Providers: [`@better-webhook/github`](packages/github/README.md), [`@better-webhook/ragie`](packages/ragie/README.md), [`@better-webhook/recall`](packages/recall/README.md)
 - Adapters: [`@better-webhook/nextjs`](packages/nextjs/README.md), [`@better-webhook/express`](packages/express/README.md), [`@better-webhook/nestjs`](packages/nestjs/README.md), [`@better-webhook/hono`](packages/hono/README.md), [`@better-webhook/gcp-functions`](packages/gcp-functions/README.md)
@@ -146,8 +150,7 @@ Code scanning signals in GitHub:
 ### Monorepo layout
 
 - [`apps/docs`](apps/docs) - docs site source (`better-webhook.dev`)
-- [`apps/webhook-cli`](apps/webhook-cli) - CLI package and command implementation
-- [`apps/dashboard`](apps/dashboard) - dashboard application used by CLI flows
+- [`apps/webhook-cli`](apps/webhook-cli) - Go CLI command implementation
 - [`apps/examples`](apps/examples) - runnable framework examples
 - [`packages`](packages) - SDK providers, adapters, and shared tooling
 

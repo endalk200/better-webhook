@@ -35,7 +35,6 @@ Fixes #
 - [ ] `@better-webhook/nestjs`
 - [ ] `@better-webhook/gcp-functions`
 - [ ] `@better-webhook/cli`
-- [ ] Dashboard
 - [ ] Documentation
 - [ ] Examples
 - [ ] Tooling/Infrastructure

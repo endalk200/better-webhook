@@ -11,13 +11,13 @@ const cliSteps = [
   {
     step: 1,
     title: "Install the CLI",
-    command: "npm install -g @better-webhook/cli",
+    command: "brew install endalk200/tap/better-webhook",
   },
   {
     step: 2,
-    title: "Start the dashboard",
-    command: "better-webhook dashboard",
-    note: "Opens a local UI at http://localhost:4000 with capture server at port 3001",
+    title: "Start capture server",
+    command: "better-webhook capture --port 3001",
+    note: "Stores incoming webhooks locally under ~/.better-webhook/captures",
   },
   {
     step: 3,
