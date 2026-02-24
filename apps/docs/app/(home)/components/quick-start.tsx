@@ -5,25 +5,28 @@ import { Copy, Check, ArrowRight, Terminal, Code2 } from "lucide-react";
 import Link from "next/link";
 
 type Tab = "cli" | "sdk";
-type Framework = "nextjs" | "hono" | "express" | "nestjs";
+type Framework = "nextjs" | "hono" | "express" | "nestjs" | "gcp-functions";
 
 const cliSteps = [
   {
     step: 1,
     title: "Install the CLI",
     command: "brew install --cask endalk200/tap/better-webhook",
+    isCommand: true,
   },
   {
     step: 2,
     title: "Start capture server",
     command: "better-webhook capture --port 3001",
     note: "Stores incoming webhooks locally under ~/.better-webhook/captures",
+    isCommand: true,
   },
   {
     step: 3,
     title: "Point webhooks to capture server",
-    command: "http://localhost:3001/webhooks/github",
+    command: "http://localhost:3001/webhooks/your-provider",
     note: "Use this URL in your webhook provider settings (e.g., GitHub webhook URL)",
+    isCommand: false,
   },
   {
     step: 4,
@@ -31,6 +34,7 @@ const cliSteps = [
     command:
       "better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github",
     note: "Replay to your local development server",
+    isCommand: true,
   },
 ];
 
@@ -121,9 +125,27 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: Request, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }`,
+  },
+  "gcp-functions": {
+    install: "npm install @better-webhook/ragie @better-webhook/gcp-functions",
+    filename: "index.ts",
+    code: `import { http } from "@google-cloud/functions-framework";
+import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
+import { toGCPFunction } from "@better-webhook/gcp-functions";
+
+const webhook = ragie()
+  .event(document_status_updated, async (payload) => {
+    console.log(\`Document \${payload.document_id} status: \${payload.status}\`);
+  });
+
+http("webhookHandler", toGCPFunction(webhook));`,
   },
 };
 
@@ -132,6 +154,7 @@ const frameworks: { id: Framework; name: string }[] = [
   { id: "hono", name: "Hono" },
   { id: "express", name: "Express" },
   { id: "nestjs", name: "NestJS" },
+  { id: "gcp-functions", name: "GCP Functions" },
 ];
 
 export function QuickStart() {
@@ -146,14 +169,18 @@ export function QuickStart() {
   };
 
   const current = sdkCode[activeFramework];
+  const secretEnvVar =
+    activeFramework === "gcp-functions"
+      ? "RAGIE_WEBHOOK_SECRET"
+      : "GITHUB_WEBHOOK_SECRET";
 
   return (
-    <section className="lyra-section lyra-section-dark">
+    <section id="quick-start" className="lyra-section lyra-section-dark">
       <div className="container mx-auto max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            Get started in <span className="gradient-text">minutes</span>
+            Get started in <span className="gradient-text">60 seconds</span>
           </h2>
           <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
             Choose how you want to work with webhooks - capture and replay with
@@ -195,8 +222,14 @@ export function QuickStart() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
-                      <span className="text-[var(--lyra-accent)]">$</span>{" "}
-                      <span className="text-white">{item.command}</span>
+                      {item.isCommand ? (
+                        <>
+                          <span className="text-[var(--lyra-accent)]">$</span>{" "}
+                          <span className="text-white">{item.command}</span>
+                        </>
+                      ) : (
+                        <span className="text-white">{item.command}</span>
+                      )}
                     </code>
                     <button
                       onClick={() => copyToClipboard(item.command, index)}
@@ -331,7 +364,7 @@ export function QuickStart() {
                   <span className="text-[var(--lyra-text-muted)]"># .env</span>
                   <br />
                   <span className="text-white">
-                    GITHUB_WEBHOOK_SECRET=your_webhook_secret
+                    {secretEnvVar}=your_webhook_secret
                   </span>
                 </code>
                 <p className="mt-3 text-sm text-[var(--lyra-text-secondary)]">

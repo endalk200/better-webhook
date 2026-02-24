@@ -110,7 +110,10 @@ export class WebhooksController {
   @Post("github")
   async handleGitHub(@Req() req: Request, @Res() res: Response) {
     const result = await toNestJS(this.webhook)(req);
-    return res.status(result.statusCode).json(result.body);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
   }
 }`,
   },

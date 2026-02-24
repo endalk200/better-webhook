@@ -1,0 +1,70 @@
+---
+title: GCP Functions Adapter
+description: Configure Better Webhook with Google Cloud Functions (Gen 1 and Gen 2).
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# GCP Functions Adapter
+
+## Install
+
+```bash
+npm install @better-webhook/gcp-functions
+```
+
+## Basic usage (Gen 2)
+
+```ts
+import { http } from "@google-cloud/functions-framework";
+import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
+import { toGCPFunction } from "@better-webhook/gcp-functions";
+
+const webhook = ragie().event(document_status_updated, async (payload) => {
+  console.log(`Document ${payload.document_id} is now ${payload.status}`);
+});
+
+http("webhookHandler", toGCPFunction(webhook));
+```
+
+## Basic usage (Gen 1)
+
+```ts
+import { ragie } from "@better-webhook/ragie";
+import { document_status_updated } from "@better-webhook/ragie/events";
+import { toGCPFunction } from "@better-webhook/gcp-functions";
+
+const webhook = ragie().event(document_status_updated, async (payload) => {
+  console.log(`Document ${payload.document_id} is now ${payload.status}`);
+});
+
+export const webhookHandler = toGCPFunction(webhook);
+```
+
+## Raw body behavior
+
+Functions Framework usually provides `req.rawBody` automatically. The adapter checks, in order:
+
+1. `req.rawBody`
+2. Buffer body
+3. String body
+4. `JSON.stringify(req.body)` fallback
+
+<Callout type="warn">
+  If your setup does not preserve raw body, signature verification can fail.
+</Callout>
+
+## Deployment example
+
+```bash
+gcloud functions deploy webhookHandler \
+  --gen2 \
+  --runtime nodejs20 \
+  --trigger-http \
+  --allow-unauthenticated \
+  --entry-point webhookHandler \
+  --set-env-vars RAGIE_WEBHOOK_SECRET=your-secret
+```
+
+Canonical reference: [Adapters](/docs/sdk/adapters#gcp-cloud-functions)

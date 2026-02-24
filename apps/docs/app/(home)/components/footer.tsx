@@ -18,6 +18,7 @@ const footerLinks = {
     { name: "Hono", href: "/docs/sdk/adapters#hono" },
     { name: "Express", href: "/docs/sdk/adapters#express" },
     { name: "NestJS", href: "/docs/sdk/adapters#nestjs" },
+    { name: "GCP Functions", href: "/docs/sdk/adapters#gcp-cloud-functions" },
   ],
   resources: [
     {
@@ -32,7 +33,7 @@ const footerLinks = {
     },
     {
       name: "Changelog",
-      href: "https://github.com/endalk200/better-webhook/releases",
+      href: "https://github.com/endalk200/better-webhook/commits/main",
       external: true,
     },
     {
@@ -76,6 +77,10 @@ const packages = [
     name: "@better-webhook/hono",
     href: "https://www.npmjs.com/package/@better-webhook/hono",
   },
+  {
+    name: "@better-webhook/gcp-functions",
+    href: "https://www.npmjs.com/package/@better-webhook/gcp-functions",
+  },
 ];
 
 export function Footer() {
@@ -90,7 +95,8 @@ export function Footer() {
               <span>better-webhook</span>
             </div>
             <p className="text-sm text-[var(--lyra-text-secondary)] mb-4">
-              Local-first webhook toolkit. Type-safe, secure, and delightful.
+              Local-first webhook toolkit for capture, replay, and type-safe
+              handlers.
             </p>
             <div className="flex gap-2">
               <a
@@ -247,7 +253,7 @@ export function Footer() {
             </a>
           </p>
           <p className="text-xs text-[var(--lyra-text-muted)] font-mono">
-            Built for developers who love webhooks
+            Built for developers shipping webhook integrations
           </p>
         </div>
       </div>

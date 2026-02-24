@@ -1,4 +1,13 @@
 {
   "title": "SDK",
-  "pages": ["index", "providers", "adapters"]
+  "pages": [
+    "index",
+    "providers",
+    "custom-providers",
+    "replay-idempotency",
+    "adapters",
+    "nestjs-adapter",
+    "gcp-functions-adapter",
+    "adapter-options"
+  ]
 }

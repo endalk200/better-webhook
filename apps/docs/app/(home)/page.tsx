@@ -15,6 +15,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <Hero />
 
+      {/* Quick Start Guide */}
+      <QuickStart />
+
       {/* Features Grid */}
       <Features />
 
@@ -29,9 +32,6 @@ export default function HomePage() {
 
       {/* Provider Showcase */}
       <ProviderShowcase />
-
-      {/* Quick Start Guide */}
-      <QuickStart />
 
       {/* Footer */}
       <Footer />

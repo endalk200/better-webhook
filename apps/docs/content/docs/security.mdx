@@ -1,0 +1,75 @@
+---
+title: Security
+description: Security best practices for webhook verification, secret handling, and replay protection.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Security
+
+## Verify every webhook request
+
+Use provider signature verification for all production endpoints.
+
+Better Webhook verifies signatures automatically when secrets are configured.
+
+Secret resolution order:
+
+1. Adapter options
+2. Provider options
+3. Provider environment variables
+
+Examples:
+
+- `GITHUB_WEBHOOK_SECRET`
+- `RAGIE_WEBHOOK_SECRET`
+- `RECALL_WEBHOOK_SECRET`
+
+## Preserve raw request bodies
+
+Signature verification depends on exact raw bytes. If middleware mutates the body before verification, checks may fail.
+
+- Express: use `express.raw({ type: "application/json" })` for webhook routes.
+- NestJS: ensure raw request body handling is configured before adapter invocation.
+- GCP Cloud Functions: adapter reads raw body from platform request data.
+
+See [Adapters](/docs/sdk/adapters) for framework details.
+
+## Protect secrets and rotate when needed
+
+- Store secrets in environment variables or your secret manager.
+- Never commit secrets to git.
+- Rotate secrets if leaked or if providers indicate suspicious activity.
+- Keep separate secrets for dev/staging/production.
+
+## Enable replay protection for idempotency-sensitive handlers
+
+Use replay protection when duplicate delivery can cause side effects:
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { github } from "@better-webhook/github";
+
+const replayStore = createInMemoryReplayStore();
+const webhook = github().withReplayProtection({ store: replayStore });
+```
+
+Choose a durable store for production deployments that run across multiple instances.
+
+## Handle verification failures explicitly
+
+Use `.onVerificationFailed()` and `.onError()` to log and monitor security-relevant failures.
+
+```ts
+webhook
+  .onVerificationFailed((reason) => {
+    console.warn("Verification failed:", reason);
+  })
+  .onError((error, context) => {
+    console.error(`Webhook error in ${context.eventType}`, error);
+  });
+```
+
+<Callout type="warn">
+  Disabling signature verification in production is unsafe and not recommended.
+</Callout>

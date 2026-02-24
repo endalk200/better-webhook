@@ -8,7 +8,8 @@
     "start": "next start",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
-    "lint": "eslint ."
+    "quality:check": "node ./scripts/docs-quality-check.mjs",
+    "lint": "eslint . && pnpm run quality:check"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",

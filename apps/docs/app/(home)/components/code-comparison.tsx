@@ -62,7 +62,10 @@ const comparisonPoints = [
   { before: "No TypeScript support", after: "Full type inference with Zod" },
   { before: "Error-prone payload parsing", after: "Schema-validated payloads" },
   { before: "Boilerplate error handling", after: "Built-in error hooks" },
-  { before: "30+ lines of code", after: "~15 lines of code" },
+  {
+    before: "Manual verification flow setup",
+    after: "Less boilerplate with adapters",
+  },
 ];
 
 export function CodeComparison() {
@@ -77,8 +80,8 @@ export function CodeComparison() {
             See the <span className="gradient-text">difference</span>
           </h2>
           <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
-            Compare traditional webhook handling with better-webhook. Less code,
-            more safety, zero headaches.
+            Compare traditional webhook handling with better-webhook. Less
+            boilerplate, more safety.
           </p>
         </div>
 
@@ -179,10 +182,10 @@ export function CodeComparison() {
             <div className="mt-6 p-4 bg-[var(--lyra-surface)] border border-[var(--lyra-accent)]/30">
               <div className="text-center">
                 <div className="text-3xl font-bold font-mono text-[var(--lyra-accent)]">
-                  50%
+                  ~20%
                 </div>
                 <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
-                  Less code
+                  Less boilerplate
                 </div>
               </div>
             </div>

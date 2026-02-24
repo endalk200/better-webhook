@@ -201,34 +201,3 @@ better-webhook templates run github-push \
 ```
 
 Templates give you repeatable, consistent webhook payloads for testing without needing to trigger real events.
-
-## Saving Captures as Templates
-
-You can save any captured webhook as a reusable template. This is useful when you want to preserve a real webhook payload for testing.
-
-### From CLI
-
-```bash
-# Interactive (prompts for template ID)
-better-webhook captures save-as-template abc123
-
-# With explicit options
-better-webhook captures save-as-template abc123 \
-  --id github-push-custom \
-  --name "GitHub Push" \
-  --event push
-```
-
-Options:
-
-- `--id <id>` — Template ID (auto-generated if not provided)
-- `--name <name>` — Display name
-- `--event <event>` — Event type (auto-detected from headers/body if not provided)
-- `--description <text>` — Description
-- `--overwrite` — Replace existing template with same ID
-
-The saved template will appear in your local templates and can be run with:
-
-```bash
-better-webhook templates run github-push-custom http://localhost:3000/api/webhooks
-```

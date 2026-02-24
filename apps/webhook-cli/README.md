@@ -60,7 +60,7 @@ better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/g
 Start a webhook capture server.
 
 ```bash
-better-webhook capture [--host 0.0.0.0] [--port 3001] [--verbose]
+better-webhook capture [--host 127.0.0.1] [--port 3001] [--verbose]
 ```
 
 ### `captures`
@@ -73,15 +73,7 @@ better-webhook captures delete <capture-id> [--force]
 better-webhook captures replay <capture-id> [target-url]
 ```
 
-`captures replay` supports `--method`, `--header`, `--timeout`, and `--verbose`.
-
-### `replay`
-
-Shortcut for replaying captures:
-
-```bash
-better-webhook replay <capture-id> [target-url]
-```
+`captures replay` supports `--base-url`, `--method`, `--header`, `--timeout`, and `--verbose`.
 
 ### `templates`
 
@@ -110,7 +102,11 @@ By default, CLI data is stored under `~/.better-webhook/`:
 ## Development
 
 ```bash
-# From repo root
-pnpm --filter @better-webhook/cli-go build
-pnpm --filter @better-webhook/cli-go test
+# Preferred workflow from repo root (devbox + just)
+devbox run -- just build-package @better-webhook/cli-go
+devbox run -- just test-package @better-webhook/cli-go
+
+# Alternative direct commands
+pnpm --filter @better-webhook/cli-go run build
+pnpm --filter @better-webhook/cli-go run test
 ```

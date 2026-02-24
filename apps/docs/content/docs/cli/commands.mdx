@@ -17,11 +17,12 @@ better-webhook capture [options]
 
 **Options:**
 
-| Option              | Default   | Description       |
-| ------------------- | --------- | ----------------- |
-| `-p, --port <port>` | `3001`    | Port to listen on |
-| `-h, --host <host>` | `0.0.0.0` | Host to bind to   |
-| `-v, --verbose`     | `false`   | Show verbose logs |
+| Option                | Default       | Description                        |
+| --------------------- | ------------- | ---------------------------------- |
+| `--host <host>`       | `127.0.0.1`   | Host to bind the capture server    |
+| `-p, --port <port>`   | `3001`        | Port to listen on                  |
+| `-v, --verbose`       | `false`       | Enable verbose capture logging     |
+| `--captures-dir <dir>`| config/default| Directory where captures are stored|
 
 **Example:**
 
@@ -29,7 +30,7 @@ better-webhook capture [options]
 better-webhook capture --port 3001
 ```
 
-Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `replay` / `captures replay`.
+Captured webhooks are stored locally and can be viewed with `captures list` or replayed with `captures replay`.
 
 ---
 
@@ -47,10 +48,11 @@ better-webhook captures list [options]
 
 **Options:**
 
-| Option                      | Default | Description              |
-| --------------------------- | ------- | ------------------------ |
-| `-l, --limit <limit>`       | `20`    | Maximum captures to show |
-| `-p, --provider <provider>` | —       | Filter by provider       |
+| Option                  | Default | Description                        |
+| ----------------------- | ------- | ---------------------------------- |
+| `--limit <limit>`       | `20`    | Maximum captures to show           |
+| `--provider <provider>` | —       | Filter by provider                 |
+| `--captures-dir <dir>`  | —       | Directory where captures are stored|
 
 **Example:**
 
@@ -60,41 +62,6 @@ better-webhook captures list
 
 # Filter by provider
 better-webhook captures list --provider github
-```
-
-### captures show
-
-Show detailed information about a capture.
-
-```bash
-better-webhook captures show <captureId> [options]
-```
-
-**Options:**
-
-| Option       | Description            |
-| ------------ | ---------------------- |
-| `-b, --body` | Show full body content |
-
-**Example:**
-
-```bash
-better-webhook captures show abc12345 --body
-```
-
-### captures search
-
-Search captures by path, method, or provider.
-
-```bash
-better-webhook captures search <query>
-```
-
-**Example:**
-
-```bash
-better-webhook captures search github
-better-webhook captures search /webhooks
 ```
 
 ### captures delete
@@ -118,58 +85,35 @@ better-webhook captures delete <captureId> [options]
 Replay a captured webhook to a target URL.
 
 ```bash
-better-webhook captures replay [captureId] [targetUrl] [options]
+better-webhook captures replay <capture-id> [target-url] [options]
 ```
 
-If `captureId` or `targetUrl` are not provided, you'll be prompted to select interactively.
+`capture-id` is required. If `target-url` is omitted, the CLI uses `--base-url` and the captured request path.
 
 **Options:**
 
-| Option                  | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `-m, --method <method>` | Override HTTP method                      |
-| `-H, --header <header>` | Add/override header (format: `key:value`) |
-| `-v, --verbose`         | Show detailed request/response info       |
+| Option                    | Description                                 |
+| ------------------------- | ------------------------------------------- |
+| `--base-url <url>`        | Base URL used when `target-url` is omitted  |
+| `--method <method>`       | Override HTTP method                        |
+| `-H, --header <header>`   | Add/override header (format: `key:value`)   |
+| `--timeout <duration>`    | HTTP timeout (for example `30s`)            |
+| `-v, --verbose`           | Show detailed request/response info         |
+| `--captures-dir <dir>`    | Directory where captures are stored         |
 
 **Example:**
 
 ```bash
-# Interactive mode
-better-webhook captures replay
-
 # Direct mode
 better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github
+
+# Build target from captured path + base URL
+better-webhook captures replay abc12345 --base-url http://localhost:3000
 
 # With options
 better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github \
   -H "X-Custom-Header:value" \
   --verbose
-```
-
----
-
-## replay
-
-Replay a captured webhook to a target URL.
-
-```bash
-better-webhook replay <capture-id> [target-url] [options]
-```
-
-**Options:**
-
-| Option                  | Description                             |
-| ----------------------- | --------------------------------------- |
-| `--method <method>`     | Override HTTP method                    |
-| `-H, --header <header>` | Add/override header (format: `key:value`) |
-| `--timeout <duration>`  | HTTP timeout (for example `30s`)        |
-| `-v, --verbose`         | Show detailed request/response info     |
-
-**Example:**
-
-```bash
-# Replay a captured webhook
-better-webhook replay abc12345 http://localhost:3000/api/webhooks/github
 ```
 
 ---

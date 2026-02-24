@@ -1,0 +1,106 @@
+---
+title: Replay and Idempotency
+description: Prevent duplicate webhook processing with replay protection.
+---
+
+# Replay and Idempotency
+
+Enable replay protection when duplicate webhook deliveries could create unwanted side effects.
+
+Core replay protection uses provider-specific replay keys:
+
+- GitHub: `x-github-delivery`
+- Ragie: `body.nonce` (exposed as `payload.nonce`)
+- Recall.ai: `webhook-id` or `svix-id`
+
+When replay protection is enabled and a duplicate is detected, the default response is `409`.
+
+```ts
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+
+const webhook = github()
+  .withReplayProtection({
+    store: createInMemoryReplayStore(),
+  })
+  .event(push, async (payload) => {
+    await processPush(payload);
+  });
+```
+
+## Custom storage (Redis-style example)
+
+You can provide your own durable replay store by implementing the `ReplayStore` contract.
+This is recommended for multi-instance deployments where in-memory storage is insufficient.
+
+```ts
+import type { ReplayReserveResult, ReplayStore } from "@better-webhook/core";
+
+interface RedisLikeClient {
+  set(
+    key: string,
+    value: string,
+    mode: "EX",
+    ttlSeconds: number,
+    condition: "NX",
+  ): Promise<"OK" | null>;
+  expire(key: string, ttlSeconds: number): Promise<number>;
+  del(key: string): Promise<number>;
+}
+
+class RedisReplayStore implements ReplayStore {
+  constructor(private readonly redis: RedisLikeClient) {}
+
+  async reserve(
+    key: string,
+    inFlightTtlSeconds: number,
+  ): Promise<ReplayReserveResult> {
+    const result = await this.redis.set(
+      `replay:${key}`,
+      "in-flight",
+      "EX",
+      inFlightTtlSeconds,
+      "NX",
+    );
+    return result === "OK" ? "reserved" : "duplicate";
+  }
+
+  async commit(key: string, ttlSeconds: number): Promise<void> {
+    await this.redis.expire(`replay:${key}`, ttlSeconds);
+  }
+
+  async release(key: string): Promise<void> {
+    await this.redis.del(`replay:${key}`);
+  }
+}
+```
+
+Use your custom store with replay protection:
+
+```ts
+const webhook = github()
+  .withReplayProtection({
+    store: new RedisReplayStore(redisClient),
+    policy: {
+      ttlSeconds: 24 * 60 * 60,
+      inFlightTtlSeconds: 60,
+      key: (context) => {
+        const base = context.replayKey ?? context.deliveryId;
+        return base ? `${context.provider}:${base}` : undefined;
+      },
+      onDuplicate: "conflict",
+    },
+  })
+  .event(push, async (payload) => {
+    await processPush(payload);
+  });
+```
+
+## Production guidance
+
+- Use a shared durable store for multi-instance deployments.
+- Keep replay windows aligned with provider retry behavior.
+- Monitor duplicate volume to spot retries and abuse patterns.
+
+Canonical reference: [Providers](/docs/sdk/providers#replay-and-idempotency)

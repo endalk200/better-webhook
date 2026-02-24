@@ -1,0 +1,67 @@
+---
+title: Contributing
+description: Local development workflow, standards, and release contribution guidelines.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Contributing
+
+## Prerequisites
+
+- Node.js `>=18`
+- `pnpm` (workspace package manager)
+- `devbox` and `just` (primary task runner workflow)
+- Go toolchain (for CLI-focused changes)
+
+## Project workflow
+
+This repository uses `devbox` + `just` as the standard workflow interface.
+
+Install dependencies:
+
+```bash
+devbox run -- just ci-install
+```
+
+Run standard checks from repo root:
+
+```bash
+devbox run -- just format-check
+devbox run -- just lint
+devbox run -- just test
+devbox run -- just build
+```
+
+Package-scoped checks:
+
+```bash
+devbox run -- just lint-package <package>
+devbox run -- just test-package <package>
+devbox run -- just build-package <package>
+```
+
+<Callout type="info">
+  Prefer `just` tasks for repository workflows to keep local and CI behavior aligned.
+</Callout>
+
+## Docs contribution guidelines
+
+- Keep command examples copy-pasteable and verified against source.
+- Keep internal links under `/docs/*` valid.
+- Prefer concise, task-oriented sections over long marketing copy in reference docs.
+- When changing CLI commands or flags, update both CLI docs and docs-site landing examples.
+
+## Pull request checklist
+
+- Include tests or rationale when tests are not needed.
+- Run lint/test/build locally before opening PR.
+- Update docs for behavior changes.
+- Keep changes scoped and include migration notes when needed.
+
+## Release contribution notes
+
+- SDK package releases are managed via Changesets.
+- CLI releases are tag-based (`v*`) and built with GoReleaser.
+
+See [Release Policy](/docs/release-policy) for release workflow details.

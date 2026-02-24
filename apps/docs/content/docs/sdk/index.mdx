@@ -185,7 +185,10 @@ Install a provider and an adapter for your framework:
       @Post("github")
       async handleGitHub(@Req() req: Request, @Res() res: Response) {
         const result = await toNestJS(this.webhook)(req);
+      if (result.body) {
         return res.status(result.statusCode).json(result.body);
+      }
+      return res.status(result.statusCode).end();
       }
     }
     ```
@@ -454,4 +457,9 @@ export const POST = toNextJS(webhook, {
 ## Next Steps
 
 - [Providers](/docs/sdk/providers) — GitHub, Ragie, and Recall.ai provider documentation with all supported events
+- [Custom Providers](/docs/sdk/custom-providers) — Build provider integrations for any webhook source
+- [Replay and Idempotency](/docs/sdk/replay-idempotency) — Prevent duplicate processing with replay protection
 - [Adapters](/docs/sdk/adapters) — Framework-specific setup and configuration
+- [NestJS Adapter](/docs/sdk/nestjs-adapter) — Raw body and response handling for NestJS
+- [GCP Functions Adapter](/docs/sdk/gcp-functions-adapter) — Cloud Functions setup for 1st and 2nd gen
+- [Adapter Options](/docs/sdk/adapter-options) — Shared options for secrets, limits, and observability

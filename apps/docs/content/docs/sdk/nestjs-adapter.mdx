@@ -1,0 +1,69 @@
+---
+title: NestJS Adapter
+description: Configure and use the Better Webhook NestJS adapter safely.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# NestJS Adapter
+
+## Install
+
+```bash
+npm install @better-webhook/nestjs
+```
+
+## Basic usage
+
+```ts
+import { Controller, Post, Req, Res } from "@nestjs/common";
+import { Request, Response } from "express";
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { toNestJS } from "@better-webhook/nestjs";
+
+@Controller("webhooks")
+export class WebhooksController {
+  private webhook = github().event(push, async (payload) => {
+    console.log(`Push to ${payload.repository.name}`);
+  });
+
+  @Post("github")
+  async handleGitHub(@Req() req: Request, @Res() res: Response) {
+    const result = await toNestJS(this.webhook)(req);
+    if (result.body) {
+      return res.status(result.statusCode).json(result.body);
+    }
+    return res.status(result.statusCode).end();
+  }
+}
+```
+
+## Preserve raw body
+
+Enable raw body in `main.ts` for signature verification:
+
+```ts
+const app = await NestFactory.create(AppModule, {
+  rawBody: true,
+});
+```
+
+<Callout type="warn">
+  Without `rawBody: true`, verification can fail because re-serialized JSON may differ from the original signed payload.
+</Callout>
+
+## Result shape
+
+The adapter returns a result object:
+
+```ts
+interface NestJSResult {
+  statusCode: number;
+  body?: Record<string, unknown>;
+}
+```
+
+If `body` is missing (for example `204`), end the response with `.end()`.
+
+Canonical reference: [Adapters](/docs/sdk/adapters#nestjs)

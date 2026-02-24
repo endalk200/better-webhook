@@ -1,0 +1,84 @@
+---
+title: Troubleshooting
+description: Fix common Better Webhook CLI and SDK setup issues quickly.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Troubleshooting
+
+## CLI is running, but no webhooks are captured
+
+Checklist:
+
+- Confirm your provider points to the correct URL (`http://localhost:3001/webhooks/your-provider`).
+- If your provider cannot reach localhost, expose the capture server through a tunnel (for example `ngrok` or `cloudflared`).
+- Verify the capture server is actually running:
+
+```bash
+better-webhook capture --port 3001
+```
+
+<Callout type="info">
+  The capture server accepts any request path and stores full request metadata.
+</Callout>
+
+## `captures replay` says capture not found or selector is ambiguous
+
+- List captures first and copy a concrete capture ID:
+
+```bash
+better-webhook captures list
+```
+
+- Use the full or unique prefix capture ID:
+
+```bash
+better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
+```
+
+## Signature verification fails in SDK handlers
+
+Most failures come from one of these:
+
+- Wrong secret value (`GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`).
+- Body parser mutated the request body before verification.
+- Provider is signing with a different secret than your environment.
+
+For framework-specific raw-body requirements, see [Adapters](/docs/sdk/adapters).
+
+## NestJS or Express handlers behave unexpectedly
+
+- Express must use `express.raw({ type: "application/json" })` for webhook routes.
+- NestJS should preserve raw body and handle `204` responses with `.end()` when no response body is returned.
+
+Reference examples: [SDK Getting Started](/docs/sdk) and [Adapters](/docs/sdk/adapters).
+
+## `templates run` fails with secret-related errors
+
+If a template requires provider signing placeholders, pass a secret explicitly:
+
+```bash
+better-webhook templates run github-push http://localhost:3000/api/webhooks/github --secret "$GITHUB_WEBHOOK_SECRET"
+```
+
+Or set provider env vars:
+
+- `GITHUB_WEBHOOK_SECRET`
+- `RAGIE_WEBHOOK_SECRET`
+- `RECALL_WEBHOOK_SECRET`
+
+## `better-webhook` command is not found after installation
+
+- Verify installation:
+
+```bash
+better-webhook --version
+```
+
+- If installed manually, make sure the binary is on your `PATH`.
+- If using Homebrew, retry install:
+
+```bash
+brew install --cask endalk200/tap/better-webhook
+```

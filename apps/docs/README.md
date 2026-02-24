@@ -15,6 +15,20 @@ yarn dev
 
 Open http://localhost:3000 with your browser to see the result.
 
+## Quality checks
+
+Run docs-specific lint and quality checks:
+
+```bash
+pnpm lint
+```
+
+Run only docs route/command validation:
+
+```bash
+pnpm quality:check
+```
+
 ## Explore
 
 In the project, you can see:

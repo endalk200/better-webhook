@@ -1,4 +1,13 @@
 {
   "title": "Documentation",
-  "pages": ["index", "cli", "sdk"]
+  "pages": [
+    "index",
+    "cli",
+    "sdk",
+    "security",
+    "troubleshooting",
+    "faq",
+    "contributing",
+    "release-policy"
+  ]
 }

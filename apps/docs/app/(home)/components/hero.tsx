@@ -58,7 +58,7 @@ export function Hero() {
             {/* Badge */}
             <div className="lyra-badge lyra-badge-primary">
               <Terminal className="w-3.5 h-3.5" />
-              <span>Webhook Development Toolkit</span>
+              <span>Local Webhook Capture + Type-Safe SDK</span>
             </div>
 
             {/* Headline */}
@@ -69,31 +69,42 @@ export function Hero() {
 
             {/* Description */}
             <p className="text-lg text-[var(--lyra-text-secondary)] max-w-xl leading-relaxed">
-              Two tools, one goal: make webhook development delightful. A{" "}
-              <span className="text-[var(--lyra-primary)]">CLI</span> to
-              capture, replay, and test webhooks locally. An{" "}
+              Two tools, one workflow: capture real webhook traffic locally,
+              then ship verified handlers with type-safe SDK adapters. Use the{" "}
+              <span className="text-[var(--lyra-primary)]">CLI</span> for
+              capture/replay and the{" "}
               <span className="text-[var(--lyra-accent)]">SDK</span> for
-              type-safe handlers with automatic signature verification.
+              production webhook endpoints.
             </p>
 
-            {/* Two Product CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* CTA stack */}
+            <div className="space-y-3">
               <Link
-                href="/docs/cli"
+                href="#quick-start"
                 className="lyra-btn lyra-btn-primary inline-flex items-center justify-center gap-2"
               >
                 <Terminal className="w-4 h-4" />
-                CLI Docs
+                Get started in 60 seconds
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link
-                href="/docs/sdk"
-                className="lyra-btn lyra-btn-secondary inline-flex items-center justify-center gap-2"
-              >
-                <Code2 className="w-4 h-4" />
-                SDK Docs
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/docs/cli"
+                  className="lyra-btn lyra-btn-secondary inline-flex items-center justify-center gap-2"
+                >
+                  <Terminal className="w-4 h-4" />
+                  CLI Docs
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/docs/sdk"
+                  className="lyra-btn lyra-btn-secondary inline-flex items-center justify-center gap-2"
+                >
+                  <Code2 className="w-4 h-4" />
+                  SDK Docs
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
 
             {/* Install command */}
@@ -166,7 +177,7 @@ export function Hero() {
             <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
                 <div className="text-2xl font-bold font-mono text-[var(--lyra-primary)]">
-                  2
+                  3
                 </div>
                 <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
                   Providers

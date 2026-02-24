@@ -1,0 +1,59 @@
+---
+title: Release Policy
+description: How SDK packages and CLI binaries are versioned and released.
+---
+
+# Release Policy
+
+## Release channels
+
+Better Webhook has two release channels:
+
+- SDK packages (npm)
+- CLI binaries (GitHub Releases + Homebrew tap)
+
+## SDK package releases
+
+SDK packages are published from `main` using Changesets.
+
+High-level flow:
+
+1. Changesets are added for package changes.
+2. CI validates formatting, linting, type checks, tests, and build.
+3. Changesets action creates a release PR or publishes packages.
+4. Tags are pushed after successful publish.
+
+Primary workflow: [`.github/workflows/release.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release.yml)
+
+## CLI releases
+
+CLI releases are tag-triggered (`v*`) and built through GoReleaser.
+
+High-level flow:
+
+1. Push a semantic tag such as `v1.2.3`.
+2. CI runs format/lint/test/build.
+3. GoReleaser builds archives for macOS/Linux/Windows.
+4. Checksums and signatures are generated.
+5. Release artifacts are published and Homebrew cask is updated.
+
+Primary workflows/config:
+
+- [`.github/workflows/release-cli.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release-cli.yml)
+- [`.goreleaser.yaml`](https://github.com/endalk200/better-webhook/blob/main/.goreleaser.yaml)
+
+## Versioning expectations
+
+- Use semantic versioning for both SDK and CLI.
+- Breaking changes should be clearly indicated in release notes.
+- Patch versions should remain backward compatible.
+
+## Where to find release artifacts
+
+- SDK packages: npm (`@better-webhook/*`)
+- CLI binaries and release notes: GitHub Releases
+- Homebrew install path:
+
+```bash
+brew install --cask endalk200/tap/better-webhook
+```

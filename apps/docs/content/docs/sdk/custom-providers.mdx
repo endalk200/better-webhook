@@ -1,0 +1,106 @@
+---
+title: Custom Providers
+description: Build type-safe providers for webhook sources not covered by built-in SDK packages.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Custom Providers
+
+For webhook sources not covered by built-in providers, use `@better-webhook/core` to define events and create a custom provider.
+
+## 1) Define event schemas and event definitions
+
+```ts
+import { defineEvent, z } from "@better-webhook/core";
+
+const OrderSchema = z.object({
+  orderId: z.string(),
+  status: z.enum(["pending", "completed", "cancelled"]),
+  amount: z.number(),
+});
+
+export const orderCreated = defineEvent({
+  name: "order.created",
+  schema: OrderSchema,
+  provider: "my-ecommerce" as const,
+});
+
+export const orderUpdated = defineEvent({
+  name: "order.updated",
+  schema: OrderSchema,
+  provider: "my-ecommerce" as const,
+});
+```
+
+## 2) Create a provider
+
+```ts
+import { createProvider, createHmacVerifier } from "@better-webhook/core";
+
+export const myProvider = createProvider({
+  name: "my-ecommerce",
+  getEventType: (headers) => headers["x-event-type"],
+  getDeliveryId: (headers) => headers["x-delivery-id"],
+  verify: createHmacVerifier({
+    algorithm: "sha256",
+    signatureHeader: "x-signature",
+    signaturePrefix: "sha256=",
+  }),
+});
+```
+
+## 3) Build a webhook and register handlers
+
+```ts
+import { createWebhook } from "@better-webhook/core";
+import { myProvider, orderCreated, orderUpdated } from "./provider";
+
+const webhook = createWebhook(myProvider)
+  .event(orderCreated, async (payload) => {
+    await handleOrderCreated(payload.orderId);
+  })
+  .event(orderUpdated, async (payload) => {
+    await handleOrderUpdated(payload.orderId, payload.status);
+  });
+```
+
+## 4) Attach to an adapter
+
+```ts
+import { toNextJS } from "@better-webhook/nextjs";
+
+export const POST = toNextJS(webhook);
+```
+
+## Envelope payloads
+
+If your provider wraps payloads in an envelope, extract the event and payload with `getEventType` and `getPayload`:
+
+```ts
+const envelopeProvider = createProvider({
+  name: "my-envelope-provider",
+  getEventType: (headers, body) => {
+    if (body && typeof body === "object" && "type" in body) {
+      return (body as { type: string }).type;
+    }
+    return undefined;
+  },
+  getPayload: (body) => {
+    if (body && typeof body === "object" && "payload" in body) {
+      return (body as { payload: unknown }).payload;
+    }
+    return body;
+  },
+  verify: createHmacVerifier({
+    algorithm: "sha256",
+    signatureHeader: "x-signature",
+  }),
+});
+```
+
+<Callout type="info">
+  `createHmacVerifier` covers common signature formats. If needed, provide your own `verify` implementation.
+</Callout>
+
+Canonical reference: [Providers](/docs/sdk/providers#custom-providers)

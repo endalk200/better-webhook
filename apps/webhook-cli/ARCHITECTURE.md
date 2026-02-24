@@ -168,7 +168,7 @@ These rules are mandatory:
 
 ### Replay flow
 
-1. CLI `replay` resolves selector and replay options (`target-url` or `base-url` + captured URI, method/header overrides, timeout).
+1. CLI `captures replay` resolves selector and replay options (`target-url` or `base-url` + captured URI, method/header overrides, timeout).
 2. App replay service resolves capture from repository and reconstructs outbound request bytes/headers.
 3. App replay service dispatches through replay transport adapter.
 4. Adapter performs outbound HTTP request and returns response status/headers/body summary.
@@ -208,7 +208,7 @@ When adding features, follow the same layering for tests.
 
 ## How To Add A New Feature
 
-Example: adding `captures show`.
+Example: adding `captures prune`.
 
 1. Add domain model updates only if core semantics change.
 2. Add use case in `internal/app/captures` (service + any new port methods).

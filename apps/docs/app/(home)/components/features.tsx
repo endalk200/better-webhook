@@ -15,7 +15,7 @@ const features = [
     icon: Radio,
     title: "Live Capture",
     description:
-      "Start a local server to capture incoming webhooks. View payloads in real-time via WebSocket.",
+      "Start a local server to capture incoming webhooks with headers, path, and payload preserved.",
     badge: "CLI",
   },
   {
@@ -62,9 +62,9 @@ const features = [
   },
   {
     icon: RotateCcw,
-    title: "Community Templates",
+    title: "Curated Templates",
     description:
-      "Download and run webhook templates for GitHub, Ragie, and Recall.ai. Real payloads ready to use instantly.",
+      "Download and run built-in webhook templates for GitHub, Ragie, and Recall.ai with realistic payloads.",
     badge: "CLI",
   },
 ];
@@ -76,12 +76,12 @@ export function Features() {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            Everything for{" "}
+            Toolkit for{" "}
             <span className="gradient-text">webhook development</span>
           </h2>
           <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
-            A complete toolkit that makes working with webhooks fast,
-            repeatable, and delightful. From local development to production.
+            A focused toolkit for fast, repeatable webhook development from
+            local testing to production handlers.
           </p>
         </div>
 

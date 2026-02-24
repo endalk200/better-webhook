@@ -1,0 +1,67 @@
+---
+title: FAQ
+description: Frequently asked questions about Better Webhook CLI and SDK usage.
+---
+
+# FAQ
+
+## Do I need both the CLI and the SDK?
+
+No. They are independent:
+
+- Use the CLI when you need local webhook capture, replay, and repeatable template testing.
+- Use the SDK when you need type-safe, verified webhook handlers in your application.
+
+Many teams use both: CLI for local debugging, SDK for production endpoints.
+
+## Which webhook providers are supported?
+
+The SDK includes providers for:
+
+- GitHub
+- Ragie
+- Recall.ai
+
+You can also define custom providers using `@better-webhook/core`. See [Providers](/docs/sdk/providers#custom-providers).
+
+## Which frameworks are supported?
+
+Official adapters are available for:
+
+- Next.js
+- Express
+- NestJS
+- Hono
+- GCP Cloud Functions
+
+See [Adapters](/docs/sdk/adapters) for setup details.
+
+## Can I use Better Webhook without exposing localhost publicly?
+
+Yes. For replay and template-based testing, localhost is enough.
+
+For receiving live events from external services, your provider still needs to reach your capture endpoint. If localhost is unreachable from the provider, use a tunnel.
+
+## Does Better Webhook verify signatures automatically?
+
+Yes, when secrets are configured. You can provide secrets through adapter options, provider options, or provider-specific environment variables. See [Security](/docs/security).
+
+## Why do I get `204` responses from the SDK?
+
+`204` usually means no matching handler executed for that event, or no response body is returned by design. This can be expected behavior for unhandled events.
+
+## Where are CLI captures and templates stored?
+
+By default under `~/.better-webhook/`:
+
+- `captures/`
+- `templates/`
+
+You can override paths with command flags like `--captures-dir` and `--templates-dir`.
+
+## How are releases published?
+
+- SDK packages are published through Changesets from `main`.
+- CLI binaries are published from version tags (`v*`) via GoReleaser.
+
+See [Release Policy](/docs/release-policy).
