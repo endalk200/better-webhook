@@ -3,7 +3,31 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "@better-webhook/dashboard#build"]
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "go.mod", "go.sum", "**/*.go"],
+      "outputs": ["bin/**"]
+    },
+    "lint": {
+      "dependsOn": [],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "go.mod",
+        "go.sum",
+        ".golangci.yml",
+        "**/*.go"
+      ]
+    },
+    "check-types": {
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "go.mod", "go.sum", "**/*.go"]
+    },
+    "test": {
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "go.mod", "go.sum", "**/*.go"]
+    },
+    "clean": {
+      "cache": false,
+      "outputs": ["bin/**"]
     }
   }
 }

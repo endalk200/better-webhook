@@ -417,7 +417,7 @@ importers:
         specifier: ^5.6.3
         version: 5.9.2
 
-  apps/webhook-cli-go: {}
+  apps/webhook-cli: {}
 
   packages/core:
     dependencies:

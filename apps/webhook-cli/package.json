@@ -1,88 +1,19 @@
 {
   "name": "@better-webhook/cli",
-  "version": "3.10.1",
-  "description": "Modern CLI for developing, capturing, and replaying webhooks locally with dashboard UI.",
-  "type": "module",
-  "bin": {
-    "better-webhook": "dist/index.js"
-  },
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
+  "private": true,
+  "version": "0.0.0",
+  "description": "Go-based CLI for local webhook capture, replay, and template workflows.",
   "scripts": {
-    "build:cli": "tsup --format cjs,esm --dts && node ./scripts/copy-dashboard.mjs",
-    "build": "pnpm --filter @better-webhook/dashboard build && pnpm run build:cli",
-    "build:binary": "bun ./scripts/build-binary.ts",
-    "build:binary:all": "bun ./scripts/build-binary.ts --all",
-    "dev": "tsup --watch",
-    "start": "tsx src/index.ts",
-    "lint": "eslint .",
-    "check-types": "tsc --noEmit",
-    "test": "vitest run",
-    "prepublishOnly": "pnpm run build",
-    "prepare": "pnpm run build:cli"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "keywords": [
-    "webhook",
-    "cli",
-    "developer-tools",
-    "testing",
-    "http",
-    "stripe",
-    "github",
-    "webhooks",
-    "capture",
-    "replay",
-    "dashboard"
-  ],
-  "license": "MIT",
-  "author": "Endalk <endalk200>",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/endalk200/better-webhook.git"
-  },
-  "bugs": {
-    "url": "https://github.com/endalk200/better-webhook/issues"
-  },
-  "homepage": "https://github.com/endalk200/better-webhook#readme",
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^14.0.1",
-    "express": "^4.21.0",
-    "ora": "^8.1.0",
-    "prompts": "^2.4.2",
-    "undici": "^7.18.2",
-    "ws": "^8.18.0",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@better-webhook/eslint-config": "workspace:*",
-    "@better-webhook/typescript-config": "workspace:*",
-    "@types/bun": "^1.2.18",
-    "@types/express": "^4.17.21",
-    "@types/node": "^24.3.1",
-    "@types/prompts": "^2.4.9",
-    "@types/ws": "^8.5.12",
-    "eslint": "^9.35.0",
-    "tsup": "^8.5.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "install": "go mod tidy",
+    "lint": "golangci-lint run ./...",
+    "format:check": "bash -euo pipefail -c 'files=$(goimports -l -local github.com/endalk200/better-webhook .); test -z \"$files\"'",
+    "format:write": "goimports -w -local github.com/endalk200/better-webhook . && gofumpt -w .",
+    "check-types": "go test ./... -run=^$",
+    "test": "go test ./...",
+    "test:race": "go test ./... -race",
+    "test:cover": "go test ./... -coverprofile=coverage.out -covermode=atomic",
+    "test:e2e": "go test ./e2e -tags=e2e",
+    "build": "mkdir -p bin && go build -ldflags \"-X github.com/endalk200/better-webhook/apps/webhook-cli/internal/version.Version=${VERSION:-dev}\" -o bin/better-webhook ./cmd/better-webhook",
+    "clean": "rm -rf bin"
   }
 }
