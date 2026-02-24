@@ -143,7 +143,7 @@ func TestReplayCapturedWebhook(t *testing.T) {
 	}))
 	defer targetServer.Close()
 
-	replayOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "replay", id, "--base-url", targetServer.URL)
+	replayOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "captures", "replay", id, "--base-url", targetServer.URL)
 	if err != nil {
 		t.Fatalf("replay command: %v\noutput:\n%s", err, replayOutput)
 	}

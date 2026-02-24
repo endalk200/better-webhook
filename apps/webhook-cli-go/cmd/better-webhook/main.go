@@ -38,9 +38,9 @@ func main() {
 		},
 		CapturesDependencies: capturescmd.Dependencies{
 			ServiceFactory: newCapturesService,
-		},
-		ReplayDependencies: replaycmd.Dependencies{
-			ServiceFactory: newReplayService,
+			ReplayDependencies: replaycmd.Dependencies{
+				ServiceFactory: newReplayService,
+			},
 		},
 		TemplateDependencies: templatescmd.Dependencies{
 			ServiceFactory: newTemplateService,

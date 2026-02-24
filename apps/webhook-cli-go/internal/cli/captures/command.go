@@ -4,12 +4,14 @@ import (
 	"github.com/spf13/cobra"
 
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/app/captures"
+	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli-go/internal/cli/replay"
 )
 
 type ServiceFactory func(capturesDir string) (*appcaptures.Service, error)
 
 type Dependencies struct {
-	ServiceFactory ServiceFactory
+	ServiceFactory     ServiceFactory
+	ReplayDependencies replaycmd.Dependencies
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {
@@ -21,6 +23,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 
 	cmd.AddCommand(newListCommand(deps))
 	cmd.AddCommand(newDeleteCommand(deps))
+	cmd.AddCommand(replaycmd.NewCommand(deps.ReplayDependencies))
 
 	return cmd
 }

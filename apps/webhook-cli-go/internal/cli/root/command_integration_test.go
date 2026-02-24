@@ -51,8 +51,8 @@ func TestRootCommandShowsHelpByDefault(t *testing.T) {
 	}
 
 	out := output.String()
-	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") || !strings.Contains(out, "replay") {
-		t.Fatalf("expected default help output to include capture commands and replay, got %q", out)
+	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") {
+		t.Fatalf("expected default help output to include capture commands, got %q", out)
 	}
 }
 
@@ -203,7 +203,7 @@ func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&out)
-	rootCmd.SetArgs([]string{"--config", configPath, "replay", "beadfeed", "--base-url", targetServer.URL})
+	rootCmd.SetArgs([]string{"--config", configPath, "captures", "replay", "beadfeed", "--base-url", targetServer.URL})
 
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute replay command: %v", err)
@@ -246,7 +246,7 @@ func TestReplayCommandMapsNotFoundError(t *testing.T) {
 	rootCmd := newTestRootCommand(t)
 	rootCmd.SetOut(&bytes.Buffer{})
 	rootCmd.SetErr(&bytes.Buffer{})
-	rootCmd.SetArgs([]string{"--config", configPath, "replay", "missing", "http://localhost:9999"})
+	rootCmd.SetArgs([]string{"--config", configPath, "captures", "replay", "missing", "http://localhost:9999"})
 
 	err := rootCmd.Execute()
 	if err == nil {
@@ -606,15 +606,15 @@ func newTestRootCommandWithTemplateRemote(
 				}
 				return appcaptures.NewService(store), nil
 			},
-		},
-		ReplayDependencies: replaycmd.Dependencies{
-			ServiceFactory: func(capturesDir string) (*appreplay.Service, error) {
-				store, err := jsonc.NewStore(capturesDir, nil, nil)
-				if err != nil {
-					return nil, err
-				}
-				dispatcher := httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout})
-				return appreplay.NewService(store, dispatcher), nil
+			ReplayDependencies: replaycmd.Dependencies{
+				ServiceFactory: func(capturesDir string) (*appreplay.Service, error) {
+					store, err := jsonc.NewStore(capturesDir, nil, nil)
+					if err != nil {
+						return nil, err
+					}
+					dispatcher := httpreplay.NewClient(&http.Client{Timeout: httptemplates.DefaultHTTPTimeout})
+					return appreplay.NewService(store, dispatcher), nil
+				},
 			},
 		},
 		TemplateDependencies: templatescmd.Dependencies{
