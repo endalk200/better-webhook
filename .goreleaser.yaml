@@ -30,7 +30,7 @@ archives:
       - better-webhook
     formats:
       - binary
-    name_template: "{{ .Binary }}-{{ .Os }}-{{ if eq .Arch \"amd64\" }}x64{{ else }}{{ .Arch }}{{ end }}{{ .Ext }}"
+    name_template: '{{ .Binary }}-{{ .Os }}-{{ if eq .Arch "amd64" }}x64{{ else }}{{ .Arch }}{{ end }}{{ .Ext }}'
 
 checksum:
   name_template: checksums.txt
