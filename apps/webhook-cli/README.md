@@ -7,13 +7,7 @@ The `better-webhook` CLI helps you capture, inspect, replay, and run webhook tem
 ### Homebrew (recommended)
 
 ```bash
-brew install endalk200/tap/better-webhook
-```
-
-### npm (wrapper package)
-
-```bash
-npm install -g @better-webhook/cli
+brew install --cask endalk200/tap/better-webhook
 ```
 
 ### Go install
@@ -30,15 +24,15 @@ go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webho
 
 ### Manual binary download
 
-Download from [GitHub Releases](https://github.com/endalk200/better-webhook/releases) and place the binary on your `PATH`.
+Download an archive from [GitHub Releases](https://github.com/endalk200/better-webhook/releases), extract `better-webhook`, and place it on your `PATH`.
 
-| Platform      | Binary name                      |
-| ------------- | -------------------------------- |
-| macOS (ARM)   | `better-webhook-darwin-arm64`    |
-| macOS (Intel) | `better-webhook-darwin-x64`      |
-| Linux (ARM)   | `better-webhook-linux-arm64`     |
-| Linux (x64)   | `better-webhook-linux-x64`       |
-| Windows (x64) | `better-webhook-windows-x64.exe` |
+| Platform      | Release asset                        |
+| ------------- | ------------------------------------ |
+| macOS (ARM)   | `better-webhook-darwin-arm64.tar.gz` |
+| macOS (Intel) | `better-webhook-darwin-x64.tar.gz`   |
+| Linux (ARM)   | `better-webhook-linux-arm64.tar.gz`  |
+| Linux (x64)   | `better-webhook-linux-x64.tar.gz`    |
+| Windows (x64) | `better-webhook-windows-x64.zip`     |
 
 ## Verify
 

@@ -15,13 +15,7 @@ The Better Webhook CLI is a local development tool for capturing, replaying, and
 ### Homebrew (Recommended)
 
 ```bash
-brew install endalk200/tap/better-webhook
-```
-
-### npm
-
-```bash
-npm install -g @better-webhook/cli
+brew install --cask endalk200/tap/better-webhook
 ```
 
 ### Go install
@@ -40,17 +34,18 @@ go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webho
 
 Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
 
-| Platform      | Binary Name                   |
-| ------------- | ----------------------------- |
-| macOS (ARM)   | `better-webhook-darwin-arm64` |
-| macOS (Intel) | `better-webhook-darwin-x64`   |
-| Linux (x64)   | `better-webhook-linux-x64`    |
-| Linux (ARM)   | `better-webhook-linux-arm64`  |
-| Windows       | `better-webhook-windows-x64.exe` |
+| Platform      | Asset Name                          |
+| ------------- | ----------------------------------- |
+| macOS (ARM)   | `better-webhook-darwin-arm64.tar.gz` |
+| macOS (Intel) | `better-webhook-darwin-x64.tar.gz`   |
+| Linux (x64)   | `better-webhook-linux-x64.tar.gz`    |
+| Linux (ARM)   | `better-webhook-linux-arm64.tar.gz`  |
+| Windows       | `better-webhook-windows-x64.zip`     |
 
 ```bash
 # Example: macOS ARM
-curl -L https://github.com/endalk200/better-webhook/releases/latest/download/better-webhook-darwin-arm64 -o better-webhook
+curl -L https://github.com/endalk200/better-webhook/releases/latest/download/better-webhook-darwin-arm64.tar.gz -o better-webhook.tar.gz
+tar -xzf better-webhook.tar.gz
 chmod +x better-webhook
 sudo mv better-webhook /usr/local/bin/
 ```
@@ -135,8 +130,8 @@ better-webhook templates run github-push http://localhost:3000/api/webhooks/gith
 Templates include proper headers and can generate valid signatures when you provide a secret.
 
 <Callout type="info">
-  You can install the CLI via Homebrew, npm (`@better-webhook/cli`), manual
-  binaries, or `go install`.
+  You can install the CLI via Homebrew Cask, manual release archives, or
+  `go install`.
 </Callout>
 
 ## Next Steps

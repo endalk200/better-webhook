@@ -68,6 +68,15 @@ jobs:
           TRIVY_SKIP_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
           TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
+      - name: Lint
+        run: devbox run -- just lint
+
+      - name: Type check
+        run: devbox run -- just check-types
+
+      - name: Test
+        run: devbox run -- just test
+
       - name: Build packages
         run: devbox run -- just build
 

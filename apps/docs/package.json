@@ -1,7 +1,7 @@
 {
   "name": "@better-webhook/docs",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "scripts": {
     "build": "next build",
     "dev": "next dev",

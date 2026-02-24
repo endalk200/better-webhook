@@ -27,11 +27,8 @@ Most webhook workflows still require tunnel juggling, repeated provider triggers
 ### Path 1: Local webhook testing with the CLI
 
 ```bash
-# Install once (Homebrew)
-brew install endalk200/tap/better-webhook
-
-# Alternative install (npm wrapper package)
-npm install -g @better-webhook/cli
+# Install once (Homebrew Cask)
+brew install --cask endalk200/tap/better-webhook
 
 # Alternative install (Go)
 go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
@@ -44,7 +41,7 @@ better-webhook capture --port 3001
 better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
-The CLI is available through Homebrew, npm (`@better-webhook/cli`), GitHub Releases binaries, and `go install`.
+The CLI is available through Homebrew Cask, GitHub Releases binaries, and `go install`.
 
 ### Path 2: Type-safe webhook handlers with the SDK
 

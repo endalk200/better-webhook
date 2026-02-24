@@ -7,13 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@better-webhook/cli",
-    "@better-webhook/cli-go",
-    "@better-webhook/cli-darwin-arm64",
-    "@better-webhook/cli-darwin-x64",
-    "@better-webhook/cli-linux-arm64",
-    "@better-webhook/cli-linux-x64",
-    "@better-webhook/cli-windows-x64"
-  ]
+  "ignore": []
 }

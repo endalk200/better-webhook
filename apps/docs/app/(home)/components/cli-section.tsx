@@ -253,7 +253,7 @@ export function CLISection() {
           <code className="inline-block px-6 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm">
             <span className="text-[var(--lyra-accent)]">$</span>{" "}
             <span className="text-white">
-              brew install endalk200/tap/better-webhook
+              brew install --cask endalk200/tap/better-webhook
             </span>
           </code>
         </div>

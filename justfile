@@ -34,6 +34,10 @@ test-package package:
 build:
     pnpm exec turbo run build
 
+# Run a local GoReleaser CLI release (snapshot by default)
+release-cli args="--snapshot --clean --skip=publish,announce,sign,sbom":
+    devbox run -- go run github.com/goreleaser/goreleaser/v2@latest release {{ args }}
+
 # Run configured build command for this package.
 build-package package:
     pnpm --filter {{ package }} run build
@@ -100,8 +104,7 @@ changeset-check:
           exit 1; \
           ;; \
         0) \
-          echo "::warning::No changesets found. If this PR introduces user-facing changes, please add a changeset by running 'pnpm changeset'"; \
-          echo "::notice::To add a changeset: 1) Run 'pnpm changeset' 2) Select packages to release 3) Choose version bump type 4) Write summary"; \
+          echo "No release changesets found. This is okay when no publishable packages changed."; \
           ;; \
         *) \
           echo "✅ Changesets found - release will be triggered when merged"; \
@@ -111,8 +114,10 @@ changeset-check:
       err_text=$(tr '\n' ' ' < "$err_file"); \
       case "$err_text" in \
         *"Some packages have been changed but no changesets were found"*) \
-          echo "::warning::No changesets found. If this PR introduces user-facing changes, please add a changeset by running 'pnpm changeset'"; \
-          echo "::notice::To add a changeset: 1) Run 'pnpm changeset' 2) Select packages to release 3) Choose version bump type 4) Write summary"; \
+          echo "::error::Some packages changed but no changeset was found. Add one with 'pnpm changeset'."; \
+          echo "::notice::Required steps: 1) Run 'pnpm changeset' 2) Select packages 3) Choose bump type 4) Write summary 5) Commit the .changeset file"; \
+          rm -f "$tmp_file" "$err_file"; \
+          exit 1; \
           ;; \
         *) \
           echo "::error::Failed to run changeset status."; \

@@ -11,7 +11,7 @@ const cliSteps = [
   {
     step: 1,
     title: "Install the CLI",
-    command: "brew install endalk200/tap/better-webhook",
+    command: "brew install --cask endalk200/tap/better-webhook",
   },
   {
     step: 2,
