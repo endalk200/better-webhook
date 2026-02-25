@@ -39,12 +39,14 @@ func main() {
 		},
 		CapturesDependencies: capturescmd.Dependencies{
 			ServiceFactory: newCapturesService,
+			Prompter:       ui.DefaultPrompter,
 			ReplayDependencies: replaycmd.Dependencies{
 				ServiceFactory: newReplayService,
 			},
 		},
 		TemplateDependencies: templatescmd.Dependencies{
 			ServiceFactory: newTemplateService,
+			Prompter:       ui.DefaultPrompter,
 		},
 	})
 

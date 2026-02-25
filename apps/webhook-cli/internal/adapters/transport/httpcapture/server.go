@@ -217,21 +217,18 @@ func (s *Server) handleCaptureRequest(w http.ResponseWriter, req *http.Request) 
 		s.logger.Warn("relay hook error", "err", logging.SanitizeForLog(result.RelayErr.Error()))
 	}
 
+	keyvals := []interface{}{
+		"method", logging.SanitizeForLog(result.Saved.Capture.Method),
+		"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
+		"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
+	}
 	if s.options.Verbose {
-		s.logger.Info("captured",
-			"method", logging.SanitizeForLog(result.Saved.Capture.Method),
-			"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
-			"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
+		keyvals = append(keyvals,
 			"file", logging.SanitizeForLog(result.Saved.File),
 			"body", fmt.Sprintf("%dB", result.Saved.Capture.ContentLength),
 		)
-	} else {
-		s.logger.Info("captured",
-			"method", logging.SanitizeForLog(result.Saved.Capture.Method),
-			"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
-			"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
-		)
 	}
+	s.logger.Info("captured", keyvals...)
 
 	provider := result.Saved.Capture.Provider
 	if provider == "" {

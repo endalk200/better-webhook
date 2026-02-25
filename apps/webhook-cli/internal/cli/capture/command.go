@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -56,7 +58,8 @@ func NewCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			url := fmt.Sprintf("http://%s:%d", captureArgs.Host, port)
+			address := net.JoinHostPort(captureArgs.Host, strconv.Itoa(port))
+			url := "http://" + address
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", ui.Bold.Render("Listening on"), ui.Info.Render(url))
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", ui.Bold.Render("Captures dir"), ui.Muted.Render(captureArgs.CapturesDir))
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Faint.Render("Press Ctrl+C to stop"))

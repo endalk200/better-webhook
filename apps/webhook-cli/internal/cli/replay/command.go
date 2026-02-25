@@ -96,7 +96,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 			)
 
 			if replayArgs.Verbose {
-				printVerboseOutput(cmd, result)
+				ui.PrintReplayVerboseOutput(cmd.OutOrStdout(), result)
 			}
 
 			return nil
@@ -168,31 +168,4 @@ func mapReplayCommandError(err error, selector string) error {
 		return fmt.Errorf("operation cancelled")
 	}
 	return err
-}
-
-func printVerboseOutput(cmd *cobra.Command, result appreplay.ReplayResult) {
-	if len(result.SentHeaders) > 0 {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Request headers"))
-		pairs := make([][]string, 0, len(result.SentHeaders))
-		for _, header := range result.SentHeaders {
-			pairs = append(pairs, []string{header.Key, header.Value})
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
-	}
-
-	if len(result.Response.Headers) > 0 {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response headers"))
-		pairs := make([][]string, 0, len(result.Response.Headers))
-		for _, header := range result.Response.Headers {
-			pairs = append(pairs, []string{header.Key, header.Value})
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
-	}
-
-	if len(result.Response.Body) == 0 {
-		return
-	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response body"))
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatBodyPreview(result.Response.Body, result.Response.BodyTruncated))
 }
