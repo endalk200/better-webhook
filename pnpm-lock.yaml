@@ -282,34 +282,6 @@ importers:
 
   apps/webhook-cli: {}
 
-  packages/cli:
-    optionalDependencies:
-      '@better-webhook/cli-darwin-arm64':
-        specifier: workspace:*
-        version: link:../cli-darwin-arm64
-      '@better-webhook/cli-darwin-x64':
-        specifier: workspace:*
-        version: link:../cli-darwin-x64
-      '@better-webhook/cli-linux-arm64':
-        specifier: workspace:*
-        version: link:../cli-linux-arm64
-      '@better-webhook/cli-linux-x64':
-        specifier: workspace:*
-        version: link:../cli-linux-x64
-      '@better-webhook/cli-windows-x64':
-        specifier: workspace:*
-        version: link:../cli-windows-x64
-
-  packages/cli-darwin-arm64: {}
-
-  packages/cli-darwin-x64: {}
-
-  packages/cli-linux-arm64: {}
-
-  packages/cli-linux-x64: {}
-
-  packages/cli-windows-x64: {}
-
   packages/core:
     dependencies:
       zod:
