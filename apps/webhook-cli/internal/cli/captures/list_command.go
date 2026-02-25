@@ -12,6 +12,7 @@ import (
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/captures"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newListCommand(deps Dependencies) *cobra.Command {
@@ -43,12 +44,12 @@ func newListCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if len(items) == 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No captures found.")
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Storage: %s\n", listArgs.CapturesDir)
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("No captures found."))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", ui.Muted.Render("Storage:"), listArgs.CapturesDir)
 				return nil
 			}
 
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Captured webhooks:")
+			rows := make([][]string, 0, len(items))
 			for _, item := range items {
 				provider := item.Capture.Provider
 				if provider == "" {
@@ -66,18 +67,21 @@ func newListCommand(deps Dependencies) *cobra.Command {
 					displayTime = parsedTime.Local().Format(time.RFC3339)
 				}
 
-				_, _ = fmt.Fprintf(
-					cmd.OutOrStdout(),
-					"- %s [%s] %s %s (%d bytes) %s\n",
+				rows = append(rows, []string{
 					id,
-					provider,
-					item.Capture.Method,
+					ui.FormatProvider(provider),
+					ui.FormatMethod(item.Capture.Method),
 					item.Capture.Path,
-					item.Capture.ContentLength,
+					fmt.Sprintf("%d B", item.Capture.ContentLength),
 					displayTime,
-				)
+				})
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Showing %d capture(s) from %s\n", len(items), listArgs.CapturesDir)
+
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewTable(
+				[]string{"ID", "Provider", "Method", "Path", "Size", "Time"},
+				rows,
+			))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Muted.Render(fmt.Sprintf("Showing %d capture(s) from %s", len(items), listArgs.CapturesDir)))
 			return nil
 		},
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/transport/httpcapture"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 type (
@@ -55,9 +56,10 @@ func NewCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Webhook capture server listening on http://%s:%d\n", captureArgs.Host, port)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Captures directory: %s\n", captureArgs.CapturesDir)
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Press Ctrl+C to stop")
+			url := fmt.Sprintf("http://%s:%d", captureArgs.Host, port)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", ui.Bold.Render("Listening on"), ui.Info.Render(url))
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", ui.Bold.Render("Captures dir"), ui.Muted.Render(captureArgs.CapturesDir))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Faint.Render("Press Ctrl+C to stop"))
 
 			baseCtx := cmd.Context()
 			if baseCtx == nil {
