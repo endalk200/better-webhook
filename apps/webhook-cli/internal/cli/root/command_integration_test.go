@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -37,6 +38,8 @@ import (
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/time"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/testutil"
 )
+
+var ansiEscapeSequence = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]`)
 
 func TestRootCommandShowsHelpByDefault(t *testing.T) {
 	rootCmd := newTestRootCommand(t)
@@ -95,13 +98,18 @@ func TestCapturesListCommandReadsConfiguredStore(t *testing.T) {
 		t.Fatalf("execute captures list: %v", err)
 	}
 
-	output := out.String()
-	if !strings.Contains(output, "Captured webhooks:") {
-		t.Fatalf("expected list output header, got %q", output)
-	}
-	if !strings.Contains(output, "[github]") {
-		t.Fatalf("expected provider output, got %q", output)
-	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output,
+		"ID",
+		"Provider",
+		"Method",
+		"Path",
+		"aabbccdd",
+		"github",
+		"POST",
+		"/webhooks/test",
+		"Showing 1 capture(s)",
+	)
 }
 
 func TestCapturesDeleteCommandDeletesByPrefix(t *testing.T) {
@@ -130,6 +138,36 @@ func TestCapturesDeleteCommandDeletesByPrefix(t *testing.T) {
 	}
 	if _, err := store.ResolveByIDOrPrefix(context.Background(), record.ID); err == nil {
 		t.Fatalf("expected capture to be deleted")
+	}
+}
+
+func TestCapturesDeleteCommandPromptCancellation(t *testing.T) {
+	capturesDir := t.TempDir()
+	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	record := testCommandCapture("deadcafe-0000-0000-0000-000000000000", domain.ProviderUnknown)
+	if _, err := store.Save(context.Background(), record); err != nil {
+		t.Fatalf("seed capture: %v", err)
+	}
+
+	configPath := writeCommandTestConfig(t, capturesDir)
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetIn(strings.NewReader("n\n"))
+	rootCmd.SetArgs([]string{"--config", configPath, "captures", "delete", "deadcafe"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute captures delete with prompt: %v", err)
+	}
+
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "Delete capture deadcafe", "Cancelled.")
+	if _, err := store.ResolveByIDOrPrefix(context.Background(), record.ID); err != nil {
+		t.Fatalf("expected capture to remain after cancellation: %v", err)
 	}
 }
 
@@ -232,13 +270,15 @@ func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
 		t.Fatalf("timed out waiting for replay request")
 	}
 
-	output := out.String()
-	if !strings.Contains(output, "Status: 201 Created") {
-		t.Fatalf("expected replay status output, got %q", output)
-	}
-	if !strings.Contains(output, "Duration:") {
-		t.Fatalf("expected replay duration output, got %q", output)
-	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output,
+		"Replayed",
+		"beadfeed",
+		"github",
+		"POST",
+		targetServer.URL,
+		"201 Created",
+	)
 }
 
 func TestReplayCommandMapsNotFoundError(t *testing.T) {
@@ -273,13 +313,16 @@ func TestTemplatesListCommandFromRemote(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute templates list: %v", err)
 	}
-	output := out.String()
-	if !strings.Contains(output, "Available templates:") {
-		t.Fatalf("expected templates list output, got %q", output)
-	}
-	if !strings.Contains(output, "github-push") {
-		t.Fatalf("expected github-push template in list output, got %q", output)
-	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output,
+		"Template",
+		"Provider",
+		"Status",
+		"github-push",
+		"github-issues",
+		"remote",
+		"Total: 2 template(s)",
+	)
 }
 
 func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
@@ -298,9 +341,8 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	if err := downloadCmd.Execute(); err != nil {
 		t.Fatalf("execute templates download: %v", err)
 	}
-	if !strings.Contains(downloadOut.String(), "Downloaded template github-push") {
-		t.Fatalf("expected download output, got %q", downloadOut.String())
-	}
+	downloadOutput := normalizeCLIOutput(downloadOut.String())
+	assertContainsAll(t, downloadOutput, "Downloaded template github-push", "Saved to:")
 
 	localCmd := newTestRootCommand(t)
 	var localOut bytes.Buffer
@@ -314,9 +356,16 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	if err := localCmd.Execute(); err != nil {
 		t.Fatalf("execute templates local: %v", err)
 	}
-	if !strings.Contains(localOut.String(), "github-push") {
-		t.Fatalf("expected local template output, got %q", localOut.String())
-	}
+	localOutput := normalizeCLIOutput(localOut.String())
+	assertContainsAll(t, localOutput,
+		"Template",
+		"Provider",
+		"Event",
+		"github-push",
+		"github",
+		"push",
+		"Total: 1 template(s)",
+	)
 
 	searchCmd := newTestRootCommand(t)
 	var searchOut bytes.Buffer
@@ -330,9 +379,15 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	if err := searchCmd.Execute(); err != nil {
 		t.Fatalf("execute templates search: %v", err)
 	}
-	if !strings.Contains(searchOut.String(), "Search results for \"push\":") {
-		t.Fatalf("expected search output, got %q", searchOut.String())
-	}
+	searchOutput := normalizeCLIOutput(searchOut.String())
+	assertContainsAll(t, searchOutput,
+		"Search results for",
+		"Template",
+		"Provider",
+		"Source",
+		"github-push",
+		"Found: 2 template(s)",
+	)
 
 	cleanCmd := newTestRootCommand(t)
 	var cleanOut bytes.Buffer
@@ -346,9 +401,8 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	if err := cleanCmd.Execute(); err != nil {
 		t.Fatalf("execute templates clean: %v", err)
 	}
-	if !strings.Contains(cleanOut.String(), "Removed 1 template(s)") {
-		t.Fatalf("expected clean output, got %q", cleanOut.String())
-	}
+	cleanOutput := normalizeCLIOutput(cleanOut.String())
+	assertContainsAll(t, cleanOutput, "Removed 1 template(s)")
 
 	cacheCmd := newTestRootCommand(t)
 	var cacheOut bytes.Buffer
@@ -362,9 +416,56 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	if err := cacheCmd.Execute(); err != nil {
 		t.Fatalf("execute templates cache clear: %v", err)
 	}
-	if !strings.Contains(cacheOut.String(), "Template cache cleared.") {
-		t.Fatalf("expected cache clear output, got %q", cacheOut.String())
+	cacheOutput := normalizeCLIOutput(cacheOut.String())
+	assertContainsAll(t, cacheOutput, "Template cache cleared.")
+}
+
+func TestTemplatesCleanCommandPromptCancellation(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	downloadCmd := newTestRootCommand(t)
+	downloadCmd.SetOut(&bytes.Buffer{})
+	downloadCmd.SetErr(&bytes.Buffer{})
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download: %v", err)
 	}
+
+	cleanCmd := newTestRootCommand(t)
+	var cleanOut bytes.Buffer
+	cleanCmd.SetOut(&cleanOut)
+	cleanCmd.SetErr(&cleanOut)
+	cleanCmd.SetIn(strings.NewReader("n\n"))
+	cleanCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "clean",
+		"--templates-dir", templatesDir,
+	})
+	if err := cleanCmd.Execute(); err != nil {
+		t.Fatalf("execute templates clean with prompt: %v", err)
+	}
+	cleanOutput := normalizeCLIOutput(cleanOut.String())
+	assertContainsAll(t, cleanOutput, "Delete all 1 template(s)?", "Cancelled.")
+
+	localCmd := newTestRootCommand(t)
+	var localOut bytes.Buffer
+	localCmd.SetOut(&localOut)
+	localCmd.SetErr(&localOut)
+	localCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "local",
+		"--templates-dir", templatesDir,
+	})
+	if err := localCmd.Execute(); err != nil {
+		t.Fatalf("execute templates local: %v", err)
+	}
+	localOutput := normalizeCLIOutput(localOut.String())
+	assertContainsAll(t, localOutput, "github-push", "Total: 1 template(s)")
 }
 
 func TestTemplatesRunCommandGeneratesGitHubSignature(t *testing.T) {
@@ -454,9 +555,15 @@ func TestTemplatesRunCommandGeneratesGitHubSignature(t *testing.T) {
 		t.Fatalf("timed out waiting for templates run request")
 	}
 
-	if !strings.Contains(runOut.String(), "Executed template github-push [github] POST ->") {
-		t.Fatalf("expected run output, got %q", runOut.String())
-	}
+	runOutput := normalizeCLIOutput(runOut.String())
+	assertContainsAll(t, runOutput,
+		"Executed",
+		"github-push",
+		"github",
+		"POST",
+		receiverServer.URL,
+		"200 OK",
+	)
 }
 
 func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
@@ -533,6 +640,20 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	}
 	if got := atomic.LoadInt32(&indexRequests); got != 2 {
 		t.Fatalf("expected --refresh to force second index request, got %d", got)
+	}
+}
+
+func normalizeCLIOutput(raw string) string {
+	withoutANSI := ansiEscapeSequence.ReplaceAllString(raw, "")
+	return strings.ReplaceAll(withoutANSI, "\r", "")
+}
+
+func assertContainsAll(t *testing.T, output string, expected ...string) {
+	t.Helper()
+	for _, value := range expected {
+		if !strings.Contains(output, value) {
+			t.Fatalf("expected output to contain %q, got %q", value, output)
+		}
 	}
 }
 

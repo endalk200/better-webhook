@@ -1,16 +1,13 @@
 package captures
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newDeleteCommand(deps Dependencies) *cobra.Command {
@@ -40,18 +37,23 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 				return mapCaptureCommandError(err, deleteArgs.Selector)
 			}
 
+			prompter := deps.Prompter
+			if prompter == nil {
+				prompter = ui.DefaultPrompter
+			}
+
 			if !deleteArgs.Force {
 				id := target.Capture.ID
 				if len(id) > 8 {
 					id = id[:8]
 				}
-				prompt := fmt.Sprintf("Delete capture %s (%s %s)? [y/N]: ", id, target.Capture.Method, target.Capture.Path)
-				confirmed, confirmErr := promptConfirm(cmd, prompt)
+				prompt := fmt.Sprintf("Delete capture %s (%s %s)?", id, target.Capture.Method, target.Capture.Path)
+				confirmed, confirmErr := prompter.Confirm(prompt, cmd.InOrStdin(), cmd.OutOrStdout())
 				if confirmErr != nil {
 					return confirmErr
 				}
 				if !confirmed {
-					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Cancelled.")
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatCancelled())
 					return nil
 				}
 			}
@@ -65,7 +67,7 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 			if len(shortID) > 8 {
 				shortID = shortID[:8]
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted capture %s (%s)\n", shortID, deleted.File)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess(fmt.Sprintf("Deleted capture %s (%s)", shortID, deleted.File)))
 			return nil
 		},
 	}
@@ -73,22 +75,4 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
 	return cmd
-}
-
-func promptConfirm(cmd *cobra.Command, prompt string) (bool, error) {
-	_, _ = fmt.Fprint(cmd.OutOrStdout(), prompt)
-	reader := bufio.NewReader(cmd.InOrStdin())
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			normalized := strings.TrimSpace(strings.ToLower(line))
-			if normalized == "" {
-				return false, nil
-			}
-			return normalized == "y" || normalized == "yes", nil
-		}
-		return false, err
-	}
-	normalized := strings.TrimSpace(strings.ToLower(line))
-	return normalized == "y" || normalized == "yes", nil
 }

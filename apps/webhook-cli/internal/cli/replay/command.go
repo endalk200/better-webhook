@@ -2,17 +2,16 @@ package replay
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	appreplay "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/replay"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 type ServiceFactory func(capturesDir string) (*appreplay.Service, error)
@@ -53,13 +52,18 @@ func NewCommand(deps Dependencies) *cobra.Command {
 				})
 			}
 
-			result, err := replayService.Replay(ctx, appreplay.ReplayRequest{
-				Selector:        replayArgs.Selector,
-				TargetURL:       replayArgs.TargetURL,
-				BaseURL:         replayArgs.BaseURL,
-				MethodOverride:  replayArgs.Method,
-				HeaderOverrides: headerOverrides,
-				Timeout:         replayArgs.Timeout,
+			var result appreplay.ReplayResult
+			err = ui.WithSpinner("Replaying capture...", cmd.OutOrStdout(), func() error {
+				var replayErr error
+				result, replayErr = replayService.Replay(ctx, appreplay.ReplayRequest{
+					Selector:        replayArgs.Selector,
+					TargetURL:       replayArgs.TargetURL,
+					BaseURL:         replayArgs.BaseURL,
+					MethodOverride:  replayArgs.Method,
+					HeaderOverrides: headerOverrides,
+					Timeout:         replayArgs.Timeout,
+				})
+				return replayErr
 			})
 			if err != nil {
 				return mapReplayCommandError(err, replayArgs.Selector)
@@ -76,20 +80,20 @@ func NewCommand(deps Dependencies) *cobra.Command {
 
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"Replayed capture %s [%s] %s %s -> %s\n",
-				shortID,
-				provider,
-				result.Method,
-				result.Capture.Capture.Path,
+				"%s %s %s %s %s %s\n",
+				ui.FormatSuccess("Replayed"),
+				ui.Muted.Render(shortID),
+				ui.FormatProvider(provider),
+				ui.FormatMethod(result.Method),
+				ui.Muted.Render("->"),
 				result.TargetURL,
 			)
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"Status: %d %s\n",
-				result.Response.StatusCode,
-				result.Response.StatusText,
+				"  %s  %s\n",
+				ui.FormatStatusCode(result.Response.StatusCode, result.Response.StatusText),
+				ui.FormatDuration(result.Response.Duration),
 			)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Duration: %s\n", formatDuration(result.Response.Duration))
 
 			if replayArgs.Verbose {
 				printVerboseOutput(cmd, result)
@@ -167,40 +171,28 @@ func mapReplayCommandError(err error, selector string) error {
 }
 
 func printVerboseOutput(cmd *cobra.Command, result appreplay.ReplayResult) {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Request headers:")
-	for _, header := range result.SentHeaders {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "- %s: %s\n", header.Key, header.Value)
+	if len(result.SentHeaders) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Request headers"))
+		pairs := make([][]string, 0, len(result.SentHeaders))
+		for _, header := range result.SentHeaders {
+			pairs = append(pairs, []string{header.Key, header.Value})
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
 	}
 
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Response headers:")
-	for _, header := range result.Response.Headers {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "- %s: %s\n", header.Key, header.Value)
+	if len(result.Response.Headers) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response headers"))
+		pairs := make([][]string, 0, len(result.Response.Headers))
+		for _, header := range result.Response.Headers {
+			pairs = append(pairs, []string{header.Key, header.Value})
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
 	}
 
 	if len(result.Response.Body) == 0 {
 		return
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Response body:")
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatBodyPreview(result.Response.Body, result.Response.BodyTruncated))
-}
-
-func formatBodyPreview(body []byte, truncated bool) string {
-	preview := string(body)
-	var parsed interface{}
-	if json.Unmarshal(body, &parsed) == nil {
-		if formatted, err := json.MarshalIndent(parsed, "", "  "); err == nil {
-			preview = string(formatted)
-		}
-	}
-	if truncated {
-		return preview + "\n... (truncated)"
-	}
-	return preview
-}
-
-func formatDuration(value time.Duration) string {
-	if value < time.Millisecond {
-		return value.String()
-	}
-	return value.Round(time.Millisecond).String()
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response body"))
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatBodyPreview(result.Response.Body, result.Response.BodyTruncated))
 }

@@ -5,6 +5,7 @@ import (
 
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/captures"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/replay"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 type ServiceFactory func(capturesDir string) (*appcaptures.Service, error)
@@ -12,6 +13,7 @@ type ServiceFactory func(capturesDir string) (*appcaptures.Service, error)
 type Dependencies struct {
 	ServiceFactory     ServiceFactory
 	ReplayDependencies replaycmd.Dependencies
+	Prompter           ui.Prompter
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {

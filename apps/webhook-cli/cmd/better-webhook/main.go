@@ -25,6 +25,7 @@ import (
 	rootcmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/root"
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/templates"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/time"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/version"
 )
 
@@ -48,7 +49,7 @@ func main() {
 	})
 
 	if err := rootCommand.Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, ui.FormatError(err))
 		os.Exit(1)
 	}
 }

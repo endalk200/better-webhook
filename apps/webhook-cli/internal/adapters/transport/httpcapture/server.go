@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	charmlog "github.com/charmbracelet/log"
 
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/capture"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
@@ -27,7 +28,8 @@ var (
 )
 
 type Logger interface {
-	Printf(format string, values ...interface{})
+	Info(msg interface{}, keyvals ...interface{})
+	Warn(msg interface{}, keyvals ...interface{})
 }
 
 type RouteResolver interface {
@@ -70,7 +72,7 @@ func NewServer(options ServerOptions) (*Server, error) {
 
 	logger := options.Logger
 	if logger == nil {
-		logger = log.Default()
+		logger = charmlog.Default()
 	}
 
 	routeResolver := options.RouteResolver
@@ -211,17 +213,23 @@ func (s *Server) handleCaptureRequest(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if result.RelayErr != nil && s.options.Verbose {
-		s.logger.Printf("relay hook error: %s", logging.SanitizeForLog(result.RelayErr.Error()))
+	if result.RelayErr != nil {
+		s.logger.Warn("relay hook error", "err", logging.SanitizeForLog(result.RelayErr.Error()))
 	}
+
 	if s.options.Verbose {
-		s.logger.Printf(
-			"captured %s %s provider=%s file=%s body=%dB",
-			logging.SanitizeForLog(result.Saved.Capture.Method),
-			logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
-			logging.SanitizeForLog(result.Saved.Capture.Provider),
-			logging.SanitizeForLog(result.Saved.File),
-			result.Saved.Capture.ContentLength,
+		s.logger.Info("captured",
+			"method", logging.SanitizeForLog(result.Saved.Capture.Method),
+			"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
+			"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
+			"file", logging.SanitizeForLog(result.Saved.File),
+			"body", fmt.Sprintf("%dB", result.Saved.Capture.ContentLength),
+		)
+	} else {
+		s.logger.Info("captured",
+			"method", logging.SanitizeForLog(result.Saved.Capture.Method),
+			"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
+			"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
 		)
 	}
 
