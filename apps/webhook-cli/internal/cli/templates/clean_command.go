@@ -1,16 +1,14 @@
 package templates
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newCleanCommand(deps Dependencies) *cobra.Command {
@@ -39,17 +37,22 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return mapTemplateCommandError(err, "")
 			}
+			prompter := deps.Prompter
+			if prompter == nil {
+				prompter = ui.DefaultPrompter
+			}
 			if len(items) == 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No local templates to remove.")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("No local templates to remove."))
 				return nil
 			}
 			if !cleanArgs.Force {
-				confirmed, confirmErr := promptTemplateCleanConfirm(cmd, fmt.Sprintf("Delete all %d template(s)? [y/N]: ", len(items)))
+				prompt := fmt.Sprintf("Delete all %d template(s)?", len(items))
+				confirmed, confirmErr := prompter.Confirm(prompt, cmd.InOrStdin(), cmd.OutOrStdout())
 				if confirmErr != nil {
 					return confirmErr
 				}
 				if !confirmed {
-					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Cancelled.")
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatCancelled())
 					return nil
 				}
 			}
@@ -57,7 +60,7 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 			if err != nil {
 				return mapTemplateCommandError(err, "")
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed %d template(s)\n", deletedCount)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess(fmt.Sprintf("Removed %d template(s)", deletedCount)))
 			return nil
 		},
 	}
@@ -65,22 +68,4 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
-}
-
-func promptTemplateCleanConfirm(cmd *cobra.Command, prompt string) (bool, error) {
-	_, _ = fmt.Fprint(cmd.OutOrStdout(), prompt)
-	reader := bufio.NewReader(cmd.InOrStdin())
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			normalized := strings.TrimSpace(strings.ToLower(line))
-			if normalized == "" {
-				return false, nil
-			}
-			return normalized == "y" || normalized == "yes", nil
-		}
-		return false, err
-	}
-	normalized := strings.TrimSpace(strings.ToLower(line))
-	return normalized == "y" || normalized == "yes", nil
 }

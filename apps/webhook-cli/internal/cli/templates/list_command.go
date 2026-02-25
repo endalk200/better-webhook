@@ -4,14 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
-	"strings"
 
 	"github.com/spf13/cobra"
 
-	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newListCommand(deps Dependencies) *cobra.Command {
@@ -42,24 +39,28 @@ func newListCommand(deps Dependencies) *cobra.Command {
 				return mapTemplateCommandError(err, "")
 			}
 			if len(templates) == 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No remote templates found.")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("No remote templates found."))
 				return nil
 			}
 
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Available templates:")
-			grouped := groupRemoteTemplatesByProvider(templates)
-			providers := slices.Sorted(maps.Keys(grouped))
-			for _, provider := range providers {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", strings.ToUpper(provider))
-				for _, item := range grouped[provider] {
-					status := "remote"
-					if item.IsDownloaded {
-						status = "downloaded"
-					}
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    - %s [%s]\n", item.Metadata.ID, status)
+			rows := make([][]string, 0, len(templates))
+			for _, item := range templates {
+				status := ui.Muted.Render("remote")
+				if item.IsDownloaded {
+					status = ui.Success.Render("downloaded")
 				}
+				rows = append(rows, []string{
+					item.Metadata.ID,
+					ui.FormatProvider(item.Metadata.Provider),
+					status,
+				})
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total: %d template(s)\n", len(templates))
+
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewTable(
+				[]string{"Template", "Provider", "Status"},
+				rows,
+			))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Muted.Render(fmt.Sprintf("Total: %d template(s)", len(templates))))
 			return nil
 		},
 	}
@@ -68,16 +69,4 @@ func newListCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
-}
-
-func groupRemoteTemplatesByProvider(items []domain.RemoteTemplate) map[string][]domain.RemoteTemplate {
-	grouped := make(map[string][]domain.RemoteTemplate)
-	for _, item := range items {
-		provider := item.Metadata.Provider
-		if strings.TrimSpace(provider) == "" {
-			provider = "unknown"
-		}
-		grouped[provider] = append(grouped[provider], item)
-	}
-	return grouped
 }

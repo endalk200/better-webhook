@@ -11,12 +11,14 @@ import (
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	platformplaceholders "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/placeholders"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 type ServiceFactory func(templatesDir string) (*apptemplates.Service, error)
 
 type Dependencies struct {
 	ServiceFactory ServiceFactory
+	Prompter       ui.Prompter
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {

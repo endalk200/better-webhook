@@ -4,14 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
-	"strings"
 
 	"github.com/spf13/cobra"
 
-	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newLocalCommand(deps Dependencies) *cobra.Command {
@@ -40,35 +37,28 @@ func newLocalCommand(deps Dependencies) *cobra.Command {
 				return mapTemplateCommandError(err, "")
 			}
 			if len(items) == 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No local templates found.")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("No local templates found."))
 				return nil
 			}
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Local templates:")
-			grouped := groupLocalTemplatesByProvider(items)
-			providers := slices.Sorted(maps.Keys(grouped))
-			for _, provider := range providers {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", strings.ToUpper(provider))
-				for _, item := range grouped[provider] {
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s (%s)\n", item.ID, item.Metadata.Event)
-				}
+
+			rows := make([][]string, 0, len(items))
+			for _, item := range items {
+				rows = append(rows, []string{
+					item.ID,
+					ui.FormatProvider(item.Metadata.Provider),
+					item.Metadata.Event,
+				})
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total: %d template(s)\n", len(items))
+
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewTable(
+				[]string{"Template", "Provider", "Event"},
+				rows,
+			))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Muted.Render(fmt.Sprintf("Total: %d template(s)", len(items))))
 			return nil
 		},
 	}
 	cmd.Flags().String("provider", "", "Filter by provider")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
-}
-
-func groupLocalTemplatesByProvider(items []domain.LocalTemplate) map[string][]domain.LocalTemplate {
-	grouped := make(map[string][]domain.LocalTemplate)
-	for _, item := range items {
-		provider := strings.TrimSpace(item.Metadata.Provider)
-		if provider == "" {
-			provider = "unknown"
-		}
-		grouped[provider] = append(grouped[provider], item)
-	}
-	return grouped
 }

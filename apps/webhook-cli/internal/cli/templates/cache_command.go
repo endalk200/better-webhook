@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newCacheCommand(deps Dependencies) *cobra.Command {
@@ -44,7 +45,7 @@ func newCacheClearCommand(deps Dependencies) *cobra.Command {
 			if err := service.ClearCache(ctx); err != nil {
 				return mapTemplateCommandError(err, "")
 			}
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Template cache cleared.")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess("Template cache cleared."))
 			return nil
 		},
 	}

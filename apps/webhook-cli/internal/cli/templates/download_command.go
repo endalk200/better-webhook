@@ -7,7 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
+	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newDownloadCommand(deps Dependencies) *cobra.Command {
@@ -49,33 +52,43 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if downloadArgs.All {
-				result, err := service.DownloadAll(ctx, downloadArgs.Refresh)
+				var result apptemplates.DownloadAllResult
+				err = ui.WithSpinner("Downloading all templates...", cmd.OutOrStdout(), func() error {
+					var dlErr error
+					result, dlErr = service.DownloadAll(ctx, downloadArgs.Refresh)
+					return dlErr
+				})
 				if err != nil {
 					return mapTemplateCommandError(err, "")
 				}
 				if result.Total > 0 && result.Skipped == result.Total {
-					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "All templates already downloaded.")
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("All templates already downloaded."))
 					return nil
 				}
-				_, _ = fmt.Fprintf(
-					cmd.OutOrStdout(),
-					"Template download complete: downloaded=%d skipped=%d failed=%d\n",
-					result.Downloaded,
-					result.Skipped,
-					result.Failed,
-				)
+
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess("Download complete"))
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable([][]string{
+					{"Downloaded", ui.Success.Render(fmt.Sprintf("%d", result.Downloaded))},
+					{"Skipped", ui.Muted.Render(fmt.Sprintf("%d", result.Skipped))},
+					{"Failed", formatFailedCount(result.Failed)},
+				}))
 				for _, failedID := range result.FailedIDs {
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "- failed: %s\n", failedID)
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s %s\n", ui.ErrorIcon, failedID)
 				}
 				return nil
 			}
 
-			localTemplate, err := service.Download(ctx, downloadArgs.TemplateID, downloadArgs.Refresh)
+			var localTemplate domain.LocalTemplate
+			err = ui.WithSpinner("Downloading template...", cmd.OutOrStdout(), func() error {
+				var dlErr error
+				localTemplate, dlErr = service.Download(ctx, downloadArgs.TemplateID, downloadArgs.Refresh)
+				return dlErr
+			})
 			if err != nil {
 				return mapTemplateCommandError(err, downloadArgs.TemplateID)
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloaded template %s\n", localTemplate.ID)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Saved to: %s\n", localTemplate.FilePath)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess(fmt.Sprintf("Downloaded template %s", localTemplate.ID)))
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s %s\n", ui.Muted.Render("Saved to:"), localTemplate.FilePath)
 			return nil
 		},
 	}
@@ -84,4 +97,11 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
+}
+
+func formatFailedCount(count int) string {
+	if count > 0 {
+		return ui.Error.Render(fmt.Sprintf("%d", count))
+	}
+	return ui.Muted.Render("0")
 }
