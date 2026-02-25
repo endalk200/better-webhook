@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 )
@@ -38,5 +39,25 @@ func TestWithSpinnerPropagatesActionErrorWhenTTYRenderingIsDisabled(t *testing.T
 	})
 	if !errors.Is(err, expected) {
 		t.Fatalf("expected action error to propagate, got %v", err)
+	}
+}
+
+func TestWithSpinnerRendersCompletionWhenRenderingIsForced(t *testing.T) {
+	originalRenderEnabled := spinnerRenderEnabled
+	spinnerRenderEnabled = func(_ io.Writer) bool { return true }
+	t.Cleanup(func() {
+		spinnerRenderEnabled = originalRenderEnabled
+	})
+
+	var out bytes.Buffer
+	err := WithSpinner("testing spinner", &out, func() error {
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected spinner action to succeed, got %v", err)
+	}
+	rendered := out.String()
+	if !strings.Contains(rendered, SuccessIcon) || !strings.Contains(rendered, "testing spinner") {
+		t.Fatalf("expected completion line in rendered spinner output, got %q", rendered)
 	}
 }

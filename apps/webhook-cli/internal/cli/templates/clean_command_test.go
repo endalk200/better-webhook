@@ -12,13 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/template"
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/time"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/testutil"
 )
 
 func TestCleanCommandRejectsUnexpectedArgs(t *testing.T) {
@@ -34,8 +33,11 @@ type fakeTemplatePrompter struct {
 	called    int
 }
 
-func (p *fakeTemplatePrompter) Confirm(_ string, _ io.Reader, _ io.Writer) (bool, error) {
+func (p *fakeTemplatePrompter) Confirm(prompt string, _ io.Reader, out io.Writer) (bool, error) {
 	p.called++
+	if out != nil {
+		_, _ = fmt.Fprintf(out, "%s [y/N]: ", prompt)
+	}
 	if p.err != nil {
 		return false, p.err
 	}
@@ -56,13 +58,20 @@ func TestCleanCommandCancelledByPromptKeepsTemplates(t *testing.T) {
 	cmd.SetErr(&output)
 	cmd.SetIn(strings.NewReader("unused\n"))
 	cmd.SetArgs([]string{"--templates-dir", templatesDir})
-	initializeTemplatesRuntimeConfig(t, cmd, templatesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: templatesDir,
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute clean command: %v", err)
 	}
 	if prompter.called != 1 {
 		t.Fatalf("expected prompter to be called once, got %d", prompter.called)
+	}
+	if !strings.Contains(output.String(), "Delete all 1 template(s)?") {
+		t.Fatalf("expected prompt output, got %q", output.String())
 	}
 	if !strings.Contains(output.String(), "Cancelled.") {
 		t.Fatalf("expected cancellation output, got %q", output.String())
@@ -94,7 +103,11 @@ func TestCleanCommandForceSkipsPromptAndDeletesTemplates(t *testing.T) {
 	cmd.SetOut(&output)
 	cmd.SetErr(&output)
 	cmd.SetArgs([]string{"--templates-dir", templatesDir, "--force"})
-	initializeTemplatesRuntimeConfig(t, cmd, templatesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: templatesDir,
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute clean command: %v", err)
@@ -131,7 +144,11 @@ func TestCleanCommandReturnsPromptError(t *testing.T) {
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{"--templates-dir", templatesDir})
-	initializeTemplatesRuntimeConfig(t, cmd, templatesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: templatesDir,
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	err := cmd.Execute()
 	if err == nil {
@@ -142,7 +159,7 @@ func TestCleanCommandReturnsPromptError(t *testing.T) {
 	}
 }
 
-func TestCleanCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
+func TestCleanCommandReturnsErrorWhenPrompterIsNilWithoutForce(t *testing.T) {
 	templatesDir := t.TempDir()
 	seedLocalTemplateForCleanTest(t, templatesDir, "github-push")
 
@@ -152,8 +169,12 @@ func TestCleanCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
 	})
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
-	cmd.SetArgs([]string{"--templates-dir", templatesDir, "--force"})
-	initializeTemplatesRuntimeConfig(t, cmd, templatesDir)
+	cmd.SetArgs([]string{"--templates-dir", templatesDir})
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: templatesDir,
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	err := cmd.Execute()
 	if err == nil {
@@ -161,6 +182,32 @@ func TestCleanCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "templates prompter cannot be nil") {
 		t.Fatalf("expected missing prompter error, got %v", err)
+	}
+}
+
+func TestCleanCommandAllowsNilPrompterWithForce(t *testing.T) {
+	templatesDir := t.TempDir()
+	seedLocalTemplateForCleanTest(t, templatesDir, "github-push")
+
+	cmd := newCleanCommand(Dependencies{
+		ServiceFactory: testTemplateServiceFactory(t),
+		Prompter:       nil,
+	})
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{"--templates-dir", templatesDir, "--force"})
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  t.TempDir(),
+		TemplatesDir: templatesDir,
+		LogLevel:     runtime.LogLevelInfo,
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected force clean to succeed without prompter, got %v", err)
+	}
+	if !strings.Contains(output.String(), "Removed 1 template(s)") {
+		t.Fatalf("expected clean success output, got %q", output.String())
 	}
 }
 
@@ -216,26 +263,5 @@ func seedLocalTemplateForCleanTest(t *testing.T, templatesDir string, id string)
 		Body:     json.RawMessage(`{"ok":true}`),
 	}, downloadedAt); err != nil {
 		t.Fatalf("seed local template: %v", err)
-	}
-}
-
-type staticTemplateConfigLoader struct {
-	config runtime.AppConfig
-}
-
-func (l staticTemplateConfigLoader) Load(_ string) (runtime.AppConfig, error) {
-	return l.config, nil
-}
-
-func initializeTemplatesRuntimeConfig(t *testing.T, cmd *cobra.Command, templatesDir string) {
-	t.Helper()
-	if err := runtime.InitializeConfig(cmd, staticTemplateConfigLoader{
-		config: runtime.AppConfig{
-			CapturesDir:  t.TempDir(),
-			TemplatesDir: templatesDir,
-			LogLevel:     runtime.LogLevelInfo,
-		},
-	}); err != nil {
-		t.Fatalf("initialize runtime config: %v", err)
 	}
 }

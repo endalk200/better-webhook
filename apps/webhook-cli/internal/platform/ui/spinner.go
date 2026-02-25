@@ -15,6 +15,8 @@ type spinnerConfig struct {
 	printCompletion bool
 }
 
+var spinnerRenderEnabled = shouldRenderSpinner
+
 func defaultSpinnerConfig() spinnerConfig {
 	return spinnerConfig{
 		printCompletion: true,
@@ -41,7 +43,7 @@ func WithSpinner(title string, out io.Writer, action func() error, options ...Sp
 		}
 		option(&config)
 	}
-	if !shouldRenderSpinner(out) {
+	if !spinnerRenderEnabled(out) {
 		return action()
 	}
 

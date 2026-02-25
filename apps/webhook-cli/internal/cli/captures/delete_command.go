@@ -2,6 +2,7 @@ package captures
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -17,10 +18,6 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 		Short:   "Delete a captured webhook",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if deps.Prompter == nil {
-				return fmt.Errorf("captures prompter cannot be nil")
-			}
-
 			deleteArgs, err := runtime.ResolveCapturesDeleteArgs(cmd, args[0])
 			if err != nil {
 				return err
@@ -42,6 +39,9 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 			}
 
 			if !deleteArgs.Force {
+				if deps.Prompter == nil {
+					return errors.New("captures prompter cannot be nil")
+				}
 				id := target.Capture.ID
 				if len(id) > 8 {
 					id = id[:8]

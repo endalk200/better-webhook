@@ -21,7 +21,6 @@ import (
 )
 
 const maxRequestBodyBytes int64 = 1 << 20
-const maxRelayErrorLogLength = 200
 
 var (
 	errRequestBodyTooLarge = errors.New("request body exceeds maximum size")
@@ -215,10 +214,7 @@ func (s *Server) handleCaptureRequest(w http.ResponseWriter, req *http.Request) 
 	}
 
 	if result.RelayErr != nil {
-		relayErr := logging.SanitizeForLog(result.RelayErr.Error())
-		if len(relayErr) > maxRelayErrorLogLength {
-			relayErr = relayErr[:maxRelayErrorLogLength] + "..."
-		}
+		relayErr := logging.TruncateForLog(logging.SanitizeForLog(result.RelayErr.Error()), 200)
 		s.logger.Warn("relay hook error", "err", relayErr)
 	}
 
