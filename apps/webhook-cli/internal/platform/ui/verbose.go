@@ -13,8 +13,8 @@ import (
 func PrintReplayVerboseOutput(out io.Writer, result appreplay.ReplayResult) {
 	printVerboseRequestResponse(
 		out,
-		headersToRows(result.SentHeaders),
-		headersToRows(result.Response.Headers),
+		captureHeadersToRows(result.SentHeaders),
+		captureHeadersToRows(result.Response.Headers),
 		result.Response.Body,
 		result.Response.BodyTruncated,
 	)
@@ -23,8 +23,8 @@ func PrintReplayVerboseOutput(out io.Writer, result appreplay.ReplayResult) {
 func PrintTemplateRunVerboseOutput(out io.Writer, result apptemplates.RunResult) {
 	printVerboseRequestResponse(
 		out,
-		headersToRows(result.SentHeaders),
-		headersToRows(result.Response.Headers),
+		templateHeadersToRows(result.SentHeaders),
+		templateHeadersToRows(result.Response.Headers),
 		result.Response.Body,
 		result.Response.BodyTruncated,
 	)
@@ -61,19 +61,18 @@ func printVerboseRequestResponse(
 	_, _ = fmt.Fprintln(out, FormatBodyPreview(responseBody, responseBodyTruncated))
 }
 
-type verboseHeaderEntry interface {
-	capturedomain.HeaderEntry | templatedomain.HeaderEntry
-}
-
-func headersToRows[T verboseHeaderEntry](headers []T) [][]string {
+func captureHeadersToRows(headers []capturedomain.HeaderEntry) [][]string {
 	rows := make([][]string, 0, len(headers))
 	for _, header := range headers {
-		switch value := any(header).(type) {
-		case capturedomain.HeaderEntry:
-			rows = append(rows, []string{value.Key, value.Value})
-		case templatedomain.HeaderEntry:
-			rows = append(rows, []string{value.Key, value.Value})
-		}
+		rows = append(rows, []string{header.Key, header.Value})
+	}
+	return rows
+}
+
+func templateHeadersToRows(headers []templatedomain.HeaderEntry) [][]string {
+	rows := make([][]string, 0, len(headers))
+	for _, header := range headers {
+		rows = append(rows, []string{header.Key, header.Value})
 	}
 	return rows
 }
