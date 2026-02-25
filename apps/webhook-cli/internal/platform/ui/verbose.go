@@ -13,8 +13,8 @@ import (
 func PrintReplayVerboseOutput(out io.Writer, result appreplay.ReplayResult) {
 	printVerboseRequestResponse(
 		out,
-		captureHeadersToRows(result.SentHeaders),
-		captureHeadersToRows(result.Response.Headers),
+		headersToRows(result.SentHeaders),
+		headersToRows(result.Response.Headers),
 		result.Response.Body,
 		result.Response.BodyTruncated,
 	)
@@ -23,8 +23,8 @@ func PrintReplayVerboseOutput(out io.Writer, result appreplay.ReplayResult) {
 func PrintTemplateRunVerboseOutput(out io.Writer, result apptemplates.RunResult) {
 	printVerboseRequestResponse(
 		out,
-		templateHeadersToRows(result.SentHeaders),
-		templateHeadersToRows(result.Response.Headers),
+		headersToRows(result.SentHeaders),
+		headersToRows(result.Response.Headers),
 		result.Response.Body,
 		result.Response.BodyTruncated,
 	)
@@ -48,6 +48,7 @@ func printVerboseRequestResponse(
 	}
 
 	if len(responseHeaders) > 0 {
+		_, _ = fmt.Fprintln(out)
 		_, _ = fmt.Fprintln(out, Bold.Render("Response headers"))
 		_, _ = fmt.Fprintln(out, NewKeyValueTable(responseHeaders))
 	}
@@ -55,22 +56,24 @@ func printVerboseRequestResponse(
 	if len(responseBody) == 0 {
 		return
 	}
+	_, _ = fmt.Fprintln(out)
 	_, _ = fmt.Fprintln(out, Bold.Render("Response body"))
 	_, _ = fmt.Fprintln(out, FormatBodyPreview(responseBody, responseBodyTruncated))
 }
 
-func captureHeadersToRows(headers []capturedomain.HeaderEntry) [][]string {
-	rows := make([][]string, 0, len(headers))
-	for _, header := range headers {
-		rows = append(rows, []string{header.Key, header.Value})
-	}
-	return rows
+type verboseHeaderEntry interface {
+	capturedomain.HeaderEntry | templatedomain.HeaderEntry
 }
 
-func templateHeadersToRows(headers []templatedomain.HeaderEntry) [][]string {
+func headersToRows[T verboseHeaderEntry](headers []T) [][]string {
 	rows := make([][]string, 0, len(headers))
 	for _, header := range headers {
-		rows = append(rows, []string{header.Key, header.Value})
+		switch value := any(header).(type) {
+		case capturedomain.HeaderEntry:
+			rows = append(rows, []string{value.Key, value.Value})
+		case templatedomain.HeaderEntry:
+			rows = append(rows, []string{value.Key, value.Value})
+		}
 	}
 	return rows
 }

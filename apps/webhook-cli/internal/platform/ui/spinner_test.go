@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -27,5 +28,15 @@ func TestWithSpinnerRunsActionWhenTTYRenderingIsDisabled(t *testing.T) {
 	}
 	if !called {
 		t.Fatalf("expected action to run")
+	}
+}
+
+func TestWithSpinnerPropagatesActionErrorWhenTTYRenderingIsDisabled(t *testing.T) {
+	expected := errors.New("action failed")
+	err := WithSpinner("testing spinner", &bytes.Buffer{}, func() error {
+		return expected
+	})
+	if !errors.Is(err, expected) {
+		t.Fatalf("expected action error to propagate, got %v", err)
 	}
 }

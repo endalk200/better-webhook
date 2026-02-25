@@ -9,12 +9,37 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func WithSpinner(title string, out io.Writer, action func() error) error {
+type SpinnerOption func(*spinnerConfig)
+
+type spinnerConfig struct {
+	printCompletion bool
+}
+
+func defaultSpinnerConfig() spinnerConfig {
+	return spinnerConfig{
+		printCompletion: true,
+	}
+}
+
+func WithoutSpinnerCompletion() SpinnerOption {
+	return func(config *spinnerConfig) {
+		config.printCompletion = false
+	}
+}
+
+func WithSpinner(title string, out io.Writer, action func() error, options ...SpinnerOption) error {
 	if action == nil {
 		return fmt.Errorf("action is nil")
 	}
 	if out == nil {
 		out = os.Stdout
+	}
+	config := defaultSpinnerConfig()
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		option(&config)
 	}
 	if !shouldRenderSpinner(out) {
 		return action()
@@ -37,7 +62,11 @@ func WithSpinner(title string, out io.Writer, action func() error) error {
 				_, _ = fmt.Fprintf(out, "\r%s %s\n", ErrorIcon, title)
 				return err
 			}
-			_, _ = fmt.Fprintf(out, "\r%s %s\n", SuccessIcon, title)
+			if config.printCompletion {
+				_, _ = fmt.Fprintf(out, "\r%s %s\n", SuccessIcon, title)
+				return nil
+			}
+			_, _ = fmt.Fprint(out, "\r\033[2K")
 			return nil
 		case <-ticker.C:
 			frame := Info.Render(frames[frameIndex%len(frames)])
@@ -52,5 +81,6 @@ func shouldRenderSpinner(out io.Writer) bool {
 	if !ok {
 		return false
 	}
-	return isatty.IsTerminal(outFile.Fd()) && os.Getenv("TERM") != "dumb"
+	fd := outFile.Fd()
+	return (isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)) && os.Getenv("TERM") != "dumb"
 }
