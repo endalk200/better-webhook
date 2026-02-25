@@ -220,12 +220,12 @@ func (s *Server) handleCaptureRequest(w http.ResponseWriter, req *http.Request) 
 
 	keyvals := []interface{}{
 		"method", logging.SanitizeForLog(result.Saved.Capture.Method),
-		"path", logging.SanitizeForLog(logging.TruncateForLog(result.Saved.Capture.Path, 256)),
+		"path", logging.TruncateForLog(logging.SanitizeForLog(result.Saved.Capture.Path), 256),
 		"provider", logging.SanitizeForLog(result.Saved.Capture.Provider),
 	}
 	if s.options.Verbose {
 		keyvals = append(keyvals,
-			"file", logging.SanitizeForLog(result.Saved.File),
+			"file", logging.TruncateForLog(logging.SanitizeForLog(result.Saved.File), 256),
 			"body_bytes", result.Saved.Capture.ContentLength,
 		)
 	}

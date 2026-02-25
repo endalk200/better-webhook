@@ -44,9 +44,9 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 			}
 
 			var result apptemplates.RunResult
-			err = ui.WithSpinner("Running template...", cmd.OutOrStdout(), func() error {
+			err = ui.WithSpinner(ctx, "Running template...", cmd.OutOrStdout(), func(spinnerCtx context.Context) error {
 				var runErr error
-				result, runErr = service.Run(ctx, apptemplates.RunRequest{
+				result, runErr = service.Run(spinnerCtx, apptemplates.RunRequest{
 					TemplateID:           runArgs.TemplateID,
 					TargetURL:            runArgs.TargetURL,
 					Secret:               runArgs.Secret,

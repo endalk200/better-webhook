@@ -53,9 +53,9 @@ func NewCommand(deps Dependencies) *cobra.Command {
 			}
 
 			var result appreplay.ReplayResult
-			err = ui.WithSpinner("Replaying capture...", cmd.OutOrStdout(), func() error {
+			err = ui.WithSpinner(ctx, "Replaying capture...", cmd.OutOrStdout(), func(spinnerCtx context.Context) error {
 				var replayErr error
-				result, replayErr = replayService.Replay(ctx, appreplay.ReplayRequest{
+				result, replayErr = replayService.Replay(spinnerCtx, appreplay.ReplayRequest{
 					Selector:        replayArgs.Selector,
 					TargetURL:       replayArgs.TargetURL,
 					BaseURL:         replayArgs.BaseURL,

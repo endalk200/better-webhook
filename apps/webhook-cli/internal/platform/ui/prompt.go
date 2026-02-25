@@ -38,11 +38,14 @@ func (HuhPrompter) Confirm(prompt string, in io.Reader, out io.Writer) (bool, er
 
 	if shouldUseInteractivePrompt(in, out) {
 		var confirmed bool
-		err := huh.NewConfirm().
+		confirm := huh.NewConfirm().
 			Title(prompt).
 			Affirmative("Yes").
 			Negative("No").
-			Value(&confirmed).
+			Value(&confirmed)
+		err := huh.NewForm(huh.NewGroup(confirm)).
+			WithInput(in).
+			WithOutput(out).
 			Run()
 		if err != nil {
 			return false, err
@@ -59,10 +62,14 @@ func shouldUseInteractivePrompt(in io.Reader, out io.Writer) bool {
 	if !inIsFile || !outIsFile {
 		return false
 	}
-	if inFile != os.Stdin || outFile != os.Stdout {
+	if inFile != os.Stdin || !isSupportedPromptOutput(outFile) {
 		return false
 	}
 	return isatty.IsTerminal(inFile.Fd()) && isatty.IsTerminal(outFile.Fd()) && os.Getenv("TERM") != "dumb"
+}
+
+func isSupportedPromptOutput(out *os.File) bool {
+	return out == os.Stdout || out == os.Stderr
 }
 
 func confirmPlain(prompt string, in io.Reader, out io.Writer) (bool, error) {

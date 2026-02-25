@@ -53,9 +53,9 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 
 			if downloadArgs.All {
 				var result apptemplates.DownloadAllResult
-				err = ui.WithSpinner("Downloading all templates...", cmd.OutOrStdout(), func() error {
+				err = ui.WithSpinner(ctx, "Downloading all templates...", cmd.OutOrStdout(), func(spinnerCtx context.Context) error {
 					var dlErr error
-					result, dlErr = service.DownloadAll(ctx, downloadArgs.Refresh)
+					result, dlErr = service.DownloadAll(spinnerCtx, downloadArgs.Refresh)
 					return dlErr
 				})
 				if err != nil {
@@ -79,9 +79,9 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 			}
 
 			var localTemplate domain.LocalTemplate
-			err = ui.WithSpinner("Downloading template...", cmd.OutOrStdout(), func() error {
+			err = ui.WithSpinner(ctx, "Downloading template...", cmd.OutOrStdout(), func(spinnerCtx context.Context) error {
 				var dlErr error
-				localTemplate, dlErr = service.Download(ctx, downloadArgs.TemplateID, downloadArgs.Refresh)
+				localTemplate, dlErr = service.Download(spinnerCtx, downloadArgs.TemplateID, downloadArgs.Refresh)
 				return dlErr
 			})
 			if err != nil {
