@@ -46,7 +46,12 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 				if len(id) > 8 {
 					id = id[:8]
 				}
-				prompt := fmt.Sprintf("Delete capture %s (%s %s)?", id, target.Capture.Method, target.Capture.Path)
+				prompt := fmt.Sprintf(
+					"Delete capture %s (%s %s)?",
+					ui.SanitizeForTerminal(id),
+					ui.SanitizeForTerminal(target.Capture.Method),
+					ui.SanitizeForTerminal(target.Capture.Path),
+				)
 				confirmed, confirmErr := deps.Prompter.Confirm(prompt, cmd.InOrStdin(), cmd.ErrOrStderr())
 				if confirmErr != nil {
 					return confirmErr
@@ -66,7 +71,14 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 			if len(shortID) > 8 {
 				shortID = shortID[:8]
 			}
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess(fmt.Sprintf("Deleted capture %s (%s)", shortID, deleted.File)))
+			_, _ = fmt.Fprintln(
+				cmd.OutOrStdout(),
+				ui.FormatSuccess(fmt.Sprintf(
+					"Deleted capture %s (%s)",
+					ui.SanitizeForTerminal(shortID),
+					ui.SanitizeForTerminal(deleted.File),
+				)),
+			)
 			return nil
 		},
 	}

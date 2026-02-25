@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestWithSpinnerReturnsErrorWhenActionIsNil(t *testing.T) {
-	err := WithSpinner("testing spinner", &bytes.Buffer{}, nil)
+	err := WithSpinner(context.Background(), "testing spinner", &bytes.Buffer{}, nil)
 	if err == nil {
 		t.Fatalf("expected error when action is nil")
 	}
@@ -20,7 +21,7 @@ func TestWithSpinnerReturnsErrorWhenActionIsNil(t *testing.T) {
 
 func TestWithSpinnerRunsActionWhenTTYRenderingIsDisabled(t *testing.T) {
 	called := false
-	err := WithSpinner("testing spinner", &bytes.Buffer{}, func() error {
+	err := WithSpinner(context.Background(), "testing spinner", &bytes.Buffer{}, func(_ context.Context) error {
 		called = true
 		return nil
 	})
@@ -34,7 +35,7 @@ func TestWithSpinnerRunsActionWhenTTYRenderingIsDisabled(t *testing.T) {
 
 func TestWithSpinnerPropagatesActionErrorWhenTTYRenderingIsDisabled(t *testing.T) {
 	expected := errors.New("action failed")
-	err := WithSpinner("testing spinner", &bytes.Buffer{}, func() error {
+	err := WithSpinner(context.Background(), "testing spinner", &bytes.Buffer{}, func(_ context.Context) error {
 		return expected
 	})
 	if !errors.Is(err, expected) {
@@ -43,21 +44,18 @@ func TestWithSpinnerPropagatesActionErrorWhenTTYRenderingIsDisabled(t *testing.T
 }
 
 func TestWithSpinnerRendersCompletionWhenRenderingIsForced(t *testing.T) {
-	originalRenderEnabled := spinnerRenderEnabled
-	spinnerRenderEnabled = func(_ io.Writer) bool { return true }
-	t.Cleanup(func() {
-		spinnerRenderEnabled = originalRenderEnabled
-	})
-
 	var out bytes.Buffer
-	err := WithSpinner("testing spinner", &out, func() error {
+	err := WithSpinner(context.Background(), "testing spinner", &out, func(_ context.Context) error {
 		return nil
-	})
+	}, withSpinnerRenderPredicate(func(_ io.Writer) bool { return true }))
 	if err != nil {
 		t.Fatalf("expected spinner action to succeed, got %v", err)
 	}
 	rendered := out.String()
 	if !strings.Contains(rendered, SuccessIcon) || !strings.Contains(rendered, "testing spinner") {
 		t.Fatalf("expected completion line in rendered spinner output, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "\r\033[2K") {
+		t.Fatalf("expected completion render to clear line first, got %q", rendered)
 	}
 }

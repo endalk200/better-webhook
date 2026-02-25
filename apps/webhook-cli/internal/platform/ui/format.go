@@ -40,7 +40,7 @@ func FormatBodyPreview(body []byte, truncated bool) string {
 			preview = string(formatted)
 		}
 	}
-	preview = sanitizeForTerminal(preview)
+	preview = SanitizeForTerminal(preview)
 
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -70,7 +70,7 @@ func FormatCancelled() string {
 	return Muted.Render("Cancelled.")
 }
 
-func sanitizeForTerminal(text string) string {
+func SanitizeForTerminal(text string) string {
 	plainText := ansi.Strip(text)
 	var sanitized strings.Builder
 	sanitized.Grow(len(plainText))

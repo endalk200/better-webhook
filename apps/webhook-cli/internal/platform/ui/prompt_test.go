@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 )
@@ -65,5 +66,28 @@ func TestHuhPrompterConfirmRepromptsOnInvalidInput(t *testing.T) {
 	}
 	if strings.Count(output, "Delete capture? [y/N]:") < 2 {
 		t.Fatalf("expected prompt to be shown again after invalid answer, got %q", output)
+	}
+}
+
+func TestIsSupportedPromptOutputAcceptsStdoutAndStderr(t *testing.T) {
+	if !isSupportedPromptOutput(os.Stdout) {
+		t.Fatalf("expected stdout to be accepted for interactive prompt output")
+	}
+	if !isSupportedPromptOutput(os.Stderr) {
+		t.Fatalf("expected stderr to be accepted for interactive prompt output")
+	}
+}
+
+func TestIsSupportedPromptOutputRejectsOtherFiles(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "prompt-output-*")
+	if err != nil {
+		t.Fatalf("create temp file: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = file.Close()
+	})
+
+	if isSupportedPromptOutput(file) {
+		t.Fatalf("expected non-stdio file to be rejected for interactive prompt output")
 	}
 }

@@ -18,6 +18,9 @@ func (l StaticConfigLoader) Load(_ string) (runtime.AppConfig, error) {
 
 func InitializeRuntimeConfig(t testing.TB, cmd *cobra.Command, config runtime.AppConfig) {
 	t.Helper()
+	if cmd == nil {
+		t.Fatalf("initialize runtime config: command cannot be nil")
+	}
 	if err := runtime.InitializeConfig(cmd, StaticConfigLoader{Config: config}); err != nil {
 		t.Fatalf("initialize runtime config: %v", err)
 	}
