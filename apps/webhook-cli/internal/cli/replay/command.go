@@ -64,7 +64,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 					Timeout:         replayArgs.Timeout,
 				})
 				return replayErr
-			})
+			}, ui.WithoutSpinnerCompletion())
 			if err != nil {
 				return mapReplayCommandError(err, replayArgs.Selector)
 			}
@@ -73,17 +73,12 @@ func NewCommand(deps Dependencies) *cobra.Command {
 			if len(shortID) > 8 {
 				shortID = shortID[:8]
 			}
-			provider := result.Capture.Capture.Provider
-			if provider == "" {
-				provider = domain.ProviderUnknown
-			}
-
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
 				"%s %s %s %s %s %s\n",
 				ui.FormatSuccess("Replayed"),
 				ui.Muted.Render(shortID),
-				ui.FormatProvider(provider),
+				ui.FormatProvider(result.Capture.Capture.Provider),
 				ui.FormatMethod(result.Method),
 				ui.Muted.Render("->"),
 				result.TargetURL,

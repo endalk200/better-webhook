@@ -9,12 +9,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
 
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/config/toml"
@@ -36,10 +36,9 @@ import (
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/time"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/testutil"
 )
-
-var ansiEscapeSequence = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]`)
 
 func TestRootCommandShowsHelpByDefault(t *testing.T) {
 	rootCmd := newTestRootCommand(t)
@@ -133,9 +132,7 @@ func TestCapturesDeleteCommandDeletesByPrefix(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute captures delete: %v", err)
 	}
-	if !strings.Contains(normalizeCLIOutput(out.String()), "Deleted capture deadbeef") {
-		t.Fatalf("expected delete confirmation output, got %q", out.String())
-	}
+	assertContainsAll(t, normalizeCLIOutput(out.String()), "Deleted capture deadbeef")
 	if _, err := store.ResolveByIDOrPrefix(context.Background(), record.ID); err == nil {
 		t.Fatalf("expected capture to be deleted")
 	}
@@ -153,7 +150,7 @@ func TestCapturesDeleteCommandPromptCancellation(t *testing.T) {
 	}
 
 	configPath := writeCommandTestConfig(t, capturesDir)
-	rootCmd := newTestRootCommand(t)
+	rootCmd := newTestRootCommandWithPrompter(t, &testPrompter{confirmed: false})
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&out)
@@ -393,6 +390,7 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	var cleanOut bytes.Buffer
 	cleanCmd.SetOut(&cleanOut)
 	cleanCmd.SetErr(&cleanOut)
+	cleanCmd.SetIn(strings.NewReader("n\n"))
 	cleanCmd.SetArgs([]string{
 		"--config", configPath,
 		"templates", "clean", "--force",
@@ -436,7 +434,7 @@ func TestTemplatesCleanCommandPromptCancellation(t *testing.T) {
 		t.Fatalf("execute templates download: %v", err)
 	}
 
-	cleanCmd := newTestRootCommand(t)
+	cleanCmd := newTestRootCommandWithPrompter(t, &testPrompter{confirmed: false})
 	var cleanOut bytes.Buffer
 	cleanCmd.SetOut(&cleanOut)
 	cleanCmd.SetErr(&cleanOut)
@@ -644,7 +642,7 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 }
 
 func normalizeCLIOutput(raw string) string {
-	withoutANSI := ansiEscapeSequence.ReplaceAllString(raw, "")
+	withoutANSI := ansi.Strip(raw)
 	return strings.ReplaceAll(withoutANSI, "\r", "")
 }
 
@@ -658,6 +656,10 @@ func assertContainsAll(t *testing.T, output string, expected ...string) {
 }
 
 func newTestRootCommand(t *testing.T) *cobra.Command {
+	return newTestRootCommandWithPrompter(t, ui.DefaultPrompter)
+}
+
+func newTestRootCommandWithPrompter(t *testing.T, prompter ui.Prompter) *cobra.Command {
 	t.Helper()
 	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
@@ -694,13 +696,32 @@ func newTestRootCommand(t *testing.T) *cobra.Command {
 	}))
 	t.Cleanup(templateServer.Close)
 
-	return newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	return newTestRootCommandWithTemplateRemoteAndPrompter(
+		t,
+		templateServer.URL,
+		templateServer.Client(),
+		prompter,
+	)
 }
 
 func newTestRootCommandWithTemplateRemote(
 	t *testing.T,
 	templateBaseURL string,
 	templateHTTPClient *http.Client,
+) *cobra.Command {
+	return newTestRootCommandWithTemplateRemoteAndPrompter(
+		t,
+		templateBaseURL,
+		templateHTTPClient,
+		ui.DefaultPrompter,
+	)
+}
+
+func newTestRootCommandWithTemplateRemoteAndPrompter(
+	t *testing.T,
+	templateBaseURL string,
+	templateHTTPClient *http.Client,
+	prompter ui.Prompter,
 ) *cobra.Command {
 	t.Helper()
 	return NewCommand(Dependencies{
@@ -727,6 +748,7 @@ func newTestRootCommandWithTemplateRemote(
 				}
 				return appcaptures.NewService(store), nil
 			},
+			Prompter: prompter,
 			ReplayDependencies: replaycmd.Dependencies{
 				ServiceFactory: func(capturesDir string) (*appreplay.Service, error) {
 					store, err := jsonc.NewStore(capturesDir, nil, nil)
@@ -766,8 +788,24 @@ func newTestRootCommandWithTemplateRemote(
 					apptemplates.WithDispatcher(dispatcher),
 				), nil
 			},
+			Prompter: prompter,
 		},
 	})
+}
+
+type testPrompter struct {
+	confirmed bool
+	err       error
+}
+
+func (p *testPrompter) Confirm(prompt string, _ io.Reader, out io.Writer) (bool, error) {
+	if out != nil {
+		_, _ = io.WriteString(out, prompt+" [y/N]: ")
+	}
+	if p.err != nil {
+		return false, p.err
+	}
+	return p.confirmed, nil
 }
 
 func writeCommandTestConfig(t *testing.T, capturesDir string) string {
