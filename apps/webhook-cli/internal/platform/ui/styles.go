@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
 	Bold  = lipgloss.NewStyle().Bold(true)
@@ -34,7 +38,7 @@ var (
 )
 
 func MethodStyle(method string) lipgloss.Style {
-	switch method {
+	switch strings.ToUpper(method) {
 	case "GET":
 		return methodGet
 	case "POST":

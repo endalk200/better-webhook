@@ -11,7 +11,7 @@ import (
 
 func WithSpinner(title string, out io.Writer, action func() error) error {
 	if action == nil {
-		return nil
+		return fmt.Errorf("action is nil")
 	}
 	if out == nil {
 		out = os.Stdout

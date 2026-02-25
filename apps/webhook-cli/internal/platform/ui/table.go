@@ -24,13 +24,16 @@ func NewTable(headers []string, rows [][]string) string {
 }
 
 func NewKeyValueTable(pairs [][]string) string {
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Padding(0, 1, 0, 0)
+	valueStyle := lipgloss.NewStyle().Padding(0, 0, 0, 0)
+
 	t := table.New().
 		Border(lipgloss.HiddenBorder()).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			if col == 0 {
-				return lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Padding(0, 1, 0, 0)
+				return keyStyle
 			}
-			return lipgloss.NewStyle().Padding(0, 0, 0, 0)
+			return valueStyle
 		})
 
 	for _, pair := range pairs {
