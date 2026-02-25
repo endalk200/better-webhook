@@ -154,7 +154,6 @@ func TestCapturesDeleteCommandPromptCancellation(t *testing.T) {
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&out)
-	rootCmd.SetIn(strings.NewReader("n\n"))
 	rootCmd.SetArgs([]string{"--config", configPath, "captures", "delete", "deadcafe"})
 
 	if err := rootCmd.Execute(); err != nil {
@@ -390,7 +389,6 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	var cleanOut bytes.Buffer
 	cleanCmd.SetOut(&cleanOut)
 	cleanCmd.SetErr(&cleanOut)
-	cleanCmd.SetIn(strings.NewReader("n\n"))
 	cleanCmd.SetArgs([]string{
 		"--config", configPath,
 		"templates", "clean", "--force",
@@ -438,7 +436,6 @@ func TestTemplatesCleanCommandPromptCancellation(t *testing.T) {
 	var cleanOut bytes.Buffer
 	cleanCmd.SetOut(&cleanOut)
 	cleanCmd.SetErr(&cleanOut)
-	cleanCmd.SetIn(strings.NewReader("n\n"))
 	cleanCmd.SetArgs([]string{
 		"--config", configPath,
 		"templates", "clean",

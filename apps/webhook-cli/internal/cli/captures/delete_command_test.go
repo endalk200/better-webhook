@@ -11,12 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/jsonc"
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/captures"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/testutil"
 )
 
 type fakePrompter struct {
@@ -53,7 +52,11 @@ func TestDeleteCommandPromptCancellationKeepsCapture(t *testing.T) {
 	cmd.SetErr(&errBuf)
 	cmd.SetIn(strings.NewReader("unused\n"))
 	cmd.SetArgs([]string{"--captures-dir", capturesDir, "deadbeef"})
-	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  capturesDir,
+		TemplatesDir: t.TempDir(),
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute delete command: %v", err)
@@ -89,7 +92,11 @@ func TestDeleteCommandForceSkipsPromptAndDeletesCapture(t *testing.T) {
 	cmd.SetOut(&outBuf)
 	cmd.SetErr(&errBuf)
 	cmd.SetArgs([]string{"--captures-dir", capturesDir, "--force", "facefeed"})
-	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  capturesDir,
+		TemplatesDir: t.TempDir(),
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute delete command: %v", err)
@@ -120,7 +127,11 @@ func TestDeleteCommandReturnsPromptError(t *testing.T) {
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{"--captures-dir", capturesDir, "cafefeed"})
-	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  capturesDir,
+		TemplatesDir: t.TempDir(),
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	err := cmd.Execute()
 	if err == nil {
@@ -145,7 +156,11 @@ func TestDeleteCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
 	cmd.SetErr(&errBuf)
 	cmd.SetIn(strings.NewReader("n\n"))
 	cmd.SetArgs([]string{"--captures-dir", capturesDir, "badc0ffe"})
-	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  capturesDir,
+		TemplatesDir: t.TempDir(),
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
 	err := cmd.Execute()
 	if err == nil {
@@ -156,9 +171,9 @@ func TestDeleteCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
 	}
 }
 
-func TestDeleteCommandReturnsErrorWhenPrompterIsNilEvenWithForce(t *testing.T) {
+func TestDeleteCommandAllowsNilPrompterWithForce(t *testing.T) {
 	capturesDir := t.TempDir()
-	_ = seedCaptureForDeleteTest(t, capturesDir, "deafbead-0000-0000-0000-000000000000")
+	store := seedCaptureForDeleteTest(t, capturesDir, "deafbead-0000-0000-0000-000000000000")
 
 	cmd := newDeleteCommand(Dependencies{
 		ServiceFactory: testCapturesServiceFactory(t),
@@ -170,14 +185,20 @@ func TestDeleteCommandReturnsErrorWhenPrompterIsNilEvenWithForce(t *testing.T) {
 	cmd.SetErr(&errBuf)
 	cmd.SetIn(strings.NewReader("n\n"))
 	cmd.SetArgs([]string{"--captures-dir", capturesDir, "--force", "deafbead"})
-	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+	testutil.InitializeRuntimeConfig(t, cmd, runtime.AppConfig{
+		CapturesDir:  capturesDir,
+		TemplatesDir: t.TempDir(),
+		LogLevel:     runtime.LogLevelInfo,
+	})
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatalf("expected delete command to fail when prompter is nil")
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected force delete to succeed without prompter, got %v", err)
 	}
-	if !strings.Contains(err.Error(), "captures prompter cannot be nil") {
-		t.Fatalf("expected missing prompter error, got %v", err)
+	if !strings.Contains(outBuf.String(), "Deleted capture deafbead") {
+		t.Fatalf("expected successful delete output, got %q", outBuf.String())
+	}
+	if _, err := store.ResolveByIDOrPrefix(context.Background(), "deafbead"); err == nil {
+		t.Fatalf("expected capture to be deleted")
 	}
 }
 
@@ -224,25 +245,4 @@ func seedCaptureForDeleteTest(t *testing.T, capturesDir string, id string) *json
 	}
 
 	return store
-}
-
-type staticConfigLoader struct {
-	config runtime.AppConfig
-}
-
-func (l staticConfigLoader) Load(_ string) (runtime.AppConfig, error) {
-	return l.config, nil
-}
-
-func initializeCapturesRuntimeConfig(t *testing.T, cmd *cobra.Command, capturesDir string) {
-	t.Helper()
-	if err := runtime.InitializeConfig(cmd, staticConfigLoader{
-		config: runtime.AppConfig{
-			CapturesDir:  capturesDir,
-			TemplatesDir: t.TempDir(),
-			LogLevel:     runtime.LogLevelInfo,
-		},
-	}); err != nil {
-		t.Fatalf("initialize runtime config: %v", err)
-	}
 }

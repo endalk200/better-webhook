@@ -21,9 +21,6 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 			if deps.ServiceFactory == nil {
 				return errors.New("templates service factory cannot be nil")
 			}
-			if deps.Prompter == nil {
-				return errors.New("templates prompter cannot be nil")
-			}
 			cleanArgs, err := runtime.ResolveTemplatesCleanArgs(cmd)
 			if err != nil {
 				return err
@@ -45,6 +42,9 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 				return nil
 			}
 			if !cleanArgs.Force {
+				if deps.Prompter == nil {
+					return errors.New("templates prompter cannot be nil")
+				}
 				prompt := fmt.Sprintf("Delete all %d template(s)?", len(items))
 				confirmed, confirmErr := deps.Prompter.Confirm(prompt, cmd.InOrStdin(), cmd.ErrOrStderr())
 				if confirmErr != nil {
