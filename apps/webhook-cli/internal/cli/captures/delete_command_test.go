@@ -16,6 +16,7 @@ import (
 	appcaptures "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/captures"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 type fakePrompter struct {
@@ -116,6 +117,68 @@ func TestDeleteCommandReturnsPromptError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "prompt failed") {
 		t.Fatalf("expected prompt error to be returned, got %v", err)
+	}
+}
+
+func TestDeleteCommandFallsBackToDefaultPrompterWhenNil(t *testing.T) {
+	if ui.DefaultPrompter == nil {
+		t.Fatalf("expected ui.DefaultPrompter to be configured")
+	}
+
+	capturesDir := t.TempDir()
+	store := seedCaptureForDeleteTest(t, capturesDir, "badc0ffe-0000-0000-0000-000000000000")
+
+	cmd := newDeleteCommand(Dependencies{
+		ServiceFactory: testCapturesServiceFactory(t),
+		Prompter:       nil,
+	})
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetIn(strings.NewReader("n\n"))
+	cmd.SetArgs([]string{"--captures-dir", capturesDir, "badc0ffe"})
+	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute delete command: %v", err)
+	}
+	if !strings.Contains(output.String(), "Delete capture badc0ffe") {
+		t.Fatalf("expected fallback prompter prompt in output, got %q", output.String())
+	}
+	if !strings.Contains(output.String(), "Cancelled.") {
+		t.Fatalf("expected cancellation output, got %q", output.String())
+	}
+	if _, err := store.ResolveByIDOrPrefix(context.Background(), "badc0ffe"); err != nil {
+		t.Fatalf("expected capture to remain after cancellation: %v", err)
+	}
+}
+
+func TestDeleteCommandFallsBackToDefaultPrompterAndForceSkipsPrompt(t *testing.T) {
+	capturesDir := t.TempDir()
+	store := seedCaptureForDeleteTest(t, capturesDir, "deafbead-0000-0000-0000-000000000000")
+
+	cmd := newDeleteCommand(Dependencies{
+		ServiceFactory: testCapturesServiceFactory(t),
+		Prompter:       nil,
+	})
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetIn(strings.NewReader("n\n"))
+	cmd.SetArgs([]string{"--captures-dir", capturesDir, "--force", "deafbead"})
+	initializeCapturesRuntimeConfig(t, cmd, capturesDir)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute delete command: %v", err)
+	}
+	if strings.Contains(output.String(), "Delete capture deafbead") {
+		t.Fatalf("expected --force to skip prompt output, got %q", output.String())
+	}
+	if !strings.Contains(output.String(), "Deleted capture deafbead") {
+		t.Fatalf("expected successful delete output, got %q", output.String())
+	}
+	if _, err := store.ResolveByIDOrPrefix(context.Background(), "deafbead"); err == nil {
+		t.Fatalf("expected capture to be deleted")
 	}
 }
 

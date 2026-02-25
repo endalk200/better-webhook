@@ -78,7 +78,7 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 			)
 
 			if runArgs.Verbose {
-				printTemplatesRunVerboseOutput(cmd, result)
+				ui.PrintTemplateRunVerboseOutput(cmd.OutOrStdout(), result)
 			}
 			return nil
 		},
@@ -108,31 +108,4 @@ func validateRunCommandArgs(cmd *cobra.Command, args []string) error {
 		return errors.New("target URL cannot be empty when provided")
 	}
 	return nil
-}
-
-func printTemplatesRunVerboseOutput(cmd *cobra.Command, result apptemplates.RunResult) {
-	if len(result.SentHeaders) > 0 {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Request headers"))
-		pairs := make([][]string, 0, len(result.SentHeaders))
-		for _, header := range result.SentHeaders {
-			pairs = append(pairs, []string{header.Key, header.Value})
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
-	}
-
-	if len(result.Response.Headers) > 0 {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response headers"))
-		pairs := make([][]string, 0, len(result.Response.Headers))
-		for _, header := range result.Response.Headers {
-			pairs = append(pairs, []string{header.Key, header.Value})
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
-	}
-
-	if len(result.Response.Body) == 0 {
-		return
-	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response body"))
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatBodyPreview(result.Response.Body, result.Response.BodyTruncated))
 }

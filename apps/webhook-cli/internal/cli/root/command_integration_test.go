@@ -133,7 +133,7 @@ func TestCapturesDeleteCommandDeletesByPrefix(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute captures delete: %v", err)
 	}
-	if !strings.Contains(out.String(), "Deleted capture deadbeef") {
+	if !strings.Contains(normalizeCLIOutput(out.String()), "Deleted capture deadbeef") {
 		t.Fatalf("expected delete confirmation output, got %q", out.String())
 	}
 	if _, err := store.ResolveByIDOrPrefix(context.Background(), record.ID); err == nil {
@@ -652,7 +652,7 @@ func assertContainsAll(t *testing.T, output string, expected ...string) {
 	t.Helper()
 	for _, value := range expected {
 		if !strings.Contains(output, value) {
-			t.Fatalf("expected output to contain %q, got %q", value, output)
+			t.Errorf("expected output to contain %q, got %q", value, output)
 		}
 	}
 }

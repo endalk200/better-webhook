@@ -37,12 +37,11 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 				return mapCaptureCommandError(err, deleteArgs.Selector)
 			}
 
-			prompter := deps.Prompter
-			if prompter == nil {
-				prompter = ui.DefaultPrompter
-			}
-
 			if !deleteArgs.Force {
+				prompter := deps.Prompter
+				if prompter == nil {
+					prompter = ui.DefaultPrompter
+				}
 				id := target.Capture.ID
 				if len(id) > 8 {
 					id = id[:8]

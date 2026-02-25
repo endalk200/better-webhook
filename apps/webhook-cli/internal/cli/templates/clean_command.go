@@ -47,7 +47,7 @@ func newCleanCommand(deps Dependencies) *cobra.Command {
 			}
 			if !cleanArgs.Force {
 				prompt := fmt.Sprintf("Delete all %d template(s)?", len(items))
-				confirmed, confirmErr := prompter.Confirm(prompt, cmd.InOrStdin(), cmd.OutOrStdout())
+				confirmed, confirmErr := prompter.Confirm(prompt, cmd.InOrStdin(), cmd.ErrOrStderr())
 				if confirmErr != nil {
 					return confirmErr
 				}
