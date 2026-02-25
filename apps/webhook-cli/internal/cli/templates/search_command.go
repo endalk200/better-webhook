@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newSearchCommand(deps Dependencies) *cobra.Command {
@@ -37,27 +38,37 @@ func newSearchCommand(deps Dependencies) *cobra.Command {
 			}
 			totalCount := len(results.Local) + len(results.Remote)
 			if totalCount == 0 {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No templates found for %q.\n", searchArgs.Query)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s No templates found for %s.\n", ui.InfoIcon, ui.Bold.Render(searchArgs.Query))
 				return nil
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Search results for %q:\n", searchArgs.Query)
-			if len(results.Local) > 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  Local:")
-				for _, item := range results.Local {
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s (%s)\n", item.ID, item.Metadata.Provider)
-				}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Search results for %s:\n\n", ui.Bold.Render(searchArgs.Query))
+
+			rows := make([][]string, 0, totalCount)
+			for _, item := range results.Local {
+				rows = append(rows, []string{
+					item.ID,
+					ui.FormatProvider(item.Metadata.Provider),
+					ui.Success.Render("local"),
+				})
 			}
-			if len(results.Remote) > 0 {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  Remote:")
-				for _, item := range results.Remote {
-					status := "remote"
-					if item.IsDownloaded {
-						status = "downloaded"
-					}
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s (%s, %s)\n", item.Metadata.ID, item.Metadata.Provider, status)
+			for _, item := range results.Remote {
+				status := ui.Muted.Render("remote")
+				if item.IsDownloaded {
+					status = ui.Success.Render("downloaded")
 				}
+				rows = append(rows, []string{
+					item.Metadata.ID,
+					ui.FormatProvider(item.Metadata.Provider),
+					status,
+				})
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found: %d template(s)\n", totalCount)
+
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewTable(
+				[]string{"Template", "Provider", "Source"},
+				rows,
+			))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Muted.Render(fmt.Sprintf("Found: %d template(s)", totalCount)))
 			return nil
 		},
 	}

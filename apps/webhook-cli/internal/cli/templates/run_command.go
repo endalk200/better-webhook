@@ -2,17 +2,16 @@ package templates
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
 func newRunCommand(deps Dependencies) *cobra.Command {
@@ -43,13 +42,19 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 					Value: override.Value,
 				})
 			}
-			result, err := service.Run(ctx, apptemplates.RunRequest{
-				TemplateID:           runArgs.TemplateID,
-				TargetURL:            runArgs.TargetURL,
-				Secret:               runArgs.Secret,
-				AllowEnvPlaceholders: runArgs.AllowEnvPlaceholders,
-				HeaderOverrides:      headerOverrides,
-				Timeout:              runArgs.Timeout,
+
+			var result apptemplates.RunResult
+			err = ui.WithSpinner("Running template...", cmd.OutOrStdout(), func() error {
+				var runErr error
+				result, runErr = service.Run(ctx, apptemplates.RunRequest{
+					TemplateID:           runArgs.TemplateID,
+					TargetURL:            runArgs.TargetURL,
+					Secret:               runArgs.Secret,
+					AllowEnvPlaceholders: runArgs.AllowEnvPlaceholders,
+					HeaderOverrides:      headerOverrides,
+					Timeout:              runArgs.Timeout,
+				})
+				return runErr
 			})
 			if err != nil {
 				return mapTemplateCommandError(err, runArgs.TemplateID)
@@ -57,19 +62,20 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"Executed template %s [%s] %s -> %s\n",
-				result.TemplateID,
-				result.Provider,
-				result.Method,
+				"%s %s %s %s %s %s\n",
+				ui.FormatSuccess("Executed"),
+				ui.Muted.Render(result.TemplateID),
+				ui.FormatProvider(result.Provider),
+				ui.FormatMethod(result.Method),
+				ui.Muted.Render("->"),
 				result.TargetURL,
 			)
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"Status: %d %s\n",
-				result.Response.StatusCode,
-				result.Response.StatusText,
+				"  %s  %s\n",
+				ui.FormatStatusCode(result.Response.StatusCode, result.Response.StatusText),
+				ui.FormatDuration(result.Response.Duration),
 			)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Duration: %s\n", formatTemplatesRunDuration(result.Response.Duration))
 
 			if runArgs.Verbose {
 				printTemplatesRunVerboseOutput(cmd, result)
@@ -105,38 +111,28 @@ func validateRunCommandArgs(cmd *cobra.Command, args []string) error {
 }
 
 func printTemplatesRunVerboseOutput(cmd *cobra.Command, result apptemplates.RunResult) {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Request headers:")
-	for _, header := range result.SentHeaders {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "- %s: %s\n", header.Key, header.Value)
+	if len(result.SentHeaders) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Request headers"))
+		pairs := make([][]string, 0, len(result.SentHeaders))
+		for _, header := range result.SentHeaders {
+			pairs = append(pairs, []string{header.Key, header.Value})
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Response headers:")
-	for _, header := range result.Response.Headers {
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "- %s: %s\n", header.Key, header.Value)
+
+	if len(result.Response.Headers) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response headers"))
+		pairs := make([][]string, 0, len(result.Response.Headers))
+		for _, header := range result.Response.Headers {
+			pairs = append(pairs, []string{header.Key, header.Value})
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable(pairs))
 	}
+
 	if len(result.Response.Body) == 0 {
 		return
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Response body:")
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatTemplatesRunBodyPreview(result.Response.Body, result.Response.BodyTruncated))
-}
-
-func formatTemplatesRunBodyPreview(body []byte, truncated bool) string {
-	preview := string(body)
-	var parsed interface{}
-	if json.Unmarshal(body, &parsed) == nil {
-		if formatted, err := json.MarshalIndent(parsed, "", "  "); err == nil {
-			preview = string(formatted)
-		}
-	}
-	if truncated {
-		return preview + "\n... (truncated)"
-	}
-	return preview
-}
-
-func formatTemplatesRunDuration(value time.Duration) string {
-	if value < time.Millisecond {
-		return value.String()
-	}
-	return value.Round(time.Millisecond).String()
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Bold.Render("Response body"))
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatBodyPreview(result.Response.Body, result.Response.BodyTruncated))
 }
