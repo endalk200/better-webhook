@@ -142,6 +142,28 @@ func TestCleanCommandReturnsPromptError(t *testing.T) {
 	}
 }
 
+func TestCleanCommandReturnsErrorWhenPrompterIsNil(t *testing.T) {
+	templatesDir := t.TempDir()
+	seedLocalTemplateForCleanTest(t, templatesDir, "github-push")
+
+	cmd := newCleanCommand(Dependencies{
+		ServiceFactory: testTemplateServiceFactory(t),
+		Prompter:       nil,
+	})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--templates-dir", templatesDir, "--force"})
+	initializeTemplatesRuntimeConfig(t, cmd, templatesDir)
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected clean command to return missing prompter error")
+	}
+	if !strings.Contains(err.Error(), "templates prompter cannot be nil") {
+		t.Fatalf("expected missing prompter error, got %v", err)
+	}
+}
+
 type noOpRemoteTemplateSource struct{}
 
 func (noOpRemoteTemplateSource) FetchIndex(context.Context) (domain.TemplatesIndex, error) {
