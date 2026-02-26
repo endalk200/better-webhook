@@ -26,7 +26,8 @@ export function Hero() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    requestAnimationFrame(() => setVisible(true));
+    const handle = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(handle);
   }, []);
 
   const copyCommand = async () => {
