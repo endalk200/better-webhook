@@ -23,15 +23,23 @@
   --nb-text: #1a1a1a;
   --nb-text-muted: #666666;
 
-  --nb-shadow-sm: 3px 3px 0 var(--nb-border-color);
-  --nb-shadow-md: 5px 5px 0 var(--nb-border-color);
-  --nb-shadow-lg: 8px 8px 0 var(--nb-border-color);
+  --nb-shadow-sm: 2px 2px 0 var(--nb-border-color);
+  --nb-shadow-md: 3px 3px 0 var(--nb-border-color);
+  --nb-shadow-lg: 5px 5px 0 var(--nb-border-color);
 
   --nb-border: 2.5px solid var(--nb-border-color);
   --nb-radius: 0px;
 
   --color-primary: #ff5c38;
   --color-primary-foreground: #ffffff;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --nb-shadow-sm: 3px 3px 0 var(--nb-border-color);
+    --nb-shadow-md: 5px 5px 0 var(--nb-border-color);
+    --nb-shadow-lg: 8px 8px 0 var(--nb-border-color);
+  }
 }
 
 .dark {
@@ -50,12 +58,20 @@
   --nb-text: #e8e4de;
   --nb-text-muted: #888888;
 
-  --nb-shadow-sm: 3px 3px 0 #000000;
-  --nb-shadow-md: 5px 5px 0 #000000;
-  --nb-shadow-lg: 8px 8px 0 #000000;
+  --nb-shadow-sm: 2px 2px 0 #000000;
+  --nb-shadow-md: 3px 3px 0 #000000;
+  --nb-shadow-lg: 5px 5px 0 #000000;
 
   --color-primary: #ff6b47;
   --color-primary-foreground: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .dark {
+    --nb-shadow-sm: 3px 3px 0 #000000;
+    --nb-shadow-md: 5px 5px 0 #000000;
+    --nb-shadow-lg: 8px 8px 0 #000000;
+  }
 }
 
 /* ==========================================================================
@@ -64,6 +80,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -72,6 +89,7 @@ body {
   color: var(--nb-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -96,13 +114,13 @@ body {
 }
 
 .font-mono {
-  font-family: var(--font-mono), var(--font-mono-display), ui-monospace, monospace;
+  font-family:
+    var(--font-mono), var(--font-mono-display), ui-monospace, monospace;
 }
 
 .nb-highlight {
   position: relative;
   display: inline;
-  white-space: nowrap;
 }
 
 .nb-highlight::after {
@@ -129,7 +147,9 @@ body {
   background: var(--nb-white);
   border: 2.5px solid var(--nb-border-color);
   box-shadow: var(--nb-shadow-md);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .nb-card:hover {
@@ -140,7 +160,9 @@ body {
 .nb-card-flat {
   background: var(--nb-white);
   border: 2.5px solid var(--nb-border-color);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .nb-card-flat:hover {
@@ -159,14 +181,23 @@ body {
   gap: 0.5rem;
   font-family: var(--font-mono-display), ui-monospace, monospace;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.85rem 1.75rem;
+  font-size: 0.75rem;
+  padding: 0.75rem 1.25rem;
   border: 2.5px solid var(--nb-border-color);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
   cursor: pointer;
   text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .nb-btn {
+    font-size: 0.85rem;
+    padding: 0.85rem 1.75rem;
+  }
 }
 
 .nb-btn:active {
@@ -222,10 +253,17 @@ body {
   box-shadow: var(--nb-shadow-sm);
   font-family: var(--font-mono-display), ui-monospace, monospace;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transform: rotate(-2deg);
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .nb-sticker {
+    font-size: 0.75rem;
+  }
 }
 
 .nb-sticker-coral {
@@ -305,12 +343,7 @@ body {
   font-weight: 700;
 }
 
-.nb-terminal-body {
-  padding: 1.25rem;
-  color: #e0e0e0;
-  font-size: 0.8rem;
-  line-height: 1.7;
-}
+/* terminal body styles moved above to nb-code-body section */
 
 .nb-code-block {
   background: #0a0a0a;
@@ -331,9 +364,29 @@ body {
 }
 
 .nb-code-body {
-  padding: 1.25rem;
+  padding: 1rem;
   overflow-x: auto;
   color: #e0e0e0;
+}
+
+@media (min-width: 640px) {
+  .nb-code-body {
+    padding: 1.25rem;
+  }
+}
+
+.nb-terminal-body {
+  padding: 1rem;
+  color: #e0e0e0;
+  font-size: 0.7rem;
+  line-height: 1.7;
+}
+
+@media (min-width: 640px) {
+  .nb-terminal-body {
+    padding: 1.25rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* ==========================================================================
@@ -392,7 +445,8 @@ body {
 
 .nb-section {
   position: relative;
-  padding: 4rem 1rem;
+  padding: 3rem 0.75rem;
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -526,16 +580,18 @@ body {
 
 .nb-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
   border: 2.5px solid var(--nb-border-color);
   box-shadow: var(--nb-shadow-sm);
   overflow: hidden;
+  max-width: 100%;
 }
 
 .nb-tab {
   font-family: var(--font-mono-display), ui-monospace, monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.65rem 1.1rem;
+  padding: 0.55rem 0.75rem;
   background: var(--nb-white);
   color: var(--nb-text-muted);
   border: none;
@@ -544,6 +600,14 @@ body {
   transition: all 0.15s ease;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .nb-tab {
+    font-size: 0.8rem;
+    padding: 0.65rem 1.1rem;
+  }
 }
 
 .nb-tab:last-child {
@@ -586,15 +650,29 @@ body {
   background: #0a0a0a;
   color: #e0e0e0;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   overflow: hidden;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .nb-install {
+    font-size: 0.85rem;
+  }
 }
 
 .nb-install-text {
   flex: 1;
-  padding: 0.85rem 1.25rem;
+  padding: 0.75rem 0.75rem;
   overflow-x: auto;
   white-space: nowrap;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .nb-install-text {
+    padding: 0.85rem 1.25rem;
+  }
 }
 
 .nb-install-btn {

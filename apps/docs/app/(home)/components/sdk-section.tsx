@@ -180,21 +180,43 @@ const providerInfo = [
   {
     key: "github",
     name: "GitHub",
-    events: ["push", "pull_request", "issues", "installation", "installation_repositories"],
+    events: [
+      "push",
+      "pull_request",
+      "issues",
+      "installation",
+      "installation_repositories",
+    ],
     package: "@better-webhook/github",
     color: "var(--nb-coral)",
   },
   {
     key: "ragie",
     name: "Ragie",
-    events: ["document_status_updated", "document_deleted", "entity_extracted", "connection_sync_started", "connection_sync_progress", "connection_sync_finished"],
+    events: [
+      "document_status_updated",
+      "document_deleted",
+      "entity_extracted",
+      "connection_sync_started",
+      "connection_sync_progress",
+      "connection_sync_finished",
+    ],
     package: "@better-webhook/ragie",
     color: "var(--nb-green)",
   },
   {
     key: "recall",
     name: "Recall.ai",
-    events: ["participant_events.join", "participant_events.leave", "participant_events.chat_message", "transcript.data", "transcript.partial_data", "bot.joining_call", "bot.done", "bot.fatal"],
+    events: [
+      "participant_events.join",
+      "participant_events.leave",
+      "participant_events.chat_message",
+      "transcript.data",
+      "transcript.partial_data",
+      "bot.joining_call",
+      "bot.done",
+      "bot.fatal",
+    ],
     package: "@better-webhook/recall",
     color: "var(--nb-blue)",
   },
@@ -234,7 +256,7 @@ export function SDKSection() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
           {sdkFeatures.map((feature) => (
             <div key={feature.title} className="nb-card p-5 text-center">
               <div
@@ -243,9 +265,7 @@ export function SDKSection() {
               >
                 <feature.icon className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-base mb-1.5">
-                {feature.title}
-              </h3>
+              <h3 className="font-bold text-base mb-1.5">{feature.title}</h3>
               <p className="text-sm text-[var(--nb-text-muted)]">
                 {feature.description}
               </p>
@@ -253,7 +273,7 @@ export function SDKSection() {
           ))}
         </div>
 
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-6 overflow-x-auto">
           <div className="nb-tabs">
             {(
               [
@@ -314,8 +334,8 @@ export function SDKSection() {
                 )}
               </button>
             </div>
-            <div className="nb-code-body overflow-x-auto max-h-[500px]">
-              <pre className="font-mono text-sm leading-relaxed">
+            <div className="nb-code-body overflow-x-auto max-h-[400px] sm:max-h-[500px]">
+              <pre className="font-mono text-xs sm:text-sm leading-relaxed">
                 <code
                   dangerouslySetInnerHTML={{
                     __html: highlightCode(current.code),
@@ -341,9 +361,7 @@ export function SDKSection() {
                     {provider.name[0]}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm">
-                      {provider.name}
-                    </h4>
+                    <h4 className="font-bold text-sm">{provider.name}</h4>
                     <code className="text-xs text-[var(--nb-text-muted)] font-mono">
                       {provider.package}
                     </code>

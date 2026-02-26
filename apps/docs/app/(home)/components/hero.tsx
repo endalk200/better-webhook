@@ -38,7 +38,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative flex items-center overflow-hidden nb-dots-hero bg-[var(--nb-cream)] py-16 lg:py-24">
+    <section className="relative flex flex-1 items-center overflow-hidden nb-dots-hero bg-[var(--nb-cream)] py-16 lg:py-24">
       <div className="relative z-10 container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Left — Text */}
@@ -50,7 +50,7 @@ export function Hero() {
               <span>Local-first Webhook Toolkit</span>
             </div>
 
-            <h1 className="font-bold text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.1] uppercase">
+            <h1 className="font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.1] uppercase">
               <span className="block">Stop fighting</span>
               <span className="block">
                 <span className="nb-highlight">webhooks</span>.
@@ -111,7 +111,7 @@ export function Hero() {
 
           {/* Right — Code Block */}
           <div
-            className={`${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
+            className={`hidden sm:block ${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
           >
             <div className="nb-code-block">
               <div className="nb-code-header">
@@ -123,7 +123,7 @@ export function Hero() {
                 </span>
               </div>
               <div className="nb-code-body overflow-x-auto">
-                <pre className="font-mono text-sm leading-relaxed">
+                <pre className="font-mono text-xs sm:text-sm leading-relaxed">
                   <code>
                     <CodeHighlight code={codeBlock} />
                   </code>
@@ -154,6 +154,33 @@ export function Hero() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Mobile-only stats */}
+          <div
+            className={`sm:hidden grid grid-cols-3 gap-2 ${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
+          >
+            {[
+              { value: "3", label: "Providers", color: "var(--nb-coral)" },
+              { value: "5", label: "Adapters", color: "var(--nb-blue)" },
+              {
+                value: "100%",
+                label: "Type-safe",
+                color: "var(--nb-green)",
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="nb-card-flat text-center p-2.5">
+                <div
+                  className="text-lg font-bold"
+                  style={{ color: stat.color }}
+                >
+                  {stat.value}
+                </div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--nb-text-muted)] mt-0.5">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

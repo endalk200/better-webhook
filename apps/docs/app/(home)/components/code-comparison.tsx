@@ -76,6 +76,7 @@ export function CodeComparison() {
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10">
           <h2 className="font-bold text-3xl sm:text-4xl tracking-tight mb-3 uppercase">
+            {" "}
             See the <span className="nb-highlight">difference</span>
           </h2>
           <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
@@ -119,9 +120,7 @@ export function CodeComparison() {
               className="nb-code-block"
               style={{
                 borderColor:
-                  activeTab === "before"
-                    ? "#dc2626"
-                    : "var(--nb-green)",
+                  activeTab === "before" ? "#dc2626" : "var(--nb-green)",
               }}
             >
               <div className="nb-code-header">
@@ -143,8 +142,8 @@ export function CodeComparison() {
                   {activeTab === "before" ? "Traditional" : "better-webhook"}
                 </span>
               </div>
-              <div className="nb-code-body overflow-x-auto max-h-[500px]">
-                <pre className="font-mono text-sm leading-relaxed">
+              <div className="nb-code-body overflow-x-auto max-h-[400px] sm:max-h-[500px]">
+                <pre className="font-mono text-xs sm:text-sm leading-relaxed">
                   <code>
                     <SimpleHighlight
                       key={activeTab}
@@ -256,11 +255,7 @@ function HighlightLine({
     return (
       <span
         className={
-          isGood
-            ? "text-emerald-400"
-            : isBad
-              ? "text-red-400"
-              : "text-[#555]"
+          isGood ? "text-emerald-400" : isBad ? "text-red-400" : "text-[#555]"
         }
       >
         {line}
