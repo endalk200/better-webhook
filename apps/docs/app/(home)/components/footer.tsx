@@ -5,6 +5,7 @@ const footerLinks = {
   cli: [
     { name: "CLI Overview", href: "/docs/cli" },
     { name: "Command Reference", href: "/docs/cli/commands" },
+    { name: "Configuration", href: "/docs/cli/configuration" },
     { name: "Templates", href: "/docs/cli/templates" },
   ],
   sdk: [

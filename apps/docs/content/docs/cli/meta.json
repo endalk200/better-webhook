@@ -1,4 +1,4 @@
 {
   "title": "CLI",
-  "pages": ["index", "commands", "templates"]
+  "pages": ["index", "commands", "configuration", "templates"]
 }
