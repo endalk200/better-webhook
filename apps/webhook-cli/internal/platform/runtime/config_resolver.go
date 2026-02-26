@@ -22,6 +22,8 @@ const (
 	LogLevelError = "error"
 )
 
+const EnvConfigPath = "BETTER_WEBHOOK_CONFIG_PATH"
+
 const (
 	DefaultCaptureHost           = "127.0.0.1"
 	DefaultCapturePort           = 3001
@@ -34,6 +36,27 @@ const (
 	defaultCapturesRelativePath  = ".better-webhook/captures"
 	defaultTemplatesRelativePath = ".better-webhook/templates"
 )
+
+type ConfigPathSource string
+
+const (
+	ConfigPathSourceFlag    ConfigPathSource = "flag"
+	ConfigPathSourceEnv     ConfigPathSource = "env"
+	ConfigPathSourceDefault ConfigPathSource = "default"
+)
+
+type ResolvedConfigPath struct {
+	Path   string
+	Source ConfigPathSource
+}
+
+type ConfigWriteResult struct {
+	Path        string
+	Created     bool
+	Overwritten bool
+}
+
+var ErrConfigFileAlreadyExists = errors.New("config file already exists")
 
 type AppConfig struct {
 	CapturesDir  string
@@ -143,11 +166,11 @@ func InitializeConfig(cmd *cobra.Command, loader Loader) error {
 	if loader == nil {
 		return errors.New("config loader cannot be nil")
 	}
-	configPath, err := ResolveConfigPathFlag(cmd)
+	resolvedConfigPath, err := ResolveConfigPath(cmd)
 	if err != nil {
 		return err
 	}
-	loadedConfig, err := loader.Load(configPath)
+	loadedConfig, err := loader.Load(resolvedConfigPath.Path)
 	if err != nil {
 		return err
 	}
@@ -189,6 +212,72 @@ func ResolveConfigPathFlag(cmd *cobra.Command) (string, error) {
 		return "", nil
 	}
 	return flag.Value.String(), nil
+}
+
+func ResolveConfigPath(cmd *cobra.Command) (ResolvedConfigPath, error) {
+	if cmd == nil {
+		return ResolvedConfigPath{}, errors.New("command cannot be nil")
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ResolvedConfigPath{}, fmt.Errorf("resolve home directory: %w", err)
+	}
+
+	if flagValue, hasFlagValue, err := lookupConfigPathFlag(cmd); err != nil {
+		return ResolvedConfigPath{}, err
+	} else if hasFlagValue {
+		resolvedPath, resolveErr := resolveExplicitConfigPath(flagValue, homeDir, ConfigPathSourceFlag)
+		if resolveErr != nil {
+			return ResolvedConfigPath{}, resolveErr
+		}
+		return ResolvedConfigPath{Path: resolvedPath, Source: ConfigPathSourceFlag}, nil
+	}
+
+	if envValue, hasEnvValue := os.LookupEnv(EnvConfigPath); hasEnvValue {
+		resolvedPath, resolveErr := resolveExplicitConfigPath(envValue, homeDir, ConfigPathSourceEnv)
+		if resolveErr != nil {
+			return ResolvedConfigPath{}, resolveErr
+		}
+		return ResolvedConfigPath{Path: resolvedPath, Source: ConfigPathSourceEnv}, nil
+	}
+
+	defaultPath, err := expandPath(DefaultConfigPath(homeDir), homeDir)
+	if err != nil {
+		return ResolvedConfigPath{}, fmt.Errorf("resolve default config path: %w", err)
+	}
+	return ResolvedConfigPath{
+		Path:   defaultPath,
+		Source: ConfigPathSourceDefault,
+	}, nil
+}
+
+func lookupConfigPathFlag(cmd *cobra.Command) (string, bool, error) {
+	if cmd == nil {
+		return "", false, errors.New("command cannot be nil")
+	}
+	flag := cmd.Flags().Lookup("config")
+	if flag == nil {
+		flag = cmd.InheritedFlags().Lookup("config")
+	}
+	if flag == nil || !flag.Changed {
+		return "", false, nil
+	}
+	return flag.Value.String(), true, nil
+}
+
+func resolveExplicitConfigPath(rawPath string, homeDir string, source ConfigPathSource) (string, error) {
+	trimmed := strings.TrimSpace(rawPath)
+	if trimmed == "" {
+		if source == ConfigPathSourceFlag {
+			return "", errors.New("config path cannot be empty when --config is provided")
+		}
+		return "", fmt.Errorf("%s cannot be empty", EnvConfigPath)
+	}
+	resolvedPath, err := expandPath(trimmed, homeDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve config path from %s %q: %w", source, trimmed, err)
+	}
+	return resolvedPath, nil
 }
 
 func ResolveCaptureArgs(cmd *cobra.Command) (CaptureArgs, error) {
