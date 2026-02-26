@@ -218,15 +218,11 @@ func ResolveConfigPath(cmd *cobra.Command) (ResolvedConfigPath, error) {
 	if cmd == nil {
 		return ResolvedConfigPath{}, errors.New("command cannot be nil")
 	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return ResolvedConfigPath{}, fmt.Errorf("resolve home directory: %w", err)
-	}
 
 	if flagValue, hasFlagValue, err := lookupConfigPathFlag(cmd); err != nil {
 		return ResolvedConfigPath{}, err
 	} else if hasFlagValue {
-		resolvedPath, resolveErr := resolveExplicitConfigPath(flagValue, homeDir, ConfigPathSourceFlag)
+		resolvedPath, resolveErr := resolveExplicitConfigPath(flagValue, "", ConfigPathSourceFlag)
 		if resolveErr != nil {
 			return ResolvedConfigPath{}, resolveErr
 		}
@@ -234,13 +230,17 @@ func ResolveConfigPath(cmd *cobra.Command) (ResolvedConfigPath, error) {
 	}
 
 	if envValue, hasEnvValue := os.LookupEnv(EnvConfigPath); hasEnvValue {
-		resolvedPath, resolveErr := resolveExplicitConfigPath(envValue, homeDir, ConfigPathSourceEnv)
+		resolvedPath, resolveErr := resolveExplicitConfigPath(envValue, "", ConfigPathSourceEnv)
 		if resolveErr != nil {
 			return ResolvedConfigPath{}, resolveErr
 		}
 		return ResolvedConfigPath{Path: resolvedPath, Source: ConfigPathSourceEnv}, nil
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ResolvedConfigPath{}, fmt.Errorf("resolve home directory: %w", err)
+	}
 	defaultPath, err := expandPath(DefaultConfigPath(homeDir), homeDir)
 	if err != nil {
 		return ResolvedConfigPath{}, fmt.Errorf("resolve default config path: %w", err)
@@ -272,6 +272,14 @@ func resolveExplicitConfigPath(rawPath string, homeDir string, source ConfigPath
 			return "", errors.New("config path cannot be empty when --config is provided")
 		}
 		return "", fmt.Errorf("%s cannot be empty", EnvConfigPath)
+	}
+	expanded := strings.TrimSpace(os.ExpandEnv(trimmed))
+	if (expanded == "~" || strings.HasPrefix(expanded, "~/")) && homeDir == "" {
+		resolvedHomeDir, homeErr := os.UserHomeDir()
+		if homeErr != nil {
+			return "", fmt.Errorf("resolve home directory: %w", homeErr)
+		}
+		homeDir = resolvedHomeDir
 	}
 	resolvedPath, err := expandPath(trimmed, homeDir)
 	if err != nil {

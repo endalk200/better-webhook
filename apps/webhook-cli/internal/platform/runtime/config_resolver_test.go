@@ -634,6 +634,22 @@ func TestResolveConfigPathRejectsEmptyEnvPath(t *testing.T) {
 	}
 }
 
+func TestResolveConfigPathRejectsEmptyFlagPath(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	command.Flags().String("config", "", "")
+	if err := command.Flags().Set("config", "   "); err != nil {
+		t.Fatalf("set config flag: %v", err)
+	}
+
+	_, err := ResolveConfigPath(command)
+	if err == nil {
+		t.Fatalf("expected empty --config path to fail")
+	}
+	if !strings.Contains(err.Error(), "--config") {
+		t.Fatalf("expected flag name in error, got %v", err)
+	}
+}
+
 func TestInitializeConfigUsesResolvedConfigPath(t *testing.T) {
 	command := &cobra.Command{Use: "root"}
 	command.Flags().String("config", "", "")

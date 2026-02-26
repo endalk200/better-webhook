@@ -196,6 +196,8 @@ func TestInitCommandForceOverwritesExistingConfig(t *testing.T) {
 	if err := forceCmd.Execute(); err != nil {
 		t.Fatalf("execute init --force command: %v", err)
 	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "Overwrote config file.", configPath)
 
 	updatedContent, err := os.ReadFile(configPath)
 	if err != nil {
