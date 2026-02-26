@@ -21,6 +21,7 @@ import (
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/captures"
+	initcmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/init"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/replay"
 	rootcmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/root"
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/templates"
@@ -33,6 +34,9 @@ func main() {
 	rootCommand := rootcmd.NewCommand(rootcmd.Dependencies{
 		Version:      version.Version,
 		ConfigLoader: configtoml.NewLoader(),
+		InitDependencies: initcmd.Dependencies{
+			ConfigWriter: configtoml.NewWriter(),
+		},
 		CaptureDependencies: capturecmd.Dependencies{
 			ServiceFactory: newCaptureService,
 			ServerFactory:  httpcapture.NewServer,

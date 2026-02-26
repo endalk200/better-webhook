@@ -32,9 +32,11 @@ import (
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/captures"
+	initcmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/init"
 	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/replay"
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/templates"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
 	platformtime "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/time"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/testutil"
@@ -72,6 +74,135 @@ func TestRootCommandVersionFlag(t *testing.T) {
 
 	if got, want := output.String(), "test-version\n"; got != want {
 		t.Fatalf("expected version output %q, got %q", want, got)
+	}
+}
+
+func TestCapturesListCommandReadsConfigPathFromEnv(t *testing.T) {
+	capturesDir := t.TempDir()
+	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	record := testCommandCapture("feedface-0000-0000-0000-000000000000", domain.ProviderGitHub)
+	if _, err := store.Save(context.Background(), record); err != nil {
+		t.Fatalf("seed capture: %v", err)
+	}
+	configPath := writeCommandTestConfig(t, capturesDir)
+	t.Setenv(runtime.EnvConfigPath, configPath)
+
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{"captures", "list", "--limit", "10"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute captures list: %v", err)
+	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "feedface")
+}
+
+func TestConfigFlagPathTakesPrecedenceOverEnvConfigPath(t *testing.T) {
+	envCapturesDir := t.TempDir()
+	envStore, err := jsonc.NewStore(envCapturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create env store: %v", err)
+	}
+	envRecord := testCommandCapture("11112222-0000-0000-0000-000000000000", domain.ProviderGitHub)
+	if _, err := envStore.Save(context.Background(), envRecord); err != nil {
+		t.Fatalf("seed env capture: %v", err)
+	}
+	flagCapturesDir := t.TempDir()
+	flagStore, err := jsonc.NewStore(flagCapturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create flag store: %v", err)
+	}
+	flagRecord := testCommandCapture("33334444-0000-0000-0000-000000000000", domain.ProviderGitHub)
+	if _, err := flagStore.Save(context.Background(), flagRecord); err != nil {
+		t.Fatalf("seed flag capture: %v", err)
+	}
+
+	t.Setenv(runtime.EnvConfigPath, writeCommandTestConfig(t, envCapturesDir))
+	flagConfigPath := writeCommandTestConfig(t, flagCapturesDir)
+
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{"--config", flagConfigPath, "captures", "list", "--limit", "10"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute captures list: %v", err)
+	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "33334444")
+	if strings.Contains(output, "11112222") {
+		t.Fatalf("expected output to use flag config path, got %q", output)
+	}
+}
+
+func TestInitCommandCreatesDefaultConfig(t *testing.T) {
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	configPath := filepath.Join(t.TempDir(), "better-webhook", "config.toml")
+	rootCmd.SetArgs([]string{"--config", configPath, "init"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("execute init command: %v", err)
+	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "Created default config file.", configPath)
+
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read generated config: %v", err)
+	}
+	assertContainsAll(t, string(content),
+		"BETTER_WEBHOOK_CONFIG_PATH",
+		"captures_dir",
+		"templates_dir",
+		"log_level",
+	)
+}
+
+func TestInitCommandForceOverwritesExistingConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	originalContent := "log_level = \"warn\"\n"
+	if err := os.WriteFile(configPath, []byte(originalContent), 0o600); err != nil {
+		t.Fatalf("seed config file: %v", err)
+	}
+
+	rootCmd := newTestRootCommand(t)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"--config", configPath, "init"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected init command without --force to fail for existing config")
+	}
+	if !strings.Contains(err.Error(), "use --force") {
+		t.Fatalf("expected force hint in error, got %v", err)
+	}
+
+	forceCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	forceCmd.SetOut(&out)
+	forceCmd.SetErr(&out)
+	forceCmd.SetArgs([]string{"--config", configPath, "init", "--force"})
+	if err := forceCmd.Execute(); err != nil {
+		t.Fatalf("execute init --force command: %v", err)
+	}
+
+	updatedContent, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read overwritten config: %v", err)
+	}
+	if strings.Contains(string(updatedContent), originalContent) {
+		t.Fatalf("expected config file to be overwritten")
 	}
 }
 
@@ -724,6 +855,9 @@ func newTestRootCommandWithTemplateRemoteAndPrompter(
 	return NewCommand(Dependencies{
 		Version:      "test-version",
 		ConfigLoader: configtoml.NewLoader(),
+		InitDependencies: initcmd.Dependencies{
+			ConfigWriter: configtoml.NewWriter(),
+		},
 		CaptureDependencies: capturecmd.Dependencies{
 			ServiceFactory: func(capturesDir string) (*appcapture.Service, error) {
 				store, err := jsonc.NewStore(capturesDir, nil, nil)

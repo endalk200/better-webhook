@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -537,4 +539,132 @@ func newTemplatesTestCommand(t *testing.T) *cobra.Command {
 		LogLevel:     LogLevelInfo,
 	}))
 	return command
+}
+
+func TestResolveConfigPathUsesFlagWhenProvided(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	command.Flags().String("config", "", "")
+	expectedPath := filepath.Join(t.TempDir(), "custom.toml")
+	if err := command.Flags().Set("config", expectedPath); err != nil {
+		t.Fatalf("set config flag: %v", err)
+	}
+
+	resolved, err := ResolveConfigPath(command)
+	if err != nil {
+		t.Fatalf("resolve config path: %v", err)
+	}
+	if resolved.Source != ConfigPathSourceFlag {
+		t.Fatalf("source mismatch: got %q want %q", resolved.Source, ConfigPathSourceFlag)
+	}
+	if resolved.Path != expectedPath {
+		t.Fatalf("path mismatch: got %q want %q", resolved.Path, expectedPath)
+	}
+}
+
+func TestResolveConfigPathUsesEnvWhenFlagMissing(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	command.Flags().String("config", "", "")
+	expectedPath := filepath.Join(t.TempDir(), "env.toml")
+	t.Setenv(EnvConfigPath, expectedPath)
+
+	resolved, err := ResolveConfigPath(command)
+	if err != nil {
+		t.Fatalf("resolve config path: %v", err)
+	}
+	if resolved.Source != ConfigPathSourceEnv {
+		t.Fatalf("source mismatch: got %q want %q", resolved.Source, ConfigPathSourceEnv)
+	}
+	if resolved.Path != expectedPath {
+		t.Fatalf("path mismatch: got %q want %q", resolved.Path, expectedPath)
+	}
+}
+
+func TestResolveConfigPathUsesDefaultWhenFlagAndEnvMissing(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+
+	resolved, err := ResolveConfigPath(command)
+	if err != nil {
+		t.Fatalf("resolve config path: %v", err)
+	}
+	if resolved.Source != ConfigPathSourceDefault {
+		t.Fatalf("source mismatch: got %q want %q", resolved.Source, ConfigPathSourceDefault)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("resolve home directory: %v", err)
+	}
+	expectedPath := DefaultConfigPath(homeDir)
+	if resolved.Path != expectedPath {
+		t.Fatalf("path mismatch: got %q want %q", resolved.Path, expectedPath)
+	}
+}
+
+func TestResolveConfigPathPrioritizesFlagOverEnv(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	command.Flags().String("config", "", "")
+	flagPath := filepath.Join(t.TempDir(), "from-flag.toml")
+	if err := command.Flags().Set("config", flagPath); err != nil {
+		t.Fatalf("set config flag: %v", err)
+	}
+	t.Setenv(EnvConfigPath, filepath.Join(t.TempDir(), "from-env.toml"))
+
+	resolved, err := ResolveConfigPath(command)
+	if err != nil {
+		t.Fatalf("resolve config path: %v", err)
+	}
+	if resolved.Source != ConfigPathSourceFlag {
+		t.Fatalf("source mismatch: got %q want %q", resolved.Source, ConfigPathSourceFlag)
+	}
+	if resolved.Path != flagPath {
+		t.Fatalf("path mismatch: got %q want %q", resolved.Path, flagPath)
+	}
+}
+
+func TestResolveConfigPathRejectsEmptyEnvPath(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	t.Setenv(EnvConfigPath, "   ")
+
+	_, err := ResolveConfigPath(command)
+	if err == nil {
+		t.Fatalf("expected empty env config path to fail")
+	}
+	if !strings.Contains(err.Error(), EnvConfigPath) {
+		t.Fatalf("expected env variable name in error, got %v", err)
+	}
+}
+
+func TestInitializeConfigUsesResolvedConfigPath(t *testing.T) {
+	command := &cobra.Command{Use: "root"}
+	command.Flags().String("config", "", "")
+	envPath := filepath.Join(t.TempDir(), "from-env.toml")
+	t.Setenv(EnvConfigPath, envPath)
+	loader := &captureLoader{
+		config: AppConfig{
+			CapturesDir:  t.TempDir(),
+			TemplatesDir: t.TempDir(),
+			LogLevel:     LogLevelInfo,
+		},
+	}
+
+	if err := InitializeConfig(command, loader); err != nil {
+		t.Fatalf("initialize config: %v", err)
+	}
+	if loader.receivedPath != envPath {
+		t.Fatalf("loader config path mismatch: got %q want %q", loader.receivedPath, envPath)
+	}
+}
+
+type captureLoader struct {
+	receivedPath string
+	config       AppConfig
+	err          error
+}
+
+func (l *captureLoader) Load(configPath string) (AppConfig, error) {
+	l.receivedPath = configPath
+	if l.err != nil {
+		return AppConfig{}, l.err
+	}
+	return l.config, nil
 }
