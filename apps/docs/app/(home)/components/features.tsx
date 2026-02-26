@@ -103,7 +103,7 @@ export function Features() {
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] bg-[var(--nb-cream)]">
-                  <feature.icon className="w-4.5 h-4.5" />
+                  <feature.icon className="w-5 h-5" />
                 </div>
                 <span
                   className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-[var(--nb-border-color)] ${

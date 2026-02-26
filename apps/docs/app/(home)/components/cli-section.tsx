@@ -146,7 +146,7 @@ export function CLISection() {
               <div className="nb-terminal-dot nb-terminal-dot-green" />
               <span className="nb-terminal-title">Terminal</span>
             </div>
-            <div className="nb-terminal-body h-80 overflow-y-auto">
+            <div className="nb-terminal-body h-64 sm:h-80 overflow-y-auto overflow-x-auto">
               {visibleLines.map((line, index) => (
                 <div key={index} className="leading-relaxed">
                   {!line ? (
@@ -180,16 +180,13 @@ export function CLISection() {
 
           <div className="space-y-3">
             {cliFeatures.map((feature) => (
-              <div
-                key={feature.title}
-                className="nb-card-flat p-4 group"
-              >
+              <div key={feature.title} className="nb-card-flat p-4 group">
                 <div className="flex items-start gap-3">
                   <div
                     className="w-10 h-10 flex items-center justify-center border-2 flex-shrink-0"
                     style={{ borderColor: feature.color, color: feature.color }}
                   >
-                    <feature.icon className="w-4.5 h-4.5" />
+                    <feature.icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-base mb-1 group-hover:text-[var(--nb-coral)] transition-colors">
@@ -198,7 +195,7 @@ export function CLISection() {
                     <p className="text-sm text-[var(--nb-text-muted)] mb-2">
                       {feature.description}
                     </p>
-                    <code className="text-xs font-mono text-[var(--nb-text-muted)] bg-[var(--nb-cream)] px-2.5 py-1 border border-[var(--nb-border-color)] inline-block">
+                    <code className="text-xs font-mono text-[var(--nb-text-muted)] bg-[var(--nb-cream)] px-2.5 py-1 border border-[var(--nb-border-color)] inline-block max-w-full overflow-x-auto">
                       {feature.command}
                     </code>
                   </div>
@@ -207,10 +204,7 @@ export function CLISection() {
             ))}
 
             <div className="pt-3">
-              <Link
-                href="/docs/cli"
-                className="nb-btn nb-btn-secondary w-full"
-              >
+              <Link href="/docs/cli" className="nb-btn nb-btn-secondary w-full">
                 CLI Documentation
                 <ArrowRight className="w-4 h-4" />
               </Link>
@@ -222,7 +216,7 @@ export function CLISection() {
           <p className="font-bold text-xs uppercase tracking-widest text-[var(--nb-text-muted)] mb-3">
             Install with Homebrew
           </p>
-          <code className="inline-block px-5 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm text-[#e0e0e0]">
+          <code className="inline-block px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-xs sm:text-sm text-[#e0e0e0] max-w-full overflow-x-auto">
             <span className="text-[var(--nb-green)]">$</span>{" "}
             <span className="text-white">
               brew install --cask endalk200/tap/better-webhook

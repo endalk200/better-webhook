@@ -80,24 +80,20 @@ export function ProviderShowcase() {
           {providers.map((provider) => (
             <div
               key={provider.name}
-              className="nb-card relative p-4 text-center"
+              className="nb-card relative p-3 sm:p-4 text-center"
             >
               <div
-                className="w-11 h-11 flex items-center justify-center font-bold text-lg mb-2 mx-auto border-2 border-[var(--nb-border-color)]"
+                className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center font-bold text-base sm:text-lg mb-2 mx-auto border-2 border-[var(--nb-border-color)]"
                 style={{
                   backgroundColor: provider.isCustom
                     ? "transparent"
                     : provider.bgColor,
-                  color: provider.isCustom
-                    ? "var(--nb-lavender)"
-                    : "#fff",
+                  color: provider.isCustom ? "var(--nb-lavender)" : "#fff",
                 }}
               >
                 {provider.isCustom ? "+" : provider.name[0]}
               </div>
-              <p className="font-bold text-sm">
-                {provider.name}
-              </p>
+              <p className="font-bold text-sm">{provider.name}</p>
               <div className="absolute top-2 right-2">
                 <div
                   className="w-4 h-4 flex items-center justify-center"
@@ -110,7 +106,7 @@ export function ProviderShowcase() {
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {providers
             .filter((p) => !p.isCustom)
             .map((provider) => (
@@ -126,9 +122,7 @@ export function ProviderShowcase() {
                     {provider.name[0]}
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm">
-                      {provider.name}
-                    </h3>
+                    <h3 className="font-bold text-sm">{provider.name}</h3>
                     <code className="text-xs text-[var(--nb-text-muted)] font-mono">
                       {provider.package}
                     </code>

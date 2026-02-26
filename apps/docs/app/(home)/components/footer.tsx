@@ -88,8 +88,8 @@ export function Footer() {
   return (
     <footer className="border-t-[2.5px] border-[var(--nb-border-color)] bg-[var(--nb-white)]">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
-          <div className="col-span-2 md:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+          <div className="sm:col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 font-bold text-base mb-3">
               <span
                 className="inline-flex items-center justify-center w-7 h-7 text-sm border-2 border-current"
@@ -115,7 +115,12 @@ export function Footer() {
                   href: "https://github.com/endalk200/better-webhook/releases",
                   label: "Releases",
                 },
-                { icon: BookOpen, href: "/docs", label: "Docs", internal: true },
+                {
+                  icon: BookOpen,
+                  href: "/docs",
+                  label: "Docs",
+                  internal: true,
+                },
               ].map((item) => {
                 const Wrapper = item.internal ? Link : "a";
                 const extraProps = item.internal
@@ -127,9 +132,10 @@ export function Footer() {
                     href={item.href}
                     className="w-8 h-8 flex items-center justify-center border-2 border-[var(--nb-border-color)] bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors"
                     title={item.label}
+                    aria-label={item.label}
                     {...extraProps}
                   >
-                    <item.icon className="w-3.5 h-3.5" />
+                    <item.icon className="w-3.5 h-3.5" aria-hidden="true" />
                   </Wrapper>
                 );
               })}

@@ -223,11 +223,9 @@ export function QuickStart() {
                   {item.step}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base mb-2">
-                    {item.title}
-                  </h3>
+                  <h3 className="font-bold text-base mb-2">{item.title}</h3>
                   <div className="flex items-center gap-0">
-                    <code className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm overflow-x-auto text-[#e0e0e0]">
+                    <code className="flex-1 px-3 sm:px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-xs sm:text-sm overflow-x-auto text-[#e0e0e0] min-w-0">
                       {item.isCommand ? (
                         <>
                           <span className="text-[var(--nb-green)]">$</span>{" "}
@@ -270,7 +268,7 @@ export function QuickStart() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex justify-center">
+            <div className="flex justify-center overflow-x-auto">
               <div className="nb-tabs">
                 {frameworks.map((fw) => (
                   <button
@@ -292,11 +290,9 @@ export function QuickStart() {
                 1
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base mb-2">
-                  Install packages
-                </h3>
+                <h3 className="font-bold text-base mb-2">Install packages</h3>
                 <div className="flex items-center gap-0">
-                  <code className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm overflow-x-auto text-[#e0e0e0]">
+                  <code className="flex-1 px-3 sm:px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-xs sm:text-sm overflow-x-auto text-[#e0e0e0] min-w-0">
                     <span className="text-[var(--nb-green)]">$</span>{" "}
                     <span className="text-white">{current.install}</span>
                   </code>
@@ -346,8 +342,8 @@ export function QuickStart() {
                       )}
                     </button>
                   </div>
-                  <div className="nb-code-body overflow-x-auto max-h-[400px]">
-                    <pre className="font-mono text-sm leading-relaxed">
+                  <div className="nb-code-body overflow-x-auto max-h-[350px] sm:max-h-[400px]">
+                    <pre className="font-mono text-xs sm:text-sm leading-relaxed">
                       <code
                         dangerouslySetInnerHTML={{
                           __html: highlightCode(current.code),
@@ -367,10 +363,8 @@ export function QuickStart() {
                 3
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base mb-2">
-                  Set webhook secret
-                </h3>
-                <code className="block px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm text-[#e0e0e0]">
+                <h3 className="font-bold text-base mb-2">Set webhook secret</h3>
+                <code className="block px-3 sm:px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-xs sm:text-sm text-[#e0e0e0] overflow-x-auto">
                   <span className="text-[#555]"># .env</span>
                   <br />
                   <span className="text-white">
