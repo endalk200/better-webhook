@@ -191,19 +191,33 @@ export function QuickStart() {
         </div>
 
         <div className="flex justify-center mb-10">
-          <div className="nb-tabs">
+          <div
+            className="nb-tabs"
+            role="tablist"
+            aria-label="Quick start method"
+          >
             <button
               onClick={() => setActiveTab("cli")}
               className={`nb-tab ${activeTab === "cli" ? "active" : ""}`}
+              role="tab"
+              aria-selected={activeTab === "cli"}
             >
-              <Terminal className="w-3.5 h-3.5 inline-block mr-2" />
+              <Terminal
+                className="w-3.5 h-3.5 inline-block mr-2"
+                aria-hidden="true"
+              />
               CLI
             </button>
             <button
               onClick={() => setActiveTab("sdk")}
               className={`nb-tab ${activeTab === "sdk" ? "active" : ""}`}
+              role="tab"
+              aria-selected={activeTab === "sdk"}
             >
-              <Code2 className="w-3.5 h-3.5 inline-block mr-2" />
+              <Code2
+                className="w-3.5 h-3.5 inline-block mr-2"
+                aria-hidden="true"
+              />
               SDK
             </button>
           </div>
@@ -239,11 +253,18 @@ export function QuickStart() {
                       onClick={() => copyToClipboard(item.command, index)}
                       className="p-2.5 border-2 border-[var(--nb-border-color)] border-l-0 bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors flex-shrink-0"
                       title="Copy"
+                      aria-label={`Copy ${item.title}`}
                     >
                       {copiedIndex === index ? (
-                        <Check className="w-4 h-4 text-[var(--nb-green)]" />
+                        <Check
+                          className="w-4 h-4 text-[var(--nb-green)]"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
+                        <Copy
+                          className="w-4 h-4 text-[var(--nb-text-muted)]"
+                          aria-hidden="true"
+                        />
                       )}
                     </button>
                   </div>
@@ -269,12 +290,14 @@ export function QuickStart() {
         ) : (
           <div className="space-y-6">
             <div className="flex justify-center overflow-x-auto">
-              <div className="nb-tabs">
+              <div className="nb-tabs" role="tablist" aria-label="Framework">
                 {frameworks.map((fw) => (
                   <button
                     key={fw.id}
                     onClick={() => setActiveFramework(fw.id)}
                     className={`nb-tab ${activeFramework === fw.id ? "active" : ""}`}
+                    role="tab"
+                    aria-selected={activeFramework === fw.id}
                   >
                     {fw.name}
                   </button>
@@ -300,11 +323,18 @@ export function QuickStart() {
                     onClick={() => copyToClipboard(current.install, 100)}
                     className="p-2.5 border-2 border-[var(--nb-border-color)] border-l-0 bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors flex-shrink-0"
                     title="Copy"
+                    aria-label="Copy install command"
                   >
                     {copiedIndex === 100 ? (
-                      <Check className="w-4 h-4 text-[var(--nb-green)]" />
+                      <Check
+                        className="w-4 h-4 text-[var(--nb-green)]"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
+                      <Copy
+                        className="w-4 h-4 text-[var(--nb-text-muted)]"
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
                 </div>
@@ -334,11 +364,18 @@ export function QuickStart() {
                       onClick={() => copyToClipboard(current.code, 101)}
                       className="ml-auto p-1.5 hover:bg-[#333] transition-colors"
                       title="Copy code"
+                      aria-label="Copy code"
                     >
                       {copiedIndex === 101 ? (
-                        <Check className="w-4 h-4 text-[var(--nb-green)]" />
+                        <Check
+                          className="w-4 h-4 text-[var(--nb-green)]"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Copy className="w-4 h-4 text-[#666]" />
+                        <Copy
+                          className="w-4 h-4 text-[#666]"
+                          aria-hidden="true"
+                        />
                       )}
                     </button>
                   </div>

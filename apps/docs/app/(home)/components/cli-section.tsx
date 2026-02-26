@@ -165,7 +165,8 @@ export function CLISection() {
                   ) : line.startsWith("\u{1F3A3}") ||
                     line.startsWith("\u{1F504}") ||
                     line.startsWith("\u{1F680}") ||
-                    line.startsWith("\u{1F4E5}") ? (
+                    line.startsWith("\u{1F4E5}") ||
+                    line.startsWith("\u{1F4DA}") ? (
                     <span className="text-white">{line}</span>
                   ) : (
                     <span className="text-[#666]">{line}</span>

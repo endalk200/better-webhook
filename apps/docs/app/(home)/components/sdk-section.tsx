@@ -437,7 +437,7 @@ function highlightCode(code: string): string {
     },
   );
 
-  result = result.replace(/(@\w+)/g, (match) => {
+  result = result.replace(/(@[\w-]+\/[\w.-]+)/g, (match) => {
     const placeholder = `__TOKEN_${tokenIndex++}__`;
     tokens.push({
       placeholder,
