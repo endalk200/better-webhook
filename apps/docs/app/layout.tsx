@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://better-webhook.com"),
   title: {
     default: "better-webhook — Local-first Webhook Development Toolkit",
     template: "%s | better-webhook",
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://better-webhook.dev",
+    url: "https://better-webhook.com",
     title: "better-webhook — Local-first Webhook Development Toolkit",
     description:
       "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
@@ -55,9 +56,6 @@ export const metadata: Metadata = {
       "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
     creator: "@endalk200",
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {
@@ -68,7 +66,14 @@ export default function Layout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen antialiased">
-        <RootProvider>{children}</RootProvider>
+        <RootProvider
+          theme={{
+            defaultTheme: "light",
+            enableSystem: false,
+          }}
+        >
+          {children}
+        </RootProvider>
         <Analytics />
       </body>
     </html>

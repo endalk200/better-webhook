@@ -1,7 +1,7 @@
 import { getPageImage, source } from "@/lib/source";
+import { OGImage } from "@/lib/og-image";
 import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
-import { generate as DefaultImage } from "fumadocs-ui/og";
 
 export const revalidate = false;
 
@@ -14,13 +14,7 @@ export async function GET(
   if (!page) notFound();
 
   return new ImageResponse(
-    (
-      <DefaultImage
-        title={page.data.title}
-        description={page.data.description}
-        site="My App"
-      />
-    ),
+    <OGImage title={page.data.title} description={page.data.description} />,
     {
       width: 1200,
       height: 630,
