@@ -86,153 +86,133 @@ const packages = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[var(--lyra-border)] bg-[var(--lyra-bg-secondary)]">
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          {/* Brand */}
+    <footer className="border-t-[2.5px] border-[var(--nb-border-color)] bg-[var(--nb-white)]">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 font-mono font-bold text-lg mb-4">
-              <span className="text-[var(--lyra-primary)]">&gt;_</span>
+            <div className="flex items-center gap-2 font-bold text-base mb-3">
+              <span
+                className="inline-flex items-center justify-center w-7 h-7 text-sm border-2 border-current"
+                style={{ boxShadow: "2px 2px 0 currentColor" }}
+              >
+                &gt;_
+              </span>
               <span>better-webhook</span>
             </div>
-            <p className="text-sm text-[var(--lyra-text-secondary)] mb-4">
+            <p className="text-sm text-[var(--nb-text-muted)] mb-3">
               Local-first webhook toolkit for capture, replay, and type-safe
               handlers.
             </p>
             <div className="flex gap-2">
-              <a
-                href="https://github.com/endalk200/better-webhook"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 border border-[var(--lyra-border)] hover:border-[var(--lyra-primary)] transition-colors"
-                title="GitHub"
-              >
-                <Github className="w-4 h-4" />
-              </a>
-              <a
-                href="https://github.com/endalk200/better-webhook/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 border border-[var(--lyra-border)] hover:border-[var(--lyra-primary)] transition-colors"
-                title="Releases"
-              >
-                <Download className="w-4 h-4" />
-              </a>
-              <Link
-                href="/docs"
-                className="p-2 border border-[var(--lyra-border)] hover:border-[var(--lyra-primary)] transition-colors"
-                title="Documentation"
-              >
-                <BookOpen className="w-4 h-4" />
-              </Link>
+              {[
+                {
+                  icon: Github,
+                  href: "https://github.com/endalk200/better-webhook",
+                  label: "GitHub",
+                },
+                {
+                  icon: Download,
+                  href: "https://github.com/endalk200/better-webhook/releases",
+                  label: "Releases",
+                },
+                { icon: BookOpen, href: "/docs", label: "Docs", internal: true },
+              ].map((item) => {
+                const Wrapper = item.internal ? Link : "a";
+                const extraProps = item.internal
+                  ? {}
+                  : { target: "_blank", rel: "noopener noreferrer" };
+                return (
+                  <Wrapper
+                    key={item.label}
+                    href={item.href}
+                    className="w-8 h-8 flex items-center justify-center border-2 border-[var(--nb-border-color)] bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors"
+                    title={item.label}
+                    {...extraProps}
+                  >
+                    <item.icon className="w-3.5 h-3.5" />
+                  </Wrapper>
+                );
+              })}
             </div>
           </div>
 
-          {/* CLI */}
-          <div>
-            <h4 className="font-mono font-semibold text-sm uppercase tracking-wider mb-4 text-[var(--lyra-primary)]">
-              CLI
-            </h4>
-            <ul className="space-y-2">
-              {footerLinks.cli.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[var(--lyra-text-secondary)] hover:text-[var(--lyra-text)] transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* SDK */}
-          <div>
-            <h4 className="font-mono font-semibold text-sm uppercase tracking-wider mb-4 text-[var(--lyra-accent)]">
-              SDK
-            </h4>
-            <ul className="space-y-2">
-              {footerLinks.sdk.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[var(--lyra-text-secondary)] hover:text-[var(--lyra-text)] transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Frameworks */}
-          <div>
-            <h4 className="font-mono font-semibold text-sm uppercase tracking-wider mb-4 text-[var(--lyra-text-muted)]">
-              Frameworks
-            </h4>
-            <ul className="space-y-2">
-              {footerLinks.frameworks.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[var(--lyra-text-secondary)] hover:text-[var(--lyra-text)] transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="font-mono font-semibold text-sm uppercase tracking-wider mb-4 text-[var(--lyra-text-muted)]">
-              Resources
-            </h4>
-            <ul className="space-y-2">
-              {footerLinks.resources.map((link) => (
-                <li key={link.name}>
-                  <a
-                    href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                    className="text-sm text-[var(--lyra-text-secondary)] hover:text-[var(--lyra-text)] transition-colors inline-flex items-center gap-1"
-                  >
-                    {link.name}
-                    {link.external && (
-                      <svg
-                        className="w-3 h-3"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+          {[
+            {
+              title: "CLI",
+              links: footerLinks.cli,
+              color: "var(--nb-coral)",
+            },
+            {
+              title: "SDK",
+              links: footerLinks.sdk,
+              color: "var(--nb-blue)",
+            },
+            { title: "Frameworks", links: footerLinks.frameworks },
+            { title: "Resources", links: footerLinks.resources },
+          ].map((col) => (
+            <div key={col.title}>
+              <h4
+                className="font-bold text-xs uppercase tracking-widest mb-3"
+                style={{ color: col.color || "var(--nb-text-muted)" }}
+              >
+                {col.title}
+              </h4>
+              <ul className="space-y-2">
+                {col.links.map((link) => {
+                  const isExternal = "external" in link && link.external;
+                  if (isExternal) {
+                    return (
+                      <li key={link.name}>
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[var(--nb-text-muted)] hover:text-[var(--nb-coral)] transition-colors inline-flex items-center gap-1"
+                        >
+                          {link.name}
+                          <svg
+                            className="w-3 h-3"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={link.name}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-[var(--nb-text-muted)] hover:text-[var(--nb-coral)] transition-colors"
                       >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+                        {link.name}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Packages */}
-        <div className="border-t border-[var(--lyra-border)] pt-8 mb-8">
-          <h4 className="font-mono font-semibold text-xs uppercase tracking-wider mb-4 text-[var(--lyra-text-muted)]">
+        <div className="border-t-[2.5px] border-[var(--nb-border-color)] pt-6 mb-6">
+          <h4 className="font-bold text-xs uppercase tracking-widest mb-3 text-[var(--nb-text-muted)]">
             SDK Packages
           </h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {packages.map((pkg) => (
               <a
                 key={pkg.name}
                 href={pkg.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-mono px-3 py-1.5 border border-[var(--lyra-border)] text-[var(--lyra-text-secondary)] hover:border-[var(--lyra-primary)] hover:text-[var(--lyra-primary)] transition-colors"
+                className="text-[11px] font-mono px-2.5 py-1 border-2 border-[var(--nb-border-color)] text-[var(--nb-text-muted)] hover:bg-[var(--nb-yellow)] hover:text-[var(--nb-black)] transition-colors"
               >
                 {pkg.name}
               </a>
@@ -240,20 +220,19 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-[var(--lyra-border)] pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[var(--lyra-text-muted)] font-mono">
-            MIT License © {new Date().getFullYear()}{" "}
+        <div className="border-t-[2.5px] border-[var(--nb-border-color)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-xs text-[var(--nb-text-muted)] font-mono">
+            MIT License &copy; {new Date().getFullYear()}{" "}
             <a
               href="https://github.com/endalk200"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--lyra-text)]"
+              className="hover:text-[var(--nb-coral)]"
             >
               Endalk
             </a>
           </p>
-          <p className="text-xs text-[var(--lyra-text-muted)] font-mono">
+          <p className="text-xs text-[var(--nb-text-muted)]">
             Built for developers shipping webhook integrations
           </p>
         </div>

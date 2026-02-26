@@ -72,32 +72,40 @@ export function CodeComparison() {
   const [activeTab, setActiveTab] = useState<"before" | "after">("after");
 
   return (
-    <section className="lyra-section">
+    <section className="nb-section bg-[var(--nb-white)]">
       <div className="container mx-auto max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            See the <span className="gradient-text">difference</span>
+        <div className="text-center mb-10">
+          <h2 className="font-bold text-3xl sm:text-4xl tracking-tight mb-3 uppercase">
+            See the <span className="nb-highlight">difference</span>
           </h2>
-          <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
+          <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
             Compare traditional webhook handling with better-webhook. Less
             boilerplate, more safety.
           </p>
         </div>
 
-        {/* Tab Buttons */}
         <div className="flex justify-center mb-8">
-          <div className="lyra-tabs">
+          <div className="nb-tabs">
             <button
               onClick={() => setActiveTab("before")}
-              className={`lyra-tab ${activeTab === "before" ? "active !bg-red-500" : ""}`}
+              className={`nb-tab ${activeTab === "before" ? "active" : ""}`}
+              style={
+                activeTab === "before"
+                  ? { background: "#dc2626", color: "#fff" }
+                  : {}
+              }
             >
               <X className="w-3.5 h-3.5 inline-block mr-2" />
               Before
             </button>
             <button
               onClick={() => setActiveTab("after")}
-              className={`lyra-tab ${activeTab === "after" ? "active" : ""}`}
+              className={`nb-tab ${activeTab === "after" ? "active" : ""}`}
+              style={
+                activeTab === "after"
+                  ? { background: "var(--nb-green)", color: "#fff" }
+                  : {}
+              }
             >
               <Check className="w-3.5 h-3.5 inline-block mr-2" />
               After
@@ -105,35 +113,37 @@ export function CodeComparison() {
           </div>
         </div>
 
-        {/* Code Display */}
-        <div className="grid lg:grid-cols-5 gap-8 items-start">
-          {/* Code Block */}
+        <div className="grid lg:grid-cols-5 gap-6 items-start">
           <div className="lg:col-span-3">
             <div
-              className={`lyra-code-block transition-all duration-150 ${
-                activeTab === "before"
-                  ? "border-red-500/50"
-                  : "border-[var(--lyra-accent)]/50"
-              }`}
+              className="nb-code-block"
+              style={{
+                borderColor:
+                  activeTab === "before"
+                    ? "#dc2626"
+                    : "var(--nb-green)",
+              }}
             >
-              <div className="lyra-code-header">
-                <div className="lyra-code-dot lyra-code-dot-red" />
-                <div className="lyra-code-dot lyra-code-dot-yellow" />
-                <div className="lyra-code-dot lyra-code-dot-green" />
-                <span className="ml-3 text-xs text-[var(--lyra-text-muted)] font-mono">
+              <div className="nb-code-header">
+                <div className="nb-terminal-dot nb-terminal-dot-red" />
+                <div className="nb-terminal-dot nb-terminal-dot-yellow" />
+                <div className="nb-terminal-dot nb-terminal-dot-green" />
+                <span className="ml-3 text-xs text-[#666] font-mono">
                   {activeTab === "before" ? "webhook-handler.js" : "route.ts"}
                 </span>
                 <span
-                  className={`ml-auto text-[10px] font-mono uppercase tracking-wider px-2 py-1 border ${
-                    activeTab === "before"
-                      ? "border-red-500/50 text-red-400"
-                      : "border-[var(--lyra-accent)]/50 text-[var(--lyra-accent)]"
-                  }`}
+                  className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 border-2"
+                  style={{
+                    borderColor:
+                      activeTab === "before" ? "#dc2626" : "var(--nb-green)",
+                    color:
+                      activeTab === "before" ? "#dc2626" : "var(--nb-green)",
+                  }}
                 >
                   {activeTab === "before" ? "Traditional" : "better-webhook"}
                 </span>
               </div>
-              <div className="lyra-code-body overflow-x-auto max-h-[500px]">
+              <div className="nb-code-body overflow-x-auto max-h-[500px]">
                 <pre className="font-mono text-sm leading-relaxed">
                   <code>
                     <SimpleHighlight
@@ -147,46 +157,53 @@ export function CodeComparison() {
             </div>
           </div>
 
-          {/* Comparison Points */}
-          <div className="lg:col-span-2 space-y-3">
-            <h3 className="font-semibold font-mono text-sm uppercase tracking-wider text-[var(--lyra-text-muted)] mb-4">
+          <div className="lg:col-span-2 space-y-2.5">
+            <h3 className="font-bold text-sm uppercase tracking-widest text-[var(--nb-text-muted)] mb-3">
               What changes
             </h3>
             {comparisonPoints.map((point, index) => (
               <div
                 key={index}
-                className="flex items-start gap-3 p-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)]"
+                className="flex items-start gap-3 p-3 nb-card-flat"
               >
                 <div className="flex-shrink-0 mt-0.5">
                   {activeTab === "before" ? (
-                    <X className="w-4 h-4 text-red-500" />
+                    <div className="w-5 h-5 flex items-center justify-center bg-red-600 text-white">
+                      <X className="w-3 h-3" />
+                    </div>
                   ) : (
-                    <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                    <div className="w-5 h-5 flex items-center justify-center bg-[var(--nb-green)] text-white">
+                      <Check className="w-3 h-3" />
+                    </div>
                   )}
                 </div>
-                <div>
-                  <span
-                    className={`text-sm ${
-                      activeTab === "before"
-                        ? "text-[var(--lyra-text-muted)] line-through"
-                        : "text-[var(--lyra-text)]"
-                    }`}
-                  >
-                    {activeTab === "before" ? point.before : point.after}
-                  </span>
-                </div>
+                <span
+                  className={`text-sm ${
+                    activeTab === "before"
+                      ? "text-[var(--nb-text-muted)] line-through"
+                      : "text-[var(--nb-text)]"
+                  }`}
+                >
+                  {activeTab === "before" ? point.before : point.after}
+                </span>
               </div>
             ))}
 
-            {/* Stats */}
-            <div className="mt-6 p-4 bg-[var(--lyra-surface)] border border-[var(--lyra-accent)]/30">
-              <div className="text-center">
-                <div className="text-3xl font-bold font-mono text-[var(--lyra-accent)]">
-                  ~20%
-                </div>
-                <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
-                  Less boilerplate
-                </div>
+            <div
+              className="mt-4 p-4 text-center nb-card"
+              style={{
+                borderColor: "var(--nb-green)",
+                boxShadow: "5px 5px 0 var(--nb-green)",
+              }}
+            >
+              <div
+                className="text-2xl font-bold"
+                style={{ color: "var(--nb-green)" }}
+              >
+                ~20%
+              </div>
+              <div className="text-xs font-bold uppercase tracking-widest text-[var(--nb-text-muted)]">
+                Less boilerplate
               </div>
             </div>
           </div>
@@ -209,7 +226,7 @@ function SimpleHighlight({
     <div className="inline-block min-w-full">
       {lines.map((line, i) => (
         <div key={i} className="flex">
-          <span className="pr-4 text-gray-600 select-none text-right w-8 shrink-0 opacity-50">
+          <span className="pr-4 text-[#444] select-none text-right w-8 shrink-0 opacity-50">
             {i + 1}
           </span>
           <span className="whitespace-pre">
@@ -228,7 +245,6 @@ function HighlightLine({
   line: string;
   isBefore: boolean;
 }) {
-  // Comments
   if (line.trim().startsWith("//")) {
     const isGood =
       line.includes("Full") || line.includes("type") || line.includes("safety");
@@ -240,7 +256,11 @@ function HighlightLine({
     return (
       <span
         className={
-          isGood ? "text-emerald-400" : isBad ? "text-red-400" : "text-gray-500"
+          isGood
+            ? "text-emerald-400"
+            : isBad
+              ? "text-red-400"
+              : "text-[#555]"
         }
       >
         {line}
@@ -252,17 +272,14 @@ function HighlightLine({
 }
 
 function highlightSyntax(line: string): string {
-  // Escape HTML first
   let result = line
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Use placeholder tokens to avoid nested replacements
   const tokens: { placeholder: string; html: string }[] = [];
   let tokenIndex = 0;
 
-  // Extract and replace strings first (to avoid keyword matching inside strings)
   result = result.replace(/("[^"]*"|'[^']*'|`[^`]*`)/g, (match) => {
     const placeholder = `__TOKEN_${tokenIndex++}__`;
     tokens.push({
@@ -272,27 +289,17 @@ function highlightSyntax(line: string): string {
     return placeholder;
   });
 
-  // Keywords (only match outside of strings now)
-  const keywords = [
-    "import",
-    "from",
-    "const",
-    "async",
-    "await",
-    "if",
-    "export",
-    "for",
-    "return",
-    "let",
-    "var",
-    "function",
-  ];
-  keywords.forEach((kw) => {
-    const regex = new RegExp(`\\b(${kw})\\b`, "g");
-    result = result.replace(regex, `<span class="text-cyan-400">$1</span>`);
+  const kwRegex =
+    /\b(import|from|const|async|await|if|export|for|return|let|var|function)\b/g;
+  result = result.replace(kwRegex, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:var(--nb-coral)">${match}</span>`,
+    });
+    return placeholder;
   });
 
-  // Restore string tokens
   tokens.forEach(({ placeholder, html }) => {
     result = result.replace(placeholder, html);
   });

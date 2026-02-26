@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 type Framework = "nextjs" | "hono" | "express" | "nestjs" | "gcp-functions";
-type Provider = "github" | "ragie" | "recall";
 
 const frameworkCode: Record<
   Framework,
@@ -27,7 +26,6 @@ import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
   .event(push, async (payload) => {
-    // Fully typed - payload.repository, payload.commits, etc.
     console.log(\`Push to \${payload.repository.name}\`);
     console.log(\`\${payload.commits.length} commits\`);
   })
@@ -60,7 +58,6 @@ const webhook = github()
     console.log(\`Issue \${payload.action}: \${payload.issue.title}\`);
   });
 
-// Important: use express.raw() for signature verification
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
@@ -130,7 +127,6 @@ import { toGCPFunction } from "@better-webhook/gcp-functions";
 
 const webhook = ragie()
   .event(document_status_updated, async (payload) => {
-    // Fully typed - payload.document_id, payload.status, etc.
     console.log(\`Document \${payload.document_id} is now \${payload.status}\`);
 
     if (payload.status === "ready") {
@@ -148,67 +144,27 @@ http("webhookHandler", toGCPFunction(webhook));`,
   },
 };
 
-const providerInfo: Record<
-  Provider,
-  { name: string; events: string[]; package: string }
-> = {
-  github: {
-    name: "GitHub",
-    events: [
-      "push",
-      "pull_request",
-      "issues",
-      "installation",
-      "installation_repositories",
-    ],
-    package: "@better-webhook/github",
-  },
-  ragie: {
-    name: "Ragie",
-    events: [
-      "document_status_updated",
-      "document_deleted",
-      "entity_extracted",
-      "connection_sync_started",
-      "connection_sync_progress",
-      "connection_sync_finished",
-    ],
-    package: "@better-webhook/ragie",
-  },
-  recall: {
-    name: "Recall.ai",
-    events: [
-      "participant_events.join",
-      "participant_events.leave",
-      "participant_events.chat_message",
-      "transcript.data",
-      "transcript.partial_data",
-      "bot.joining_call",
-      "bot.done",
-      "bot.fatal",
-    ],
-    package: "@better-webhook/recall",
-  },
-};
-
 const sdkFeatures = [
   {
     icon: Shield,
     title: "Signature Verification",
     description:
-      "Automatic HMAC signature verification for all supported providers. Timing-safe comparison to prevent attacks.",
+      "Automatic HMAC verification for all providers. Timing-safe comparison prevents attacks.",
+    color: "var(--nb-coral)",
   },
   {
     icon: Sparkles,
     title: "Type-Safe Handlers",
     description:
-      "Full TypeScript support with Zod schemas. Get autocomplete for every event payload property.",
+      "Full TypeScript support with Zod schemas. Autocomplete for every payload property.",
+    color: "var(--nb-yellow)",
   },
   {
     icon: Layers,
     title: "Framework Adapters",
     description:
-      "First-class support for Next.js, Hono, Express, NestJS, and GCP Cloud Functions.",
+      "First-class support for Next.js, Hono, Express, NestJS, and GCP Functions.",
+    color: "var(--nb-blue)",
   },
 ];
 
@@ -217,8 +173,32 @@ const frameworkLabels: Record<Framework, string> = {
   hono: "Hono",
   express: "Express",
   nestjs: "NestJS",
-  "gcp-functions": "GCP Functions",
+  "gcp-functions": "GCP",
 };
+
+const providerInfo = [
+  {
+    key: "github",
+    name: "GitHub",
+    events: ["push", "pull_request", "issues", "installation", "installation_repositories"],
+    package: "@better-webhook/github",
+    color: "var(--nb-coral)",
+  },
+  {
+    key: "ragie",
+    name: "Ragie",
+    events: ["document_status_updated", "document_deleted", "entity_extracted", "connection_sync_started", "connection_sync_progress", "connection_sync_finished"],
+    package: "@better-webhook/ragie",
+    color: "var(--nb-green)",
+  },
+  {
+    key: "recall",
+    name: "Recall.ai",
+    events: ["participant_events.join", "participant_events.leave", "participant_events.chat_message", "transcript.data", "transcript.partial_data", "bot.joining_call", "bot.done", "bot.fatal"],
+    package: "@better-webhook/recall",
+    color: "var(--nb-blue)",
+  },
+];
 
 export function SDKSection() {
   const [activeFramework, setActiveFramework] = useState<Framework>("nextjs");
@@ -239,45 +219,42 @@ export function SDKSection() {
   const current = frameworkCode[activeFramework];
 
   return (
-    <section className="lyra-section">
+    <section className="nb-section bg-[var(--nb-cream)]">
       <div className="container mx-auto max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="lyra-badge lyra-badge-accent mb-6">
+        <div className="text-center mb-12">
+          <div className="nb-sticker nb-sticker-blue mb-6 inline-flex">
             <span>SDK Packages</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            <span className="text-[var(--lyra-text)]">Type-safe.</span>{" "}
-            <span className="text-[var(--lyra-accent)]">Verified.</span>{" "}
-            <span className="text-[var(--lyra-primary)]">Simple.</span>
+          <h2 className="font-bold text-3xl sm:text-4xl tracking-tight mb-3 uppercase">
+            Type-safe. Verified. <span className="nb-highlight">Simple</span>.
           </h2>
-          <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
+          <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
             Build webhook handlers with full TypeScript support, automatic
-            signature verification, and Zod schema validation. Works with your
-            favorite framework.
+            signature verification, and Zod schema validation.
           </p>
         </div>
 
-        {/* Features Row */}
-        <div className="grid sm:grid-cols-3 gap-6 mb-16">
+        <div className="grid sm:grid-cols-3 gap-4 mb-12">
           {sdkFeatures.map((feature) => (
-            <div key={feature.title} className="lyra-feature-card text-center">
-              <div className="lyra-feature-icon mx-auto">
+            <div key={feature.title} className="nb-card p-5 text-center">
+              <div
+                className="w-11 h-11 flex items-center justify-center border-2 border-[var(--nb-border-color)] mx-auto mb-3"
+                style={{ color: feature.color }}
+              >
                 <feature.icon className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold font-mono text-lg mb-2">
+              <h3 className="font-bold text-base mb-1.5">
                 {feature.title}
               </h3>
-              <p className="text-sm text-[var(--lyra-text-secondary)]">
+              <p className="text-sm text-[var(--nb-text-muted)]">
                 {feature.description}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Framework Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="lyra-tabs">
+        <div className="flex justify-center mb-6">
+          <div className="nb-tabs">
             {(
               [
                 "nextjs",
@@ -290,7 +267,7 @@ export function SDKSection() {
               <button
                 key={fw}
                 onClick={() => setActiveFramework(fw)}
-                className={`lyra-tab ${activeFramework === fw ? "active" : ""}`}
+                className={`nb-tab ${activeFramework === fw ? "active" : ""}`}
               >
                 {frameworkLabels[fw]}
               </button>
@@ -298,49 +275,46 @@ export function SDKSection() {
           </div>
         </div>
 
-        {/* Code Display */}
-        <div className="space-y-4">
-          {/* Install Command */}
-          <div className="flex items-center gap-2">
-            <code className="flex-1 px-4 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
-              <span className="text-[var(--lyra-accent)]">$</span>{" "}
-              <span className="text-[var(--lyra-text)]">{current.install}</span>
-            </code>
+        <div className="space-y-3 max-w-4xl mx-auto">
+          <div className="nb-install">
+            <div className="nb-install-text">
+              <span className="text-[var(--nb-green)]">$</span>{" "}
+              <span>{current.install}</span>
+            </div>
             <button
               onClick={() => copyToClipboard(current.install, "install")}
-              className="p-3 border border-[var(--lyra-border)] bg-[var(--lyra-surface)] hover:border-[var(--lyra-primary)] transition-colors flex-shrink-0"
-              title="Copy install command"
+              className="nb-install-btn"
+              title="Copy"
             >
               {copiedInstall ? (
-                <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                <Check className="w-4 h-4 text-[var(--nb-green)]" />
               ) : (
-                <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
               )}
             </button>
           </div>
 
-          {/* Code Block */}
-          <div className="lyra-code-block">
-            <div className="lyra-code-header">
-              <div className="lyra-code-dot lyra-code-dot-red" />
-              <div className="lyra-code-dot lyra-code-dot-yellow" />
-              <div className="lyra-code-dot lyra-code-dot-green" />
-              <span className="ml-3 text-xs text-[var(--lyra-text-muted)] font-mono">
+          <div className="nb-code-block">
+            <div className="nb-code-header">
+              <div className="nb-terminal-dot nb-terminal-dot-red" />
+              <div className="nb-terminal-dot nb-terminal-dot-yellow" />
+              <div className="nb-terminal-dot nb-terminal-dot-green" />
+              <span className="ml-3 text-xs text-[#666] font-mono">
                 {current.filename}
               </span>
               <button
                 onClick={() => copyToClipboard(current.code, "code")}
-                className="ml-auto p-1.5 hover:bg-[var(--lyra-border)] transition-colors"
+                className="ml-auto p-1.5 hover:bg-[#333] transition-colors"
                 title="Copy code"
               >
                 {copiedCode ? (
-                  <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                  <Check className="w-4 h-4 text-[var(--nb-green)]" />
                 ) : (
-                  <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                  <Copy className="w-4 h-4 text-[#666]" />
                 )}
               </button>
             </div>
-            <div className="lyra-code-body overflow-x-auto max-h-[500px]">
+            <div className="nb-code-body overflow-x-auto max-h-[500px]">
               <pre className="font-mono text-sm leading-relaxed">
                 <code
                   dangerouslySetInnerHTML={{
@@ -352,36 +326,40 @@ export function SDKSection() {
           </div>
         </div>
 
-        {/* Providers */}
-        <div className="mt-16">
-          <h3 className="text-center font-mono text-sm uppercase tracking-wider text-[var(--lyra-text-muted)] mb-6">
+        <div className="mt-12">
+          <h3 className="text-center font-bold text-sm uppercase tracking-widest text-[var(--nb-text-muted)] mb-6">
             Available Providers
           </h3>
-          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {Object.entries(providerInfo).map(([key, provider]) => (
-              <div key={key} className="lyra-card-glow p-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {providerInfo.map((provider) => (
+              <div key={provider.key} className="nb-card p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-[var(--lyra-surface)] border border-[var(--lyra-accent)] flex items-center justify-center font-mono font-bold text-[var(--lyra-accent)]">
+                  <div
+                    className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] font-bold text-lg"
+                    style={{ color: provider.color }}
+                  >
                     {provider.name[0]}
                   </div>
                   <div>
-                    <h4 className="font-semibold font-mono">{provider.name}</h4>
-                    <code className="text-xs text-[var(--lyra-text-muted)]">
+                    <h4 className="font-bold text-sm">
+                      {provider.name}
+                    </h4>
+                    <code className="text-xs text-[var(--nb-text-muted)] font-mono">
                       {provider.package}
                     </code>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {provider.events.slice(0, 4).map((event) => (
                     <span
                       key={event}
-                      className="text-xs font-mono px-2 py-0.5 bg-[var(--lyra-bg-secondary)] border border-[var(--lyra-border)] text-[var(--lyra-text-secondary)]"
+                      className="text-[10px] font-mono px-2 py-0.5 bg-[var(--nb-cream)] border border-[var(--nb-border-color)] text-[var(--nb-text-muted)]"
                     >
                       {event}
                     </span>
                   ))}
                   {provider.events.length > 4 && (
-                    <span className="text-xs font-mono px-2 py-0.5 text-[var(--lyra-text-muted)]">
+                    <span className="text-[10px] font-mono px-2 py-0.5 text-[var(--nb-text-muted)]">
                       +{provider.events.length - 4} more
                     </span>
                   )}
@@ -391,12 +369,8 @@ export function SDKSection() {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/docs/sdk"
-            className="lyra-btn lyra-btn-primary inline-flex items-center gap-2"
-          >
+        <div className="mt-10 text-center">
+          <Link href="/docs/sdk" className="nb-btn nb-btn-primary inline-flex">
             SDK Documentation
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -412,43 +386,51 @@ function highlightCode(code: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Strings
-  result = result.replace(
-    /("[^"]*"|'[^']*'|`[^`]*`)/g,
-    '<span style="color: var(--lyra-warning)">$1</span>',
-  );
+  const tokens: { placeholder: string; html: string }[] = [];
+  let tokenIndex = 0;
 
-  // Comments
-  result = result.replace(
-    /(\/\/.*$)/gm,
-    '<span style="color: var(--lyra-text-muted)">$1</span>',
-  );
-
-  // Keywords
-  const keywords = [
-    "import",
-    "from",
-    "const",
-    "async",
-    "await",
-    "if",
-    "export",
-    "return",
-    "new",
-  ];
-  keywords.forEach((kw) => {
-    const regex = new RegExp(`\\b(${kw})\\b`, "g");
-    result = result.replace(
-      regex,
-      '<span style="color: var(--lyra-primary)">$1</span>',
-    );
+  result = result.replace(/("[^"]*"|'[^']*'|`[^`]*`)/g, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:var(--nb-yellow)">${match}</span>`,
+    });
+    return placeholder;
   });
 
-  // Decorators (NestJS)
+  result = result.replace(/(\/\/.*$)/gm, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:#555">${match}</span>`,
+    });
+    return placeholder;
+  });
+
   result = result.replace(
-    /(@\w+)/g,
-    '<span style="color: var(--lyra-accent)">$1</span>',
+    /\b(import|from|const|async|await|if|export|return|new)\b/g,
+    (match) => {
+      const placeholder = `__TOKEN_${tokenIndex++}__`;
+      tokens.push({
+        placeholder,
+        html: `<span style="color:var(--nb-coral)">${match}</span>`,
+      });
+      return placeholder;
+    },
   );
+
+  result = result.replace(/(@\w+)/g, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:var(--nb-lavender)">${match}</span>`,
+    });
+    return placeholder;
+  });
+
+  tokens.forEach(({ placeholder, html }) => {
+    result = result.replace(placeholder, html);
+  });
 
   return result;
 }

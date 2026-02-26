@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Clock, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 
 const providers = [
   {
     name: "GitHub",
-    status: "available",
+    status: "available" as const,
     package: "@better-webhook/github",
     events: [
       "push",
@@ -15,12 +15,12 @@ const providers = [
       "installation",
       "installation_repositories",
     ],
-    color: "#ffffff",
     bgColor: "#24292e",
+    accentColor: "var(--nb-coral)",
   },
   {
     name: "Ragie",
-    status: "available",
+    status: "available" as const,
     package: "@better-webhook/ragie",
     events: [
       "document_status_updated",
@@ -30,12 +30,12 @@ const providers = [
       "connection_sync_progress",
       "connection_sync_finished",
     ],
-    color: "#ffffff",
     bgColor: "#0d9488",
+    accentColor: "var(--nb-green)",
   },
   {
     name: "Recall.ai",
-    status: "available",
+    status: "available" as const,
     package: "@better-webhook/recall",
     events: [
       "participant_events.join",
@@ -45,117 +45,104 @@ const providers = [
       "bot.done",
       "bot.fatal",
     ],
-    color: "#ffffff",
     bgColor: "#4f46e5",
+    accentColor: "var(--nb-blue)",
   },
   {
     name: "Custom",
-    status: "available",
+    status: "available" as const,
     package: "@better-webhook/core",
     events: ["any.event", "you.define"],
-    color: "var(--lyra-primary)",
     bgColor: "transparent",
+    accentColor: "var(--nb-lavender)",
     isCustom: true,
   },
 ];
 
 export function ProviderShowcase() {
   return (
-    <section className="lyra-section lyra-section-alt">
+    <section className="nb-section nb-dots bg-[var(--nb-cream)]">
       <div className="container mx-auto max-w-5xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            <span className="text-[var(--lyra-text)]">Webhook</span>{" "}
-            <span className="gradient-text">Providers</span>
+        <div className="text-center mb-10">
+          <div className="nb-sticker nb-sticker-green mb-6 inline-flex">
+            <span>Providers</span>
+          </div>
+          <h2 className="font-bold text-3xl sm:text-4xl tracking-tight mb-3 uppercase">
+            Webhook <span className="nb-highlight">Providers</span>
           </h2>
-          <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
+          <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
             Pre-built providers with automatic signature verification and fully
             typed payloads. Create custom providers for any webhook source.
           </p>
         </div>
 
-        {/* Provider Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {providers.map((provider) => (
             <div
               key={provider.name}
-              className={`relative p-4 border transition-all duration-150 ${
-                provider.status === "available"
-                  ? "bg-[var(--lyra-surface)] border-[var(--lyra-border)] hover:border-[var(--lyra-primary)]"
-                  : "bg-[var(--lyra-bg-secondary)] border-dashed border-[var(--lyra-border)] opacity-60"
-              }`}
+              className="nb-card relative p-4 text-center"
             >
-              {/* Provider Icon/Letter */}
               <div
-                className={`w-10 h-10 flex items-center justify-center font-mono font-bold text-lg mb-3 mx-auto ${
-                  provider.isCustom ? "border border-[var(--lyra-primary)]" : ""
-                }`}
+                className="w-11 h-11 flex items-center justify-center font-bold text-lg mb-2 mx-auto border-2 border-[var(--nb-border-color)]"
                 style={{
                   backgroundColor: provider.isCustom
                     ? "transparent"
                     : provider.bgColor,
-                  color: provider.color,
+                  color: provider.isCustom
+                    ? "var(--nb-lavender)"
+                    : "#fff",
                 }}
               >
                 {provider.isCustom ? "+" : provider.name[0]}
               </div>
-
-              {/* Name */}
-              <p
-                className={`text-sm font-mono text-center ${
-                  provider.status === "coming"
-                    ? "text-[var(--lyra-text-muted)]"
-                    : "text-[var(--lyra-text)]"
-                }`}
-              >
+              <p className="font-bold text-sm">
                 {provider.name}
               </p>
-
-              {/* Status Badge */}
               <div className="absolute top-2 right-2">
-                {provider.status === "available" ? (
-                  <Check className="w-3.5 h-3.5 text-[var(--lyra-accent)]" />
-                ) : (
-                  <Clock className="w-3 h-3 text-[var(--lyra-text-muted)]" />
-                )}
+                <div
+                  className="w-4 h-4 flex items-center justify-center"
+                  style={{ color: provider.accentColor }}
+                >
+                  <Check className="w-3 h-3" />
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Available Providers Detail */}
-        <div className="mt-12 grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {providers
-            .filter((p) => p.status === "available" && !p.isCustom)
+            .filter((p) => !p.isCustom)
             .map((provider) => (
-              <div key={provider.name} className="lyra-card p-6">
-                <div className="flex items-center gap-3 mb-4">
+              <div key={provider.name} className="nb-card p-5">
+                <div className="flex items-center gap-3 mb-3">
                   <div
-                    className="w-10 h-10 flex items-center justify-center font-mono font-bold"
+                    className="w-10 h-10 flex items-center justify-center font-bold border-2 border-[var(--nb-border-color)]"
                     style={{
                       backgroundColor: provider.bgColor,
-                      color: provider.color,
+                      color: "#fff",
                     }}
                   >
                     {provider.name[0]}
                   </div>
                   <div>
-                    <h3 className="font-semibold font-mono">{provider.name}</h3>
-                    <code className="text-xs text-[var(--lyra-text-muted)]">
+                    <h3 className="font-bold text-sm">
+                      {provider.name}
+                    </h3>
+                    <code className="text-xs text-[var(--nb-text-muted)] font-mono">
                       {provider.package}
                     </code>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-mono uppercase tracking-wider text-[var(--lyra-text-muted)]">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--nb-text-muted)]">
                     Supported Events
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {provider.events.map((event) => (
                       <span
                         key={event}
-                        className="text-xs font-mono px-2 py-0.5 bg-[var(--lyra-bg-secondary)] border border-[var(--lyra-border)] text-[var(--lyra-text-secondary)]"
+                        className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--nb-cream)] border border-[var(--nb-border-color)] text-[var(--nb-text-muted)]"
                       >
                         {event}
                       </span>
@@ -166,17 +153,16 @@ export function ProviderShowcase() {
             ))}
         </div>
 
-        {/* CTA */}
-        <div className="mt-12 text-center space-y-4">
-          <p className="text-[var(--lyra-text-secondary)]">
+        <div className="mt-10 text-center space-y-3">
+          <p className="text-sm text-[var(--nb-text-muted)]">
             Need a different provider?{" "}
-            <span className="text-[var(--lyra-text)]">
+            <span className="text-[var(--nb-text)] font-bold">
               Create custom webhooks with the core package.
             </span>
           </p>
           <Link
             href="/docs/sdk/custom-providers"
-            className="inline-flex items-center gap-2 font-mono text-sm text-[var(--lyra-primary)] hover:text-[var(--lyra-primary-dark)] transition-colors"
+            className="nb-btn nb-btn-ghost inline-flex"
           >
             Learn about custom providers
             <ArrowRight className="w-4 h-4" />

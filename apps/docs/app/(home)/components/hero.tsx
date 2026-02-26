@@ -10,7 +10,6 @@ import { toNextJS } from "@better-webhook/nextjs";
 
 const webhook = github()
   .event(push, async (payload) => {
-    // Fully typed payload
     console.log(payload.repository.name);
     console.log(payload.commits.length);
   })
@@ -23,15 +22,11 @@ const webhook = github()
 export const POST = toNextJS(webhook);`;
 
 export function Hero() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsVisible(true);
-    }, 0);
-
-    return () => clearTimeout(timeout);
+    requestAnimationFrame(() => setVisible(true));
   }, []);
 
   const copyCommand = async () => {
@@ -43,128 +38,91 @@ export function Hero() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden lyra-grid-bg">
-      {/* Gradient orbs */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-[var(--lyra-primary)] opacity-5 blur-[100px]" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-[var(--lyra-accent)] opacity-5 blur-[100px]" />
-
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-20">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left - Text Content */}
+    <section className="relative flex items-center overflow-hidden nb-dots-hero bg-[var(--nb-cream)] py-16 lg:py-24">
+      <div className="relative z-10 container mx-auto px-4">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Left — Text */}
           <div
-            className={`space-y-8 ${isVisible ? "lyra-animate-slide-up" : "opacity-0"}`}
+            className={`space-y-6 ${visible ? "nb-animate-fade-up" : "opacity-0"}`}
           >
-            {/* Badge */}
-            <div className="lyra-badge lyra-badge-primary">
+            <div className="nb-sticker nb-sticker-yellow">
               <Terminal className="w-3.5 h-3.5" />
-              <span>Local Webhook Capture + Type-Safe SDK</span>
+              <span>Local-first Webhook Toolkit</span>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight font-mono">
-              <span className="block text-[var(--lyra-text)]">Webhooks.</span>
-              <span className="gradient-text">Type-safe. Local-first.</span>
+            <h1 className="font-bold text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.1] uppercase">
+              <span className="block">Stop fighting</span>
+              <span className="block">
+                <span className="nb-highlight">webhooks</span>.
+              </span>
             </h1>
 
-            {/* Description */}
-            <p className="text-lg text-[var(--lyra-text-secondary)] max-w-xl leading-relaxed">
-              Two tools, one workflow: capture real webhook traffic locally,
-              then ship verified handlers with type-safe SDK adapters. Use the{" "}
-              <span className="text-[var(--lyra-primary)]">CLI</span> for
-              capture/replay and the{" "}
-              <span className="text-[var(--lyra-accent)]">SDK</span> for
-              production webhook endpoints.
+            <p className="text-lg text-[var(--nb-text-muted)] max-w-lg leading-relaxed">
+              The local-first toolkit for capturing, replaying, and shipping
+              type-safe webhook handlers in TypeScript.
             </p>
 
-            {/* CTA stack */}
-            <div className="space-y-3">
-              <Link
-                href="#quick-start"
-                className="lyra-btn lyra-btn-primary inline-flex items-center justify-center gap-2"
-              >
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="#quick-start" className="nb-btn nb-btn-primary">
                 <Terminal className="w-4 h-4" />
-                Get started in 60 seconds
+                Get Started
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/docs/cli"
-                  className="lyra-btn lyra-btn-secondary inline-flex items-center justify-center gap-2"
-                >
-                  <Terminal className="w-4 h-4" />
-                  CLI Docs
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/docs/sdk"
-                  className="lyra-btn lyra-btn-secondary inline-flex items-center justify-center gap-2"
-                >
-                  <Code2 className="w-4 h-4" />
-                  SDK Docs
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+              <Link href="/docs" className="nb-btn nb-btn-secondary">
+                <Code2 className="w-4 h-4" />
+                Read the Docs
+              </Link>
             </div>
 
-            {/* Install command */}
-            <div className="space-y-3 pt-4">
-              <p className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
+            <div className="space-y-2 pt-2">
+              <p className="font-bold text-xs uppercase tracking-widest text-[var(--nb-text-muted)]">
                 Quick Install
               </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-3 bg-[var(--lyra-surface)] border border-[var(--lyra-border)] font-mono text-sm">
-                  <span className="text-[var(--lyra-accent)]">$</span>{" "}
-                  <span className="text-[var(--lyra-text)]">
-                    brew install --cask endalk200/tap/better-webhook
-                  </span>
-                </code>
+              <div className="nb-install max-w-lg">
+                <div className="nb-install-text">
+                  <span className="text-[var(--nb-green)]">$</span>{" "}
+                  <span>brew install --cask endalk200/tap/better-webhook</span>
+                </div>
                 <button
                   onClick={copyCommand}
-                  className="p-3 border border-[var(--lyra-border)] bg-[var(--lyra-surface)] hover:border-[var(--lyra-primary)] transition-colors"
+                  className="nb-install-btn"
                   title="Copy to clipboard"
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                    <Check className="w-4 h-4 text-[var(--nb-green)]" />
                   ) : (
-                    <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                    <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* GitHub link */}
-            <div className="pt-2">
-              <a
-                href="https://github.com/endalk200/better-webhook"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-[var(--lyra-text-muted)] hover:text-[var(--lyra-primary)] transition-colors font-mono"
-              >
-                <Github className="w-4 h-4" />
-                View on GitHub
-                <ArrowRight className="w-3 h-3" />
-              </a>
-            </div>
+            <a
+              href="https://github.com/endalk200/better-webhook"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 font-bold text-sm text-[var(--nb-text-muted)] hover:text-[var(--nb-coral)] transition-colors"
+            >
+              <Github className="w-4 h-4" />
+              View on GitHub
+              <ArrowRight className="w-3 h-3" />
+            </a>
           </div>
 
-          {/* Right - Code Block */}
+          {/* Right — Code Block */}
           <div
-            className={`${isVisible ? "lyra-animate-slide-up lyra-delay-200" : "opacity-0"}`}
+            className={`${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
           >
-            <div className="lyra-code-block shadow-2xl">
-              {/* Header */}
-              <div className="lyra-code-header">
-                <div className="lyra-code-dot lyra-code-dot-red" />
-                <div className="lyra-code-dot lyra-code-dot-yellow" />
-                <div className="lyra-code-dot lyra-code-dot-green" />
-                <span className="ml-3 text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
+            <div className="nb-code-block">
+              <div className="nb-code-header">
+                <div className="nb-terminal-dot nb-terminal-dot-red" />
+                <div className="nb-terminal-dot nb-terminal-dot-yellow" />
+                <div className="nb-terminal-dot nb-terminal-dot-green" />
+                <span className="ml-3 text-xs text-[#666] font-mono uppercase tracking-wider">
                   app/api/webhooks/github/route.ts
                 </span>
               </div>
-
-              {/* Code */}
-              <div className="lyra-code-body overflow-x-auto">
+              <div className="nb-code-body overflow-x-auto">
                 <pre className="font-mono text-sm leading-relaxed">
                   <code>
                     <CodeHighlight code={codeBlock} />
@@ -173,32 +131,28 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Stats below code */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
-                <div className="text-2xl font-bold font-mono text-[var(--lyra-primary)]">
-                  3
+            <div className="grid grid-cols-3 gap-3 mt-5">
+              {[
+                { value: "3", label: "Providers", color: "var(--nb-coral)" },
+                { value: "5", label: "Adapters", color: "var(--nb-blue)" },
+                {
+                  value: "100%",
+                  label: "Type-safe",
+                  color: "var(--nb-green)",
+                },
+              ].map((stat) => (
+                <div key={stat.label} className="nb-card-flat text-center p-3">
+                  <div
+                    className="text-xl font-bold"
+                    style={{ color: stat.color }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--nb-text-muted)] mt-1">
+                    {stat.label}
+                  </div>
                 </div>
-                <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
-                  Providers
-                </div>
-              </div>
-              <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
-                <div className="text-2xl font-bold font-mono text-[var(--lyra-accent)]">
-                  5
-                </div>
-                <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
-                  Adapters
-                </div>
-              </div>
-              <div className="text-center p-4 border border-[var(--lyra-border)] bg-[var(--lyra-surface)]">
-                <div className="text-2xl font-bold font-mono text-[var(--lyra-warning)]">
-                  100%
-                </div>
-                <div className="text-xs text-[var(--lyra-text-muted)] font-mono uppercase tracking-wider">
-                  Type-safe
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -209,12 +163,11 @@ export function Hero() {
 
 function CodeHighlight({ code }: { code: string }) {
   const lines = code.split("\n");
-
   return (
     <>
       {lines.map((line, i) => (
         <div key={i} className="table-row">
-          <span className="table-cell pr-4 text-[var(--lyra-text-muted)] select-none text-right w-8 opacity-50">
+          <span className="table-cell pr-4 text-[#555] select-none text-right w-8 opacity-50">
             {i + 1}
           </span>
           <span className="table-cell">
@@ -227,22 +180,18 @@ function CodeHighlight({ code }: { code: string }) {
 }
 
 function LineHighlight({ line }: { line: string }) {
-  // Handle comments
   if (line.trim().startsWith("//")) {
-    return <span className="text-[var(--lyra-text-muted)]">{line}</span>;
+    return <span className="text-[#555]">{line}</span>;
   }
 
-  // Tokenize and highlight
-  let result: React.ReactNode[] = [];
+  const result: React.ReactNode[] = [];
   let key = 0;
 
-  // Highlight strings first
   const stringRegex = /"[^"]*"|'[^']*'|`[^`]*`/g;
   let lastIndex = 0;
   let match;
 
   while ((match = stringRegex.exec(line)) !== null) {
-    // Add text before the match
     if (match.index > lastIndex) {
       result.push(
         <span key={key++}>
@@ -250,16 +199,14 @@ function LineHighlight({ line }: { line: string }) {
         </span>,
       );
     }
-    // Add the string
     result.push(
-      <span key={key++} className="text-[var(--lyra-warning)]">
+      <span key={key++} className="text-[var(--nb-yellow)]">
         {match[0]}
       </span>,
     );
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < line.length) {
     result.push(
       <span key={key++}>{highlightKeywords(line.slice(lastIndex))}</span>,
@@ -290,7 +237,7 @@ function highlightKeywords(text: string): React.ReactNode {
       parts.push(text.slice(lastIndex, match.index));
     }
     parts.push(
-      <span key={key++} className="text-[var(--lyra-primary)]">
+      <span key={key++} className="text-[var(--nb-coral)]">
         {match[0]}
       </span>,
     );

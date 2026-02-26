@@ -5,8 +5,13 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
-        <span className="flex items-center gap-2 font-bold">
-          <span className="text-lg">🎣</span>
+        <span className="flex items-center gap-2 font-bold text-base tracking-tight">
+          <span
+            className="inline-flex items-center justify-center w-7 h-7 text-sm border-2 border-current"
+            style={{ boxShadow: "2px 2px 0 currentColor" }}
+          >
+            &gt;_
+          </span>
           <span>better-webhook</span>
         </span>
       ),

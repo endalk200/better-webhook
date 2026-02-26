@@ -154,7 +154,7 @@ const frameworks: { id: Framework; name: string }[] = [
   { id: "hono", name: "Hono" },
   { id: "express", name: "Express" },
   { id: "nestjs", name: "NestJS" },
-  { id: "gcp-functions", name: "GCP Functions" },
+  { id: "gcp-functions", name: "GCP" },
 ];
 
 export function QuickStart() {
@@ -175,32 +175,33 @@ export function QuickStart() {
       : "GITHUB_WEBHOOK_SECRET";
 
   return (
-    <section id="quick-start" className="lyra-section lyra-section-dark">
+    <section id="quick-start" className="nb-section nb-section-dark">
       <div className="container mx-auto max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold font-mono mb-4">
-            Get started in <span className="gradient-text">60 seconds</span>
+        <div className="text-center mb-10">
+          <div className="nb-sticker nb-sticker-coral mb-6 inline-flex">
+            <span>Quick Start</span>
+          </div>
+          <h2 className="font-bold text-3xl sm:text-4xl tracking-tight mb-3 uppercase">
+            Get started in <span className="text-[var(--nb-yellow)]">60s</span>
           </h2>
-          <p className="text-lg text-[var(--lyra-text-secondary)] max-w-2xl mx-auto">
-            Choose how you want to work with webhooks - capture and replay with
+          <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
+            Choose how you want to work with webhooks — capture and replay with
             the CLI, or build type-safe handlers with the SDK.
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex justify-center mb-12">
-          <div className="lyra-tabs">
+        <div className="flex justify-center mb-10">
+          <div className="nb-tabs">
             <button
               onClick={() => setActiveTab("cli")}
-              className={`lyra-tab ${activeTab === "cli" ? "active" : ""}`}
+              className={`nb-tab ${activeTab === "cli" ? "active" : ""}`}
             >
               <Terminal className="w-3.5 h-3.5 inline-block mr-2" />
               CLI
             </button>
             <button
               onClick={() => setActiveTab("sdk")}
-              className={`lyra-tab ${activeTab === "sdk" ? "active" : ""}`}
+              className={`nb-tab ${activeTab === "sdk" ? "active" : ""}`}
             >
               <Code2 className="w-3.5 h-3.5 inline-block mr-2" />
               SDK
@@ -209,22 +210,27 @@ export function QuickStart() {
         </div>
 
         {activeTab === "cli" ? (
-          /* CLI Steps */
-          <div className="space-y-6">
+          <div className="space-y-5">
             {cliSteps.map((item, index) => (
               <div key={item.step} className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-[var(--lyra-primary)] text-[#0a0a0a] flex items-center justify-center font-mono font-bold text-sm">
+                <div
+                  className="nb-step-number"
+                  style={{
+                    background: "var(--nb-coral)",
+                    color: "#fff",
+                  }}
+                >
                   {item.step}
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold font-mono mb-2 text-white">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base mb-2">
                     {item.title}
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
+                  <div className="flex items-center gap-0">
+                    <code className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm overflow-x-auto text-[#e0e0e0]">
                       {item.isCommand ? (
                         <>
-                          <span className="text-[var(--lyra-accent)]">$</span>{" "}
+                          <span className="text-[var(--nb-green)]">$</span>{" "}
                           <span className="text-white">{item.command}</span>
                         </>
                       ) : (
@@ -233,18 +239,18 @@ export function QuickStart() {
                     </code>
                     <button
                       onClick={() => copyToClipboard(item.command, index)}
-                      className="p-3 border border-[var(--lyra-border)] bg-[#0a0a0a] hover:border-[var(--lyra-primary)] transition-colors flex-shrink-0"
-                      title="Copy to clipboard"
+                      className="p-2.5 border-2 border-[var(--nb-border-color)] border-l-0 bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors flex-shrink-0"
+                      title="Copy"
                     >
                       {copiedIndex === index ? (
-                        <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                        <Check className="w-4 h-4 text-[var(--nb-green)]" />
                       ) : (
-                        <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                        <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
                       )}
                     </button>
                   </div>
                   {item.note && (
-                    <p className="mt-2 text-sm text-[var(--lyra-text-muted)]">
+                    <p className="mt-1.5 text-sm text-[var(--nb-text-muted)]">
                       {item.note}
                     </p>
                   )}
@@ -255,7 +261,7 @@ export function QuickStart() {
             <div className="pt-6 text-center">
               <Link
                 href="/docs/cli"
-                className="lyra-btn lyra-btn-secondary inline-flex items-center gap-2"
+                className="nb-btn nb-btn-secondary inline-flex"
               >
                 Full CLI Documentation
                 <ArrowRight className="w-4 h-4" />
@@ -263,82 +269,84 @@ export function QuickStart() {
             </div>
           </div>
         ) : (
-          /* SDK Steps */
-          <div className="space-y-8">
-            {/* Framework Tabs */}
+          <div className="space-y-6">
             <div className="flex justify-center">
-              <div className="lyra-tabs">
-                {frameworks.map((framework) => (
+              <div className="nb-tabs">
+                {frameworks.map((fw) => (
                   <button
-                    key={framework.id}
-                    onClick={() => setActiveFramework(framework.id)}
-                    className={`lyra-tab ${activeFramework === framework.id ? "active" : ""}`}
+                    key={fw.id}
+                    onClick={() => setActiveFramework(fw.id)}
+                    className={`nb-tab ${activeFramework === fw.id ? "active" : ""}`}
                   >
-                    {framework.name}
+                    {fw.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Step 1: Install */}
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-[var(--lyra-accent)] text-[#0a0a0a] flex items-center justify-center font-mono font-bold text-sm">
+              <div
+                className="nb-step-number"
+                style={{ background: "var(--nb-blue)", color: "#fff" }}
+              >
                 1
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base mb-2">
                   Install packages
                 </h3>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm overflow-x-auto">
-                    <span className="text-[var(--lyra-accent)]">$</span>{" "}
+                <div className="flex items-center gap-0">
+                  <code className="flex-1 px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm overflow-x-auto text-[#e0e0e0]">
+                    <span className="text-[var(--nb-green)]">$</span>{" "}
                     <span className="text-white">{current.install}</span>
                   </code>
                   <button
                     onClick={() => copyToClipboard(current.install, 100)}
-                    className="p-3 border border-[var(--lyra-border)] bg-[#0a0a0a] hover:border-[var(--lyra-primary)] transition-colors flex-shrink-0"
-                    title="Copy to clipboard"
+                    className="p-2.5 border-2 border-[var(--nb-border-color)] border-l-0 bg-[var(--nb-cream)] hover:bg-[var(--nb-yellow)] transition-colors flex-shrink-0"
+                    title="Copy"
                   >
                     {copiedIndex === 100 ? (
-                      <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                      <Check className="w-4 h-4 text-[var(--nb-green)]" />
                     ) : (
-                      <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                      <Copy className="w-4 h-4 text-[var(--nb-text-muted)]" />
                     )}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Step 2: Code */}
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-[var(--lyra-accent)] text-[#0a0a0a] flex items-center justify-center font-mono font-bold text-sm">
+              <div
+                className="nb-step-number"
+                style={{ background: "var(--nb-blue)", color: "#fff" }}
+              >
                 2
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base mb-2">
                   Create webhook handler
                 </h3>
-                <div className="lyra-code-block">
-                  <div className="lyra-code-header">
-                    <div className="lyra-code-dot lyra-code-dot-red" />
-                    <div className="lyra-code-dot lyra-code-dot-yellow" />
-                    <div className="lyra-code-dot lyra-code-dot-green" />
-                    <span className="ml-3 text-xs text-[var(--lyra-text-muted)] font-mono">
+                <div className="nb-code-block">
+                  <div className="nb-code-header">
+                    <div className="nb-terminal-dot nb-terminal-dot-red" />
+                    <div className="nb-terminal-dot nb-terminal-dot-yellow" />
+                    <div className="nb-terminal-dot nb-terminal-dot-green" />
+                    <span className="ml-3 text-xs text-[#666] font-mono">
                       {current.filename}
                     </span>
                     <button
                       onClick={() => copyToClipboard(current.code, 101)}
-                      className="ml-auto p-1.5 hover:bg-[var(--lyra-border)] transition-colors"
+                      className="ml-auto p-1.5 hover:bg-[#333] transition-colors"
                       title="Copy code"
                     >
                       {copiedIndex === 101 ? (
-                        <Check className="w-4 h-4 text-[var(--lyra-accent)]" />
+                        <Check className="w-4 h-4 text-[var(--nb-green)]" />
                       ) : (
-                        <Copy className="w-4 h-4 text-[var(--lyra-text-muted)]" />
+                        <Copy className="w-4 h-4 text-[#666]" />
                       )}
                     </button>
                   </div>
-                  <div className="lyra-code-body overflow-x-auto max-h-[400px]">
+                  <div className="nb-code-body overflow-x-auto max-h-[400px]">
                     <pre className="font-mono text-sm leading-relaxed">
                       <code
                         dangerouslySetInnerHTML={{
@@ -351,23 +359,25 @@ export function QuickStart() {
               </div>
             </div>
 
-            {/* Step 3: Environment */}
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-[var(--lyra-accent)] text-[#0a0a0a] flex items-center justify-center font-mono font-bold text-sm">
+              <div
+                className="nb-step-number"
+                style={{ background: "var(--nb-blue)", color: "#fff" }}
+              >
                 3
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold font-mono mb-2 text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base mb-2">
                   Set webhook secret
                 </h3>
-                <code className="block px-4 py-3 bg-[#0a0a0a] border border-[var(--lyra-border)] font-mono text-sm">
-                  <span className="text-[var(--lyra-text-muted)]"># .env</span>
+                <code className="block px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-sm text-[#e0e0e0]">
+                  <span className="text-[#555]"># .env</span>
                   <br />
                   <span className="text-white">
                     {secretEnvVar}=your_webhook_secret
                   </span>
                 </code>
-                <p className="mt-3 text-sm text-[var(--lyra-text-secondary)]">
+                <p className="mt-2 text-sm text-[var(--nb-text-muted)]">
                   Done! Your webhook endpoint has automatic signature
                   verification and full TypeScript support.
                 </p>
@@ -377,7 +387,7 @@ export function QuickStart() {
             <div className="pt-6 text-center">
               <Link
                 href="/docs/sdk"
-                className="lyra-btn lyra-btn-primary inline-flex items-center gap-2"
+                className="nb-btn nb-btn-primary inline-flex"
               >
                 Full SDK Documentation
                 <ArrowRight className="w-4 h-4" />
@@ -396,42 +406,51 @@ function highlightCode(code: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Strings
-  result = result.replace(
-    /("[^"]*"|'[^']*'|`[^`]*`)/g,
-    '<span style="color: var(--lyra-warning)">$1</span>',
-  );
+  const tokens: { placeholder: string; html: string }[] = [];
+  let tokenIndex = 0;
 
-  // Comments
-  result = result.replace(
-    /(\/\/.*$)/gm,
-    '<span style="color: var(--lyra-text-muted)">$1</span>',
-  );
-
-  // Keywords
-  const keywords = [
-    "import",
-    "from",
-    "const",
-    "async",
-    "await",
-    "if",
-    "export",
-    "return",
-  ];
-  keywords.forEach((kw) => {
-    const regex = new RegExp(`\\b(${kw})\\b`, "g");
-    result = result.replace(
-      regex,
-      '<span style="color: var(--lyra-primary)">$1</span>',
-    );
+  result = result.replace(/("[^"]*"|'[^']*'|`[^`]*`)/g, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:var(--nb-yellow)">${match}</span>`,
+    });
+    return placeholder;
   });
 
-  // Decorators (NestJS)
+  result = result.replace(/(\/\/.*$)/gm, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:#555">${match}</span>`,
+    });
+    return placeholder;
+  });
+
   result = result.replace(
-    /(@\w+)/g,
-    '<span style="color: var(--lyra-accent)">$1</span>',
+    /\b(import|from|const|async|await|if|export|return)\b/g,
+    (match) => {
+      const placeholder = `__TOKEN_${tokenIndex++}__`;
+      tokens.push({
+        placeholder,
+        html: `<span style="color:var(--nb-coral)">${match}</span>`,
+      });
+      return placeholder;
+    },
   );
+
+  result = result.replace(/(@\w+)/g, (match) => {
+    const placeholder = `__TOKEN_${tokenIndex++}__`;
+    tokens.push({
+      placeholder,
+      html: `<span style="color:var(--nb-lavender)">${match}</span>`,
+    });
+    return placeholder;
+  });
+
+  tokens.forEach(({ placeholder, html }) => {
+    result = result.replace(placeholder, html);
+  });
 
   return result;
 }

@@ -2,509 +2,622 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
-/* ============================================================================
-   LYRA STYLE SYSTEM
-   Boxy, sharp, mono-inspired aesthetic
-   ============================================================================ */
-
-/* ============================================================================
-   CSS Variables
-   ============================================================================ */
+/* ==========================================================================
+   NEOBRUTALIST DESIGN SYSTEM — Monospaced Brutalism
+   Thick borders, offset shadows, monospaced type, refined palette
+   ========================================================================== */
 
 :root {
-  /* Typography */
-  --font-mono:
-    "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
-    monospace;
-  --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  --nb-cream: #faf8f4;
+  --nb-white: #ffffff;
+  --nb-black: #1a1a1a;
+  --nb-border-color: #1a1a1a;
 
-  /* Lyra Light Mode */
-  --lyra-bg: #fafafa;
-  --lyra-bg-secondary: #f0f0f0;
-  --lyra-surface: #ffffff;
-  --lyra-border: #e0e0e0;
-  --lyra-border-strong: #c0c0c0;
+  --nb-coral: #ff5c38;
+  --nb-blue: #3b5bdb;
+  --nb-yellow: #fcc419;
+  --nb-lavender: #b197fc;
+  --nb-green: #2b9a66;
+  --nb-pink: #f06595;
 
-  /* Primary - Electric Cyan */
-  --lyra-primary: #00d4ff;
-  --lyra-primary-dark: #00b8e6;
+  --nb-text: #1a1a1a;
+  --nb-text-muted: #666666;
 
-  /* Accent - Electric Green */
-  --lyra-accent: #00ff88;
-  --lyra-accent-dark: #00e67a;
+  --nb-shadow-sm: 3px 3px 0 var(--nb-border-color);
+  --nb-shadow-md: 5px 5px 0 var(--nb-border-color);
+  --nb-shadow-lg: 8px 8px 0 var(--nb-border-color);
 
-  /* Warning - Amber */
-  --lyra-warning: #ffb800;
+  --nb-border: 2.5px solid var(--nb-border-color);
+  --nb-radius: 0px;
 
-  /* Text */
-  --lyra-text: #0a0a0a;
-  --lyra-text-secondary: #404040;
-  --lyra-text-muted: #707070;
-
-  /* Code Block */
-  --code-bg: #1a1a1a;
-  --code-border: #2a2a2a;
-  --code-header: #141414;
-
-  /* Fumadocs overrides */
-  --color-primary: var(--lyra-primary);
-  --color-primary-foreground: #0a0a0a;
+  --color-primary: #ff5c38;
+  --color-primary-foreground: #ffffff;
 }
 
 .dark {
-  /* Lyra Dark Mode - The primary aesthetic */
-  --lyra-bg: #0a0a0a;
-  --lyra-bg-secondary: #0f0f0f;
-  --lyra-surface: #141414;
-  --lyra-border: #2a2a2a;
-  --lyra-border-strong: #3a3a3a;
+  --nb-cream: #0f0f0f;
+  --nb-white: #1a1a1a;
+  --nb-black: #faf8f4;
+  --nb-border-color: #333333;
 
-  /* Primary - Electric Cyan */
-  --lyra-primary: #00d4ff;
-  --lyra-primary-dark: #00b8e6;
+  --nb-coral: #ff6b47;
+  --nb-blue: #5c7cfa;
+  --nb-yellow: #ffd43b;
+  --nb-lavender: #c3a6ff;
+  --nb-green: #40c463;
+  --nb-pink: #ff85ab;
 
-  /* Accent - Electric Green */
-  --lyra-accent: #00ff88;
-  --lyra-accent-dark: #00e67a;
+  --nb-text: #e8e4de;
+  --nb-text-muted: #888888;
 
-  /* Warning - Amber */
-  --lyra-warning: #ffb800;
+  --nb-shadow-sm: 3px 3px 0 #000000;
+  --nb-shadow-md: 5px 5px 0 #000000;
+  --nb-shadow-lg: 8px 8px 0 #000000;
 
-  /* Text */
-  --lyra-text: #ffffff;
-  --lyra-text-secondary: #b0b0b0;
-  --lyra-text-muted: #707070;
-
-  /* Code Block */
-  --code-bg: #0f0f0f;
-  --code-border: #2a2a2a;
-  --code-header: #141414;
-
-  /* Fumadocs overrides */
-  --color-primary: var(--lyra-primary);
-  --color-primary-foreground: #0a0a0a;
+  --color-primary: #ff6b47;
+  --color-primary-foreground: #ffffff;
 }
 
-/* ============================================================================
-   Base Styles
-   ============================================================================ */
+/* ==========================================================================
+   Base
+   ========================================================================== */
 
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  font-family: var(--font-sans);
-  background-color: var(--lyra-bg);
-  color: var(--lyra-text);
+  font-family: var(--font-mono-display), ui-monospace, "Courier New", monospace;
+  background-color: var(--nb-cream);
+  color: var(--nb-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ============================================================================
-   Typography
-   ============================================================================ */
+::selection {
+  background: rgba(252, 196, 25, 0.4);
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--nb-coral);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Typography — Monospaced Throughout
+   ========================================================================== */
+
+.font-display {
+  font-family: var(--font-mono-display), ui-monospace, "Courier New", monospace;
+}
+
+.font-serif {
+  font-family: var(--font-mono-display), ui-monospace, "Courier New", monospace;
+}
 
 .font-mono {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), var(--font-mono-display), ui-monospace, monospace;
 }
 
-.font-sans {
-  font-family: var(--font-sans);
-}
-
-/* Gradient text - Cyan to Green */
-.gradient-text {
-  background: linear-gradient(135deg, var(--lyra-primary), var(--lyra-accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Gradient text - Amber accent */
-.gradient-text-warm {
-  background: linear-gradient(135deg, var(--lyra-warning), #ff8800);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ============================================================================
-   Lyra Components
-   ============================================================================ */
-
-/* Boxy Card */
-.lyra-card {
-  background: var(--lyra-surface);
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  transition: all 0.15s ease;
-}
-
-.lyra-card:hover {
-  border-color: var(--lyra-primary);
-  box-shadow: 0 0 0 1px var(--lyra-primary);
-}
-
-/* Boxy Card with glow */
-.lyra-card-glow {
-  background: var(--lyra-surface);
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  transition: all 0.15s ease;
-}
-
-.lyra-card-glow:hover {
-  border-color: var(--lyra-primary);
-  box-shadow:
-    0 0 0 1px var(--lyra-primary),
-    0 0 20px rgba(0, 212, 255, 0.15);
-}
-
-/* Sharp Button - Primary */
-.lyra-btn {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 0.875rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2px;
-  transition: all 0.15s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.lyra-btn-primary {
-  background: var(--lyra-primary);
-  color: #0a0a0a;
-  border: 1px solid var(--lyra-primary);
-}
-
-.lyra-btn-primary:hover {
-  background: var(--lyra-primary-dark);
-  border-color: var(--lyra-primary-dark);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-}
-
-/* Sharp Button - Secondary */
-.lyra-btn-secondary {
-  background: transparent;
-  color: var(--lyra-text);
-  border: 1px solid var(--lyra-border-strong);
-}
-
-.lyra-btn-secondary:hover {
-  border-color: var(--lyra-primary);
-  color: var(--lyra-primary);
-}
-
-/* Sharp Button - Ghost */
-.lyra-btn-ghost {
-  background: transparent;
-  color: var(--lyra-text-secondary);
-  border: 1px solid transparent;
-}
-
-.lyra-btn-ghost:hover {
-  color: var(--lyra-primary);
-  background: rgba(0, 212, 255, 0.1);
-}
-
-/* ============================================================================
-   Code Block - Terminal Style
-   ============================================================================ */
-
-.lyra-code-block {
-  background: var(--code-bg);
-  border: 1px solid var(--code-border);
-  border-radius: 2px;
-  overflow: hidden;
-  font-family: var(--font-mono);
-}
-
-.lyra-code-header {
-  background: var(--code-header);
-  border-bottom: 1px solid var(--code-border);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.lyra-code-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 1px;
-}
-
-.lyra-code-dot-red {
-  background: #ff5f57;
-}
-.lyra-code-dot-yellow {
-  background: #ffbd2e;
-}
-.lyra-code-dot-green {
-  background: #28c840;
-}
-
-.lyra-code-body {
-  padding: 1.25rem;
-  overflow-x: auto;
-}
-
-/* ============================================================================
-   Terminal
-   ============================================================================ */
-
-.lyra-terminal {
-  background: #0a0a0a;
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  overflow: hidden;
-}
-
-.lyra-terminal-header {
-  background: #141414;
-  border-bottom: 1px solid var(--lyra-border);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.lyra-terminal-title {
-  color: var(--lyra-text-muted);
-  font-size: 0.75rem;
-  margin-left: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.lyra-terminal-body {
-  padding: 1.25rem;
-  min-height: 200px;
-  color: #e0e0e0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-}
-
-.lyra-terminal-prompt {
-  color: var(--lyra-accent);
-}
-
-.lyra-terminal-command {
-  color: #ffffff;
-}
-
-.lyra-terminal-output {
-  color: #808080;
-}
-
-.lyra-terminal-success {
-  color: var(--lyra-accent);
-}
-
-.lyra-terminal-info {
-  color: var(--lyra-primary);
-}
-
-/* ============================================================================
-   Grid Background
-   ============================================================================ */
-
-.lyra-grid-bg {
-  background-color: var(--lyra-bg);
-  background-image:
-    linear-gradient(var(--lyra-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--lyra-border) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-.dark .lyra-grid-bg {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-}
-
-/* ============================================================================
-   Section Styles
-   ============================================================================ */
-
-.lyra-section {
+.nb-highlight {
   position: relative;
-  padding: 6rem 1rem;
+  display: inline;
+  white-space: nowrap;
 }
 
-.lyra-section-alt {
-  background: var(--lyra-bg-secondary);
+.nb-highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: -4px;
+  right: -4px;
+  height: 35%;
+  background: var(--nb-yellow);
+  z-index: -1;
+  transform: rotate(-0.5deg);
 }
 
-.lyra-section-dark {
-  background: #0a0a0a;
+.dark .nb-highlight::after {
+  background: rgba(255, 212, 59, 0.3);
+}
+
+/* ==========================================================================
+   Neobrutalist Cards
+   ========================================================================== */
+
+.nb-card {
+  background: var(--nb-white);
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nb-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--nb-shadow-lg);
+}
+
+.nb-card-flat {
+  background: var(--nb-white);
+  border: 2.5px solid var(--nb-border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nb-card-flat:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--nb-shadow-sm);
+}
+
+/* ==========================================================================
+   Neobrutalist Buttons
+   ========================================================================== */
+
+.nb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.85rem 1.75rem;
+  border: 2.5px solid var(--nb-border-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nb-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: none !important;
+}
+
+.nb-btn-primary {
+  background: var(--nb-coral);
   color: #ffffff;
+  box-shadow: var(--nb-shadow-md);
 }
 
-/* Section divider */
-.lyra-divider {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--lyra-border-strong),
-    transparent
-  );
+.nb-btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--nb-shadow-lg);
 }
 
-/* ============================================================================
-   Badge / Tag
-   ============================================================================ */
+.nb-btn-secondary {
+  background: var(--nb-white);
+  color: var(--nb-text);
+  box-shadow: var(--nb-shadow-sm);
+}
 
-.lyra-badge {
+.nb-btn-secondary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--nb-shadow-md);
+}
+
+.nb-btn-ghost {
+  background: transparent;
+  color: var(--nb-text);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.nb-btn-ghost:hover {
+  border-color: var(--nb-border-color);
+  box-shadow: var(--nb-shadow-sm);
+  transform: translate(-1px, -1px);
+}
+
+/* ==========================================================================
+   Sticker Badge
+   ========================================================================== */
+
+.nb-sticker {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  font-family: var(--font-mono);
+  padding: 0.375rem 1rem;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-sm);
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-weight: 700;
   font-size: 0.75rem;
-  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 2px;
-  border: 1px solid var(--lyra-border);
-  background: var(--lyra-surface);
+  transform: rotate(-2deg);
 }
 
-.lyra-badge-primary {
-  border-color: var(--lyra-primary);
-  color: var(--lyra-primary);
-  background: rgba(0, 212, 255, 0.1);
+.nb-sticker-coral {
+  background: var(--nb-coral);
+  color: #ffffff;
 }
 
-.lyra-badge-accent {
-  border-color: var(--lyra-accent);
-  color: var(--lyra-accent);
-  background: rgba(0, 255, 136, 0.1);
+.nb-sticker-yellow {
+  background: var(--nb-yellow);
+  color: var(--nb-black);
 }
 
-.lyra-badge-warning {
-  border-color: var(--lyra-warning);
-  color: var(--lyra-warning);
-  background: rgba(255, 184, 0, 0.1);
+.nb-sticker-blue {
+  background: var(--nb-blue);
+  color: #ffffff;
 }
 
-/* ============================================================================
-   Feature Card
-   ============================================================================ */
-
-.lyra-feature-card {
-  background: var(--lyra-surface);
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  padding: 1.5rem;
-  transition: all 0.15s ease;
+.nb-sticker-green {
+  background: var(--nb-green);
+  color: #ffffff;
 }
 
-.lyra-feature-card:hover {
-  border-color: var(--lyra-primary);
-  transform: translateY(-2px);
+.nb-sticker-lavender {
+  background: var(--nb-lavender);
+  color: var(--nb-black);
 }
 
-.lyra-feature-icon {
-  width: 40px;
-  height: 40px;
+/* ==========================================================================
+   Code Block — Neobrutalist Terminal
+   ========================================================================== */
+
+.nb-terminal {
+  background: #0a0a0a;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-md);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  overflow: hidden;
+}
+
+.nb-terminal-header {
+  background: #141414;
+  border-bottom: 2.5px solid var(--nb-border-color);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nb-terminal-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #333;
+}
+
+.nb-terminal-dot-red {
+  background: #ff5f57;
+  border-color: #e0443e;
+}
+
+.nb-terminal-dot-yellow {
+  background: #ffbd2e;
+  border-color: #dea123;
+}
+
+.nb-terminal-dot-green {
+  background: #28c840;
+  border-color: #1aab29;
+}
+
+.nb-terminal-title {
+  color: #666;
+  font-size: 0.7rem;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-weight: 700;
+}
+
+.nb-terminal-body {
+  padding: 1.25rem;
+  color: #e0e0e0;
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.nb-code-block {
+  background: #0a0a0a;
+  color: #e0e0e0;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-md);
+  overflow: hidden;
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.nb-code-header {
+  background: #141414;
+  border-bottom: 2.5px solid var(--nb-border-color);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nb-code-body {
+  padding: 1.25rem;
+  overflow-x: auto;
+  color: #e0e0e0;
+}
+
+/* ==========================================================================
+   Marquee Strip
+   ========================================================================== */
+
+.nb-marquee {
+  overflow: hidden;
+  border-top: 2.5px solid var(--nb-border-color);
+  border-bottom: 2.5px solid var(--nb-border-color);
+  background: var(--nb-black);
+  color: var(--nb-cream);
+  padding: 0.75rem 0;
+  white-space: nowrap;
+}
+
+.dark .nb-marquee {
+  background: var(--nb-coral);
+  color: #ffffff;
+  border-color: var(--nb-coral);
+}
+
+.nb-marquee-track {
+  display: flex;
+  gap: 0;
+  animation: nb-scroll 25s linear infinite;
+  width: max-content;
+}
+
+.nb-marquee-item {
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+.nb-marquee-sep {
+  opacity: 0.5;
+}
+
+@keyframes nb-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ==========================================================================
+   Sections — Tighter Padding
+   ========================================================================== */
+
+.nb-section {
+  position: relative;
+  padding: 4rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .nb-section {
+    padding: 5rem 1.5rem;
+  }
+}
+
+.nb-section-cream {
+  background: var(--nb-cream);
+}
+
+.nb-section-white {
+  background: var(--nb-white);
+}
+
+.nb-section-dark {
+  background: var(--nb-white);
+  color: var(--nb-text);
+  border-top: 2.5px solid var(--nb-border-color);
+  border-bottom: 2.5px solid var(--nb-border-color);
+}
+
+.dark .nb-section-dark {
+  background: #080808;
+  color: #e8e4de;
+  border-color: #333;
+}
+
+.nb-section-coral {
+  background: var(--nb-coral);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Dot Pattern Background
+   ========================================================================== */
+
+.nb-dots {
+  background-image: radial-gradient(
+    circle,
+    var(--nb-border-color) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+.dark .nb-dots {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px
+  );
+}
+
+.nb-dots-hero {
+  background-image: radial-gradient(
+    circle,
+    rgba(26, 26, 26, 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+.dark .nb-dots-hero {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px
+  );
+}
+
+/* ==========================================================================
+   Feature Card Accent Stripes
+   ========================================================================== */
+
+.nb-stripe-left {
+  position: relative;
+}
+
+.nb-stripe-left::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+}
+
+.nb-stripe-coral::before {
+  background: var(--nb-coral);
+}
+
+.nb-stripe-blue::before {
+  background: var(--nb-blue);
+}
+
+.nb-stripe-yellow::before {
+  background: var(--nb-yellow);
+}
+
+.nb-stripe-green::before {
+  background: var(--nb-green);
+}
+
+.nb-stripe-lavender::before {
+  background: var(--nb-lavender);
+}
+
+/* ==========================================================================
+   Numbered Step
+   ========================================================================== */
+
+.nb-step-number {
+  width: 2.75rem;
+  height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  margin-bottom: 1rem;
-  color: var(--lyra-primary);
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-sm);
+  flex-shrink: 0;
 }
 
-/* ============================================================================
-   Provider Card
-   ============================================================================ */
-
-.lyra-provider-card {
-  background: var(--lyra-surface);
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  padding: 1.25rem;
-  text-align: center;
-  transition: all 0.15s ease;
-}
-
-.lyra-provider-card:hover {
-  border-color: var(--lyra-primary);
-}
-
-.lyra-provider-card.available {
-  border-color: var(--lyra-accent);
-}
-
-.lyra-provider-card.coming-soon {
-  opacity: 0.5;
-  border-style: dashed;
-}
-
-/* ============================================================================
+/* ==========================================================================
    Tab Navigation
-   ============================================================================ */
+   ========================================================================== */
 
-.lyra-tabs {
-  display: flex;
-  gap: 0;
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
+.nb-tabs {
+  display: inline-flex;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-sm);
   overflow: hidden;
-  width: fit-content;
 }
 
-.lyra-tab {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  color: var(--lyra-text-secondary);
+.nb-tab {
+  font-family: var(--font-mono-display), ui-monospace, monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.65rem 1.1rem;
+  background: var(--nb-white);
+  color: var(--nb-text-muted);
   border: none;
-  border-right: 1px solid var(--lyra-border);
+  border-right: 2.5px solid var(--nb-border-color);
   cursor: pointer;
   transition: all 0.15s ease;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
-.lyra-tab:last-child {
+.nb-tab:last-child {
   border-right: none;
 }
 
-.lyra-tab:hover {
-  background: rgba(0, 212, 255, 0.05);
-  color: var(--lyra-text);
+.nb-tab:hover {
+  background: var(--nb-cream);
+  color: var(--nb-text);
 }
 
-.lyra-tab.active {
-  background: var(--lyra-primary);
-  color: #0a0a0a;
+.nb-tab.active {
+  background: var(--nb-coral);
+  color: #ffffff;
 }
 
-/* ============================================================================
+.dark .nb-tab {
+  background: #1a1a1a;
+}
+
+.dark .nb-tab:hover {
+  background: #222;
+}
+
+.dark .nb-tab.active {
+  background: var(--nb-coral);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Install Command Box
+   ========================================================================== */
+
+.nb-install {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 2.5px solid var(--nb-border-color);
+  box-shadow: var(--nb-shadow-sm);
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  overflow: hidden;
+}
+
+.nb-install-text {
+  flex: 1;
+  padding: 0.85rem 1.25rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.nb-install-btn {
+  padding: 0.85rem 1rem;
+  border-left: 2.5px solid var(--nb-border-color);
+  background: #141414;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.nb-install-btn:hover {
+  background: var(--nb-yellow);
+  color: var(--nb-black);
+}
+
+/* ==========================================================================
    Animations
-   ============================================================================ */
+   ========================================================================== */
 
-@keyframes lyra-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes lyra-slide-up {
+@keyframes nb-fade-up {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -515,23 +628,12 @@ body {
   }
 }
 
-@keyframes lyra-glow-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+@keyframes nb-fade-in {
+  from {
+    opacity: 0;
   }
-  50% {
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.4);
-  }
-}
-
-@keyframes lyra-border-glow {
-  0%,
-  100% {
-    border-color: var(--lyra-primary);
-  }
-  50% {
-    border-color: var(--lyra-accent);
+  to {
+    opacity: 1;
   }
 }
 
@@ -545,227 +647,49 @@ body {
   }
 }
 
-.lyra-animate-fade-in {
-  animation: lyra-fade-in 0.5s ease-out forwards;
+.nb-animate-fade-up {
+  animation: nb-fade-up 0.5s ease-out forwards;
 }
 
-.lyra-animate-slide-up {
-  animation: lyra-slide-up 0.6s ease-out forwards;
-}
-
-.lyra-animate-glow {
-  animation: lyra-glow-pulse 3s ease-in-out infinite;
-}
-
-.lyra-animate-border-glow {
-  animation: lyra-border-glow 2s ease-in-out infinite;
-}
-
-.lyra-cursor-blink {
+.nb-cursor-blink {
   animation: cursor-blink 1s step-end infinite;
 }
 
-/* Animation delays */
-.lyra-delay-100 {
+.nb-delay-100 {
   animation-delay: 100ms;
 }
-.lyra-delay-200 {
+.nb-delay-200 {
   animation-delay: 200ms;
 }
-.lyra-delay-300 {
+.nb-delay-300 {
   animation-delay: 300ms;
 }
-.lyra-delay-400 {
-  animation-delay: 400ms;
-}
-.lyra-delay-500 {
-  animation-delay: 500ms;
-}
 
-/* ============================================================================
-   Utility Classes
-   ============================================================================ */
-
-.lyra-border-glow {
-  box-shadow:
-    0 0 0 1px var(--lyra-primary),
-    0 0 20px rgba(0, 212, 255, 0.2);
-}
-
-.lyra-text-primary {
-  color: var(--lyra-primary);
-}
-
-.lyra-text-accent {
-  color: var(--lyra-accent);
-}
-
-.lyra-text-warning {
-  color: var(--lyra-warning);
-}
-
-.lyra-text-muted {
-  color: var(--lyra-text-muted);
-}
-
-.lyra-bg-surface {
-  background: var(--lyra-surface);
-}
-
-/* ============================================================================
+/* ==========================================================================
    Scrollbar
-   ============================================================================ */
+   ========================================================================== */
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--nb-cream);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--lyra-border-strong);
-  border-radius: 1px;
+  background: var(--nb-border-color);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--lyra-text-muted);
+  background: var(--nb-text-muted);
 }
 
-/* ============================================================================
-   Selection
-   ============================================================================ */
+/* ==========================================================================
+   Fumadocs Overrides — Neobrutalist Docs
+   ========================================================================== */
 
-::selection {
-  background: rgba(0, 212, 255, 0.3);
-}
-
-/* ============================================================================
-   Focus States
-   ============================================================================ */
-
-:focus-visible {
-  outline: 2px solid var(--lyra-primary);
-  outline-offset: 2px;
-}
-
-/* ============================================================================
-   Legacy Compatibility (for existing components)
-   ============================================================================ */
-
-.code-block {
-  background: var(--code-bg);
-  border: 1px solid var(--code-border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.code-header {
-  background: var(--code-header);
-  border-bottom: 1px solid var(--code-border);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.code-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 1px;
-}
-
-.code-dot-red {
-  background: #ff5f57;
-}
-.code-dot-yellow {
-  background: #ffbd2e;
-}
-.code-dot-green {
-  background: #28c840;
-}
-
-.terminal {
-  background: #0a0a0a;
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  overflow: hidden;
-}
-
-.terminal-header {
-  background: #141414;
-  border-bottom: 1px solid var(--lyra-border);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.terminal-body {
-  padding: 1.25rem;
-  color: #e0e0e0;
-}
-
-.terminal-prompt {
-  color: var(--lyra-accent);
-}
-
-.terminal-command {
-  color: #ffffff;
-}
-
-.terminal-output {
-  color: #808080;
-}
-
-.btn-primary {
-  background: var(--lyra-primary);
-  color: #0a0a0a;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2px;
-  transition: all 0.15s ease;
-}
-
-.btn-primary:hover {
-  background: var(--lyra-primary-dark);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--lyra-border-strong);
-  color: var(--lyra-text);
-  font-family: var(--font-mono);
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2px;
-  transition: all 0.15s ease;
-}
-
-.btn-secondary:hover {
-  border-color: var(--lyra-primary);
-  color: var(--lyra-primary);
-}
-
-.feature-card {
-  background: var(--lyra-surface);
-  border: 1px solid var(--lyra-border);
-  border-radius: 2px;
-  padding: 1.5rem;
-  transition: all 0.15s ease;
-}
-
-.feature-card:hover {
-  border-color: var(--lyra-primary);
-  transform: translateY(-2px);
-}
-
-/* Remove all rounded corners for Lyra aesthetic */
 .rounded-full {
   border-radius: 2px !important;
 }
@@ -774,4 +698,10 @@ body {
 .rounded-lg,
 .rounded-md {
   border-radius: 2px !important;
+}
+
+/* Navbar border in both modes */
+:root nav.fd-navbar {
+  border-bottom: 2px solid var(--nb-border-color) !important;
+  backdrop-filter: blur(8px);
 }
