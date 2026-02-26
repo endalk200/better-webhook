@@ -1,0 +1,116 @@
+---
+title: Configuration
+description: Configure Better Webhook CLI with config files, environment variables, and command flags.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+
+# Configuration
+
+The CLI supports three configuration layers:
+
+- Config file (`config.toml`)
+- Environment variables
+- Command flags
+
+Use this page to set up predictable defaults and reduce repetitive flags.
+
+## Quick Setup
+
+<Steps>
+  <Step>
+    ### Generate a default config file
+
+    ```bash
+    better-webhook init
+    ```
+
+    This creates `~/.better-webhook/config.toml` with documented defaults.
+  </Step>
+
+  <Step>
+    ### Review and adjust settings
+
+    Open the generated file and update directories or log level as needed.
+  </Step>
+
+  <Step>
+    ### Use overrides only when needed
+
+    Use environment variables or command flags for temporary changes.
+  </Step>
+</Steps>
+
+## Config File Location
+
+By default, the CLI resolves the config file path to:
+
+```text
+~/.better-webhook/config.toml
+```
+
+You can choose a different file path with `--config` or `BETTER_WEBHOOK_CONFIG_PATH`.
+
+## Config Path Precedence
+
+The CLI resolves **which config file to load** in this order:
+
+1. `--config <path>`
+2. `BETTER_WEBHOOK_CONFIG_PATH`
+3. `~/.better-webhook/config.toml`
+
+## Config Keys
+
+| Key             | Default                    | Env Override                         | Flag Override              | Description |
+| --------------- | -------------------------- | ------------------------------------ | -------------------------- | ----------- |
+| `captures_dir`  | `~/.better-webhook/captures`  | `BETTER_WEBHOOK_CAPTURES_DIR`     | `--captures-dir`           | Directory where captured webhook payloads are stored |
+| `templates_dir` | `~/.better-webhook/templates` | `BETTER_WEBHOOK_TEMPLATES_DIR`    | `--templates-dir`          | Directory where downloaded templates and cache files are stored |
+| `log_level`     | `info`                     | `BETTER_WEBHOOK_LOG_LEVEL`          | command-specific `--verbose` behavior | Default logging verbosity (`debug`, `info`, `warn`, `error`) |
+
+## Value Precedence
+
+For each setting value (`captures_dir`, `templates_dir`, `log_level`), precedence is:
+
+1. Command flags
+2. Environment variables
+3. Config file
+4. Built-in defaults
+
+This means one-off command flags always win over persistent defaults.
+
+## Environment Variables
+
+```bash
+# Config file path
+export BETTER_WEBHOOK_CONFIG_PATH="$HOME/.better-webhook/config.toml"
+
+# Value overrides
+export BETTER_WEBHOOK_CAPTURES_DIR="$HOME/tmp/bw-captures"
+export BETTER_WEBHOOK_TEMPLATES_DIR="$HOME/tmp/bw-templates"
+export BETTER_WEBHOOK_LOG_LEVEL="debug"
+```
+
+## Custom Config File Path
+
+```bash
+# Use an explicit config file for this command
+better-webhook --config ./configs/dev.toml captures list
+
+# Generate defaults into a custom path
+better-webhook --config ./configs/dev.toml init
+```
+
+<Callout type="info">
+  `init` does not overwrite existing files unless you pass `--force`.
+</Callout>
+
+## Example Config File
+
+```toml
+captures_dir = "~/.better-webhook/captures"
+templates_dir = "~/.better-webhook/templates"
+log_level = "info"
+```
+
+The generated config from `better-webhook init` includes additional inline comments and guidance.

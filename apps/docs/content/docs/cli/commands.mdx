@@ -7,6 +7,23 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Command Reference
 
+For configuration keys, path precedence, and environment variable details, see [Configuration](/docs/cli/configuration).
+
+## Global Options
+
+These options apply to all commands:
+
+| Option                  | Description |
+| ----------------------- | ----------- |
+| `--config <path>`       | Path to config TOML file |
+| `BETTER_WEBHOOK_CONFIG_PATH` | Environment variable alternative to `--config` |
+
+Initialize a default config file:
+
+```bash
+better-webhook init
+```
+
 ## capture
 
 Start a standalone server to capture incoming webhooks.
