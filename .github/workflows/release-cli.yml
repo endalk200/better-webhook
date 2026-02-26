@@ -31,8 +31,15 @@ jobs:
       - name: Setup Devbox
         uses: ./.github/actions/setup-devbox
 
+      - name: Configure npm registry auth
+        uses: actions/setup-node@v4
+        with:
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         run: devbox run -- just ci-install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NODE_AUTH_TOKEN }}
 
       - name: Format check
         run: devbox run -- just format-check
