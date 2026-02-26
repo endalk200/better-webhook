@@ -23,7 +23,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 		Use:   "init",
 		Short: "Create a default CLI config file",
 		Long: "Create a default config TOML file with documented settings.\n\n" +
-			"Path precedence is: --config, BETTER_WEBHOOK_CONFIG_PATH, then ~/.better-webhook/config.toml.",
+			"Path precedence is: --config, " + runtime.EnvConfigPath + ", then ~/.better-webhook/config.toml.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ConfigWriter == nil {

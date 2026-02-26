@@ -103,5 +103,5 @@ templates_dir = %q
 #   - BETTER_WEBHOOK_LOG_LEVEL
 #   - command flags like --verbose on supported commands
 log_level = %q
-`, runtime.EnvConfigPath, capturesDir, templatesDir, runtime.DefaultLogLevel)
+`, runtime.EnvConfigPath, capturesDir, templatesDir, defaults.LogLevel)
 }

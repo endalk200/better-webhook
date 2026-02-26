@@ -20,13 +20,15 @@ type Dependencies struct {
 }
 
 func NewCommand(deps Dependencies) *cobra.Command {
+	initCommand := initcmd.NewCommand(deps.InitDependencies)
+
 	rootCmd := &cobra.Command{
 		Use:     "better-webhook",
 		Short:   "Capture and inspect webhook requests locally",
 		Long:    "A local CLI for capturing webhook requests with high-fidelity storage.",
 		Version: deps.Version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if shouldSkipConfigInitialization(cmd) {
+			if shouldSkipConfigInitialization(cmd, initCommand) {
 				return nil
 			}
 			return runtime.InitializeConfig(cmd, deps.ConfigLoader)
@@ -38,7 +40,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 
 	rootCmd.PersistentFlags().String("config", "", "Path to config TOML file")
 	rootCmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
-	rootCmd.AddCommand(initcmd.NewCommand(deps.InitDependencies))
+	rootCmd.AddCommand(initCommand)
 	rootCmd.AddCommand(capturecmd.NewCommand(deps.CaptureDependencies))
 	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDependencies))
 	rootCmd.AddCommand(templatescmd.NewCommand(deps.TemplateDependencies))
@@ -46,6 +48,14 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	return rootCmd
 }
 
-func shouldSkipConfigInitialization(cmd *cobra.Command) bool {
-	return cmd != nil && cmd.Name() == "init"
+func shouldSkipConfigInitialization(cmd, initCommand *cobra.Command) bool {
+	if cmd == nil || initCommand == nil {
+		return false
+	}
+	for current := cmd; current != nil; current = current.Parent() {
+		if current == initCommand {
+			return true
+		}
+	}
+	return false
 }

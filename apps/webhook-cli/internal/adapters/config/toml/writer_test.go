@@ -31,6 +31,13 @@ func TestWriteDefaultConfigCreatesCommentedTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read config file: %v", err)
 	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		t.Fatalf("stat config file: %v", err)
+	}
+	if got, want := info.Mode().Perm(), os.FileMode(defaultConfigFileMode); got != want {
+		t.Fatalf("config mode mismatch: got %o want %o", got, want)
+	}
 	content := string(data)
 	assertContainsAll(t, content,
 		"# Better Webhook CLI configuration",
@@ -78,6 +85,13 @@ func TestWriteDefaultConfigOverwritesWhenForced(t *testing.T) {
 	updatedData, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("read updated config file: %v", err)
+	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		t.Fatalf("stat overwritten config file: %v", err)
+	}
+	if got, want := info.Mode().Perm(), os.FileMode(defaultConfigFileMode); got != want {
+		t.Fatalf("overwritten config mode mismatch: got %o want %o", got, want)
 	}
 	updated := string(updatedData)
 	if strings.Contains(updated, original) {
