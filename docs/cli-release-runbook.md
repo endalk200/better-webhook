@@ -66,8 +66,10 @@ devbox run -- go run github.com/goreleaser/goreleaser/v2@latest release --snapsh
    - `checksums.txt`
    - SBOM files
    - `checksums.txt.sigstore.json`
-5. Review the Homebrew cask PR opened in `endalk200/homebrew-tap`.
-6. Merge the cask PR once checks pass.
+5. Confirm the Homebrew cask PR is created in `endalk200/homebrew-tap`.
+6. Confirm required checks pass (`brew test-bot`, style fix if needed).
+7. Confirm PR auto-merge is enabled for the release bot PR.
+8. Verify the PR is merged before announcing release completion.
 
 Note: `pr-pull` labeling is for formula bottles and is not required for cask-only updates.
 
@@ -102,6 +104,22 @@ If a release is broken:
 2. If already merged, open a new cask PR pinning to the last known-good version.
 3. Create a patch release (recommended) rather than deleting history.
 4. If required, mark the bad GitHub release as prerelease and clearly document the issue.
+
+## Homebrew Tap Reliability Rules
+
+- Keep tap updates PR-based (no direct pushes to `homebrew-tap/main`).
+- Keep branch protection enabled on `homebrew-tap/main` with required checks.
+- Keep auto-merge scoped to trusted bot PRs for `Casks/better-webhook.rb` only.
+- If release workflow cannot find the expected tap PR, treat the release as incomplete and investigate before proceeding.
+
+## Common Homebrew Failures
+
+- `Cask/StanzaOrder` or `Cask/StanzaGrouping` in tap CI:
+  - Open/fix the tap PR (or let style-fix workflow update it), then re-run checks.
+- Tap PR not created:
+  - Check `HOMEBREW_TAP_TOKEN` permissions (contents + pull requests write on `endalk200/homebrew-tap`).
+- Tap PR created but not merged:
+  - Confirm required checks are green and auto-merge workflow is enabled for that PR.
 
 ## Nix Readiness Backlog
 
