@@ -69,3 +69,35 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Locate Homebrew tap PR
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          title="chore: update better-webhook cask to ${RELEASE_TAG}"
+          query="map(select(.title == \"${title}\")) | sort_by(.number) | reverse | .[0]"
+
+          pr_number=$(gh pr list \
+            --repo endalk200/homebrew-tap \
+            --state all \
+            --search "${title} in:title" \
+            --json number,title \
+            --jq "${query} | .number // empty")
+
+          if [ -z "$pr_number" ]; then
+            echo "Expected Homebrew tap PR not found for ${RELEASE_TAG}." >&2
+            exit 1
+          fi
+
+          pr_url=$(gh pr view "$pr_number" --repo endalk200/homebrew-tap --json url --jq '.url')
+          pr_state=$(gh pr view "$pr_number" --repo endalk200/homebrew-tap --json state --jq '.state')
+
+          {
+            echo "## Homebrew tap update"
+            echo "- Tag: ${RELEASE_TAG}"
+            echo "- PR: ${pr_url}"
+            echo "- State: ${pr_state}"
+          } >> "$GITHUB_STEP_SUMMARY"
