@@ -1,12 +1,13 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./global.css";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Space_Mono, JetBrains_Mono } from "next/font/google";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
-const spaceGrotesk = Space_Grotesk({
+const spaceMono = Space_Mono({
+  weight: ["400", "700"],
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-mono-display",
   display: "swap",
 });
 
@@ -18,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "better-webhook - Local-first Webhook Development Toolkit",
+    default: "better-webhook — Local-first Webhook Development Toolkit",
     template: "%s | better-webhook",
   },
   description:
@@ -42,14 +43,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://better-webhook.dev",
-    title: "better-webhook - Local-first Webhook Development Toolkit",
+    title: "better-webhook — Local-first Webhook Development Toolkit",
     description:
       "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
     siteName: "better-webhook",
   },
   twitter: {
     card: "summary_large_image",
-    title: "better-webhook - Local-first Webhook Development Toolkit",
+    title: "better-webhook — Local-first Webhook Development Toolkit",
     description:
       "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
     creator: "@endalk200",
@@ -63,10 +64,10 @@ export default function Layout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+      className={`${spaceMono.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex flex-col min-h-screen font-sans antialiased">
+      <body className="flex flex-col min-h-screen antialiased">
         <RootProvider>{children}</RootProvider>
         <Analytics />
       </body>
