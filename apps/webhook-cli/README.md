@@ -82,7 +82,8 @@ Manage and execute templates:
 ```bash
 better-webhook templates list
 better-webhook templates download <template-id>
-better-webhook templates local
+better-webhook templates list --local
+better-webhook templates delete <template-id>
 better-webhook templates search <query>
 better-webhook templates cache clear
 better-webhook templates clean
