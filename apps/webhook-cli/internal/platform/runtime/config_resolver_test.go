@@ -286,9 +286,6 @@ func TestResolveTemplatesListArgsParsesFlags(t *testing.T) {
 	if err := command.Flags().Set("refresh", "true"); err != nil {
 		t.Fatalf("set refresh: %v", err)
 	}
-	if err := command.Flags().Set("local", "true"); err != nil {
-		t.Fatalf("set local: %v", err)
-	}
 
 	args, err := ResolveTemplatesListArgs(command)
 	if err != nil {
@@ -300,11 +297,29 @@ func TestResolveTemplatesListArgsParsesFlags(t *testing.T) {
 	if !args.Refresh {
 		t.Fatalf("expected refresh true")
 	}
-	if !args.Local {
-		t.Fatalf("expected local true")
+	if args.Local {
+		t.Fatalf("expected local false")
 	}
 	if args.TemplatesDir == "" {
 		t.Fatalf("expected templates dir")
+	}
+}
+
+func TestResolveTemplatesListArgsRejectsRefreshWithLocal(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("refresh", "true"); err != nil {
+		t.Fatalf("set refresh: %v", err)
+	}
+	if err := command.Flags().Set("local", "true"); err != nil {
+		t.Fatalf("set local: %v", err)
+	}
+
+	_, err := ResolveTemplatesListArgs(command)
+	if err == nil {
+		t.Fatalf("expected refresh/local validation error")
+	}
+	if !strings.Contains(err.Error(), "cannot use --refresh with --local") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -162,6 +163,51 @@ func TestStoreDeleteSkipsUnmanagedTemplateFile(t *testing.T) {
 	}
 	if _, statErr := os.Stat(targetPath); statErr != nil {
 		t.Fatalf("expected unmanaged file to remain, got stat error: %v", statErr)
+	}
+}
+
+func TestStoreDeleteRejectsSymlinkPathEscape(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+
+	externalDir := t.TempDir()
+	externalTemplatePath := filepath.Join(externalDir, "github-push.jsonc")
+	payload := `{
+  "method": "POST",
+  "_metadata": {
+    "id": "github-push",
+    "provider": "github"
+  }
+}`
+	if err := os.WriteFile(externalTemplatePath, []byte(payload), 0o600); err != nil {
+		t.Fatalf("write external template file: %v", err)
+	}
+
+	linkedTemplatePath := filepath.Join(providerDir, "github-push.jsonc")
+	if err := os.Symlink(externalTemplatePath, linkedTemplatePath); err != nil {
+		t.Fatalf("symlink template file: %v", err)
+	}
+
+	_, err = store.Delete(context.Background(), "github-push")
+	if err == nil {
+		t.Fatalf("expected symlink path escape to fail")
+	}
+	if !strings.Contains(err.Error(), "unsafe template path") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, statErr := os.Stat(externalTemplatePath); statErr != nil {
+		t.Fatalf("expected external file to remain, got stat error: %v", statErr)
+	}
+	if _, lstatErr := os.Lstat(linkedTemplatePath); lstatErr != nil {
+		t.Fatalf("expected symlink file to remain, got lstat error: %v", lstatErr)
 	}
 }
 

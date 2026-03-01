@@ -16,7 +16,7 @@ const allowedCapturesSubcommands = new Set(["list", "delete", "replay"]);
 const allowedTemplatesSubcommands = new Set([
   "list",
   "download",
-  "local",
+  "delete",
   "search",
   "cache",
   "clean",
