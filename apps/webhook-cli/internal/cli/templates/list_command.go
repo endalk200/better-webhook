@@ -15,7 +15,7 @@ func newListCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List available remote templates",
+		Short:   "List available templates",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ServiceFactory == nil {
@@ -34,6 +34,33 @@ func newListCommand(deps Dependencies) *cobra.Command {
 			if ctx == nil {
 				ctx = context.Background()
 			}
+			if listArgs.Local {
+				items, err := service.ListLocal(ctx, listArgs.Provider)
+				if err != nil {
+					return mapTemplateCommandError(err, "")
+				}
+				if len(items) == 0 {
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("No local templates found."))
+					return nil
+				}
+
+				rows := make([][]string, 0, len(items))
+				for _, item := range items {
+					rows = append(rows, []string{
+						item.ID,
+						ui.FormatProvider(item.Metadata.Provider),
+						item.Metadata.Event,
+					})
+				}
+
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewTable(
+					[]string{"Template", "Provider", "Event"},
+					rows,
+				))
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.Muted.Render(fmt.Sprintf("Total: %d template(s)", len(items))))
+				return nil
+			}
+
 			templates, err := service.ListRemote(ctx, listArgs.Provider, listArgs.Refresh)
 			if err != nil {
 				return mapTemplateCommandError(err, "")
@@ -67,6 +94,7 @@ func newListCommand(deps Dependencies) *cobra.Command {
 
 	cmd.Flags().String("provider", "", "Filter by provider")
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
+	cmd.Flags().Bool("local", false, "List downloaded local templates instead of remote templates")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }

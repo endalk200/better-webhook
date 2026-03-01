@@ -36,7 +36,7 @@ func TestMapTemplateCommandErrorPassThrough(t *testing.T) {
 func TestNewCommandRegistersTemplateSubcommands(t *testing.T) {
 	cmd := NewCommand(Dependencies{})
 	expected := map[string]bool{
-		"list": true, "download": true, "local": true, "search": true, "cache": true, "clean": true, "run": true,
+		"list": true, "download": true, "delete": true, "search": true, "cache": true, "clean": true, "run": true,
 	}
 	actual := make(map[string]bool, len(cmd.Commands()))
 	for _, sub := range cmd.Commands() {

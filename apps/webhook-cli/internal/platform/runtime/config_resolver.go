@@ -109,6 +109,7 @@ type TemplatesListArgs struct {
 	TemplatesDir string
 	Provider     string
 	Refresh      bool
+	Local        bool
 }
 
 type TemplatesDownloadArgs struct {
@@ -118,16 +119,17 @@ type TemplatesDownloadArgs struct {
 	Refresh      bool
 }
 
-type TemplatesLocalArgs struct {
-	TemplatesDir string
-	Provider     string
-}
-
 type TemplatesSearchArgs struct {
 	TemplatesDir string
 	Query        string
 	Provider     string
 	Refresh      bool
+}
+
+type TemplatesDeleteArgs struct {
+	TemplatesDir string
+	TemplateID   string
+	Force        bool
 }
 
 type TemplatesCleanArgs struct {
@@ -480,10 +482,15 @@ func ResolveTemplatesListArgs(cmd *cobra.Command) (TemplatesListArgs, error) {
 	if err != nil {
 		return TemplatesListArgs{}, err
 	}
+	local, err := cmd.Flags().GetBool("local")
+	if err != nil {
+		return TemplatesListArgs{}, err
+	}
 	return TemplatesListArgs{
 		TemplatesDir: templatesDir,
 		Provider:     strings.TrimSpace(provider),
 		Refresh:      refresh,
+		Local:        local,
 	}, nil
 }
 
@@ -522,25 +529,6 @@ func ResolveTemplatesDownloadArgs(cmd *cobra.Command, args []string) (TemplatesD
 	}, nil
 }
 
-func ResolveTemplatesLocalArgs(cmd *cobra.Command) (TemplatesLocalArgs, error) {
-	loadedConfig, err := RuntimeConfigFromCommand(cmd)
-	if err != nil {
-		return TemplatesLocalArgs{}, err
-	}
-	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
-	if err != nil {
-		return TemplatesLocalArgs{}, err
-	}
-	provider, err := cmd.Flags().GetString("provider")
-	if err != nil {
-		return TemplatesLocalArgs{}, err
-	}
-	return TemplatesLocalArgs{
-		TemplatesDir: templatesDir,
-		Provider:     strings.TrimSpace(provider),
-	}, nil
-}
-
 func ResolveTemplatesSearchArgs(cmd *cobra.Command, args []string) (TemplatesSearchArgs, error) {
 	loadedConfig, err := RuntimeConfigFromCommand(cmd)
 	if err != nil {
@@ -570,6 +558,30 @@ func ResolveTemplatesSearchArgs(cmd *cobra.Command, args []string) (TemplatesSea
 		Query:        query,
 		Provider:     strings.TrimSpace(provider),
 		Refresh:      refresh,
+	}, nil
+}
+
+func ResolveTemplatesDeleteArgs(cmd *cobra.Command, templateID string) (TemplatesDeleteArgs, error) {
+	loadedConfig, err := RuntimeConfigFromCommand(cmd)
+	if err != nil {
+		return TemplatesDeleteArgs{}, err
+	}
+	templatesDir, err := resolveTemplatesDir(cmd, loadedConfig.TemplatesDir)
+	if err != nil {
+		return TemplatesDeleteArgs{}, err
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return TemplatesDeleteArgs{}, err
+	}
+	trimmedTemplateID := strings.TrimSpace(templateID)
+	if trimmedTemplateID == "" {
+		return TemplatesDeleteArgs{}, errors.New("template id cannot be empty")
+	}
+	return TemplatesDeleteArgs{
+		TemplatesDir: templatesDir,
+		TemplateID:   trimmedTemplateID,
+		Force:        force,
 	}, nil
 }
 

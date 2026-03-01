@@ -11,6 +11,7 @@ type LocalTemplateStore interface {
 	List(ctx context.Context) ([]domain.LocalTemplate, error)
 	Get(ctx context.Context, templateID string) (domain.LocalTemplate, error)
 	Save(ctx context.Context, metadata domain.TemplateMetadata, template domain.WebhookTemplate, downloadedAt string) (domain.LocalTemplate, error)
+	Delete(ctx context.Context, templateID string) (domain.LocalTemplate, error)
 	DeleteAll(ctx context.Context) (int, error)
 }
 
