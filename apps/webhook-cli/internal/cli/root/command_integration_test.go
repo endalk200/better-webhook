@@ -454,7 +454,7 @@ func TestTemplatesListCommandFromRemote(t *testing.T) {
 	)
 }
 
-func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
+func TestTemplatesDownloadListDeleteSearchCleanAndCache(t *testing.T) {
 	configPath := writeCommandTestConfig(t, t.TempDir())
 	templatesDir := t.TempDir()
 
@@ -479,11 +479,11 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 	localCmd.SetErr(&localOut)
 	localCmd.SetArgs([]string{
 		"--config", configPath,
-		"templates", "local",
+		"templates", "list", "--local",
 		"--templates-dir", templatesDir,
 	})
 	if err := localCmd.Execute(); err != nil {
-		t.Fatalf("execute templates local: %v", err)
+		t.Fatalf("execute templates list --local: %v", err)
 	}
 	localOutput := normalizeCLIOutput(localOut.String())
 	assertContainsAll(t, localOutput,
@@ -495,6 +495,48 @@ func TestTemplatesDownloadLocalSearchCleanAndCache(t *testing.T) {
 		"push",
 		"Total: 1 template(s)",
 	)
+
+	deleteCmd := newTestRootCommand(t)
+	var deleteOut bytes.Buffer
+	deleteCmd.SetOut(&deleteOut)
+	deleteCmd.SetErr(&deleteOut)
+	deleteCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "delete", "--force", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := deleteCmd.Execute(); err != nil {
+		t.Fatalf("execute templates delete: %v", err)
+	}
+	deleteOutput := normalizeCLIOutput(deleteOut.String())
+	assertContainsAll(t, deleteOutput, "Deleted template github-push")
+
+	localAfterDeleteCmd := newTestRootCommand(t)
+	var localAfterDeleteOut bytes.Buffer
+	localAfterDeleteCmd.SetOut(&localAfterDeleteOut)
+	localAfterDeleteCmd.SetErr(&localAfterDeleteOut)
+	localAfterDeleteCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "list", "--local",
+		"--templates-dir", templatesDir,
+	})
+	if err := localAfterDeleteCmd.Execute(); err != nil {
+		t.Fatalf("execute templates list --local after delete: %v", err)
+	}
+	localAfterDeleteOutput := normalizeCLIOutput(localAfterDeleteOut.String())
+	assertContainsAll(t, localAfterDeleteOutput, "No local templates found.")
+
+	downloadAgainCmd := newTestRootCommand(t)
+	downloadAgainCmd.SetOut(&bytes.Buffer{})
+	downloadAgainCmd.SetErr(&bytes.Buffer{})
+	downloadAgainCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadAgainCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download after delete: %v", err)
+	}
 
 	searchCmd := newTestRootCommand(t)
 	var searchOut bytes.Buffer
@@ -586,11 +628,11 @@ func TestTemplatesCleanCommandPromptCancellation(t *testing.T) {
 	localCmd.SetErr(&localOut)
 	localCmd.SetArgs([]string{
 		"--config", configPath,
-		"templates", "local",
+		"templates", "list", "--local",
 		"--templates-dir", templatesDir,
 	})
 	if err := localCmd.Execute(); err != nil {
-		t.Fatalf("execute templates local: %v", err)
+		t.Fatalf("execute templates list --local: %v", err)
 	}
 	localOutput := normalizeCLIOutput(localOut.String())
 	assertContainsAll(t, localOutput, "github-push", "Total: 1 template(s)")

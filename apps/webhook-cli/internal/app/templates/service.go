@@ -281,6 +281,14 @@ func (s *Service) ClearCache(ctx context.Context) error {
 	return s.cacheStore.Clear(ctx)
 }
 
+func (s *Service) DeleteLocal(ctx context.Context, templateID string) (domain.LocalTemplate, error) {
+	trimmedID := strings.TrimSpace(templateID)
+	if trimmedID == "" {
+		return domain.LocalTemplate{}, domain.ErrInvalidTemplateID
+	}
+	return s.localStore.Delete(ctx, trimmedID)
+}
+
 func (s *Service) CleanLocal(ctx context.Context) (int, error) {
 	return s.localStore.DeleteAll(ctx)
 }

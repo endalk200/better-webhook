@@ -286,6 +286,9 @@ func TestResolveTemplatesListArgsParsesFlags(t *testing.T) {
 	if err := command.Flags().Set("refresh", "true"); err != nil {
 		t.Fatalf("set refresh: %v", err)
 	}
+	if err := command.Flags().Set("local", "true"); err != nil {
+		t.Fatalf("set local: %v", err)
+	}
 
 	args, err := ResolveTemplatesListArgs(command)
 	if err != nil {
@@ -296,6 +299,9 @@ func TestResolveTemplatesListArgsParsesFlags(t *testing.T) {
 	}
 	if !args.Refresh {
 		t.Fatalf("expected refresh true")
+	}
+	if !args.Local {
+		t.Fatalf("expected local true")
 	}
 	if args.TemplatesDir == "" {
 		t.Fatalf("expected templates dir")
@@ -351,6 +357,37 @@ func TestResolveTemplatesSearchArgsRequiresQuery(t *testing.T) {
 		t.Fatalf("expected search query validation error")
 	}
 	if !strings.Contains(err.Error(), "search query is required") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveTemplatesDeleteArgsParsesTemplateIDAndForce(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	if err := command.Flags().Set("force", "true"); err != nil {
+		t.Fatalf("set force: %v", err)
+	}
+	args, err := ResolveTemplatesDeleteArgs(command, " github-push ")
+	if err != nil {
+		t.Fatalf("resolve templates delete args: %v", err)
+	}
+	if args.TemplateID != "github-push" {
+		t.Fatalf("template id mismatch: got %q", args.TemplateID)
+	}
+	if !args.Force {
+		t.Fatalf("expected force true")
+	}
+	if args.TemplatesDir == "" {
+		t.Fatalf("expected templates dir")
+	}
+}
+
+func TestResolveTemplatesDeleteArgsRejectsEmptyTemplateID(t *testing.T) {
+	command := newTemplatesTestCommand(t)
+	_, err := ResolveTemplatesDeleteArgs(command, "   ")
+	if err == nil {
+		t.Fatalf("expected delete template id validation error")
+	}
+	if !strings.Contains(err.Error(), "template id cannot be empty") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -526,6 +563,7 @@ func newTemplatesTestCommand(t *testing.T) *cobra.Command {
 	command.Flags().String("templates-dir", "", "")
 	command.Flags().String("provider", "", "")
 	command.Flags().Bool("refresh", false, "")
+	command.Flags().Bool("local", false, "")
 	command.Flags().Bool("all", false, "")
 	command.Flags().Bool("force", false, "")
 	command.Flags().String("secret", "", "")

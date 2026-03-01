@@ -93,6 +93,78 @@ func TestStoreDeleteAllRemovesTemplates(t *testing.T) {
 	}
 }
 
+func TestStoreDeleteRemovesTemplate(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	_, err = store.Save(context.Background(), domain.TemplateMetadata{
+		ID:       "github-push",
+		Name:     "GitHub Push",
+		Provider: "github",
+		Event:    "push",
+		File:     "github/github-push.jsonc",
+	}, domain.WebhookTemplate{Method: "POST"}, "2026-02-22T10:00:00Z")
+	if err != nil {
+		t.Fatalf("save template: %v", err)
+	}
+
+	deleted, err := store.Delete(context.Background(), "github-push")
+	if err != nil {
+		t.Fatalf("delete template: %v", err)
+	}
+	if deleted.ID != "github-push" {
+		t.Fatalf("deleted template mismatch: got %q", deleted.ID)
+	}
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected template to be deleted, got %d", len(items))
+	}
+}
+
+func TestStoreDeleteReturnsNotFoundForMissingTemplate(t *testing.T) {
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	_, err = store.Delete(context.Background(), "missing-template")
+	if err == nil {
+		t.Fatalf("expected missing template delete to fail")
+	}
+}
+
+func TestStoreDeleteSkipsUnmanagedTemplateFile(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+
+	providerDir := filepath.Join(baseDir, "github")
+	if err := os.MkdirAll(providerDir, 0o700); err != nil {
+		t.Fatalf("mkdir provider dir: %v", err)
+	}
+	targetPath := filepath.Join(providerDir, "github-push.jsonc")
+	payload := `{
+  "method": "POST",
+  "_metadata": {}
+}`
+	if err := os.WriteFile(targetPath, []byte(payload), 0o600); err != nil {
+		t.Fatalf("write unmanaged template file: %v", err)
+	}
+
+	_, err = store.Delete(context.Background(), "github-push")
+	if err == nil {
+		t.Fatalf("expected unmanaged template delete to fail")
+	}
+	if _, statErr := os.Stat(targetPath); statErr != nil {
+		t.Fatalf("expected unmanaged file to remain, got stat error: %v", statErr)
+	}
+}
+
 func TestStoreDeleteAllSkipsUnmanagedJSONFiles(t *testing.T) {
 	baseDir := t.TempDir()
 	store, err := NewStore(baseDir)

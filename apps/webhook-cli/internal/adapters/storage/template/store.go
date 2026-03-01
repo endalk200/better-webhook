@@ -269,6 +269,45 @@ func (s *Store) Save(
 	}, nil
 }
 
+func (s *Store) Delete(ctx context.Context, templateID string) (domain.LocalTemplate, error) {
+	if err := checkContext(ctx); err != nil {
+		return domain.LocalTemplate{}, err
+	}
+	trimmedTemplateID := strings.TrimSpace(templateID)
+	if !isValidTemplateToken(trimmedTemplateID) {
+		return domain.LocalTemplate{}, domain.ErrInvalidTemplateID
+	}
+
+	target, err := s.Get(ctx, trimmedTemplateID)
+	if err != nil {
+		return domain.LocalTemplate{}, err
+	}
+
+	targetPath := filepath.Clean(target.FilePath)
+	baseDir := filepath.Clean(s.templatesDir)
+	if targetPath != baseDir && !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
+		return domain.LocalTemplate{}, fmt.Errorf("unsafe template path for id %q", trimmedTemplateID)
+	}
+	provider := filepath.Base(filepath.Dir(targetPath))
+	if !isValidTemplateToken(provider) {
+		return domain.LocalTemplate{}, fmt.Errorf("unsafe template provider for id %q", trimmedTemplateID)
+	}
+	if !isManagedTemplateFile(targetPath, provider, trimmedTemplateID) {
+		return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedTemplateID)
+	}
+	if err := os.Remove(targetPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedTemplateID)
+		}
+		return domain.LocalTemplate{}, fmt.Errorf("delete template file %q: %w", targetPath, err)
+	}
+
+	// Best effort cleanup of now-empty managed provider directory.
+	_ = os.Remove(filepath.Dir(targetPath))
+
+	return target, nil
+}
+
 func (s *Store) DeleteAll(ctx context.Context) (int, error) {
 	if err := checkContext(ctx); err != nil {
 		return 0, err

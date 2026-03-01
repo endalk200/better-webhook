@@ -30,7 +30,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 
 	cmd.AddCommand(newListCommand(deps))
 	cmd.AddCommand(newDownloadCommand(deps))
-	cmd.AddCommand(newLocalCommand(deps))
+	cmd.AddCommand(newDeleteCommand(deps))
 	cmd.AddCommand(newSearchCommand(deps))
 	cmd.AddCommand(newCacheCommand(deps))
 	cmd.AddCommand(newCleanCommand(deps))

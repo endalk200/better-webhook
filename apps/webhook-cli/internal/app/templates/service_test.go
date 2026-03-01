@@ -104,6 +104,46 @@ func TestDownloadAllCountsSkippedDownloadedAndFailed(t *testing.T) {
 	}
 }
 
+func TestDeleteLocalRemovesTemplateByID(t *testing.T) {
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+	deleted, err := service.DeleteLocal(context.Background(), "github-push")
+	if err != nil {
+		t.Fatalf("delete local template: %v", err)
+	}
+	if deleted.ID != "github-push" {
+		t.Fatalf("deleted template mismatch: got %q", deleted.ID)
+	}
+}
+
+func TestDeleteLocalRejectsEmptyTemplateID(t *testing.T) {
+	service := NewService(
+		&localStoreStub{},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+	_, err := service.DeleteLocal(context.Background(), "   ")
+	if !errors.Is(err, domain.ErrInvalidTemplateID) {
+		t.Fatalf("expected ErrInvalidTemplateID, got %v", err)
+	}
+}
+
 func TestSearchReturnsMatchesFromLocalAndRemote(t *testing.T) {
 	service := NewService(
 		&localStoreStub{
@@ -524,6 +564,16 @@ func (s *localStoreStub) Save(_ context.Context, metadata domain.TemplateMetadat
 	}
 	s.items = append(s.items, item)
 	return item, nil
+}
+
+func (s *localStoreStub) Delete(_ context.Context, templateID string) (domain.LocalTemplate, error) {
+	for idx, item := range s.items {
+		if item.ID == templateID {
+			s.items = append(s.items[:idx], s.items[idx+1:]...)
+			return item, nil
+		}
+	}
+	return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, templateID)
 }
 
 func (s *localStoreStub) DeleteAll(context.Context) (int, error) {
