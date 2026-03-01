@@ -486,6 +486,9 @@ func ResolveTemplatesListArgs(cmd *cobra.Command) (TemplatesListArgs, error) {
 	if err != nil {
 		return TemplatesListArgs{}, err
 	}
+	if refresh && local {
+		return TemplatesListArgs{}, errors.New("cannot use --refresh with --local")
+	}
 	return TemplatesListArgs{
 		TemplatesDir: templatesDir,
 		Provider:     strings.TrimSpace(provider),

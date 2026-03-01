@@ -285,7 +285,22 @@ func (s *Store) Delete(ctx context.Context, templateID string) (domain.LocalTemp
 
 	targetPath := filepath.Clean(target.FilePath)
 	baseDir := filepath.Clean(s.templatesDir)
-	if targetPath != baseDir && !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
+	if targetPath == baseDir || !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
+		return domain.LocalTemplate{}, fmt.Errorf("unsafe template path for id %q", trimmedTemplateID)
+	}
+	resolvedBaseDir, err := filepath.EvalSymlinks(baseDir)
+	if err != nil {
+		return domain.LocalTemplate{}, fmt.Errorf("resolve templates directory %q: %w", baseDir, err)
+	}
+	resolvedTargetPath, err := filepath.EvalSymlinks(targetPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedTemplateID)
+		}
+		return domain.LocalTemplate{}, fmt.Errorf("resolve template path %q: %w", targetPath, err)
+	}
+	if resolvedTargetPath == resolvedBaseDir ||
+		!strings.HasPrefix(resolvedTargetPath, resolvedBaseDir+string(filepath.Separator)) {
 		return domain.LocalTemplate{}, fmt.Errorf("unsafe template path for id %q", trimmedTemplateID)
 	}
 	provider := filepath.Base(filepath.Dir(targetPath))
@@ -377,7 +392,7 @@ func (s *Store) DeleteAll(ctx context.Context) (int, error) {
 func (s *Store) safeTemplatePath(provider string, templateID string) (string, error) {
 	baseDir := filepath.Clean(s.templatesDir)
 	targetPath := filepath.Clean(filepath.Join(baseDir, provider, templateID+templateFileExtJSONC))
-	if targetPath != baseDir && !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
+	if targetPath == baseDir || !strings.HasPrefix(targetPath, baseDir+string(filepath.Separator)) {
 		return "", fmt.Errorf("unsafe template path for provider %q and id %q", provider, templateID)
 	}
 	return targetPath, nil
