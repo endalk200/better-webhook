@@ -77,6 +77,64 @@ func TestRootCommandVersionFlag(t *testing.T) {
 	}
 }
 
+func TestRootCommandSilencesCobraErrorRendering(t *testing.T) {
+	rootCmd := newTestRootCommand(t)
+	if !rootCmd.SilenceErrors {
+		t.Fatalf("expected root command to silence cobra error rendering")
+	}
+	if !rootCmd.SilenceUsage {
+		t.Fatalf("expected root command to silence usage rendering")
+	}
+}
+
+func TestCapturesGroupRejectsUnknownSubcommand(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"--config", configPath, "captures", "typo-subcommand"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected unknown captures subcommand to fail")
+	}
+	if !strings.Contains(err.Error(), `unknown command "typo-subcommand"`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTemplatesGroupRejectsUnknownSubcommand(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"--config", configPath, "templates", "typo-subcommand"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected unknown templates subcommand to fail")
+	}
+	if !strings.Contains(err.Error(), `unknown command "typo-subcommand"`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTemplatesCacheGroupRejectsUnknownSubcommand(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{"--config", configPath, "templates", "cache", "typo-subcommand"})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected unknown templates cache subcommand to fail")
+	}
+	if !strings.Contains(err.Error(), `unknown command "typo-subcommand"`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestCapturesListCommandReadsConfigPathFromEnv(t *testing.T) {
 	capturesDir := t.TempDir()
 	store, err := jsonc.NewStore(capturesDir, nil, nil)
@@ -426,6 +484,46 @@ func TestReplayCommandMapsNotFoundError(t *testing.T) {
 	}
 }
 
+func TestReplayCommandReturnsErrorOnHTTPErrorStatus(t *testing.T) {
+	capturesDir := t.TempDir()
+	store, err := jsonc.NewStore(capturesDir, nil, nil)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+	record := testCommandCapture("c0ffeeba-0000-0000-0000-000000000000", domain.ProviderGitHub)
+	record.URL = "/webhooks/test"
+	record.Path = "/webhooks/test"
+	if _, err := store.Save(context.Background(), record); err != nil {
+		t.Fatalf("seed capture: %v", err)
+	}
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"ok":false}`))
+	}))
+	defer targetServer.Close()
+
+	configPath := writeCommandTestConfig(t, capturesDir)
+	rootCmd := newTestRootCommand(t)
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{
+		"--config", configPath,
+		"captures", "replay", "c0ffeeba",
+		"--base-url", targetServer.URL,
+	})
+
+	err = rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected replay command to fail on HTTP error status")
+	}
+	if !strings.Contains(err.Error(), "replay returned HTTP 500") {
+		t.Fatalf("unexpected replay command error: %v", err)
+	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "Replay completed with HTTP error", "500 Internal Server Error")
+}
+
 func TestTemplatesListCommandFromRemote(t *testing.T) {
 	configPath := writeCommandTestConfig(t, t.TempDir())
 	templatesDir := t.TempDir()
@@ -736,6 +834,67 @@ func TestTemplatesRunCommandGeneratesGitHubSignature(t *testing.T) {
 	)
 }
 
+func TestTemplatesRunCommandReturnsErrorOnHTTPErrorStatus(t *testing.T) {
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"ok":false}`))
+	}))
+	defer targetServer.Close()
+
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {"id":"github-push","name":"GitHub Push","provider":"github","event":"push","file":"github/github-push.jsonc"}
+  ]
+}`))
+		case "/templates/github/github-push.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"method":"POST","provider":"github","body":{"ok":true}}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	downloadCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	downloadCmd.SetOut(&bytes.Buffer{})
+	downloadCmd.SetErr(&bytes.Buffer{})
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download: %v", err)
+	}
+
+	runCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	var runOut bytes.Buffer
+	runCmd.SetOut(&runOut)
+	runCmd.SetErr(&runOut)
+	runCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "run", "github-push", targetServer.URL,
+		"--templates-dir", templatesDir,
+	})
+	err := runCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected templates run command to fail on HTTP error status")
+	}
+	if !strings.Contains(err.Error(), "template run returned HTTP 422") {
+		t.Fatalf("unexpected templates run error: %v", err)
+	}
+	output := normalizeCLIOutput(runOut.String())
+	assertContainsAll(t, output, "Template execution completed with HTTP error", "422 Unprocessable Entity")
+}
+
 func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	var indexRequests int32
 	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -811,6 +970,57 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	if got := atomic.LoadInt32(&indexRequests); got != 2 {
 		t.Fatalf("expected --refresh to force second index request, got %d", got)
 	}
+}
+
+func TestTemplatesDownloadSingleReportsAlreadyDownloadedAndRefreshed(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+	rootCmd := newTestRootCommand(t)
+
+	firstDownload := bytes.Buffer{}
+	rootCmd.SetOut(&firstDownload)
+	rootCmd.SetErr(&firstDownload)
+	rootCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("first download command failed: %v", err)
+	}
+	firstOutput := normalizeCLIOutput(firstDownload.String())
+	assertContainsAll(t, firstOutput, "Downloaded template github-push")
+
+	alreadyCmd := newTestRootCommand(t)
+	alreadyOutput := bytes.Buffer{}
+	alreadyCmd.SetOut(&alreadyOutput)
+	alreadyCmd.SetErr(&alreadyOutput)
+	alreadyCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+	if err := alreadyCmd.Execute(); err != nil {
+		t.Fatalf("second download command failed: %v", err)
+	}
+	alreadyDownloadedOutput := normalizeCLIOutput(alreadyOutput.String())
+	assertContainsAll(t, alreadyDownloadedOutput, "is already downloaded")
+
+	refreshCmd := newTestRootCommand(t)
+	refreshOutput := bytes.Buffer{}
+	refreshCmd.SetOut(&refreshOutput)
+	refreshCmd.SetErr(&refreshOutput)
+	refreshCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--refresh",
+		"--templates-dir", templatesDir,
+	})
+	if err := refreshCmd.Execute(); err != nil {
+		t.Fatalf("refresh download command failed: %v", err)
+	}
+	refreshedOutput := normalizeCLIOutput(refreshOutput.String())
+	assertContainsAll(t, refreshedOutput, "Refreshed template github-push")
 }
 
 func normalizeCLIOutput(raw string) string {

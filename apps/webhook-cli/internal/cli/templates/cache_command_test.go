@@ -18,7 +18,7 @@ func TestCacheCommandHasClearSubcommand(t *testing.T) {
 
 func TestCacheCommandRejectsUnexpectedArgs(t *testing.T) {
 	cmd := newCacheCommand(Dependencies{})
-	if err := cmd.Args(cmd, []string{"unexpected"}); err == nil {
+	if err := runTemplateCacheGroupCommand(cmd, []string{"unexpected"}); err == nil {
 		t.Fatalf("expected cache command to reject positional args")
 	}
 }

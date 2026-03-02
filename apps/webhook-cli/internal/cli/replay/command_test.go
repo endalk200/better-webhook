@@ -11,6 +11,18 @@ import (
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 )
 
+func TestReplayLeadMessageByStatusClass(t *testing.T) {
+	if got := replayLeadMessage(200); !strings.Contains(got, "Replayed") {
+		t.Fatalf("expected success lead message, got %q", got)
+	}
+	if got := replayLeadMessage(302); !strings.Contains(got, "redirect response") {
+		t.Fatalf("expected redirect lead message, got %q", got)
+	}
+	if got := replayLeadMessage(500); !strings.Contains(got, "HTTP error") {
+		t.Fatalf("expected error lead message, got %q", got)
+	}
+}
+
 func TestMapReplayCommandErrorForCaptureNotFound(t *testing.T) {
 	err := mapReplayCommandError(domain.ErrCaptureNotFound, "deadbeef")
 	if err == nil {

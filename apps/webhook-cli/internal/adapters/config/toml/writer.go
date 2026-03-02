@@ -99,6 +99,11 @@ templates_dir = %q
 
 # Log level controls default verbosity for commands.
 # Supported values: "debug", "info", "warn", "error"
+# When set to "debug", verbose output is enabled by default for:
+#   - capture
+#   - captures replay
+#   - templates run
+# (You can still explicitly override with --verbose=true/false.)
 # Override with:
 #   - BETTER_WEBHOOK_LOG_LEVEL
 #   - command flags like --verbose on supported commands

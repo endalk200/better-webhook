@@ -26,6 +26,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 		Use:     "templates",
 		Aliases: []string{"t"},
 		Short:   "Manage webhook templates",
+		RunE:    runTemplateGroupCommand,
 	}
 
 	cmd.AddCommand(newListCommand(deps))
@@ -36,6 +37,13 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd.AddCommand(newCleanCommand(deps))
 	cmd.AddCommand(newRunCommand(deps))
 	return cmd
+}
+
+func runTemplateGroupCommand(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
+	}
+	return cmd.Help()
 }
 
 func mapTemplateCommandError(err error, templateID string) error {
@@ -87,15 +95,18 @@ func mapTemplateCommandError(err error, templateID string) error {
 func mapRunInvalidBodyError(err error) error {
 	cause := runInvalidBodyCause(err)
 	if cause == nil {
-		return fmt.Errorf("template body is invalid: %w", err)
+		return wrapRunInvalidBodyError("template body is invalid", nil)
 	}
 	if errors.Is(cause, platformplaceholders.ErrEnvironmentPlaceholdersDisabled) {
-		return fmt.Errorf(
-			"template body is invalid: environment placeholders are disabled (use --allow-env-placeholders): %w",
-			err,
+		return wrapRunInvalidBodyError(
+			"template body uses environment placeholders but they are disabled (use --allow-env-placeholders)",
+			cause,
 		)
 	}
-	return fmt.Errorf("template body is invalid: %w", err)
+	return wrapRunInvalidBodyError(
+		fmt.Sprintf("template body is invalid: %s", strings.TrimSpace(cause.Error())),
+		cause,
+	)
 }
 
 func runInvalidBodyCause(err error) error {
@@ -110,4 +121,30 @@ func runInvalidBodyCause(err error) error {
 		return wrapped
 	}
 	return nil
+}
+
+type runInvalidBodyUserError struct {
+	message string
+	cause   error
+}
+
+func (e runInvalidBodyUserError) Error() string {
+	return e.message
+}
+
+func (e runInvalidBodyUserError) Unwrap() error {
+	return e.cause
+}
+
+func wrapRunInvalidBodyError(message string, cause error) error {
+	if cause == nil {
+		return runInvalidBodyUserError{
+			message: message,
+			cause:   apptemplates.ErrRunInvalidBody,
+		}
+	}
+	return runInvalidBodyUserError{
+		message: message,
+		cause:   errors.Join(apptemplates.ErrRunInvalidBody, cause),
+	}
 }

@@ -24,7 +24,9 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replay <capture-id> [target-url]",
 		Short: "Replay a captured webhook to a target URL",
-		Args:  validateReplayCommandArgs,
+		Example: `  better-webhook captures replay deadbeef --base-url http://localhost:3000
+  better-webhook captures replay deadbeef http://localhost:3000/api/webhooks/github`,
+		Args: validateReplayCommandArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ServiceFactory == nil {
 				return errors.New("replay service factory cannot be nil")
@@ -69,14 +71,22 @@ func NewCommand(deps Dependencies) *cobra.Command {
 				return mapReplayCommandError(err, replayArgs.Selector)
 			}
 
+			if replayArgs.VerboseImplicit {
+				_, _ = fmt.Fprintln(
+					cmd.OutOrStdout(),
+					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+				)
+			}
+
 			shortID := result.Capture.Capture.ID
 			if len(shortID) > 8 {
 				shortID = shortID[:8]
 			}
+			lead := replayLeadMessage(result.Response.StatusCode)
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
 				"%s %s %s %s %s %s\n",
-				ui.FormatSuccess("Replayed"),
+				lead,
 				ui.Muted.Render(shortID),
 				ui.FormatProvider(result.Capture.Capture.Provider),
 				ui.FormatMethod(result.Method),
@@ -93,6 +103,13 @@ func NewCommand(deps Dependencies) *cobra.Command {
 			if replayArgs.Verbose {
 				ui.PrintReplayVerboseOutput(cmd.OutOrStdout(), result)
 			}
+			if result.Response.StatusCode >= httpStatusBadRequest {
+				statusText := strings.TrimSpace(result.Response.StatusText)
+				if statusText == "" {
+					return fmt.Errorf("replay returned HTTP %d", result.Response.StatusCode)
+				}
+				return fmt.Errorf("replay returned HTTP %d %s", result.Response.StatusCode, statusText)
+			}
 
 			return nil
 		},
@@ -103,9 +120,29 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().String("method", "", "Override HTTP method")
 	cmd.Flags().StringArrayP("header", "H", nil, "Add or override header (format: key:value)")
 	cmd.Flags().Duration("timeout", runtime.DefaultReplayTimeout, "HTTP request timeout")
-	cmd.Flags().BoolP("verbose", "v", false, "Show detailed request/response information")
+	cmd.Flags().BoolP(
+		"verbose",
+		"v",
+		false,
+		"Show detailed request/response information (enabled by default when log_level=debug unless overridden)",
+	)
 
 	return cmd
+}
+
+const (
+	httpStatusMultipleChoices = 300
+	httpStatusBadRequest      = 400
+)
+
+func replayLeadMessage(statusCode int) string {
+	if statusCode >= httpStatusBadRequest {
+		return ui.FormatWarning("Replay completed with HTTP error")
+	}
+	if statusCode >= httpStatusMultipleChoices {
+		return ui.FormatWarning("Replay completed with redirect response")
+	}
+	return ui.FormatSuccess("Replayed")
 }
 
 func validateReplayCommandArgs(cmd *cobra.Command, args []string) error {

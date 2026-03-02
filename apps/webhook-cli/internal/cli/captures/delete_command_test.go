@@ -181,6 +181,17 @@ func TestDeleteCommandAllowsNilPrompterWithForce(t *testing.T) {
 	}
 }
 
+func TestDeleteCommandArgsRequireSelector(t *testing.T) {
+	cmd := newDeleteCommand(Dependencies{})
+	err := cmd.Args(cmd, []string{})
+	if err == nil {
+		t.Fatalf("expected missing selector error")
+	}
+	if !strings.Contains(err.Error(), "capture selector is required") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func setupDeleteCmd(
 	t *testing.T,
 	capturesDir string,

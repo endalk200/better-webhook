@@ -56,6 +56,7 @@ func main() {
 
 	if err := rootCommand.Execute(); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, ui.FormatError(err))
+		_, _ = fmt.Fprintln(os.Stderr, ui.Muted.Render(`Run "better-webhook --help" for usage.`))
 		os.Exit(1)
 	}
 }

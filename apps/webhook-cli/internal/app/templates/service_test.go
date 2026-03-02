@@ -61,6 +61,85 @@ func TestDownloadReturnsTemplateNotFound(t *testing.T) {
 	}
 }
 
+func TestDownloadWithResultSkipsWhenTemplateAlreadyDownloaded(t *testing.T) {
+	localTemplate := domain.LocalTemplate{
+		ID: "github-push",
+		Metadata: domain.TemplateMetadata{
+			ID:       "github-push",
+			Provider: "github",
+			Event:    "push",
+		},
+		FilePath: "/tmp/github/github-push.jsonc",
+	}
+	remote := &remoteStoreStub{
+		index: domain.TemplatesIndex{
+			Version: "1.0.0",
+			Templates: []domain.TemplateMetadata{
+				{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.jsonc"},
+			},
+		},
+	}
+	service := NewService(
+		&localStoreStub{items: []domain.LocalTemplate{localTemplate}},
+		remote,
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+
+	result, err := service.DownloadWithResult(context.Background(), "github-push", false)
+	if err != nil {
+		t.Fatalf("download with result: %v", err)
+	}
+	if result.Outcome != DownloadOutcomeAlreadyCurrent {
+		t.Fatalf("expected already-current outcome, got %q", result.Outcome)
+	}
+	if result.Template.ID != "github-push" {
+		t.Fatalf("template id mismatch: got %q", result.Template.ID)
+	}
+	if remote.fetchTemplateCalls != 0 {
+		t.Fatalf("expected no remote fetch for already downloaded template, got %d calls", remote.fetchTemplateCalls)
+	}
+}
+
+func TestDownloadWithResultRefreshesWhenRequested(t *testing.T) {
+	remote := &remoteStoreStub{
+		index: domain.TemplatesIndex{
+			Version: "1.0.0",
+			Templates: []domain.TemplateMetadata{
+				{ID: "github-push", Name: "GitHub Push", Provider: "github", Event: "push", File: "github/github-push.jsonc"},
+			},
+		},
+	}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "github-push",
+					Metadata: domain.TemplateMetadata{
+						ID:       "github-push",
+						Provider: "github",
+						Event:    "push",
+					},
+				},
+			},
+		},
+		remote,
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+
+	result, err := service.DownloadWithResult(context.Background(), "github-push", true)
+	if err != nil {
+		t.Fatalf("refresh download with result: %v", err)
+	}
+	if result.Outcome != DownloadOutcomeRefreshed {
+		t.Fatalf("expected refreshed outcome, got %q", result.Outcome)
+	}
+	if remote.fetchTemplateCalls != 1 {
+		t.Fatalf("expected one remote fetch for refreshed template, got %d calls", remote.fetchTemplateCalls)
+	}
+}
+
 func TestDownloadAllCountsSkippedDownloadedAndFailed(t *testing.T) {
 	service := NewService(
 		&localStoreStub{
@@ -531,6 +610,28 @@ func TestRunAppliesHeaderOverrides(t *testing.T) {
 	}
 }
 
+func TestResolveProviderSecretUsesProviderSpecificAndFallbackEnvVars(t *testing.T) {
+	service := NewService(
+		&localStoreStub{},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+		WithEnvironmentLookup(mapLookup(map[string]string{
+			"RAGIE_WEBHOOK_SECRET": "ragie-secret",
+			"WEBHOOK_SECRET":       "fallback-secret",
+		})),
+	)
+	if got := service.resolveProviderSecret("ragie", ""); got != "ragie-secret" {
+		t.Fatalf("expected provider-specific secret, got %q", got)
+	}
+	if got := service.resolveProviderSecret("custom-provider", ""); got != "fallback-secret" {
+		t.Fatalf("expected generic fallback secret, got %q", got)
+	}
+	if got := service.resolveProviderSecret("ragie", "explicit-secret"); got != "explicit-secret" {
+		t.Fatalf("expected explicit secret to win, got %q", got)
+	}
+}
+
 type localStoreStub struct {
 	items       []domain.LocalTemplate
 	saveErrByID map[string]error
@@ -583,9 +684,10 @@ func (s *localStoreStub) DeleteAll(context.Context) (int, error) {
 }
 
 type remoteStoreStub struct {
-	index             domain.TemplatesIndex
-	err               error
-	templateErrByFile map[string]error
+	index              domain.TemplatesIndex
+	err                error
+	templateErrByFile  map[string]error
+	fetchTemplateCalls int
 }
 
 func (s *remoteStoreStub) FetchIndex(context.Context) (domain.TemplatesIndex, error) {
@@ -596,6 +698,7 @@ func (s *remoteStoreStub) FetchIndex(context.Context) (domain.TemplatesIndex, er
 }
 
 func (s *remoteStoreStub) FetchTemplate(_ context.Context, templateFile string) (domain.WebhookTemplate, error) {
+	s.fetchTemplateCalls++
 	if err, ok := s.templateErrByFile[templateFile]; ok {
 		return domain.WebhookTemplate{}, err
 	}

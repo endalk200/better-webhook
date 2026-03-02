@@ -15,10 +15,17 @@ func newCacheCommand(deps Dependencies) *cobra.Command {
 	cacheCmd := &cobra.Command{
 		Use:   "cache",
 		Short: "Manage template index cache",
-		Args:  cobra.NoArgs,
+		RunE:  runTemplateCacheGroupCommand,
 	}
 	cacheCmd.AddCommand(newCacheClearCommand(deps))
 	return cacheCmd
+}
+
+func runTemplateCacheGroupCommand(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
+	}
+	return cmd.Help()
 }
 
 func newCacheClearCommand(deps Dependencies) *cobra.Command {
