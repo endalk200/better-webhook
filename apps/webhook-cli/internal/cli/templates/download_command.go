@@ -63,7 +63,7 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 				if result.Total > 0 && result.Skipped == result.Total {
 					_, _ = fmt.Fprintln(
 						cmd.OutOrStdout(),
-						ui.FormatInfo(formatAllTemplatesAlreadyDownloadedMessage(downloadArgs.Refresh)),
+						ui.FormatInfo(formatAllTemplatesAlreadyDownloadedMessage()),
 					)
 					return nil
 				}
@@ -106,10 +106,7 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 	return cmd
 }
 
-func formatAllTemplatesAlreadyDownloadedMessage(refresh bool) string {
-	if refresh {
-		return "All templates already downloaded. (index cache was refreshed)"
-	}
+func formatAllTemplatesAlreadyDownloadedMessage() string {
 	return "All templates already downloaded."
 }
 

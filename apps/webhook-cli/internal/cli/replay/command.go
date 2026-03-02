@@ -74,7 +74,7 @@ func NewCommand(deps Dependencies) *cobra.Command {
 			if replayArgs.VerboseImplicit {
 				_, _ = fmt.Fprintln(
 					cmd.OutOrStdout(),
-					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+					ui.FormatImplicitVerboseEnabledHint(),
 				)
 			}
 

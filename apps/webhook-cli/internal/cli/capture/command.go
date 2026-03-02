@@ -47,7 +47,7 @@ Tip: run "better-webhook init" first if you have not created a config file yet.`
 			if captureArgs.VerboseImplicit {
 				_, _ = fmt.Fprintln(
 					cmd.OutOrStdout(),
-					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+					ui.FormatImplicitVerboseEnabledHint(),
 				)
 			}
 
