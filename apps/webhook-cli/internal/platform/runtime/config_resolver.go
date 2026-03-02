@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	platformhttprequest "github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/httprequest"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/httpurl"
 )
@@ -579,7 +580,7 @@ func ResolveTemplatesDeleteArgs(cmd *cobra.Command, templateID string) (Template
 	}
 	trimmedTemplateID := strings.TrimSpace(templateID)
 	if trimmedTemplateID == "" {
-		return TemplatesDeleteArgs{}, errors.New("template id cannot be empty")
+		return TemplatesDeleteArgs{}, fmt.Errorf("template id cannot be empty: %w", domain.ErrInvalidTemplateID)
 	}
 	return TemplatesDeleteArgs{
 		TemplatesDir: templatesDir,

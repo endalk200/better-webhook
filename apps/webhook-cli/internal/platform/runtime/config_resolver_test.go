@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 )
 
 func TestResolveCaptureArgsEnablesVerboseForDebugLogLevel(t *testing.T) {
@@ -401,6 +404,9 @@ func TestResolveTemplatesDeleteArgsRejectsEmptyTemplateID(t *testing.T) {
 	_, err := ResolveTemplatesDeleteArgs(command, "   ")
 	if err == nil {
 		t.Fatalf("expected delete template id validation error")
+	}
+	if !errors.Is(err, domain.ErrInvalidTemplateID) {
+		t.Fatalf("expected ErrInvalidTemplateID, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "template id cannot be empty") {
 		t.Fatalf("unexpected error: %v", err)
