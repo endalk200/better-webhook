@@ -41,7 +41,7 @@ better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/g
 
 Most failures come from one of these:
 
-- Wrong secret value (`GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`).
+- Wrong secret value (`<PROVIDER>_WEBHOOK_SECRET`, such as `GITHUB_WEBHOOK_SECRET`, or fallback `WEBHOOK_SECRET`).
 - Body parser mutated the request body before verification.
 - Provider is signing with a different secret than your environment.
 
@@ -62,11 +62,10 @@ If a template requires provider signing placeholders, pass a secret explicitly:
 better-webhook templates run github-push http://localhost:3000/api/webhooks/github --secret "$GITHUB_WEBHOOK_SECRET"
 ```
 
-Or set provider env vars:
+Or set a provider-specific env var (or generic fallback):
 
-- `GITHUB_WEBHOOK_SECRET`
-- `RAGIE_WEBHOOK_SECRET`
-- `RECALL_WEBHOOK_SECRET`
+- `<PROVIDER>_WEBHOOK_SECRET` (for example `GITHUB_WEBHOOK_SECRET`)
+- `WEBHOOK_SECRET`
 
 ## `better-webhook` command is not found after installation
 
