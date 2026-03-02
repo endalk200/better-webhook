@@ -99,7 +99,7 @@ Download all available templates:
 better-webhook templates download --all
 ```
 
-If a single template is already present, running `download <template-id>` again reports that it is already downloaded. Use `--refresh` to force a re-download.
+If templates are already present locally, running download again skips them by default. Use `--refresh` to force a fresh index fetch and re-download existing templates (for both `download <template-id>` and `download --all`).
 
 ### List Local Templates
 

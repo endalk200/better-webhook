@@ -897,6 +897,7 @@ func TestTemplatesRunCommandReturnsErrorOnHTTPErrorStatus(t *testing.T) {
 
 func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	var indexRequests int32
+	var templateRequests int32
 	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/templates/templates.jsonc":
@@ -915,6 +916,7 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
   ]
 }`))
 		case "/templates/github/github-push.jsonc":
+			atomic.AddInt32(&templateRequests, 1)
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"method":"POST","body":{"ok":true}}`))
 		default:
@@ -955,10 +957,14 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	if got := atomic.LoadInt32(&indexRequests); got != 1 {
 		t.Fatalf("expected download --all without --refresh to use cache, got %d index requests", got)
 	}
+	if got := atomic.LoadInt32(&templateRequests); got != 1 {
+		t.Fatalf("expected initial --all download to fetch template once, got %d", got)
+	}
 
 	refreshCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
-	refreshCmd.SetOut(&bytes.Buffer{})
-	refreshCmd.SetErr(&bytes.Buffer{})
+	refreshOutput := &bytes.Buffer{}
+	refreshCmd.SetOut(refreshOutput)
+	refreshCmd.SetErr(refreshOutput)
 	refreshCmd.SetArgs([]string{
 		"--config", configPath,
 		"templates", "download", "--all", "--refresh",
@@ -970,6 +976,11 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	if got := atomic.LoadInt32(&indexRequests); got != 2 {
 		t.Fatalf("expected --refresh to force second index request, got %d", got)
 	}
+	if got := atomic.LoadInt32(&templateRequests); got != 2 {
+		t.Fatalf("expected --all --refresh to re-download existing templates, got %d template fetches", got)
+	}
+	output := normalizeCLIOutput(refreshOutput.String())
+	assertContainsAll(t, output, "Download complete")
 }
 
 func TestTemplatesDownloadSingleReportsAlreadyDownloadedAndRefreshed(t *testing.T) {

@@ -60,3 +60,21 @@ func TestFormatSingleDownloadSummaryIncludesOutcomeMessage(t *testing.T) {
 		t.Fatalf("unexpected refreshed summary: %q", refreshed)
 	}
 }
+
+func TestFormatAllTemplatesAlreadyDownloadedMessageIncludesRefreshNote(t *testing.T) {
+	withoutRefresh := formatAllTemplatesAlreadyDownloadedMessage(false)
+	if !strings.Contains(withoutRefresh, "All templates already downloaded.") {
+		t.Fatalf("unexpected message without refresh: %q", withoutRefresh)
+	}
+	if strings.Contains(withoutRefresh, "index cache was refreshed") {
+		t.Fatalf("did not expect refresh note without refresh flag: %q", withoutRefresh)
+	}
+
+	withRefresh := formatAllTemplatesAlreadyDownloadedMessage(true)
+	if !strings.Contains(withRefresh, "All templates already downloaded.") {
+		t.Fatalf("unexpected message with refresh: %q", withRefresh)
+	}
+	if !strings.Contains(withRefresh, "index cache was refreshed") {
+		t.Fatalf("expected refresh note in message: %q", withRefresh)
+	}
+}

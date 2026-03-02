@@ -61,7 +61,10 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 					return mapTemplateCommandError(err, "")
 				}
 				if result.Total > 0 && result.Skipped == result.Total {
-					_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatInfo("All templates already downloaded."))
+					_, _ = fmt.Fprintln(
+						cmd.OutOrStdout(),
+						ui.FormatInfo(formatAllTemplatesAlreadyDownloadedMessage(downloadArgs.Refresh)),
+					)
 					return nil
 				}
 
@@ -98,9 +101,16 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().Bool("all", false, "Download all templates")
-	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
+	cmd.Flags().Bool("refresh", false, "Force refresh template index and re-download existing templates")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
+}
+
+func formatAllTemplatesAlreadyDownloadedMessage(refresh bool) string {
+	if refresh {
+		return "All templates already downloaded. (index cache was refreshed)"
+	}
+	return "All templates already downloaded."
 }
 
 func formatFailedCount(count int) string {
