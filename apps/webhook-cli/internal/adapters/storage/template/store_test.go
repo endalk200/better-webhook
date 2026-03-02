@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -208,6 +209,56 @@ func TestStoreDeleteRejectsSymlinkPathEscape(t *testing.T) {
 	}
 	if _, lstatErr := os.Lstat(linkedTemplatePath); lstatErr != nil {
 		t.Fatalf("expected symlink file to remain, got lstat error: %v", lstatErr)
+	}
+}
+
+func TestStoreDeleteRemovesResolvedTargetForManagedSymlink(t *testing.T) {
+	baseDir := t.TempDir()
+	store, err := NewStore(baseDir)
+	if err != nil {
+		t.Fatalf("create store: %v", err)
+	}
+
+	linkedProviderDir := filepath.Join(baseDir, "a-link")
+	targetProviderDir := filepath.Join(baseDir, "z-target")
+	if err := os.MkdirAll(linkedProviderDir, 0o700); err != nil {
+		t.Fatalf("mkdir linked provider dir: %v", err)
+	}
+	if err := os.MkdirAll(targetProviderDir, 0o700); err != nil {
+		t.Fatalf("mkdir target provider dir: %v", err)
+	}
+
+	templateID := "github-push"
+	managedPayload := `{
+  "method": "POST",
+  "_metadata": {
+    "id": "github-push",
+    "provider": "a-link"
+  }
+}`
+	resolvedTargetPath := filepath.Join(targetProviderDir, templateID+".jsonc")
+	if err := os.WriteFile(resolvedTargetPath, []byte(managedPayload), 0o600); err != nil {
+		t.Fatalf("write managed target template: %v", err)
+	}
+	linkPath := filepath.Join(linkedProviderDir, templateID+".jsonc")
+	if err := os.Symlink(resolvedTargetPath, linkPath); err != nil {
+		t.Fatalf("create symlink template file: %v", err)
+	}
+
+	if _, err := store.Delete(context.Background(), templateID); err != nil {
+		t.Fatalf("delete template through symlink alias: %v", err)
+	}
+
+	if _, statErr := os.Stat(resolvedTargetPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected resolved target to be deleted, got %v", statErr)
+	}
+
+	items, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("list templates: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected template to be fully deleted, got %d", len(items))
 	}
 }
 

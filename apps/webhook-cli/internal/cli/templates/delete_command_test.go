@@ -102,6 +102,28 @@ func TestDeleteCommandForceDeletesTemplate(t *testing.T) {
 	}
 }
 
+func TestDeleteCommandAllowsNilPrompterWithForce(t *testing.T) {
+	templatesDir := t.TempDir()
+	seedLocalTemplateForCleanTest(t, templatesDir, "github-push")
+
+	cmd, output := setupDeleteCmd(
+		t,
+		templatesDir,
+		nil,
+		"--templates-dir",
+		templatesDir,
+		"--force",
+		"github-push",
+	)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected force delete to succeed without prompter, got %v", err)
+	}
+	if !strings.Contains(output.String(), "Deleted template github-push") {
+		t.Fatalf("expected delete success output, got %q", output.String())
+	}
+}
+
 func TestDeleteCommandConfirmedByPromptDeletesTemplate(t *testing.T) {
 	templatesDir := t.TempDir()
 	seedLocalTemplateForCleanTest(t, templatesDir, "github-push")
