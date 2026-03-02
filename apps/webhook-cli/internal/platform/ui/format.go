@@ -66,6 +66,10 @@ func FormatInfo(message string) string {
 	return fmt.Sprintf("%s %s", InfoIcon, message)
 }
 
+func FormatImplicitVerboseEnabledHint() string {
+	return Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable).")
+}
+
 func FormatCancelled() string {
 	return Muted.Render("Cancelled.")
 }

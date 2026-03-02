@@ -70,7 +70,7 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 			if runArgs.VerboseImplicit {
 				_, _ = fmt.Fprintln(
 					cmd.OutOrStdout(),
-					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+					ui.FormatImplicitVerboseEnabledHint(),
 				)
 			}
 

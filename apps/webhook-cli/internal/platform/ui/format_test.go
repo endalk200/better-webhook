@@ -41,3 +41,14 @@ func TestFormatBodyPreviewKeepsTruncatedHint(t *testing.T) {
 		t.Fatalf("expected truncated hint in preview output, got %q", plain)
 	}
 }
+
+func TestFormatImplicitVerboseEnabledHint(t *testing.T) {
+	output := FormatImplicitVerboseEnabledHint()
+	plain := ansi.Strip(output)
+	if !strings.Contains(plain, "Verbose output enabled because log_level=debug") {
+		t.Fatalf("expected implicit verbose hint text, got %q", plain)
+	}
+	if !strings.Contains(plain, "--verbose=false") {
+		t.Fatalf("expected opt-out guidance in implicit verbose hint, got %q", plain)
+	}
+}
