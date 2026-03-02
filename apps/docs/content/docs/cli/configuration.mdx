@@ -66,7 +66,7 @@ The CLI resolves **which config file to load** in this order:
 | --------------- | -------------------------- | ------------------------------------ | -------------------------- | ----------- |
 | `captures_dir`  | `~/.better-webhook/captures`  | `BETTER_WEBHOOK_CAPTURES_DIR`     | `--captures-dir`           | Directory where captured webhook payloads are stored |
 | `templates_dir` | `~/.better-webhook/templates` | `BETTER_WEBHOOK_TEMPLATES_DIR`    | `--templates-dir`          | Directory where downloaded templates and cache files are stored |
-| `log_level`     | `info`                     | `BETTER_WEBHOOK_LOG_LEVEL`          | command-specific `--verbose` behavior | Default logging verbosity (`debug`, `info`, `warn`, `error`) |
+| `log_level`     | `info`                     | `BETTER_WEBHOOK_LOG_LEVEL`          | command-specific `--verbose` behavior | Default logging verbosity (`debug`, `info`, `warn`, `error`). `debug` enables verbose output by default for `capture`, `captures replay`, and `templates run` unless `--verbose` is explicitly set. |
 
 ## Value Precedence
 

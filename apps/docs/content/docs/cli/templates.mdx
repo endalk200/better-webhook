@@ -99,6 +99,8 @@ Download all available templates:
 better-webhook templates download --all
 ```
 
+If a single template is already present, running `download <template-id>` again reports that it is already downloaded. Use `--refresh` to force a re-download.
+
 ### List Local Templates
 
 View templates you've downloaded:
@@ -157,11 +159,9 @@ better-webhook templates run github-push \
 ```
 
 <Callout type="info">
-  The CLI will automatically look for provider-specific environment variables if
-  you don't pass `--secret`:
-  - `GITHUB_WEBHOOK_SECRET`
-  - `RAGIE_WEBHOOK_SECRET`
-  - `RECALL_WEBHOOK_SECRET`
+  If you do not pass `--secret`, the CLI resolves secrets in this order:
+  1. `<PROVIDER>_WEBHOOK_SECRET` (for example `GITHUB_WEBHOOK_SECRET` or `RAGIE_WEBHOOK_SECRET`)
+  2. `WEBHOOK_SECRET`
 </Callout>
 
 ### With Custom Headers

@@ -38,7 +38,7 @@ better-webhook capture [options]
 | --------------------- | ------------- | ---------------------------------- |
 | `--host <host>`       | `127.0.0.1`   | Host to bind the capture server    |
 | `-p, --port <port>`   | `3001`        | Port to listen on                  |
-| `-v, --verbose`       | `false`       | Enable verbose capture logging     |
+| `-v, --verbose`       | `false`       | Enable verbose capture logging (enabled by default when `log_level=debug` unless overridden) |
 | `--captures-dir <dir>`| config/default| Directory where captures are stored|
 
 **Example:**
@@ -115,8 +115,10 @@ better-webhook captures replay <capture-id> [target-url] [options]
 | `--method <method>`       | Override HTTP method                        |
 | `-H, --header <header>`   | Add/override header (format: `key:value`)   |
 | `--timeout <duration>`    | HTTP timeout (for example `30s`)            |
-| `-v, --verbose`           | Show detailed request/response info         |
+| `-v, --verbose`           | Show detailed request/response info (enabled by default when `log_level=debug` unless overridden) |
 | `--captures-dir <dir>`    | Directory where captures are stored         |
+
+`captures replay` exits non-zero when the target response is HTTP `4xx` or `5xx`.
 
 **Example:**
 
@@ -182,7 +184,9 @@ better-webhook templates run <template-id> [target-url] [options]
 | `--allow-env-placeholders`        | Allow `$env:*` placeholders in template content        |
 | `-H, --header <header>`           | Add/override header (format: `key:value`)             |
 | `--timeout <duration>`            | HTTP timeout (for example `30s`)                       |
-| `-v, --verbose`                   | Show detailed request/response info                    |
+| `-v, --verbose`                   | Show detailed request/response info (enabled by default when `log_level=debug` unless overridden) |
+
+`templates run` exits non-zero when the target response is HTTP `4xx` or `5xx`.
 
 <Callout type="info">
   The command path is `templates run` (not top-level `run`) in the Go CLI.
