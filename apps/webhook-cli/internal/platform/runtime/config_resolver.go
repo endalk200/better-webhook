@@ -76,6 +76,8 @@ type CaptureArgs struct {
 	Host        string
 	Port        int
 	Verbose     bool
+	// VerboseImplicit is true when verbose output is enabled via log_level=debug.
+	VerboseImplicit bool
 }
 
 type CapturesListArgs struct {
@@ -104,6 +106,8 @@ type ReplayArgs struct {
 	HeaderOverrides []ReplayHeaderOverride
 	Timeout         time.Duration
 	Verbose         bool
+	// VerboseImplicit is true when verbose output is enabled via log_level=debug.
+	VerboseImplicit bool
 }
 
 type TemplatesListArgs struct {
@@ -151,6 +155,8 @@ type TemplatesRunArgs struct {
 	HeaderOverrides      []ReplayHeaderOverride
 	Timeout              time.Duration
 	Verbose              bool
+	// VerboseImplicit is true when verbose output is enabled via log_level=debug.
+	VerboseImplicit bool
 }
 
 func DefaultConfigPath(homeDir string) string {
@@ -309,7 +315,7 @@ func ResolveCaptureArgs(cmd *cobra.Command) (CaptureArgs, error) {
 	if err != nil {
 		return CaptureArgs{}, err
 	}
-	verbose, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
+	verbose, verboseImplicit, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
 	if err != nil {
 		return CaptureArgs{}, err
 	}
@@ -323,10 +329,11 @@ func ResolveCaptureArgs(cmd *cobra.Command) (CaptureArgs, error) {
 	}
 
 	return CaptureArgs{
-		CapturesDir: capturesDir,
-		Host:        normalizedHost,
-		Port:        port,
-		Verbose:     verbose,
+		CapturesDir:     capturesDir,
+		Host:            normalizedHost,
+		Port:            port,
+		Verbose:         verbose,
+		VerboseImplicit: verboseImplicit,
 	}, nil
 }
 
@@ -439,7 +446,7 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 		return ReplayArgs{}, errors.New("timeout must be greater than 0")
 	}
 
-	verbose, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
+	verbose, verboseImplicit, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
 	if err != nil {
 		return ReplayArgs{}, err
 	}
@@ -463,6 +470,7 @@ func ResolveReplayArgs(cmd *cobra.Command, args []string) (ReplayArgs, error) {
 		HeaderOverrides: headerOverrides,
 		Timeout:         timeout,
 		Verbose:         verbose,
+		VerboseImplicit: verboseImplicit,
 	}, nil
 }
 
@@ -673,7 +681,7 @@ func ResolveTemplatesRunArgs(cmd *cobra.Command, args []string) (TemplatesRunArg
 	if timeout <= 0 {
 		return TemplatesRunArgs{}, errors.New("timeout must be greater than 0")
 	}
-	verbose, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
+	verbose, verboseImplicit, err := resolveCaptureVerbose(cmd, loadedConfig.LogLevel)
 	if err != nil {
 		return TemplatesRunArgs{}, err
 	}
@@ -687,6 +695,7 @@ func ResolveTemplatesRunArgs(cmd *cobra.Command, args []string) (TemplatesRunArg
 		HeaderOverrides:      headerOverrides,
 		Timeout:              timeout,
 		Verbose:              verbose,
+		VerboseImplicit:      verboseImplicit,
 	}, nil
 }
 
@@ -739,12 +748,14 @@ func resolveTemplatesDir(cmd *cobra.Command, fallbackDir string) (string, error)
 	return expanded, nil
 }
 
-func resolveCaptureVerbose(cmd *cobra.Command, logLevel string) (bool, error) {
+func resolveCaptureVerbose(cmd *cobra.Command, logLevel string) (bool, bool, error) {
 	flag := cmd.Flags().Lookup("verbose")
 	if flag != nil && flag.Changed {
-		return cmd.Flags().GetBool("verbose")
+		value, err := cmd.Flags().GetBool("verbose")
+		return value, false, err
 	}
-	return strings.EqualFold(logLevel, LogLevelDebug), nil
+	implicit := strings.EqualFold(logLevel, LogLevelDebug)
+	return implicit, implicit, nil
 }
 
 func expandPath(pathValue, homeDir string) (string, error) {

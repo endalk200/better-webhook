@@ -19,6 +19,19 @@ type DownloadAllResult struct {
 	FailedIDs  []string
 }
 
+type DownloadOutcome string
+
+const (
+	DownloadOutcomeDownloaded     DownloadOutcome = "downloaded"
+	DownloadOutcomeAlreadyCurrent DownloadOutcome = "already-current"
+	DownloadOutcomeRefreshed      DownloadOutcome = "refreshed"
+)
+
+type DownloadResult struct {
+	Template domain.LocalTemplate
+	Outcome  DownloadOutcome
+}
+
 type SearchResult struct {
 	Local  []domain.LocalTemplate
 	Remote []domain.RemoteTemplate

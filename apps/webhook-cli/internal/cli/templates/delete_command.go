@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,7 +17,7 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 		Use:     "delete <template-id>",
 		Aliases: []string{"rm"},
 		Short:   "Delete a downloaded local template",
-		Args:    cobra.ExactArgs(1),
+		Args:    validateTemplateDeleteCommandArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ServiceFactory == nil {
 				return errors.New("templates service factory cannot be nil")
@@ -61,4 +62,17 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
+}
+
+func validateTemplateDeleteCommandArgs(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return errors.New("template id is required. List local templates with `better-webhook templates list --local`")
+	}
+	if len(args) > 1 {
+		return fmt.Errorf("too many arguments: expected <template-id>, received %d", len(args))
+	}
+	if strings.TrimSpace(args[0]) == "" {
+		return errors.New("template id cannot be empty")
+	}
+	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	apptemplates "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/templates"
-	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/template"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
@@ -78,17 +77,22 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 				return nil
 			}
 
-			var localTemplate domain.LocalTemplate
+			var downloadResult apptemplates.DownloadResult
 			err = ui.WithSpinner(ctx, "Downloading template...", cmd.OutOrStdout(), func(spinnerCtx context.Context) error {
 				var dlErr error
-				localTemplate, dlErr = service.Download(spinnerCtx, downloadArgs.TemplateID, downloadArgs.Refresh)
+				downloadResult, dlErr = service.DownloadWithResult(spinnerCtx, downloadArgs.TemplateID, downloadArgs.Refresh)
 				return dlErr
 			})
 			if err != nil {
 				return mapTemplateCommandError(err, downloadArgs.TemplateID)
 			}
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess(fmt.Sprintf("Downloaded template %s", localTemplate.ID)))
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s %s\n", ui.Muted.Render("Saved to:"), localTemplate.FilePath)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatSingleDownloadSummary(downloadResult))
+			_, _ = fmt.Fprintf(
+				cmd.OutOrStdout(),
+				"  %s %s\n",
+				ui.Muted.Render("Saved to:"),
+				downloadResult.Template.FilePath,
+			)
 			return nil
 		},
 	}
@@ -104,4 +108,15 @@ func formatFailedCount(count int) string {
 		return ui.Error.Render(fmt.Sprintf("%d", count))
 	}
 	return ui.Muted.Render("0")
+}
+
+func formatSingleDownloadSummary(result apptemplates.DownloadResult) string {
+	switch result.Outcome {
+	case apptemplates.DownloadOutcomeAlreadyCurrent:
+		return ui.FormatInfo(fmt.Sprintf("Template %s is already downloaded.", result.Template.ID))
+	case apptemplates.DownloadOutcomeRefreshed:
+		return ui.FormatSuccess(fmt.Sprintf("Refreshed template %s", result.Template.ID))
+	default:
+		return ui.FormatSuccess(fmt.Sprintf("Downloaded template %s", result.Template.ID))
+	}
 }

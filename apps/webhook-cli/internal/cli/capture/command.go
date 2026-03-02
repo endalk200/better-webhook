@@ -33,10 +33,22 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "capture",
 		Short: "Start a server to capture incoming webhooks",
+		Long: `Start a local HTTP server that stores full webhook requests for inspection and replay.
+
+Tip: run "better-webhook init" first if you have not created a config file yet.`,
+		Example: `  better-webhook capture
+  better-webhook capture --port 3001
+  better-webhook capture --host 0.0.0.0 --port 3001 --verbose`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			captureArgs, err := runtime.ResolveCaptureArgs(cmd)
 			if err != nil {
 				return err
+			}
+			if captureArgs.VerboseImplicit {
+				_, _ = fmt.Fprintln(
+					cmd.OutOrStdout(),
+					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+				)
 			}
 
 			captureService, err := deps.ServiceFactory(captureArgs.CapturesDir)
@@ -98,7 +110,12 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
 	cmd.Flags().String("host", runtime.DefaultCaptureHost, "Host to bind the capture server")
 	cmd.Flags().IntP("port", "p", runtime.DefaultCapturePort, "Port to listen on")
-	cmd.Flags().BoolP("verbose", "v", runtime.DefaultCaptureVerbose, "Enable verbose capture logging")
+	cmd.Flags().BoolP(
+		"verbose",
+		"v",
+		runtime.DefaultCaptureVerbose,
+		"Enable verbose capture logging (enabled by default when log_level=debug unless overridden)",
+	)
 
 	return cmd
 }

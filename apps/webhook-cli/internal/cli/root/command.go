@@ -23,10 +23,21 @@ func NewCommand(deps Dependencies) *cobra.Command {
 	initCommand := initcmd.NewCommand(deps.InitDependencies)
 
 	rootCmd := &cobra.Command{
-		Use:     "better-webhook",
-		Short:   "Capture and inspect webhook requests locally",
-		Long:    "A local CLI for capturing webhook requests with high-fidelity storage.",
-		Version: deps.Version,
+		Use:   "better-webhook",
+		Short: "Capture and inspect webhook requests locally",
+		Long: `A local CLI for capturing webhook requests with high-fidelity storage.
+
+First run:
+  better-webhook init
+Then start capturing:
+  better-webhook capture`,
+		Example: `  better-webhook init
+  better-webhook capture --port 3001
+  better-webhook captures list
+  better-webhook captures replay <capture-id> --base-url http://localhost:3000`,
+		Version:       deps.Version,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if shouldSkipConfigInitialization(cmd, initCommand) {
 				return nil

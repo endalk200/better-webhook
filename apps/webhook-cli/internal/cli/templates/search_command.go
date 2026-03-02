@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -15,7 +16,7 @@ func newSearchCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "search <query>",
 		Short: "Search local and remote templates",
-		Args:  cobra.ExactArgs(1),
+		Args:  validateSearchCommandArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ServiceFactory == nil {
 				return errors.New("templates service factory cannot be nil")
@@ -76,4 +77,17 @@ func newSearchCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
 	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
+}
+
+func validateSearchCommandArgs(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return errors.New("search query is required. Try `better-webhook templates search github`")
+	}
+	if len(args) > 1 {
+		return fmt.Errorf("too many arguments: expected <query>, received %d", len(args))
+	}
+	if strings.TrimSpace(args[0]) == "" {
+		return errors.New("search query cannot be empty")
+	}
+	return nil
 }

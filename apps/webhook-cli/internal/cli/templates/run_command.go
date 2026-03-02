@@ -14,11 +14,18 @@ import (
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/ui"
 )
 
+const (
+	httpStatusMultipleChoices = 300
+	httpStatusBadRequest      = 400
+)
+
 func newRunCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <template-id> [target-url]",
 		Short: "Run a downloaded template against a target URL",
-		Args:  validateRunCommandArgs,
+		Example: `  better-webhook templates run github-push http://localhost:3000/api/webhooks/github
+  better-webhook templates run github-push --secret "$GITHUB_WEBHOOK_SECRET"`,
+		Args: validateRunCommandArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if deps.ServiceFactory == nil {
 				return errors.New("templates service factory cannot be nil")
@@ -60,10 +67,18 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 				return mapTemplateCommandError(err, runArgs.TemplateID)
 			}
 
+			if runArgs.VerboseImplicit {
+				_, _ = fmt.Fprintln(
+					cmd.OutOrStdout(),
+					ui.Muted.Render("Verbose output enabled because log_level=debug (set --verbose=false to disable)."),
+				)
+			}
+
+			lead := templateRunLeadMessage(result.Response.StatusCode)
 			_, _ = fmt.Fprintf(
 				cmd.OutOrStdout(),
 				"%s %s %s %s %s %s\n",
-				ui.FormatSuccess("Executed"),
+				lead,
 				ui.Muted.Render(result.TemplateID),
 				ui.FormatProvider(result.Provider),
 				ui.FormatMethod(result.Method),
@@ -80,6 +95,13 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 			if runArgs.Verbose {
 				ui.PrintTemplateRunVerboseOutput(cmd.OutOrStdout(), result)
 			}
+			if result.Response.StatusCode >= httpStatusBadRequest {
+				statusText := strings.TrimSpace(result.Response.StatusText)
+				if statusText == "" {
+					return fmt.Errorf("template run returned HTTP %d", result.Response.StatusCode)
+				}
+				return fmt.Errorf("template run returned HTTP %d %s", result.Response.StatusCode, statusText)
+			}
 			return nil
 		},
 	}
@@ -89,8 +111,23 @@ func newRunCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().Bool("allow-env-placeholders", false, "Allow resolving $env:* placeholders from template content")
 	cmd.Flags().StringArrayP("header", "H", nil, "Add or override header (format: key:value)")
 	cmd.Flags().Duration("timeout", runtime.DefaultTemplateRunTimeout, "HTTP request timeout")
-	cmd.Flags().BoolP("verbose", "v", false, "Show detailed request/response information")
+	cmd.Flags().BoolP(
+		"verbose",
+		"v",
+		false,
+		"Show detailed request/response information (enabled by default when log_level=debug unless overridden)",
+	)
 	return cmd
+}
+
+func templateRunLeadMessage(statusCode int) string {
+	if statusCode >= httpStatusBadRequest {
+		return ui.FormatWarning("Template execution completed with HTTP error")
+	}
+	if statusCode >= httpStatusMultipleChoices {
+		return ui.FormatWarning("Template execution completed with redirect response")
+	}
+	return ui.FormatSuccess("Executed")
 }
 
 func validateRunCommandArgs(cmd *cobra.Command, args []string) error {

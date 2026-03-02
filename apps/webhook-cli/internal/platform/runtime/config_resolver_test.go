@@ -33,6 +33,9 @@ func TestResolveCaptureArgsEnablesVerboseForDebugLogLevel(t *testing.T) {
 	if !args.Verbose {
 		t.Fatalf("expected verbose mode to be enabled for debug log level")
 	}
+	if !args.VerboseImplicit {
+		t.Fatalf("expected verbose to be marked implicit for debug log level")
+	}
 }
 
 func TestResolveCaptureArgsUsesVerboseFlagPrecedence(t *testing.T) {
@@ -55,6 +58,9 @@ func TestResolveCaptureArgsUsesVerboseFlagPrecedence(t *testing.T) {
 	}
 	if args.Verbose {
 		t.Fatalf("expected explicit --verbose flag to take precedence over log level")
+	}
+	if args.VerboseImplicit {
+		t.Fatalf("expected explicit --verbose flag to disable implicit verbose source")
 	}
 }
 
@@ -104,6 +110,9 @@ func TestResolveReplayArgsParsesFlagsAndArguments(t *testing.T) {
 	if !args.Verbose {
 		t.Fatalf("expected verbose true")
 	}
+	if args.VerboseImplicit {
+		t.Fatalf("expected explicit --verbose to disable implicit verbose source")
+	}
 	if len(args.HeaderOverrides) != 2 {
 		t.Fatalf("expected two header overrides, got %d", len(args.HeaderOverrides))
 	}
@@ -137,6 +146,9 @@ func TestResolveReplayArgsEnablesVerboseForDebugLogLevel(t *testing.T) {
 	if !args.Verbose {
 		t.Fatalf("expected verbose mode to be enabled for debug log level")
 	}
+	if !args.VerboseImplicit {
+		t.Fatalf("expected verbose to be marked implicit for debug log level")
+	}
 }
 
 func TestResolveReplayArgsUsesVerboseFlagPrecedence(t *testing.T) {
@@ -155,6 +167,9 @@ func TestResolveReplayArgsUsesVerboseFlagPrecedence(t *testing.T) {
 	}
 	if args.Verbose {
 		t.Fatalf("expected explicit --verbose flag to take precedence over log level")
+	}
+	if args.VerboseImplicit {
+		t.Fatalf("expected explicit --verbose flag to disable implicit verbose source")
 	}
 }
 
@@ -452,6 +467,9 @@ func TestResolveTemplatesRunArgsParsesFlagsAndArguments(t *testing.T) {
 	}
 	if !args.Verbose {
 		t.Fatalf("expected verbose true")
+	}
+	if args.VerboseImplicit {
+		t.Fatalf("expected explicit --verbose to disable implicit verbose source")
 	}
 	if len(args.HeaderOverrides) != 1 {
 		t.Fatalf("expected one header override, got %d", len(args.HeaderOverrides))

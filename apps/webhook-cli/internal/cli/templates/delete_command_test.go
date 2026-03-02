@@ -16,8 +16,12 @@ import (
 
 func TestDeleteCommandRejectsUnexpectedArgs(t *testing.T) {
 	cmd := newDeleteCommand(Dependencies{})
-	if err := cmd.Args(cmd, []string{}); err == nil {
+	err := cmd.Args(cmd, []string{})
+	if err == nil {
 		t.Fatalf("expected delete command to require template id")
+	}
+	if !strings.Contains(err.Error(), "template id is required") {
+		t.Fatalf("unexpected error message: %v", err)
 	}
 	if err := cmd.Args(cmd, []string{"one", "two"}); err == nil {
 		t.Fatalf("expected delete command to reject extra args")

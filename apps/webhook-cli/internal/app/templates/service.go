@@ -126,13 +126,21 @@ func (s *Service) listRemote(
 }
 
 func (s *Service) Download(ctx context.Context, templateID string, forceRefresh bool) (domain.LocalTemplate, error) {
+	result, err := s.DownloadWithResult(ctx, templateID, forceRefresh)
+	if err != nil {
+		return domain.LocalTemplate{}, err
+	}
+	return result.Template, nil
+}
+
+func (s *Service) DownloadWithResult(ctx context.Context, templateID string, forceRefresh bool) (DownloadResult, error) {
 	trimmedID := strings.TrimSpace(templateID)
 	if trimmedID == "" {
-		return domain.LocalTemplate{}, domain.ErrInvalidTemplateID
+		return DownloadResult{}, domain.ErrInvalidTemplateID
 	}
 	index, err := s.loadIndex(ctx, forceRefresh)
 	if err != nil {
-		return domain.LocalTemplate{}, err
+		return DownloadResult{}, err
 	}
 	var metadata *domain.TemplateMetadata
 	for idx := range index.Templates {
@@ -142,11 +150,21 @@ func (s *Service) Download(ctx context.Context, templateID string, forceRefresh 
 		}
 	}
 	if metadata == nil {
-		return domain.LocalTemplate{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedID)
+		return DownloadResult{}, fmt.Errorf("%w: %s", domain.ErrTemplateNotFound, trimmedID)
+	}
+	existingLocal, hasLocal, err := s.loadLocalTemplateIfExists(ctx, trimmedID)
+	if err != nil {
+		return DownloadResult{}, err
+	}
+	if hasLocal && !forceRefresh {
+		return DownloadResult{
+			Template: existingLocal,
+			Outcome:  DownloadOutcomeAlreadyCurrent,
+		}, nil
 	}
 	template, err := s.remoteStore.FetchTemplate(ctx, metadata.File)
 	if err != nil {
-		return domain.LocalTemplate{}, err
+		return DownloadResult{}, err
 	}
 	if strings.TrimSpace(template.Provider) == "" {
 		template.Provider = metadata.Provider
@@ -157,7 +175,18 @@ func (s *Service) Download(ctx context.Context, templateID string, forceRefresh 
 	if strings.TrimSpace(template.Description) == "" {
 		template.Description = metadata.Description
 	}
-	return s.localStore.Save(ctx, *metadata, template, s.clock.Now().UTC().Format(time.RFC3339Nano))
+	saved, err := s.localStore.Save(ctx, *metadata, template, s.clock.Now().UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return DownloadResult{}, err
+	}
+	outcome := DownloadOutcomeDownloaded
+	if hasLocal {
+		outcome = DownloadOutcomeRefreshed
+	}
+	return DownloadResult{
+		Template: saved,
+		Outcome:  outcome,
+	}, nil
 }
 
 func (s *Service) DownloadAll(ctx context.Context, forceRefresh bool) (DownloadAllResult, error) {
@@ -434,6 +463,17 @@ func (s *Service) loadLocalTemplate(ctx context.Context, templateID string) (dom
 	return s.localStore.Get(ctx, templateID)
 }
 
+func (s *Service) loadLocalTemplateIfExists(ctx context.Context, templateID string) (domain.LocalTemplate, bool, error) {
+	localTemplate, err := s.localStore.Get(ctx, templateID)
+	if err == nil {
+		return localTemplate, true, nil
+	}
+	if errors.Is(err, domain.ErrTemplateNotFound) {
+		return domain.LocalTemplate{}, false, nil
+	}
+	return domain.LocalTemplate{}, false, err
+}
+
 func (s *Service) resolveBody(body json.RawMessage, resolver *platformplaceholders.Resolver) ([]byte, error) {
 	resolvedBody, err := resolver.ResolveBody(body)
 	if err != nil {
@@ -447,9 +487,9 @@ func (s *Service) resolveProviderSecret(provider string, fromRequest string) str
 	if trimmedFromRequest != "" {
 		return trimmedFromRequest
 	}
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "github":
-		if secret, ok := s.envLookupFn("GITHUB_WEBHOOK_SECRET"); ok && strings.TrimSpace(secret) != "" {
+	providerSecretEnvVar := providerSecretEnvVarName(provider)
+	if providerSecretEnvVar != "" {
+		if secret, ok := s.envLookupFn(providerSecretEnvVar); ok && strings.TrimSpace(secret) != "" {
 			return strings.TrimSpace(secret)
 		}
 	}
@@ -457,6 +497,24 @@ func (s *Service) resolveProviderSecret(provider string, fromRequest string) str
 		return strings.TrimSpace(secret)
 	}
 	return ""
+}
+
+func providerSecretEnvVarName(provider string) string {
+	trimmedProvider := strings.TrimSpace(provider)
+	if trimmedProvider == "" {
+		return ""
+	}
+	replaced := strings.NewReplacer(
+		"-", "_",
+		".", "_",
+		" ", "_",
+		"/", "_",
+	).Replace(trimmedProvider)
+	normalized := strings.TrimSpace(strings.ToUpper(replaced))
+	if normalized == "" {
+		return ""
+	}
+	return normalized + "_WEBHOOK_SECRET"
 }
 
 func providerOrUnknown(provider string) string {
