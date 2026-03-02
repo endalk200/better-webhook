@@ -204,7 +204,7 @@ func (s *Service) DownloadAll(ctx context.Context, forceRefresh bool) (DownloadA
 	}
 	result := DownloadAllResult{Total: len(index.Templates)}
 	for _, metadata := range index.Templates {
-		if localByID[metadata.ID] {
+		if localByID[metadata.ID] && !forceRefresh {
 			result.Skipped++
 			continue
 		}

@@ -165,7 +165,7 @@ func TestDownloadAllCountsSkippedDownloadedAndFailed(t *testing.T) {
 		&cacheStoreStub{},
 		clockStub{now: time.Now().UTC()},
 	)
-	result, err := service.DownloadAll(context.Background(), true)
+	result, err := service.DownloadAll(context.Background(), false)
 	if err != nil {
 		t.Fatalf("download all: %v", err)
 	}
@@ -180,6 +180,45 @@ func TestDownloadAllCountsSkippedDownloadedAndFailed(t *testing.T) {
 	}
 	if result.Failed != 2 {
 		t.Fatalf("failed mismatch: got %d", result.Failed)
+	}
+}
+
+func TestDownloadAllRefreshesAlreadyDownloadedTemplatesWhenRequested(t *testing.T) {
+	remote := &remoteStoreStub{
+		index: domain.TemplatesIndex{
+			Version: "1.0.0",
+			Templates: []domain.TemplateMetadata{
+				{ID: "already-downloaded", Name: "A", Provider: "github", Event: "push", File: "github/a.jsonc"},
+			},
+		},
+	}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{{ID: "already-downloaded"}},
+		},
+		remote,
+		&cacheStoreStub{},
+		clockStub{now: time.Now().UTC()},
+	)
+
+	result, err := service.DownloadAll(context.Background(), true)
+	if err != nil {
+		t.Fatalf("download all with refresh: %v", err)
+	}
+	if result.Total != 1 {
+		t.Fatalf("total mismatch: got %d", result.Total)
+	}
+	if result.Skipped != 0 {
+		t.Fatalf("skipped mismatch: got %d", result.Skipped)
+	}
+	if result.Downloaded != 1 {
+		t.Fatalf("downloaded mismatch: got %d", result.Downloaded)
+	}
+	if result.Failed != 0 {
+		t.Fatalf("failed mismatch: got %d", result.Failed)
+	}
+	if remote.fetchTemplateCalls != 1 {
+		t.Fatalf("expected one remote fetch for refresh all, got %d", remote.fetchTemplateCalls)
 	}
 }
 
