@@ -7,6 +7,7 @@ const footerLinks = {
     { name: "Command Reference", href: "/docs/cli/commands" },
     { name: "Configuration", href: "/docs/cli/configuration" },
     { name: "Templates", href: "/docs/cli/templates" },
+    { name: "Template Registry", href: "/templates" },
   ],
   sdk: [
     { name: "SDK Overview", href: "/docs/sdk" },
