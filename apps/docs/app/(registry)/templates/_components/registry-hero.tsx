@@ -37,7 +37,7 @@ export function RegistryHero({ totalTemplates, providers }: RegistryHeroProps) {
               >
                 <span
                   className="w-4 h-4 flex items-center justify-center text-[8px] font-bold border-[1.5px] border-[var(--nb-border-color)]"
-                  style={{ backgroundColor: p.bgColor, color: "#fff" }}
+                  style={{ backgroundColor: p.bgColor, color: p.textColor }}
                 >
                   {p.initial}
                 </span>
