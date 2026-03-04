@@ -26,7 +26,10 @@ export function ProviderStep({ providers, onSelect }: ProviderStepProps) {
             <div className="flex items-center gap-3 mb-3">
               <div
                 className="nb-provider-icon-lg"
-                style={{ backgroundColor: provider.bgColor, color: "#fff" }}
+                style={{
+                  backgroundColor: provider.bgColor,
+                  color: provider.textColor,
+                }}
               >
                 {provider.initial}
               </div>

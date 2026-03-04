@@ -6,7 +6,7 @@ export interface TemplateMetadata {
   event: string;
   file: string;
   version: string;
-  docsUrl: string;
+  docsUrl?: string;
 }
 
 export interface ProviderInfo {
@@ -15,28 +15,38 @@ export interface ProviderInfo {
   count: number;
   color: string;
   bgColor: string;
+  textColor: string;
   initial: string;
 }
 
 const PROVIDER_THEME: Record<
   string,
-  { color: string; bgColor: string; initial: string; displayName: string }
+  {
+    color: string;
+    bgColor: string;
+    textColor: string;
+    initial: string;
+    displayName: string;
+  }
 > = {
   github: {
     color: "var(--nb-coral)",
     bgColor: "#24292e",
+    textColor: "#fff",
     initial: "G",
     displayName: "GitHub",
   },
   ragie: {
     color: "var(--nb-green)",
     bgColor: "#0d9488",
+    textColor: "#fff",
     initial: "R",
     displayName: "Ragie",
   },
   recall: {
     color: "var(--nb-blue)",
     bgColor: "#4f46e5",
+    textColor: "#fff",
     initial: "R",
     displayName: "Recall.ai",
   },
@@ -46,7 +56,8 @@ export function getProviderTheme(providerSlug: string) {
   return (
     PROVIDER_THEME[providerSlug] ?? {
       color: "var(--nb-text-muted)",
-      bgColor: "transparent",
+      bgColor: "#475569",
+      textColor: "#fff",
       initial: providerSlug[0]?.toUpperCase() ?? "?",
       displayName: providerSlug,
     }
@@ -60,14 +71,15 @@ export function getProviders(templates: TemplateMetadata[]): ProviderInfo[] {
   }
 
   return Array.from(providerMap.entries()).map(([slug, count]) => {
-    const theme = PROVIDER_THEME[slug];
+    const theme = getProviderTheme(slug);
     return {
-      name: theme?.displayName ?? slug,
+      name: theme.displayName,
       slug,
       count,
-      color: theme?.color ?? "var(--nb-text-muted)",
-      bgColor: theme?.bgColor ?? "transparent",
-      initial: theme?.initial ?? slug[0]?.toUpperCase() ?? "?",
+      color: theme.color,
+      bgColor: theme.bgColor,
+      textColor: theme.textColor,
+      initial: theme.initial,
     };
   });
 }

@@ -7,6 +7,22 @@ interface TemplateIndex {
   templates: TemplateMetadata[];
 }
 
+function resolveTemplatesPath(): string {
+  const candidates = [
+    path.resolve(process.cwd(), "../../templates/templates.jsonc"),
+    path.resolve(process.cwd(), "templates/templates.jsonc"),
+  ];
+
+  const templatesPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!templatesPath) {
+    throw new Error(
+      `Could not locate templates/templates.jsonc. Tried:\n- ${candidates.join("\n- ")}`,
+    );
+  }
+
+  return templatesPath;
+}
+
 function stripJsonComments(jsonc: string): string {
   let result = "";
   let i = 0;
@@ -62,11 +78,25 @@ function stripJsonComments(jsonc: string): string {
 }
 
 export function getTemplates(): TemplateMetadata[] {
-  const templatesPath = path.resolve(
-    process.cwd(),
-    "../../templates/templates.jsonc",
-  );
-  const raw = fs.readFileSync(templatesPath, "utf-8");
-  const index = JSON.parse(stripJsonComments(raw)) as TemplateIndex;
+  const templatesPath = resolveTemplatesPath();
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(templatesPath, "utf-8");
+  } catch (error) {
+    throw new Error(
+      `Failed to read templates index at "${templatesPath}". ${String(error)}`,
+    );
+  }
+
+  let index: TemplateIndex;
+  try {
+    index = JSON.parse(stripJsonComments(raw)) as TemplateIndex;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse templates index at "${templatesPath}". ${String(error)}`,
+    );
+  }
+
   return index.templates;
 }
