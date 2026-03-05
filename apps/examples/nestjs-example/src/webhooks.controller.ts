@@ -36,8 +36,18 @@ import {
   connection_sync_finished,
   entity_extracted,
 } from "@better-webhook/ragie/events";
+import { stripe } from "@better-webhook/stripe";
+import {
+  charge_failed,
+  checkout_session_completed,
+  payment_intent_succeeded,
+} from "@better-webhook/stripe/events";
 import { toNestJS } from "@better-webhook/nestjs";
-import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
+import {
+  createInMemoryReplayStore,
+  createWebhookStats,
+  type WebhookObserver,
+} from "@better-webhook/core";
 
 // Extend Request type to include rawBody
 interface RawBodyRequest extends Request {
@@ -47,21 +57,12 @@ interface RawBodyRequest extends Request {
 // Create stats collectors for observability
 const githubStats = createWebhookStats();
 const ragieStats = createWebhookStats();
+const stripeStats = createWebhookStats();
 const recallStats = createWebhookStats();
-// Example-only manual dedupe cache: unbounded in-memory Set.
-// For production, prefer withReplayProtection + createInMemoryReplayStore (or a shared persistent store).
-const processedReplayKeys = new Set<string>();
-
-function isDuplicateReplay(key: string | undefined): boolean {
-  if (!key) {
-    return false;
-  }
-  if (processedReplayKeys.has(key)) {
-    return true;
-  }
-  processedReplayKeys.add(key);
-  return false;
-}
+const githubReplayStore = createInMemoryReplayStore();
+const ragieReplayStore = createInMemoryReplayStore();
+const stripeReplayStore = createInMemoryReplayStore();
+const recallReplayStore = createInMemoryReplayStore();
 
 // Custom observer for logging webhook lifecycle events
 const loggingObserver: WebhookObserver = {
@@ -109,14 +110,8 @@ export class WebhooksController {
   private githubWebhook = github()
     .observe(githubStats.observer)
     .observe(loggingObserver)
+    .withReplayProtection({ store: githubReplayStore })
     .event(push, async (payload, context) => {
-      const replayKey = context.deliveryId
-        ? `github:${context.deliveryId}`
-        : undefined;
-      if (isDuplicateReplay(replayKey)) {
-        console.log("Duplicate GitHub delivery detected, skipping");
-        return;
-      }
       console.log("📦 Push event received!");
       console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
       console.log(`   Received at: ${context.receivedAt.toISOString()}`);
@@ -155,12 +150,8 @@ export class WebhooksController {
   private ragieWebhook = ragie()
     .observe(ragieStats.observer)
     .observe(loggingObserver)
+    .withReplayProtection({ store: ragieReplayStore })
     .event(document_status_updated, async (payload) => {
-      const replayKey = payload.nonce ? `ragie:${payload.nonce}` : undefined;
-      if (isDuplicateReplay(replayKey)) {
-        console.log("Duplicate Ragie nonce detected, skipping");
-        return;
-      }
       console.log("📄 Document status updated!");
       console.log(`   Document ID: ${payload.document_id}`);
       console.log(`   Status: ${payload.status}`);
@@ -188,14 +179,8 @@ export class WebhooksController {
   private recallWebhook = recall()
     .observe(recallStats.observer)
     .observe(loggingObserver)
+    .withReplayProtection({ store: recallReplayStore })
     .event(participant_events_join, async (payload, context) => {
-      const replayKey = context.deliveryId
-        ? `recall:${context.deliveryId}`
-        : undefined;
-      if (isDuplicateReplay(replayKey)) {
-        console.log("Duplicate Recall delivery detected, skipping");
-        return;
-      }
       await logRecallParticipantEvent(payload, context);
     })
     .event(participant_events_leave, logRecallParticipantEvent)
@@ -242,6 +227,37 @@ export class WebhooksController {
       console.error("🔐 Recall verification failed:", reason);
     });
 
+  private stripeWebhook = stripe()
+    .observe(stripeStats.observer)
+    .observe(loggingObserver)
+    .withReplayProtection({ store: stripeReplayStore })
+    .event(charge_failed, async (payload) => {
+      console.log("💳 Stripe charge failed");
+      console.log(`   Event ID: ${payload.id}`);
+      console.log(`   Charge ID: ${payload.data.object.id}`);
+      console.log(`   Amount: ${payload.data.object.amount}`);
+      console.log(`   Failure: ${payload.data.object.failure_code}`);
+    })
+    .event(checkout_session_completed, async (payload) => {
+      console.log("🧾 Stripe checkout session completed");
+      console.log(`   Event ID: ${payload.id}`);
+      console.log(`   Session ID: ${payload.data.object.id}`);
+      console.log(`   Payment status: ${payload.data.object.payment_status}`);
+    })
+    .event(payment_intent_succeeded, async (payload) => {
+      console.log("✅ Stripe payment intent succeeded");
+      console.log(`   Event ID: ${payload.id}`);
+      console.log(`   PaymentIntent ID: ${payload.data.object.id}`);
+      console.log(`   Latest charge: ${payload.data.object.latest_charge}`);
+    })
+    .onError(async (error, context) => {
+      console.error("❌ Stripe webhook error:", error.message);
+      console.error("   Event type:", context.eventType);
+    })
+    .onVerificationFailed(async (reason) => {
+      console.error("🔐 Stripe verification failed:", reason);
+    });
+
   // Create the handlers with options
   private githubHandler = toNestJS(this.githubWebhook, {
     secret: process.env.GITHUB_WEBHOOK_SECRET,
@@ -261,6 +277,13 @@ export class WebhooksController {
     secret: process.env.RECALL_WEBHOOK_SECRET,
     onSuccess: (eventType) => {
       console.log(`✅ Successfully processed Recall ${eventType} event`);
+    },
+  });
+
+  private stripeHandler = toNestJS(this.stripeWebhook, {
+    secret: process.env.STRIPE_WEBHOOK_SECRET,
+    onSuccess: (eventType) => {
+      console.log(`✅ Successfully processed Stripe ${eventType} event`);
     },
   });
 
@@ -380,6 +403,37 @@ export class WebhooksController {
     };
   }
 
+  @Post("webhooks/stripe")
+  async handleStripeWebhook(
+    @Req() req: RawBodyRequest,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.stripeHandler({
+      headers: req.headers as Record<string, string | string[] | undefined>,
+      body: req.body,
+      rawBody: req.rawBody,
+    });
+
+    if (result.body) {
+      res.status(result.statusCode).json(result.body);
+    } else {
+      res.status(result.statusCode).end();
+    }
+  }
+
+  @Get("webhooks/stripe")
+  getStripeWebhookInfo(): object {
+    return {
+      status: "ok",
+      endpoint: "/webhooks/stripe",
+      supportedEvents: [
+        "charge.failed",
+        "checkout.session.completed",
+        "payment_intent.succeeded",
+      ],
+    };
+  }
+
   @Get("health")
   healthCheck(): object {
     return {
@@ -393,6 +447,7 @@ export class WebhooksController {
     return {
       github: githubStats.snapshot(),
       ragie: ragieStats.snapshot(),
+      stripe: stripeStats.snapshot(),
       recall: recallStats.snapshot(),
       timestamp: new Date().toISOString(),
     };

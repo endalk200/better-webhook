@@ -1,0 +1,49 @@
+{
+  "method": "POST",
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "Stripe-Signature",
+      "value": "$stripe:signature"
+    },
+    {
+      "key": "User-Agent",
+      "value": "Stripe/1.0 (+https://stripe.com/docs/webhooks)"
+    }
+  ],
+  "body": {
+    "id": "evt_3QvdcD2eZvKYlo2C1AbCdEf1",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1730000100,
+    "livemode": false,
+    "pending_webhooks": 1,
+    "request": {
+      "id": "req_223456789",
+      "idempotency_key": "idem_223456789"
+    },
+    "type": "checkout.session.completed",
+    "data": {
+      "object": {
+        "id": "cs_test_a1b2c3d4e5f6",
+        "object": "checkout.session",
+        "mode": "payment",
+        "payment_status": "paid",
+        "amount_total": 5000,
+        "currency": "usd",
+        "customer": "cus_PZ8YxA8B9cDef0",
+        "payment_intent": "pi_3QvdcD2eZvKYlo2C1intent",
+        "status": "complete",
+        "metadata": {
+          "cart_id": "cart_9012"
+        }
+      }
+    }
+  },
+  "provider": "stripe",
+  "event": "checkout.session.completed",
+  "description": "Stripe Checkout session completed event"
+}

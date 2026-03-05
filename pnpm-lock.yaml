@@ -107,6 +107,9 @@ importers:
       '@better-webhook/recall':
         specifier: workspace:*
         version: link:../../../packages/recall
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../../../packages/stripe
       express:
         specifier: ^4.21.2
         version: 4.21.2
@@ -150,6 +153,9 @@ importers:
       '@better-webhook/recall':
         specifier: workspace:*
         version: link:../../../packages/recall
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../../../packages/stripe
       '@hono/node-server':
         specifier: ^1.19.7
         version: 1.19.7(hono@4.12.0)
@@ -193,6 +199,9 @@ importers:
       '@better-webhook/recall':
         specifier: workspace:*
         version: link:../../../packages/recall
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../../../packages/stripe
       '@nestjs/common':
         specifier: ^11.0.0
         version: 11.1.8(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -248,6 +257,9 @@ importers:
       '@better-webhook/recall':
         specifier: workspace:*
         version: link:../../../packages/recall
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../../../packages/stripe
       next:
         specifier: ^16.1.5
         version: 16.1.5(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -585,6 +597,37 @@ importers:
         version: link:../core
       zod:
         specifier: 4.1.8
+        version: 4.1.8
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^24.3.1
+        version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.5)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.3))(terser@5.44.1)(tsx@4.20.5)
+
+  packages/stripe:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: ^4.0.0
         version: 4.1.8
     devDependencies:
       '@better-webhook/eslint-config':
