@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -207,6 +208,51 @@ func TestResolveHeaderValueReturnsSecretErrorForGitHubSignature(t *testing.T) {
 
 	_, err := resolver.ResolveHeaderValue("X-Hub-Signature-256", "$github:x-hub-signature-256", HeaderContext{
 		Provider: "github",
+		Secret:   "",
+		Body:     []byte(`{"ok":true}`),
+	})
+	if !errors.Is(err, ErrMissingSecret) {
+		t.Fatalf("expected ErrMissingSecret, got %v", err)
+	}
+}
+
+func TestResolveHeaderValueGeneratesStripeSignature(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 12, 0, 0, 0, time.UTC)
+	resolver := NewResolver(
+		fixedClock{now: now},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+	body := []byte(`{"ok":true}`)
+
+	value, err := resolver.ResolveHeaderValue("Stripe-Signature", "$stripe:signature", HeaderContext{
+		Provider: "stripe",
+		Secret:   "stripe-secret",
+		Body:     body,
+	})
+	if err != nil {
+		t.Fatalf("resolve stripe header value: %v", err)
+	}
+
+	signature := hmac.New(sha256.New, []byte("stripe-secret"))
+	_, _ = fmt.Fprintf(signature, "%d.%s", now.Unix(), string(body))
+	expected := fmt.Sprintf("t=%d,v1=%s", now.Unix(), hex.EncodeToString(signature.Sum(nil)))
+	if value != expected {
+		t.Fatalf("signature mismatch: got %q want %q", value, expected)
+	}
+}
+
+func TestResolveHeaderValueReturnsSecretErrorForStripeSignature(t *testing.T) {
+	resolver := NewResolver(
+		fixedClock{now: time.Now().UTC()},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+
+	_, err := resolver.ResolveHeaderValue("Stripe-Signature", "$stripe:signature", HeaderContext{
+		Provider: "stripe",
 		Secret:   "",
 		Body:     []byte(`{"ok":true}`),
 	})

@@ -2,6 +2,9 @@ package templates
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -589,6 +592,110 @@ func TestRunReturnsSecretRequiredWhenGithubSignaturePlaceholderPresent(t *testin
 	_, err := service.Run(context.Background(), RunRequest{
 		TemplateID: "github-push",
 		TargetURL:  "http://localhost:3000/webhooks/github",
+		Timeout:    5 * time.Second,
+	})
+	if !errors.Is(err, ErrRunSecretRequired) {
+		t.Fatalf("expected ErrRunSecretRequired, got %v", err)
+	}
+	if dispatcher.calls != 0 {
+		t.Fatalf("expected no dispatch calls")
+	}
+}
+
+func TestRunResolvesStripeSignatureHeader(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{
+		result: DispatchResult{
+			StatusCode: 200,
+			StatusText: "OK",
+		},
+	}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "stripe-charge_failed",
+					Metadata: domain.TemplateMetadata{
+						ID:       "stripe-charge_failed",
+						Provider: "stripe",
+						Event:    "charge.failed",
+					},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "stripe",
+						Headers: []domain.HeaderEntry{
+							{Key: "Stripe-Signature", Value: "$stripe:signature"},
+						},
+						Body: []byte(`{"id":"evt_123","type":"charge.failed"}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, nil, mapLookup(map[string]string{
+			"STRIPE_WEBHOOK_SECRET": "stripe-secret",
+		}))),
+		WithEnvironmentLookup(mapLookup(map[string]string{
+			"STRIPE_WEBHOOK_SECRET": "stripe-secret",
+		})),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "stripe-charge_failed",
+		TargetURL:  "http://localhost:3000/webhooks/stripe",
+		Timeout:    5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("run stripe template: %v", err)
+	}
+	if dispatcher.calls != 1 {
+		t.Fatalf("expected one dispatch call, got %d", dispatcher.calls)
+	}
+
+	signature := hmac.New(sha256.New, []byte("stripe-secret"))
+	_, _ = fmt.Fprintf(signature, "%d.%s", now.Unix(), string(dispatcher.lastRequest.Body))
+	expectedSignature := fmt.Sprintf("t=%d,v1=%s", now.Unix(), hex.EncodeToString(signature.Sum(nil)))
+	if got := headerValue(dispatcher.lastRequest.Headers, "Stripe-Signature"); got != expectedSignature {
+		t.Fatalf("stripe signature mismatch: got %q want %q", got, expectedSignature)
+	}
+}
+
+func TestRunReturnsSecretRequiredWhenStripeSignaturePlaceholderPresent(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID: "stripe-charge_failed",
+					Metadata: domain.TemplateMetadata{
+						ID:       "stripe-charge_failed",
+						Provider: "stripe",
+						Event:    "charge.failed",
+					},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "stripe",
+						Headers: []domain.HeaderEntry{
+							{Key: "Stripe-Signature", Value: "$stripe:signature"},
+						},
+						Body: []byte(`{"id":"evt_123","type":"charge.failed"}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, nil, func(string) (string, bool) { return "", false })),
+		WithEnvironmentLookup(func(string) (string, bool) { return "", false }),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "stripe-charge_failed",
+		TargetURL:  "http://localhost:3000/webhooks/stripe",
 		Timeout:    5 * time.Second,
 	})
 	if !errors.Is(err, ErrRunSecretRequired) {
