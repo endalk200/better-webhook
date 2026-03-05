@@ -34,6 +34,14 @@ Templates are pre-built webhook payloads that you can use to test your handlers 
 | `ragie-connection_limit_exceeded` | `connection_limit_exceeded` | Connection page limit exceeded                  |
 | `ragie-partition_limit_exceeded`  | `partition_limit_exceeded`  | Partition document limit exceeded               |
 
+### Stripe
+
+| Template ID                            | Event                          | Description                                                |
+| -------------------------------------- | ------------------------------ | ---------------------------------------------------------- |
+| `stripe-charge_failed`                 | `charge.failed`                | Charge attempt fails (declined card, auth failure, etc.)   |
+| `stripe-checkout_session_completed`    | `checkout.session.completed`   | Checkout session completes successfully                    |
+| `stripe-payment_intent_succeeded`      | `payment_intent.succeeded`     | PaymentIntent transitions to succeeded                     |
+
 ### Recall.ai
 
 | Template ID                                     | Event                                    | Description                             |
@@ -69,6 +77,17 @@ Templates are pre-built webhook payloads that you can use to test your handlers 
   format from Recall.
 </Callout>
 
+<Callout type="info">
+  Stripe template signing expects `STRIPE_WEBHOOK_SECRET` (`whsec_...`) and
+  generates `Stripe-Signature` as `t=<unix>,v1=<hmac_sha256>`.
+</Callout>
+
+<Callout type="info">
+  Stripe retries produce a new `Stripe-Signature` timestamp/signature per
+  delivery attempt. For idempotency, dedupe Stripe webhooks by `body.id` (event
+  id), not by signature value.
+</Callout>
+
 ## Commands
 
 ### List Remote Templates
@@ -83,6 +102,7 @@ Filter by provider:
 
 ```bash
 better-webhook templates list --provider github
+better-webhook templates list --provider stripe
 ```
 
 ### Download Templates
@@ -156,11 +176,15 @@ To generate a valid signature, provide the webhook secret:
 better-webhook templates run github-push \
   http://localhost:3000/api/webhooks/github \
   --secret "your-webhook-secret"
+
+better-webhook templates run stripe-charge_failed \
+  http://localhost:3000/api/webhooks/stripe \
+  --secret "whsec_test_123"
 ```
 
 <Callout type="info">
   If you do not pass `--secret`, the CLI resolves secrets in this order:
-  1. `<PROVIDER>_WEBHOOK_SECRET` (for example `GITHUB_WEBHOOK_SECRET` or `RAGIE_WEBHOOK_SECRET`)
+  1. `<PROVIDER>_WEBHOOK_SECRET` (for example `GITHUB_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`, or `RAGIE_WEBHOOK_SECRET`)
   2. `WEBHOOK_SECRET`
 </Callout>
 

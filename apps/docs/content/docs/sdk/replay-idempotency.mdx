@@ -10,6 +10,7 @@ Enable replay protection when duplicate webhook deliveries could create unwanted
 Core replay protection uses provider-specific replay keys:
 
 - GitHub: `x-github-delivery`
+- Stripe: `body.id` (event id)
 - Ragie: `body.nonce` (exposed as `payload.nonce`)
 - Recall.ai: `webhook-id` or `svix-id`
 

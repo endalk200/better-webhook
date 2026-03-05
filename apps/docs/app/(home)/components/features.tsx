@@ -31,7 +31,7 @@ const features = [
     icon: Shield,
     title: "Signature Verification",
     description:
-      "Automatic signature verification for GitHub, Ragie, and Recall.ai with timing-safe comparison.",
+      "Automatic signature verification for GitHub, Stripe, Ragie, and Recall.ai with timing-safe comparison.",
     badge: "SDK",
     stripe: "nb-stripe-blue",
   },
@@ -71,7 +71,7 @@ const features = [
     icon: RotateCcw,
     title: "Curated Templates",
     description:
-      "Download and run built-in webhook templates for GitHub, Ragie, and Recall.ai with realistic payloads.",
+      "Download and run built-in webhook templates for GitHub, Stripe, Ragie, and Recall.ai with realistic payloads.",
     badge: "CLI",
     stripe: "nb-stripe-coral",
   },
@@ -79,7 +79,7 @@ const features = [
 
 export function Features() {
   return (
-    <section className="nb-section bg-[var(--nb-white)]">
+    <section className="nb-section bg-(--nb-white)">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
           <div className="nb-sticker nb-sticker-lavender mb-6 inline-flex">
@@ -89,7 +89,7 @@ export function Features() {
             Everything you need for{" "}
             <span className="nb-highlight">webhook dev</span>
           </h2>
-          <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
+          <p className="text-base text-(--nb-text-muted) max-w-2xl mx-auto">
             A focused toolkit for fast, repeatable webhook development — from
             local testing to production handlers.
           </p>
@@ -102,24 +102,24 @@ export function Features() {
               className={`nb-card nb-stripe-left ${feature.stripe} p-5 group overflow-hidden`}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] bg-[var(--nb-cream)]">
+                <div className="w-10 h-10 flex items-center justify-center border-2 border-(--nb-border-color) bg-(--nb-cream)">
                   <feature.icon className="w-5 h-5" />
                 </div>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-[var(--nb-border-color)] ${
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-(--nb-border-color) ${
                     feature.badge === "CLI"
-                      ? "bg-[var(--nb-coral)] text-white"
-                      : "bg-[var(--nb-blue)] text-white"
+                      ? "bg-(--nb-coral) text-white"
+                      : "bg-(--nb-blue) text-white"
                   }`}
                 >
                   {feature.badge}
                 </span>
               </div>
 
-              <h3 className="font-bold text-base mb-1.5 group-hover:text-[var(--nb-coral)] transition-colors">
+              <h3 className="font-bold text-base mb-1.5 group-hover:text-(--nb-coral) transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-sm text-[var(--nb-text-muted)] leading-relaxed">
+              <p className="text-sm text-(--nb-text-muted) leading-relaxed">
                 {feature.description}
               </p>
             </div>

@@ -34,6 +34,18 @@ const providers = [
     accentColor: "var(--nb-green)",
   },
   {
+    name: "Stripe",
+    status: "available" as const,
+    package: "@better-webhook/stripe",
+    events: [
+      "charge.failed",
+      "checkout.session.completed",
+      "payment_intent.succeeded",
+    ],
+    bgColor: "#635bff",
+    accentColor: "var(--nb-yellow)",
+  },
+  {
     name: "Recall.ai",
     status: "available" as const,
     package: "@better-webhook/recall",

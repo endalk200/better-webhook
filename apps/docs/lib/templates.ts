@@ -43,6 +43,13 @@ const PROVIDER_THEME: Record<
     initial: "R",
     displayName: "Ragie",
   },
+  stripe: {
+    color: "var(--nb-yellow)",
+    bgColor: "#635bff",
+    textColor: "#fff",
+    initial: "S",
+    displayName: "Stripe",
+  },
   recall: {
     color: "var(--nb-blue)",
     bgColor: "#4f46e5",

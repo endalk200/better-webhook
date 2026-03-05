@@ -1,6 +1,6 @@
 ---
 title: Providers
-description: Documentation for GitHub, Ragie, and Recall.ai webhook providers with all supported events.
+description: Documentation for GitHub, Stripe, Ragie, and Recall.ai webhook providers with all supported events.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -172,6 +172,109 @@ import { installation_repositories } from "@better-webhook/github/events";
 ### Signature Verification
 
 GitHub uses HMAC-SHA256 signatures sent in the `X-Hub-Signature-256` header. The SDK verifies this automatically when a secret is configured.
+
+---
+
+## Stripe
+
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/stripe
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/stripe
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/stripe
+  ```
+  </Tab>
+</Tabs>
+
+```ts
+import { stripe } from "@better-webhook/stripe";
+import {
+  charge_failed,
+  checkout_session_completed,
+  payment_intent_succeeded,
+} from "@better-webhook/stripe/events";
+
+const webhook = stripe({ secret: process.env.STRIPE_WEBHOOK_SECRET })
+  .event(charge_failed, async (payload) => {
+    console.log(payload.data.object.failure_code);
+  })
+  .event(checkout_session_completed, async (payload) => {
+    console.log(payload.data.object.payment_status);
+  })
+  .event(payment_intent_succeeded, async (payload) => {
+    console.log(payload.data.object.amount);
+  });
+```
+
+### Events
+
+Import events from `@better-webhook/stripe/events`:
+
+```ts
+import {
+  charge_failed,
+  checkout_session_completed,
+  payment_intent_succeeded,
+} from "@better-webhook/stripe/events";
+```
+
+#### charge.failed
+
+Triggered when a charge attempt fails.
+
+**Key payload fields:**
+
+- `data.object.id` — Stripe charge id
+- `data.object.amount` / `currency` — Amount details
+- `data.object.failure_code` / `failure_message` — Failure diagnostics
+- `data.object.payment_intent` — Related payment intent id or expanded object
+
+#### checkout.session.completed
+
+Triggered when a Checkout Session completes successfully.
+
+**Key payload fields:**
+
+- `data.object.id` — Checkout session id
+- `data.object.mode` — Session mode (`payment`, `subscription`, etc.)
+- `data.object.payment_status` — Payment state (`paid`, `unpaid`, etc.)
+- `data.object.amount_total` / `currency` — Checkout totals
+- `data.object.customer` / `payment_intent` — Ids or expanded objects
+
+#### payment_intent.succeeded
+
+Triggered when a PaymentIntent reaches `succeeded`.
+
+**Key payload fields:**
+
+- `data.object.id` — Payment intent id
+- `data.object.status` — Final status (`succeeded`)
+- `data.object.amount` / `currency` — Payment amount
+- `data.object.latest_charge` — Charge id or expanded charge object
+
+### Signature Verification
+
+Stripe signatures are read from `Stripe-Signature`. The provider validates:
+
+- `t=<unix timestamp>` freshness (300s tolerance by default, configurable)
+- One or more `v1=<hmac_sha256>` signatures (supports secret rotation)
+- Signed payload format `${t}.${rawBody}` (requires raw request body access)
+- Only `v1` signatures are used for verification (non-`v1` schemes are ignored)
+
+<Callout type="info">
+  Stripe replay dedupe uses `body.id` (the event id) as `replayKey`. Stripe
+  does not provide a standard delivery-id header, so `deliveryId` is undefined
+  for this provider.
+</Callout>
 
 ---
 
@@ -625,6 +728,7 @@ verifies HMAC-SHA256 signatures automatically when `RECALL_WEBHOOK_SECRET` (or
 Core replay protection uses provider-specific replay keys:
 
 - GitHub: `x-github-delivery`
+- Stripe: `body.id` (event id). `deliveryId` is not set.
 - Ragie: `body.nonce` (exposed as `payload.nonce`)
 - Recall.ai: `webhook-id`/`svix-id`
 
