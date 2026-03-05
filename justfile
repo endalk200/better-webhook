@@ -6,34 +6,6 @@ TRIVY_JAVA_DB_REPO := "ghcr.io/aquasecurity/trivy-java-db:1"
 TRIVY_SKIP_DB_UPDATE_VALUE := "true"
 TRIVY_SKIP_JAVA_DB_UPDATE_VALUE := "true"
 
-# Run configured lint commands for all packages and apps
-lint:
-    pnpm exec turbo run lint
-
-# Run configured lint command for this package.
-lint-package package:
-    pnpm --filter {{ package }} run lint
-
-# Run configured check-types commands for all packages and apps
-check-types:
-    pnpm exec turbo run check-types
-
-# Run configured check-types command for this package.
-check-types-package package:
-    pnpm --filter {{ package }} run check-types
-
-# Run configured test commands for all packages and apps
-test:
-    pnpm exec turbo run test
-
-# Run configured test command for this package.
-test-package package:
-    pnpm --filter {{ package }} run test
-
-# Run configured build commands for all packages and apps
-build:
-    pnpm exec turbo run build
-
 # Run a local GoReleaser CLI release (snapshot by default)
 release-cli args="--snapshot --clean --skip=publish,announce,sign,sbom":
     devbox run -- go run github.com/goreleaser/goreleaser/v2@latest release {{ args }}
@@ -55,10 +27,6 @@ format-write:
     pnpm --filter @better-webhook/cli-go run format:write
     # Run format:write at the root level using prettier
     pnpm run format:write
-
-# Install all dependencies for CI and local parity.
-ci-install:
-    pnpm install --frozen-lockfile
 
 security-scan:
     TRIVY_DB_REPOSITORY={{ TRIVY_DB_REPO }} TRIVY_JAVA_DB_REPOSITORY={{ TRIVY_JAVA_DB_REPO }} trivy fs --config trivy.yaml .
