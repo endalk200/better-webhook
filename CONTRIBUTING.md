@@ -4,34 +4,30 @@ Thanks for your interest in contributing.
 
 ## Getting started
 
+**Prerequisites**: Install [devbox](https://github.com/jetify-com/devbox).
+This repo uses devbox to manage tools and dependencies.
+
 1. Fork and clone the repository.
-1. Install dependencies:
+2. Install dependencies:
 
-```bash
-pnpm install --frozen-lockfile
-```
+   ```bash
+   devbox shell
+   ```
 
-1. Build and run tests before opening a pull request:
+3. Build and run tests before opening a pull request:
 
-```bash
-pnpm lint
-pnpm check-types
-pnpm test
-pnpm build
-```
+   ```bash
+   devbox run -- pnpm run format:check
+   devbox run -- pnpm run lint
+   devbox run -- pnpm run check-types
+   devbox run -- pnpm run build
+   ```
 
-1. (Recommended) Install Devbox so `just` and `trivy` are available:
+4. Run security scan for the changes you added
 
-```bash
-# Install instructions: https://www.jetify.com/docs/devbox/installing-devbox/
-devbox shell
-```
-
-1. Run security scans before opening a pull request (CI runs the same checks):
-
-```bash
-just security-scan
-```
+   ```bash
+   devbox run -- just security-scan
+   ```
 
 ## Development guidelines
 
@@ -39,22 +35,6 @@ just security-scan
 - Add tests for behavioral or security-sensitive changes.
 - Update docs when user-facing behavior changes.
 - Follow existing package and workflow conventions.
-
-## Security scanning workflow
-
-- Trivy config is centralized in `trivy.yaml`, `trivy-secret.yaml`, and `.trivyignore`.
-- Use advisory mode during normal development: `just security-scan`.
-- Use blocking mode before high-risk releases: `just security-scan-blocking`.
-- SARIF output can be generated locally with `just security-scan-sarif`.
-- Keep all `.trivyignore` entries small, justified, and removable.
-- If local Trivy data becomes stale/corrupt, refresh it with `trivy clean --vuln-db --java-db` and rerun the scan.
-
-## CI enforcement toggle
-
-- Security checks run in advisory mode by default.
-- Maintainers can flip CI to blocking mode by setting repository variable `TRIVY_ENFORCE=1`.
-- This toggle affects `security.yml` and `release.yml`.
-- CI command execution is standardized through `devbox run -- just ...` for local/CI parity.
 
 ## Pull requests
 

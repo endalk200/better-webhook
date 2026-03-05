@@ -1,67 +1,54 @@
 ---
 title: Contributing
-description: Local development workflow, standards, and release contribution guidelines.
+description: Local workflow, checks, and guidelines for contributing to Better Webhook.
 ---
-
-import { Callout } from "fumadocs-ui/components/callout";
 
 # Contributing
 
+Thanks for your interest in contributing to Better Webhook.
+
 ## Prerequisites
 
-- Node.js `>=18`
-- `pnpm` (workspace package manager)
-- `devbox` and `just` (primary task runner workflow)
-- Go toolchain (for CLI-focused changes)
+- Install [devbox](https://github.com/jetify-com/devbox) to manage tools and dependencies.
 
-## Project workflow
+## Getting started
 
-This repository uses `devbox` + `just` as the standard workflow interface.
+1. Fork and clone the repository.
+2. Install dependencies:
 
-Install dependencies:
+   ```bash
+   devbox shell
+   ```
 
-```bash
-devbox run -- just ci-install
-```
+3. Run checks before opening a pull request:
 
-Run standard checks from repo root:
+   ```bash
+   devbox run -- pnpm run format:check
+   devbox run -- pnpm run lint
+   devbox run -- pnpm run check-types
+   devbox run -- pnpm run build
+   ```
 
-```bash
-devbox run -- just format-check
-devbox run -- just lint
-devbox run -- just test
-devbox run -- just build
-```
+4. Run the security scan for the changes you added:
 
-Package-scoped checks:
+   ```bash
+   devbox run -- just security-scan
+   ```
 
-```bash
-devbox run -- just lint-package <package>
-devbox run -- just test-package <package>
-devbox run -- just build-package <package>
-```
+## Development guidelines
 
-<Callout type="info">
-  Prefer `just` tasks for repository workflows to keep local and CI behavior aligned.
-</Callout>
+- Keep changes focused and small when possible.
+- Add tests for behavioral or security-sensitive changes.
+- Update docs when user-facing behavior changes.
+- Follow existing package and workflow conventions.
 
-## Docs contribution guidelines
+## Pull requests
 
-- Keep command examples copy-pasteable and verified against source.
-- Keep internal links under `/docs/*` valid.
-- Prefer concise, task-oriented sections over long marketing copy in reference docs.
-- When changing CLI commands or flags, update both CLI docs and docs-site landing examples.
+- Use a clear title that explains intent.
+- Include a concise summary and test plan.
+- Link related issues when applicable.
 
-## Pull request checklist
+## Security reports
 
-- Include tests or rationale when tests are not needed.
-- Run lint/test/build locally before opening PR.
-- Update docs for behavior changes.
-- Keep changes scoped and include migration notes when needed.
-
-## Release contribution notes
-
-- SDK package releases are managed via Changesets.
-- CLI releases are tag-based (`v*`) and built with GoReleaser.
-
-See [Release Policy](/docs/release-policy) for release workflow details.
+Do not disclose security vulnerabilities publicly.
+Report them through the security policy in `SECURITY.md`.

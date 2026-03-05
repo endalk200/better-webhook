@@ -13,7 +13,9 @@ function resolveTemplatesPath(): string {
     path.resolve(process.cwd(), "templates/templates.jsonc"),
   ];
 
-  const templatesPath = candidates.find((candidate) => fs.existsSync(candidate));
+  const templatesPath = candidates.find((candidate) =>
+    fs.existsSync(candidate),
+  );
   if (!templatesPath) {
     throw new Error(
       `Could not locate templates/templates.jsonc. Tried:\n- ${candidates.join("\n- ")}`,
