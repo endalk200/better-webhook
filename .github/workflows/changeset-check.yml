@@ -18,7 +18,7 @@ jobs:
         uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: devbox run -- just ci-install
+        run: devbox run -- pnpm install --frozen-lockfile
 
       - name: Ensure base branch ref exists
         run: git fetch --no-tags --depth=1 origin "refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"

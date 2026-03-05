@@ -39,7 +39,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: devbox run -- just ci-install
+        run: devbox run -- pnpm install --frozen-lockfile
 
       - name: Get cache key date
         id: cache-date
@@ -69,16 +69,16 @@ jobs:
           TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Lint
-        run: devbox run -- just lint
+        run: devbox run -- pnpm run lint
 
       - name: Type check
-        run: devbox run -- just check-types
+        run: devbox run -- pnpm run check-types
 
       - name: Test
-        run: devbox run -- just test
+        run: devbox run -- pnpm run test
 
       - name: Build packages
-        run: devbox run -- just build
+        run: devbox run -- pnpm run build
 
       - name: Create Release Pull Request or Publish
         id: changesets

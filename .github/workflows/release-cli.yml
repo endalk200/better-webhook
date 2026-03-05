@@ -37,21 +37,21 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: devbox run -- just ci-install
+        run: devbox run -- pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NODE_AUTH_TOKEN }}
 
       - name: Format check
-        run: devbox run -- just format-check
+        run: devbox run -- pnpm run format:check
 
       - name: Lint
-        run: devbox run -- just lint
+        run: devbox run -- pnpm run lint
 
       - name: Test
-        run: devbox run -- just test
+        run: devbox run -- pnpm run test
 
       - name: Build
-        run: devbox run -- just build
+        run: devbox run -- pnpm run build
 
       - name: Install Syft
         uses: anchore/sbom-action/download-syft@v0
