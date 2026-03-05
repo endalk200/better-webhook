@@ -98,7 +98,7 @@ pnpm dev:docs
 
 - CLI: [`better-webhook` Go CLI](apps/webhook-cli/README.md)
 - Core SDK: [`@better-webhook/core`](packages/core/README.md)
-- Providers: [`@better-webhook/github`](packages/github/README.md), [`@better-webhook/ragie`](packages/ragie/README.md), [`@better-webhook/recall`](packages/recall/README.md)
+- Providers: [`@better-webhook/github`](packages/github/README.md), [`@better-webhook/stripe`](packages/stripe/README.md), [`@better-webhook/ragie`](packages/ragie/README.md), [`@better-webhook/recall`](packages/recall/README.md)
 - Adapters: [`@better-webhook/nextjs`](packages/nextjs/README.md), [`@better-webhook/express`](packages/express/README.md), [`@better-webhook/nestjs`](packages/nestjs/README.md), [`@better-webhook/hono`](packages/hono/README.md), [`@better-webhook/gcp-functions`](packages/gcp-functions/README.md)
 
 ### Monorepo layout

@@ -1,5 +1,9 @@
 import express from "express";
-import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
+import {
+  createInMemoryReplayStore,
+  createWebhookStats,
+  type WebhookObserver,
+} from "@better-webhook/core";
 import { toExpress } from "@better-webhook/express";
 import { github } from "@better-webhook/github";
 import { issues, pull_request, push } from "@better-webhook/github/events";
@@ -37,28 +41,25 @@ import {
   document_status_updated,
   entity_extracted,
 } from "@better-webhook/ragie/events";
+import { stripe } from "@better-webhook/stripe";
+import {
+  charge_failed,
+  checkout_session_completed,
+  payment_intent_succeeded,
+} from "@better-webhook/stripe/events";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-// Example-only manual dedupe cache: unbounded in-memory Set.
-// For production, prefer withReplayProtection + createInMemoryReplayStore (or a shared persistent store).
-const processedReplayKeys = new Set<string>();
-
-function isDuplicateReplay(key: string | undefined): boolean {
-  if (!key) {
-    return false;
-  }
-  if (processedReplayKeys.has(key)) {
-    return true;
-  }
-  processedReplayKeys.add(key);
-  return false;
-}
 
 // Create stats collectors for observability
 const githubStats = createWebhookStats();
 const ragieStats = createWebhookStats();
+const stripeStats = createWebhookStats();
 const recallStats = createWebhookStats();
+const githubReplayStore = createInMemoryReplayStore();
+const ragieReplayStore = createInMemoryReplayStore();
+const stripeReplayStore = createInMemoryReplayStore();
+const recallReplayStore = createInMemoryReplayStore();
 
 // Custom observer for logging webhook lifecycle events
 const loggingObserver: WebhookObserver = {
@@ -88,14 +89,8 @@ const loggingObserver: WebhookObserver = {
 const githubWebhook = github()
   .observe(githubStats.observer)
   .observe(loggingObserver)
+  .withReplayProtection({ store: githubReplayStore })
   .event(push, async (payload, context) => {
-    const replayKey = context.deliveryId
-      ? `github:${context.deliveryId}`
-      : undefined;
-    if (isDuplicateReplay(replayKey)) {
-      console.log("Duplicate GitHub delivery detected, skipping");
-      return;
-    }
     console.log("📦 Push event received!");
     console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
     console.log(`   Received at: ${context.receivedAt.toISOString()}`);
@@ -134,12 +129,8 @@ const githubWebhook = github()
 const ragieWebhook = ragie()
   .observe(ragieStats.observer)
   .observe(loggingObserver)
+  .withReplayProtection({ store: ragieReplayStore })
   .event(document_status_updated, async (payload) => {
-    const replayKey = payload.nonce ? `ragie:${payload.nonce}` : undefined;
-    if (isDuplicateReplay(replayKey)) {
-      console.log("Duplicate Ragie nonce detected, skipping");
-      return;
-    }
     console.log("📄 Document status updated!");
     console.log(`   Document ID: ${payload.document_id}`);
     console.log(`   Status: ${payload.status}`);
@@ -168,14 +159,8 @@ const ragieWebhook = ragie()
 const recallWebhook = recall()
   .observe(recallStats.observer)
   .observe(loggingObserver)
+  .withReplayProtection({ store: recallReplayStore })
   .event(participant_events_join, async (payload, context) => {
-    const replayKey = context.deliveryId
-      ? `recall:${context.deliveryId}`
-      : undefined;
-    if (isDuplicateReplay(replayKey)) {
-      console.log("Duplicate Recall delivery detected, skipping");
-      return;
-    }
     console.log("🟢 Recall participant joined");
     console.log(`   Event: ${context.eventType}`);
     console.log(`   Participant: ${payload.data.participant.name}`);
@@ -309,6 +294,38 @@ const recallWebhook = recall()
     console.error("🔐 Recall verification failed:", reason);
   });
 
+// Create a Stripe webhook handler with observability
+const stripeWebhook = stripe()
+  .observe(stripeStats.observer)
+  .observe(loggingObserver)
+  .withReplayProtection({ store: stripeReplayStore })
+  .event(charge_failed, async (payload) => {
+    console.log("💳 Stripe charge failed");
+    console.log(`   Event ID: ${payload.id}`);
+    console.log(`   Charge ID: ${payload.data.object.id}`);
+    console.log(`   Amount: ${payload.data.object.amount}`);
+    console.log(`   Failure: ${payload.data.object.failure_code}`);
+  })
+  .event(checkout_session_completed, async (payload) => {
+    console.log("🧾 Stripe checkout session completed");
+    console.log(`   Event ID: ${payload.id}`);
+    console.log(`   Session ID: ${payload.data.object.id}`);
+    console.log(`   Payment status: ${payload.data.object.payment_status}`);
+  })
+  .event(payment_intent_succeeded, async (payload) => {
+    console.log("✅ Stripe payment intent succeeded");
+    console.log(`   Event ID: ${payload.id}`);
+    console.log(`   PaymentIntent ID: ${payload.data.object.id}`);
+    console.log(`   Latest charge: ${payload.data.object.latest_charge}`);
+  })
+  .onError(async (error, context) => {
+    console.error("❌ Stripe webhook error:", error.message);
+    console.error("   Event type:", context.eventType);
+  })
+  .onVerificationFailed(async (reason) => {
+    console.error("🔐 Stripe verification failed:", reason);
+  });
+
 // Mount the webhook handlers
 // Note: express.raw() is required to get the raw body for signature verification
 app.post(
@@ -334,6 +351,17 @@ app.post(
 );
 
 app.post(
+  "/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  toExpress(stripeWebhook, {
+    secret: process.env.STRIPE_WEBHOOK_SECRET,
+    onSuccess: (eventType) => {
+      console.log(`✅ Successfully processed Stripe ${eventType} event`);
+    },
+  }),
+);
+
+app.post(
   "/webhooks/recall",
   express.raw({ type: "application/json" }),
   toExpress(recallWebhook, {
@@ -354,6 +382,7 @@ app.get("/stats", (_req, res) => {
   res.json({
     github: githubStats.snapshot(),
     ragie: ragieStats.snapshot(),
+    stripe: stripeStats.snapshot(),
     recall: recallStats.snapshot(),
     timestamp: new Date().toISOString(),
   });
@@ -367,6 +396,7 @@ app.listen(PORT, () => {
    Webhook endpoints:
    - GitHub: http://localhost:${PORT}/webhooks/github
    - Ragie:  http://localhost:${PORT}/webhooks/ragie
+   - Stripe: http://localhost:${PORT}/webhooks/stripe
    - Recall: http://localhost:${PORT}/webhooks/recall
    
    Health check: http://localhost:${PORT}/health
@@ -375,6 +405,7 @@ app.listen(PORT, () => {
    Environment variables:
    - GITHUB_WEBHOOK_SECRET (for GitHub webhooks)
    - RAGIE_WEBHOOK_SECRET (for Ragie webhooks)
+   - STRIPE_WEBHOOK_SECRET (for Stripe webhooks)
    - RECALL_WEBHOOK_SECRET (for Recall webhooks)
 
    To test with ngrok:

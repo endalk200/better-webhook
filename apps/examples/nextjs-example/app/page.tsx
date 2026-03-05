@@ -4,7 +4,8 @@ export default function Home() {
       <h1>Better Webhook - Next.js Example</h1>
       <p>
         This example demonstrates how to use <code>@better-webhook/github</code>
-        , <code>@better-webhook/ragie</code>, and{" "}
+        , <code>@better-webhook/stripe</code>,{" "}
+        <code>@better-webhook/ragie</code>, and{" "}
         <code>@better-webhook/recall</code> with{" "}
         <code>@better-webhook/nextjs</code>.
       </p>
@@ -22,6 +23,12 @@ export default function Home() {
         </li>
         <li>
           <code>GET /api/webhooks/ragie</code> - Ragie endpoint info
+        </li>
+        <li>
+          <code>POST /api/webhooks/stripe</code> - Stripe webhook endpoint
+        </li>
+        <li>
+          <code>GET /api/webhooks/stripe</code> - Stripe endpoint info
         </li>
         <li>
           <code>POST /api/webhooks/recall</code> - Recall.ai webhook endpoint

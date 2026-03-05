@@ -380,6 +380,36 @@
       "file": "recall/recall-bot_breakout_room_closed.jsonc",
       "version": "1.0.0",
       "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+    },
+    {
+      "id": "stripe-charge_failed",
+      "name": "Stripe Charge Failed",
+      "description": "Stripe charge failed event triggered when a charge attempt fails",
+      "provider": "stripe",
+      "event": "charge.failed",
+      "file": "stripe/stripe-charge_failed.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-charge.failed"
+    },
+    {
+      "id": "stripe-checkout_session_completed",
+      "name": "Stripe Checkout Session Completed",
+      "description": "Stripe checkout session completed event triggered when Checkout succeeds",
+      "provider": "stripe",
+      "event": "checkout.session.completed",
+      "file": "stripe/stripe-checkout_session_completed.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-checkout.session.completed"
+    },
+    {
+      "id": "stripe-payment_intent_succeeded",
+      "name": "Stripe Payment Intent Succeeded",
+      "description": "Stripe payment intent succeeded event triggered after successful payment",
+      "provider": "stripe",
+      "event": "payment_intent.succeeded",
+      "file": "stripe/stripe-payment_intent_succeeded.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-payment_intent.succeeded"
     }
   ]
 }
