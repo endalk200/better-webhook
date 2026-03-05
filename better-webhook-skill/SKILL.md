@@ -30,7 +30,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
       `PR #${payload.number} ${payload.action}: ${payload.pull_request.title}`,
     );
   })
-  .onError(({ error }) => console.error("Webhook error:", error));
+  .onError((error, context) => console.error("Webhook error:", error));
 
 export const POST = toNextJS(webhook);
 ```

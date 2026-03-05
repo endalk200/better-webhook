@@ -1,6 +1,6 @@
 # AGENTS.md
 
-The role of this file is to describe common mistakes and confusion points that agents might encounter as they work in this codebase. If you ever encounter something in this project that surprises you, please alert the developer working with you and indicate that this is the case in the AGENT.md file to help prevent future agents from having the same issue.
+The role of this file is to describe common mistakes and confusion points that agents might encounter as they work in this codebase. If you ever encounter something in this project that surprises you, please alert the developer working with you and indicate that this is the case in the AGENTS.md file to help prevent future agents from having the same issue.
 
 ## Code Style Guide
 
@@ -9,12 +9,13 @@ The role of this file is to describe common mistakes and confusion points that a
 
 ## Development Workflow Commands
 
-- Always use devbox to run commands. Don't run commands in a sandboxed environment. - When running any commands append `devbox run --` before. For example if you want to run lin `devbox run -- pnpm run lint`
+- Always use devbox to run commands. Don't run commands in a sandboxed environment.
+- When running any commands append `devbox run --` before. For example if you want to run lint `devbox run -- pnpm run lint`
 - You can run `lint`, `test`, `check-types` and `build` commands using pnpm directly.
 - If you want to run `lint`, `test`, `check-types` and `build` commands for a specific package, you can run `pnpm --filter <package> run lint`, `pnpm --filter <package> run test`, `pnpm --filter <package> run check-types` and `pnpm --filter <package> run build` respectively.
 
-- Make sure you run formating check using `pnpm run format:check` and format using `pnpm run format:write` at the end of your work.
-- Always verify your work by running type checking, linting, testing and formating check commands.
+- Make sure you run formatting check using `pnpm run format:check` and format using `pnpm run format:write` at the end of your work.
+- Always verify your work by running type checking, linting, testing and formatting check commands.
 
 NOTE:
 
@@ -22,5 +23,5 @@ NOTE:
 
 ## Important Notes
 
-- This app has no users yet, make whatever changes you need without worying about users or data or migrations.
-- Docs content under `apps/docs/content` can get out of datem so whenever you make changes to the CLI or the SDK, you should see if you need to update the docs.
+- This app has no users yet, make whatever changes you need without worrying about users or data or migrations.
+- Docs content under `apps/docs/content` can get out of date so whenever you make changes to the CLI or the SDK, you should see if you need to update the docs.
