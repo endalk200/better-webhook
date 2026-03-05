@@ -20,13 +20,18 @@ const (
 	timeUnixPlaceholder                 = "$time:unix"
 	timeRFC3339Placeholder              = "$time:rfc3339"
 	githubSignature256Placeholder       = "$github:x-hub-signature-256"
+	stripeSignaturePlaceholder          = "$stripe:signature"
 	legacySignaturePlaceholder          = "placeholder"
 	githubProvider                      = "github"
+	stripeProvider                      = "stripe"
 	githubSignatureHeader               = "x-hub-signature-256"
+	stripeSignatureHeader               = "stripe-signature"
 	githubSignaturePrefix               = "sha256="
+	stripeSignaturePrefix               = "t=%d,v1=%s"
 	genericEnvironmentPrefixPlaceholder = "$env:"
 	genericTimePrefixPlaceholder        = "$time:"
 	githubPrefixPlaceholder             = "$github:"
+	stripePrefixPlaceholder             = "$stripe:"
 )
 
 var (
@@ -120,12 +125,15 @@ func (r *Resolver) ResolveHeaderValue(key string, value string, ctx HeaderContex
 	if isGitHubSignaturePlaceholder(strings.TrimSpace(key), trimmedValue, strings.TrimSpace(ctx.Provider)) {
 		return buildGitHubSignature(ctx.Body, ctx.Secret)
 	}
+	if isStripeSignaturePlaceholder(strings.TrimSpace(key), trimmedValue, strings.TrimSpace(ctx.Provider)) {
+		return r.buildStripeSignature(ctx.Body, ctx.Secret)
+	}
 	resolved, err := r.resolveString(trimmedValue)
 	if err != nil {
 		return "", err
 	}
 	// Safety net in case resolution leaves a provider token unresolved.
-	if strings.HasPrefix(resolved, githubPrefixPlaceholder) {
+	if strings.HasPrefix(resolved, githubPrefixPlaceholder) || strings.HasPrefix(resolved, stripePrefixPlaceholder) {
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedProviderToken, resolved)
 	}
 	return resolved, nil
@@ -215,7 +223,7 @@ func (r *Resolver) resolveInterpolatedToken(value string) (string, int, bool, er
 		return r.resolveEnvironmentToken(value)
 	case strings.HasPrefix(value, genericTimePrefixPlaceholder):
 		return "", 0, false, fmt.Errorf("%w: %s", ErrUnsupportedTimeFormat, readPlaceholderToken(value))
-	case strings.HasPrefix(value, githubPrefixPlaceholder):
+	case strings.HasPrefix(value, githubPrefixPlaceholder), strings.HasPrefix(value, stripePrefixPlaceholder):
 		return "", 0, false, fmt.Errorf("%w: %s", ErrUnsupportedProviderToken, readPlaceholderToken(value))
 	default:
 		return "", 0, false, nil
@@ -300,6 +308,15 @@ func isGitHubSignaturePlaceholder(key string, value string, provider string) boo
 		strings.EqualFold(value, legacySignaturePlaceholder)
 }
 
+func isStripeSignaturePlaceholder(key string, value string, provider string) bool {
+	if strings.EqualFold(value, stripeSignaturePlaceholder) {
+		return strings.EqualFold(provider, stripeProvider)
+	}
+	return strings.EqualFold(provider, stripeProvider) &&
+		strings.EqualFold(key, stripeSignatureHeader) &&
+		strings.EqualFold(value, legacySignaturePlaceholder)
+}
+
 func buildGitHubSignature(body []byte, secret string) (string, error) {
 	trimmedSecret := strings.TrimSpace(secret)
 	if trimmedSecret == "" {
@@ -310,4 +327,19 @@ func buildGitHubSignature(body []byte, secret string) (string, error) {
 		return "", err
 	}
 	return githubSignaturePrefix + hex.EncodeToString(signature.Sum(nil)), nil
+}
+
+func (r *Resolver) buildStripeSignature(body []byte, secret string) (string, error) {
+	trimmedSecret := strings.TrimSpace(secret)
+	if trimmedSecret == "" {
+		return "", ErrMissingSecret
+	}
+
+	timestamp := r.clock.Now().UTC().Unix()
+	signedPayload := fmt.Sprintf("%d.%s", timestamp, string(body))
+	signature := hmac.New(sha256.New, []byte(trimmedSecret))
+	if _, err := signature.Write([]byte(signedPayload)); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(stripeSignaturePrefix, timestamp, hex.EncodeToString(signature.Sum(nil))), nil
 }

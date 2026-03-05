@@ -53,6 +53,33 @@ func TestRegistryDetectPrefersHigherConfidenceMatch(t *testing.T) {
 	}
 }
 
+func TestRegistryDetectCanReturnStripeProvider(t *testing.T) {
+	registry := NewRegistry(
+		detectorStub{
+			result: domain.DetectionResult{
+				Provider:   domain.ProviderGitHub,
+				Confidence: 0.5,
+			},
+			matched: true,
+		},
+		detectorStub{
+			result: domain.DetectionResult{
+				Provider:   domain.ProviderStripe,
+				Confidence: 0.9,
+			},
+			matched: true,
+		},
+	)
+
+	result := registry.Detect(domain.DetectionContext{})
+	if result.Provider != domain.ProviderStripe {
+		t.Fatalf("expected provider %q, got %q", domain.ProviderStripe, result.Provider)
+	}
+	if result.Confidence != 0.9 {
+		t.Fatalf("expected confidence 0.9, got %f", result.Confidence)
+	}
+}
+
 type detectorStub struct {
 	result  domain.DetectionResult
 	matched bool

@@ -12,6 +12,7 @@ import (
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/github"
+	stripedetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/stripe"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/jsonc"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/capture"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
@@ -67,6 +68,45 @@ func TestServerCapturesRequestWithRawBodyAndMeta(t *testing.T) {
 	}
 	if !hasHeaderCaseInsensitive(capture.Headers, "x-github-event") {
 		t.Fatalf("expected captured github event header key")
+	}
+}
+
+func TestServerCapturesStripeProviderFromSignatureHeader(t *testing.T) {
+	server, store := mustStartServer(t, "test-version")
+	defer stopServer(t, server)
+
+	body := `{"id":"evt_123","type":"charge.failed"}`
+	req, err := http.NewRequest(http.MethodPost, serverURL(server)+"/webhooks/stripe", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Stripe-Signature", "t=1730000000,v1=abc123")
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("send request: %v", err)
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	if response.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(response.Body)
+		t.Fatalf("expected 200 response, got %d (%s)", response.StatusCode, string(raw))
+	}
+
+	captures, err := store.List(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("list captures: %v", err)
+	}
+	if len(captures) != 1 {
+		t.Fatalf("expected one capture, got %d", len(captures))
+	}
+
+	capture := captures[0].Capture
+	if capture.Provider != domain.ProviderStripe {
+		t.Fatalf("provider mismatch: got %q want %q", capture.Provider, domain.ProviderStripe)
 	}
 }
 
@@ -209,6 +249,7 @@ func mustStartServer(t *testing.T, toolVersion string) (*Server, *jsonc.Store) {
 	}
 	detector := provider.NewRegistry(
 		githubdetector.NewDetector(),
+		stripedetector.NewDetector(),
 	)
 	captureService := appcapture.NewService(store, detector, nil, toolVersion)
 	server, err := NewServer(ServerOptions{

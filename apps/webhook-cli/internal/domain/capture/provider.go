@@ -3,6 +3,7 @@ package capture
 const (
 	ProviderUnknown = "unknown"
 	ProviderGitHub  = "github"
+	ProviderStripe  = "stripe"
 )
 
 type DetectionContext struct {
