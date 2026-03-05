@@ -75,7 +75,7 @@ Use a terminal-only workflow to capture and replay real webhook traffic:
   <Step>
     ### Point Webhooks to the Capture Server
 
-    Configure your webhook source (GitHub, Ragie, Recall.ai, etc.) to send webhooks to:
+    Configure your webhook source (GitHub, Stripe, Ragie, Recall.ai, etc.) to send webhooks to:
 
     ```
     http://localhost:3001/webhooks/your-provider
@@ -122,9 +122,11 @@ better-webhook templates list
 
 # Download a template
 better-webhook templates download github-push
+better-webhook templates download stripe-charge_failed
 
 # Run a template against your endpoint
 better-webhook templates run github-push http://localhost:3000/api/webhooks/github
+better-webhook templates run stripe-charge_failed http://localhost:3000/api/webhooks/stripe
 ```
 
 Templates include proper headers and can generate valid signatures when you provide a secret.
