@@ -30,7 +30,9 @@ jobs:
         run: devbox run -- pnpm install --frozen-lockfile
 
       - name: Format check
-        run: devbox run -- pnpm run format:check
+        run: |
+          devbox run -- pnpm --filter @better-webhook/cli-go format:check
+          devbox run -- pnpm run format:check
 
       - name: Lint
         run: devbox run -- pnpm run lint

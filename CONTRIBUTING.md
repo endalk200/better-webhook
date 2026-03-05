@@ -11,7 +11,7 @@ This repo uses devbox to manage tools and dependencies.
 2. Install dependencies:
 
    ```bash
-   devbox shell
+   devbox run -- pnpm install --frozen-lockfile
    ```
 
 3. Build and run tests before opening a pull request:

@@ -17,7 +17,7 @@ Thanks for your interest in contributing to Better Webhook.
 2. Install dependencies:
 
    ```bash
-   devbox shell
+   devbox run -- pnpm install --frozen-lockfile
    ```
 
 3. Run checks before opening a pull request:
@@ -26,6 +26,7 @@ Thanks for your interest in contributing to Better Webhook.
    devbox run -- pnpm run format:check
    devbox run -- pnpm run lint
    devbox run -- pnpm run check-types
+   devbox run -- pnpm run test 
    devbox run -- pnpm run build
    ```
 
