@@ -54,45 +54,4 @@ security-scan-ci:
     fi
 
 changeset-check:
-    tmp_file=$(mktemp); \
-    err_file=$(mktemp); \
-    base_ref="${CHANGESET_BASE_REF:-main}"; \
-    if pnpm exec changeset status --output "$tmp_file" --since "$base_ref" 2> "$err_file"; then \
-      if ! releases_count=$(node -e "const fs=require('node:fs');const status=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(String(status.releases.length));" "$tmp_file" 2>> "$err_file"); then \
-        echo "::error::Failed to parse changeset status JSON."; \
-        cat "$err_file"; \
-        rm -f "$tmp_file" "$err_file"; \
-        exit 1; \
-      fi; \
-      case "$releases_count" in \
-        ''|*[!0-9]*) \
-          echo "::error::Invalid releases count parsed from changeset status: '$releases_count'"; \
-          if [ -s "$err_file" ]; then cat "$err_file"; fi; \
-          rm -f "$tmp_file" "$err_file"; \
-          exit 1; \
-          ;; \
-        0) \
-          echo "No release changesets found. This is okay when no publishable packages changed."; \
-          ;; \
-        *) \
-          echo "✅ Changesets found - release will be triggered when merged"; \
-          ;; \
-      esac; \
-    else \
-      err_text=$(tr '\n' ' ' < "$err_file"); \
-      case "$err_text" in \
-        *"Some packages have been changed but no changesets were found"*) \
-          echo "::error::Some packages changed but no changeset was found. Add one with 'pnpm changeset'."; \
-          echo "::notice::Required steps: 1) Run 'pnpm changeset' 2) Select packages 3) Choose bump type 4) Write summary 5) Commit the .changeset file"; \
-          rm -f "$tmp_file" "$err_file"; \
-          exit 1; \
-          ;; \
-        *) \
-          echo "::error::Failed to run changeset status."; \
-          cat "$err_file"; \
-          rm -f "$tmp_file" "$err_file"; \
-          exit 1; \
-          ;; \
-      esac; \
-    fi; \
-    rm -f "$tmp_file" "$err_file"
+    node ./scripts/changeset-check.mjs
