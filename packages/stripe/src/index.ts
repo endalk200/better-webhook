@@ -74,6 +74,11 @@ function verifyStripeSignature(
   secret: string,
   timestampToleranceSeconds: number,
 ): boolean {
+  const normalizedSecret = secret.trim();
+  if (!normalizedSecret) {
+    return false;
+  }
+
   const signatureHeader = headers["stripe-signature"];
   if (!signatureHeader) {
     return false;
@@ -99,7 +104,7 @@ function verifyStripeSignature(
       verifyHmac({
         algorithm: "sha256",
         rawBody: signedPayload,
-        secret,
+        secret: normalizedSecret,
         signature: candidateSignature,
       })
     ) {
@@ -125,8 +130,12 @@ export interface StripeOptions {
 }
 
 function createStripeProvider(options?: StripeOptions): Provider<"stripe"> {
+  const configuredTimestampTolerance = options?.timestampToleranceSeconds;
   const timestampToleranceSeconds =
-    options?.timestampToleranceSeconds ?? DEFAULT_TIMESTAMP_TOLERANCE_SECONDS;
+    configuredTimestampTolerance !== undefined &&
+    Number.isFinite(configuredTimestampTolerance)
+      ? configuredTimestampTolerance
+      : DEFAULT_TIMESTAMP_TOLERANCE_SECONDS;
 
   return {
     name: "stripe",
@@ -171,6 +180,12 @@ function createStripeProvider(options?: StripeOptions): Provider<"stripe"> {
   };
 }
 
+/**
+ * Create a Stripe webhook builder with signature verification and replay context support.
+ *
+ * @param options - Stripe provider options, including secret and timestamp tolerance.
+ * @returns A webhook builder configured with the Stripe provider.
+ */
 export function stripe(options?: StripeOptions): WebhookBuilder<"stripe"> {
   const provider = createStripeProvider(options);
   return new WebhookBuilder(provider);

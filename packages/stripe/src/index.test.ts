@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { stripe } from "./index.js";
 import {
   charge_failed,
@@ -232,6 +233,28 @@ describe("Stripe Schemas", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts request object when idempotency_key is omitted", () => {
+    const result = StripeChargeFailedEventSchema.safeParse({
+      ...chargeFailedEvent,
+      request: {
+        id: "req_omitted_idempotency",
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts request object when id is omitted", () => {
+    const result = StripeChargeFailedEventSchema.safeParse({
+      ...chargeFailedEvent,
+      request: {
+        idempotency_key: "idem_omitted_request_id",
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("stripe()", () => {
@@ -375,12 +398,13 @@ describe("stripe()", () => {
   it("rejects invalid signatures", async () => {
     const handler = vi.fn();
     const body = JSON.stringify(chargeFailedEvent);
+    const freshTimestamp = Math.floor(Date.now() / 1000);
     const webhook = stripe({ secret }).event(charge_failed, handler);
 
     const result = await webhook.process({
       headers: {
         "content-type": "application/json",
-        "stripe-signature": "t=1730000000,v1=invalid",
+        "stripe-signature": `t=${freshTimestamp},v1=invalid`,
       },
       rawBody: body,
     });
@@ -455,6 +479,56 @@ describe("stripe()", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it("allows stale signatures when timestamp tolerance is disabled", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 86400;
+    const webhook = stripe({
+      secret,
+      timestampToleranceSeconds: 0,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": createStripeSignatureHeader({
+          body,
+          secret,
+          timestamp: staleTimestamp,
+        }),
+      },
+      rawBody: body,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to default tolerance when timestamp tolerance is non-finite", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 601;
+    const webhook = stripe({
+      secret,
+      timestampToleranceSeconds: Number.NaN,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": createStripeSignatureHeader({
+          body,
+          secret,
+          timestamp: staleTimestamp,
+        }),
+      },
+      rawBody: body,
+    });
+
+    expect(result.status).toBe(401);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed timestamps in Stripe-Signature", async () => {
     const handler = vi.fn();
     const body = JSON.stringify(chargeFailedEvent);
@@ -491,5 +565,78 @@ describe("stripe()", () => {
 
     expect(result.status).toBe(401);
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("accepts signatures with extra whitespace around segments", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const validTimestamp = Math.floor(Date.now() / 1000);
+    const validSignature = createStripeSignature(body, secret, validTimestamp);
+    const webhook = stripe({ secret }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": ` t = ${validTimestamp} , v1 = ${validSignature} `,
+      },
+      rawBody: body,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the last valid t value when multiple timestamps are present", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 601;
+    const validTimestamp = Math.floor(Date.now() / 1000);
+    const validSignature = createStripeSignature(body, secret, validTimestamp);
+    const webhook = stripe({
+      secret,
+      timestampToleranceSeconds: 300,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": `t=${staleTimestamp},t=${validTimestamp},v1=${validSignature}`,
+      },
+      rawBody: body,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("enforces replay protection for duplicate Stripe event ids", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const webhook = stripe({ secret })
+      .withReplayProtection({
+        store: createInMemoryReplayStore(),
+      })
+      .event(charge_failed, handler);
+
+    const firstResult = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": createStripeSignatureHeader({ body, secret }),
+      },
+      rawBody: body,
+    });
+
+    const secondResult = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": createStripeSignatureHeader({ body, secret }),
+      },
+      rawBody: body,
+    });
+
+    expect(firstResult.status).toBe(200);
+    expect(secondResult.status).toBe(409);
+    expect(secondResult.body?.error).toBe("Duplicate webhook delivery");
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 });
