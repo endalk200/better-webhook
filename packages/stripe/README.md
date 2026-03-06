@@ -56,6 +56,8 @@ Stripe signatures are verified from `Stripe-Signature` using the signed payload
 - Uses only `v1` signatures (ignores other schemes such as `v0`)
 - Supports multiple `v1` values for endpoint secret rotation
 - Rejects timestamps outside the configured tolerance window (default `300s`)
+- Freshness uses absolute skew (`|now - t|`) and rejects both stale and far-future
+  timestamps outside tolerance
 
 Use the raw request body exactly as sent by Stripe. Body mutation before
 verification will invalidate the signature.

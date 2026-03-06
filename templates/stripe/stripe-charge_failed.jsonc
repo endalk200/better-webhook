@@ -3,16 +3,16 @@
   "headers": [
     {
       "key": "Content-Type",
-      "value": "application/json"
+      "value": "application/json",
     },
     {
       "key": "Stripe-Signature",
-      "value": "$stripe:signature"
+      "value": "$stripe:signature",
     },
     {
       "key": "User-Agent",
-      "value": "Stripe/1.0 (+https://stripe.com/docs/webhooks)"
-    }
+      "value": "Stripe/1.0 (+https://stripe.com/docs/webhooks)",
+    },
   ],
   "body": {
     "id": "evt_3QvdbN2eZvKYlo2C0aAbCdEf",
@@ -23,7 +23,7 @@
     "pending_webhooks": 1,
     "request": {
       "id": "req_123456789",
-      "idempotency_key": "idem_123456789"
+      "idempotency_key": "PLACEHOLDER_IDEMPOTENCY_KEY",
     },
     "type": "charge.failed",
     "data": {
@@ -38,12 +38,12 @@
         "customer": "cus_PZ8YxA8B9cDef0",
         "payment_intent": "pi_3QvdbN2eZvKYlo2C0intent",
         "metadata": {
-          "order_id": "order_1234"
-        }
-      }
-    }
+          "order_id": "order_1234",
+        },
+      },
+    },
   },
   "provider": "stripe",
   "event": "charge.failed",
-  "description": "Stripe charge failed event"
+  "description": "Stripe charge failed event",
 }

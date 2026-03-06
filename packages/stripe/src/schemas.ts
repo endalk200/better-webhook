@@ -13,9 +13,10 @@ const StripeExpandableNullableFieldSchema = z
 
 const StripeRequestSchema = z
   .object({
-    id: z.string().nullable(),
-    idempotency_key: z.string().nullable(),
+    id: z.string().nullable().optional(),
+    idempotency_key: z.string().nullable().optional(),
   })
+  .passthrough()
   .nullable();
 
 const StripeChargeObjectSchema = z
@@ -73,6 +74,12 @@ const StripeEventBaseSchema = z
   })
   .passthrough();
 
+/**
+ * Schema for Stripe `charge.failed` webhook events.
+ * Occurs whenever a failed charge attempt occurs.
+ *
+ * Includes `data.object` validated by `StripeChargeObjectSchema`.
+ */
 export const StripeChargeFailedEventSchema = StripeEventBaseSchema.extend({
   type: z.literal("charge.failed"),
   data: z
@@ -83,6 +90,11 @@ export const StripeChargeFailedEventSchema = StripeEventBaseSchema.extend({
     .passthrough(),
 }).passthrough();
 
+/**
+ * Schema for Stripe `checkout.session.completed` webhook events.
+ *
+ * Includes `data.object` validated by `StripeCheckoutSessionObjectSchema`.
+ */
 export const StripeCheckoutSessionCompletedEventSchema =
   StripeEventBaseSchema.extend({
     type: z.literal("checkout.session.completed"),
@@ -94,6 +106,11 @@ export const StripeCheckoutSessionCompletedEventSchema =
       .passthrough(),
   }).passthrough();
 
+/**
+ * Schema for Stripe `payment_intent.succeeded` webhook events.
+ *
+ * Includes `data.object` validated by `StripePaymentIntentObjectSchema`.
+ */
 export const StripePaymentIntentSucceededEventSchema =
   StripeEventBaseSchema.extend({
     type: z.literal("payment_intent.succeeded"),
@@ -105,12 +122,21 @@ export const StripePaymentIntentSucceededEventSchema =
       .passthrough(),
   }).passthrough();
 
+/**
+ * Type inferred from `StripeChargeFailedEventSchema`.
+ */
 export type StripeChargeFailedEvent = z.infer<
   typeof StripeChargeFailedEventSchema
 >;
+/**
+ * Type inferred from `StripeCheckoutSessionCompletedEventSchema`.
+ */
 export type StripeCheckoutSessionCompletedEvent = z.infer<
   typeof StripeCheckoutSessionCompletedEventSchema
 >;
+/**
+ * Type inferred from `StripePaymentIntentSucceededEventSchema`.
+ */
 export type StripePaymentIntentSucceededEvent = z.infer<
   typeof StripePaymentIntentSucceededEventSchema
 >;

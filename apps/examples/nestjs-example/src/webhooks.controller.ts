@@ -106,6 +106,18 @@ const logRecallBotCodeEvent = async (
 
 @Controller()
 export class WebhooksController {
+  private writeResponse(
+    res: Response,
+    result: { statusCode: number; body?: Record<string, unknown> },
+  ): void {
+    if (result.body) {
+      res.status(result.statusCode).json(result.body);
+      return;
+    }
+
+    res.status(result.statusCode).end();
+  }
+
   // Create a GitHub webhook handler with observability
   private githubWebhook = github()
     .observe(githubStats.observer)
@@ -297,12 +309,7 @@ export class WebhooksController {
       body: req.body,
       rawBody: req.rawBody,
     });
-
-    if (result.body) {
-      res.status(result.statusCode).json(result.body);
-    } else {
-      res.status(result.statusCode).end();
-    }
+    this.writeResponse(res, result);
   }
 
   @Get("webhooks/github")
@@ -324,12 +331,7 @@ export class WebhooksController {
       body: req.body,
       rawBody: req.rawBody,
     });
-
-    if (result.body) {
-      res.status(result.statusCode).json(result.body);
-    } else {
-      res.status(result.statusCode).end();
-    }
+    this.writeResponse(res, result);
   }
 
   @Get("webhooks/ragie")
@@ -360,12 +362,7 @@ export class WebhooksController {
       body: req.body,
       rawBody: req.rawBody,
     });
-
-    if (result.body) {
-      res.status(result.statusCode).json(result.body);
-    } else {
-      res.status(result.statusCode).end();
-    }
+    this.writeResponse(res, result);
   }
 
   @Get("webhooks/recall")
@@ -413,12 +410,7 @@ export class WebhooksController {
       body: req.body,
       rawBody: req.rawBody,
     });
-
-    if (result.body) {
-      res.status(result.statusCode).json(result.body);
-    } else {
-      res.status(result.statusCode).end();
-    }
+    this.writeResponse(res, result);
   }
 
   @Get("webhooks/stripe")

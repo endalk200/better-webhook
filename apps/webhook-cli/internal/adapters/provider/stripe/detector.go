@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/headers"
 	domain "github.com/endalk200/better-webhook/apps/webhook-cli/internal/domain/capture"
 )
 
@@ -15,7 +16,7 @@ func NewDetector() Detector {
 }
 
 func (d Detector) Detect(ctx domain.DetectionContext) (domain.DetectionResult, bool) {
-	if hasHeader(ctx.Headers, "stripe-signature") {
+	if headers.HasHeader(ctx.Headers, "stripe-signature") {
 		return domain.DetectionResult{
 			Provider:   domain.ProviderStripe,
 			Confidence: 1.0,
@@ -57,8 +58,8 @@ func (d Detector) Detect(ctx domain.DetectionContext) (domain.DetectionResult, b
 	}
 }
 
-func hasStripeUserAgent(headers []domain.HeaderEntry) bool {
-	userAgents := headerValues(headers, "user-agent")
+func hasStripeUserAgent(headerEntries []domain.HeaderEntry) bool {
+	userAgents := headers.HeaderValues(headerEntries, "user-agent")
 	for _, ua := range userAgents {
 		if strings.Contains(strings.ToLower(ua), "stripe") {
 			return true
@@ -88,23 +89,4 @@ func looksLikeStripeEvent(body []byte) bool {
 		return false
 	}
 	return strings.Contains(envelope.Type, ".")
-}
-
-func hasHeader(headers []domain.HeaderEntry, key string) bool {
-	for _, header := range headers {
-		if strings.EqualFold(header.Key, key) {
-			return true
-		}
-	}
-	return false
-}
-
-func headerValues(headers []domain.HeaderEntry, key string) []string {
-	values := make([]string, 0)
-	for _, header := range headers {
-		if strings.EqualFold(header.Key, key) {
-			values = append(values, header.Value)
-		}
-	}
-	return values
 }
