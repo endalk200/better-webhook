@@ -6,8 +6,14 @@ import {
   verifyHmac,
 } from "@better-webhook/core";
 
+/**
+ * Provider brand for Stripe webhook builders.
+ */
 export type { StripeProvider } from "./events.js";
 
+/**
+ * Typed Stripe webhook payloads re-exported from `./schemas.js`.
+ */
 export type {
   StripeChargeFailedEvent,
   StripeCheckoutSessionCompletedEvent,
@@ -55,6 +61,8 @@ function parseStripeSignature(signatureHeader: string): ParsedStripeSignature {
     if (key === "t") {
       const parsedTimestamp = parseUnixTimestamp(value);
       if (parsedTimestamp !== undefined) {
+        // Stripe's Node SDK keeps the last parsed `t=` value, so later header
+        // segments intentionally override earlier ones here as well.
         timestamp = parsedTimestamp;
       }
       continue;

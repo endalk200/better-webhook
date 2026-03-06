@@ -63,7 +63,7 @@ class ExampleReplayStore implements ReplayStore {
 // and is not shared across instances. Use a shared store (Redis/DynamoDB/etc.)
 // for production-grade replay protection.
 const customReplayStore: ReplayStore = new ExampleReplayStore();
-const webhook = ragie({ secret: process.env.RAGIE_WEBHOOK_SECRET })
+const webhook = ragie()
   .withReplayProtection({
     store: customReplayStore,
     policy: {

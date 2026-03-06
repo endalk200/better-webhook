@@ -27,7 +27,7 @@ const loggingObserver: WebhookObserver = {
   },
 };
 
-const webhook = stripe({ secret: process.env.STRIPE_WEBHOOK_SECRET })
+const webhook = stripe()
   .observe(stats.observer)
   .observe(loggingObserver)
   .withReplayProtection({
