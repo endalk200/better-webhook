@@ -17,7 +17,7 @@
     "@better-webhook/hono": "workspace:*",
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
-    "@hono/node-server": "^1.19.7",
+    "@hono/node-server": "^1.19.10",
     "hono": "4.12.0",
     "@better-webhook/stripe": "workspace:*"
   },
