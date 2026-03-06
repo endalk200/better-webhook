@@ -1,15 +1,22 @@
 import { z } from "zod";
 
 const StripeMetadataSchema = z.record(z.string(), z.string());
-const StripeExpandableObjectSchema = z
-  .object({
-    id: z.string(),
-    object: z.string(),
-  })
-  .passthrough();
-const StripeExpandableNullableFieldSchema = z
-  .union([z.string(), StripeExpandableObjectSchema])
-  .nullable();
+
+function createStripeExpandableNullableFieldSchema<TObject extends string>(
+  objectType: TObject,
+) {
+  return z
+    .union([
+      z.string(),
+      z
+        .object({
+          id: z.string(),
+          object: z.literal(objectType),
+        })
+        .passthrough(),
+    ])
+    .nullable();
+}
 
 const StripeRequestSchema = z
   .object({
@@ -28,8 +35,8 @@ const StripeChargeObjectSchema = z
     status: z.string(),
     failure_code: z.string().nullable(),
     failure_message: z.string().nullable(),
-    customer: StripeExpandableNullableFieldSchema,
-    payment_intent: StripeExpandableNullableFieldSchema,
+    customer: createStripeExpandableNullableFieldSchema("customer"),
+    payment_intent: createStripeExpandableNullableFieldSchema("payment_intent"),
     metadata: StripeMetadataSchema,
   })
   .passthrough();
@@ -42,8 +49,8 @@ const StripeCheckoutSessionObjectSchema = z
     payment_status: z.string(),
     amount_total: z.number().nullable(),
     currency: z.string().nullable(),
-    customer: StripeExpandableNullableFieldSchema,
-    payment_intent: StripeExpandableNullableFieldSchema,
+    customer: createStripeExpandableNullableFieldSchema("customer"),
+    payment_intent: createStripeExpandableNullableFieldSchema("payment_intent"),
     status: z.string().nullable(),
     metadata: StripeMetadataSchema.nullable(),
   })
@@ -56,8 +63,8 @@ const StripePaymentIntentObjectSchema = z
     amount: z.number(),
     currency: z.string(),
     status: z.string(),
-    customer: StripeExpandableNullableFieldSchema,
-    latest_charge: StripeExpandableNullableFieldSchema,
+    customer: createStripeExpandableNullableFieldSchema("customer"),
+    latest_charge: createStripeExpandableNullableFieldSchema("charge"),
     metadata: StripeMetadataSchema,
   })
   .passthrough();

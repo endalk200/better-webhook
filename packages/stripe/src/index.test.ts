@@ -226,6 +226,51 @@ describe("Stripe Schemas", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects expanded customer objects with the wrong Stripe resource type", () => {
+    const result = StripeChargeFailedEventSchema.safeParse({
+      ...chargeFailedEvent,
+      data: {
+        ...chargeFailedEvent.data,
+        object: {
+          ...chargeFailedEvent.data.object,
+          customer: expandedCharge,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects expanded payment_intent objects with the wrong Stripe resource type", () => {
+    const result = StripeCheckoutSessionCompletedEventSchema.safeParse({
+      ...checkoutSessionCompletedEvent,
+      data: {
+        ...checkoutSessionCompletedEvent.data,
+        object: {
+          ...checkoutSessionCompletedEvent.data.object,
+          payment_intent: expandedCharge,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects expanded latest_charge objects with the wrong Stripe resource type", () => {
+    const result = StripePaymentIntentSucceededEventSchema.safeParse({
+      ...paymentIntentSucceededEvent,
+      data: {
+        ...paymentIntentSucceededEvent.data,
+        object: {
+          ...paymentIntentSucceededEvent.data.object,
+          latest_charge: expandedPaymentIntent,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects invalid payload shape", () => {
     const result = StripeChargeFailedEventSchema.safeParse({
       id: "evt_invalid",
@@ -486,6 +531,31 @@ describe("stripe()", () => {
     const webhook = stripe({
       secret,
       timestampToleranceSeconds: 0,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": createStripeSignatureHeader({
+          body,
+          secret,
+          timestamp: staleTimestamp,
+        }),
+      },
+      rawBody: body,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows stale signatures when timestamp tolerance is negative", async () => {
+    const handler = vi.fn();
+    const body = JSON.stringify(chargeFailedEvent);
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 86400;
+    const webhook = stripe({
+      secret,
+      timestampToleranceSeconds: -1,
     }).event(charge_failed, handler);
 
     const result = await webhook.process({

@@ -33,7 +33,7 @@ const loggingObserver: WebhookObserver = {
 };
 
 // Create a GitHub webhook handler with observability
-const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
+const webhook = github()
   // Add observers for metrics and logging
   .observe(stats.observer)
   .observe(loggingObserver)
