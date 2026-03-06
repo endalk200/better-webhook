@@ -108,6 +108,22 @@ func TestStripeDetectorWithStripeEventEnvelopeHint(t *testing.T) {
 	}
 }
 
+func TestStripeDetectorRejectsGenericUserAgentSubstring(t *testing.T) {
+	detector := NewDetector()
+	_, matched := detector.Detect(domain.DetectionContext{
+		Method: "POST",
+		Path:   "/webhooks/stripe",
+		Headers: []domain.HeaderEntry{
+			{Key: "User-Agent", Value: "my-stripe-webhook-processor/1.0"},
+		},
+		Body: []byte(`{"event":"not-a-stripe-envelope"}`),
+	})
+
+	if matched {
+		t.Fatalf("expected detector not to match generic user agent substring")
+	}
+}
+
 func TestStripeDetectorRejectsUnknownTraffic(t *testing.T) {
 	detector := NewDetector()
 	_, matched := detector.Detect(domain.DetectionContext{

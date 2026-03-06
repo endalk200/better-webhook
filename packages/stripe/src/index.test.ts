@@ -171,6 +171,11 @@ describe("Stripe Schemas", () => {
       checkoutSessionCompletedEvent,
     );
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.data.object.custom_text?.submit?.message).toBe(
+        "Thanks!",
+      );
+    }
   });
 
   it("validates payment_intent.succeeded payload", () => {
@@ -178,6 +183,9 @@ describe("Stripe Schemas", () => {
       paymentIntentSucceededEvent,
     );
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.data.object.amount_received).toBe(5000);
+    }
   });
 
   it("accepts expanded charge fields in charge.failed payloads", () => {

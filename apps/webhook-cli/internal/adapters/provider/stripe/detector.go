@@ -61,7 +61,8 @@ func (d Detector) Detect(ctx domain.DetectionContext) (domain.DetectionResult, b
 func hasStripeUserAgent(headerEntries []domain.HeaderEntry) bool {
 	userAgents := headers.HeaderValues(headerEntries, "user-agent")
 	for _, ua := range userAgents {
-		if strings.Contains(strings.ToLower(ua), "stripe") {
+		normalizedUserAgent := strings.ToLower(strings.TrimSpace(ua))
+		if strings.HasPrefix(normalizedUserAgent, "stripe/") {
 			return true
 		}
 	}

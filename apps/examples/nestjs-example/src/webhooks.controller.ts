@@ -42,7 +42,7 @@ import {
   checkout_session_completed,
   payment_intent_succeeded,
 } from "@better-webhook/stripe/events";
-import { toNestJS } from "@better-webhook/nestjs";
+import { toNestJS, type NestJSResult } from "@better-webhook/nestjs";
 import {
   createInMemoryReplayStore,
   createWebhookStats,
@@ -106,11 +106,8 @@ const logRecallBotCodeEvent = async (
 
 @Controller()
 export class WebhooksController {
-  private writeResponse(
-    res: Response,
-    result: { statusCode: number; body?: Record<string, unknown> },
-  ): void {
-    if (result.body) {
+  private writeResponse(res: Response, result: NestJSResult): void {
+    if (result.body !== undefined) {
       res.status(result.statusCode).json(result.body);
       return;
     }
