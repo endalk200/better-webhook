@@ -41,6 +41,24 @@ const StripeChargeObjectSchema = z
   })
   .passthrough();
 
+const StripeCheckoutSessionCustomTextSectionSchema = z
+  .object({
+    message: z.string(),
+  })
+  .passthrough();
+
+const StripeCheckoutSessionCustomTextSchema = z
+  .object({
+    after_submit:
+      StripeCheckoutSessionCustomTextSectionSchema.nullable().optional(),
+    shipping_address:
+      StripeCheckoutSessionCustomTextSectionSchema.nullable().optional(),
+    submit: StripeCheckoutSessionCustomTextSectionSchema.nullable().optional(),
+    terms_of_service_acceptance:
+      StripeCheckoutSessionCustomTextSectionSchema.nullable().optional(),
+  })
+  .passthrough();
+
 const StripeCheckoutSessionObjectSchema = z
   .object({
     id: z.string(),
@@ -53,6 +71,7 @@ const StripeCheckoutSessionObjectSchema = z
     payment_intent: createStripeExpandableNullableFieldSchema("payment_intent"),
     status: z.string().nullable(),
     metadata: StripeMetadataSchema.nullable(),
+    custom_text: StripeCheckoutSessionCustomTextSchema.optional(),
   })
   .passthrough();
 
@@ -61,6 +80,7 @@ const StripePaymentIntentObjectSchema = z
     id: z.string(),
     object: z.literal("payment_intent"),
     amount: z.number(),
+    amount_received: z.number(),
     currency: z.string(),
     status: z.string(),
     customer: createStripeExpandableNullableFieldSchema("customer"),
