@@ -17,6 +17,14 @@ import {
 } from "./schemas.js";
 
 const secret = "whsec_test_secret";
+const officialCompatibilitySecret = "whsec_dGVzdF9rZXlfZm9yX3N0cmlwZQ==";
+const officialCompatibilityBody =
+  '{"id":"evt_charge_failed_1","object":"event","api_version":"2024-06-20","created":1730000000,"livemode":false,"pending_webhooks":1,"request":{"id":"req_123","idempotency_key":"idem_123"},"type":"charge.failed","data":{"object":{"id":"ch_123","object":"charge","amount":5000,"currency":"usd","status":"failed","failure_code":"card_declined","failure_message":"The card was declined.","customer":"cus_123","payment_intent":"pi_123","metadata":{"order_id":"order_123"},"receipt_url":"https://example.com/receipt/ch_123"}}}';
+const officialCompatibilityTimestamp = 1730000000;
+const officialCompatibilityHeader =
+  "t=1730000000,v1=99670ccdef3550a725e6392f37e687450e0ec048ffbadfd4844daa62726f18bc";
+const decodedSecretCompatibilityHeader =
+  "t=1730000000,v1=fa206ae6d6f437e1c93ff3ff61f0182da660afd3ef3e39e687ffe7301f2c824e";
 
 const chargeFailedEvent: StripeChargeFailedEvent = {
   id: "evt_charge_failed_1",
@@ -448,6 +456,53 @@ describe("stripe()", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  it("accepts a fixed Stripe-compatible whsec_ test vector", async () => {
+    const handler = vi.fn();
+    const webhook = stripe({
+      secret: officialCompatibilitySecret,
+      timestampToleranceSeconds: 0,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": officialCompatibilityHeader,
+      },
+      rawBody: officialCompatibilityBody,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "evt_charge_failed_1",
+        type: "charge.failed",
+      }),
+      expect.objectContaining({
+        eventType: "charge.failed",
+        provider: "stripe",
+      }),
+    );
+  });
+
+  it("rejects signatures computed from a base64-decoded whsec_ secret", async () => {
+    const handler = vi.fn();
+    const webhook = stripe({
+      secret: officialCompatibilitySecret,
+      timestampToleranceSeconds: 0,
+    }).event(charge_failed, handler);
+
+    const result = await webhook.process({
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": decodedSecretCompatibilityHeader,
+      },
+      rawBody: officialCompatibilityBody,
+    });
+
+    expect(result.status).toBe(401);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid signatures", async () => {
     const handler = vi.fn();
     const body = JSON.stringify(chargeFailedEvent);
@@ -685,6 +740,16 @@ describe("stripe()", () => {
 
     expect(result.status).toBe(200);
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("matches the fixed Stripe-compatible header with the local helper", () => {
+    expect(
+      createStripeSignatureHeader({
+        body: officialCompatibilityBody,
+        secret: officialCompatibilitySecret,
+        timestamp: officialCompatibilityTimestamp,
+      }),
+    ).toBe(officialCompatibilityHeader);
   });
 
   it("enforces replay protection for duplicate Stripe event ids", async () => {
