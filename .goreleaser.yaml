@@ -65,7 +65,7 @@ homebrew_casks:
     repository:
       owner: endalk200
       name: homebrew-tap
-      branch: main
+      branch: better-webhook-{{ .Tag }}
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
       pull_request:
         enabled: true

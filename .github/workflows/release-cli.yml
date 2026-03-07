@@ -78,17 +78,29 @@ jobs:
           set -euo pipefail
 
           title="chore: update better-webhook cask to ${RELEASE_TAG}"
+          head_branch="better-webhook-${RELEASE_TAG}"
           query="map(select(.title == \"${title}\")) | sort_by(.number) | reverse | .[0]"
+          pr_number=""
 
-          pr_number=$(gh pr list \
-            --repo endalk200/homebrew-tap \
-            --state all \
-            --search "${title} in:title" \
-            --json number,title \
-            --jq "${query} | .number // empty")
+          for attempt in $(seq 1 12); do
+            pr_number=$(gh pr list \
+              --repo endalk200/homebrew-tap \
+              --state all \
+              --head "${head_branch}" \
+              --json number,title \
+              --jq "${query} | .number // empty")
+
+            if [ -n "$pr_number" ]; then
+              break
+            fi
+
+            if [ "$attempt" -lt 12 ]; then
+              sleep 5
+            fi
+          done
 
           if [ -z "$pr_number" ]; then
-            echo "Expected Homebrew tap PR not found for ${RELEASE_TAG}." >&2
+            echo "Expected Homebrew tap PR not found for ${RELEASE_TAG} (head branch: ${head_branch})." >&2
             exit 1
           fi
 
@@ -98,6 +110,7 @@ jobs:
           {
             echo "## Homebrew tap update"
             echo "- Tag: ${RELEASE_TAG}"
+            echo "- Branch: ${head_branch}"
             echo "- PR: ${pr_url}"
             echo "- State: ${pr_state}"
           } >> "$GITHUB_STEP_SUMMARY"
