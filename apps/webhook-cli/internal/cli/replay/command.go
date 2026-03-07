@@ -20,7 +20,15 @@ type Dependencies struct {
 	ServiceFactory ServiceFactory
 }
 
+type CommandOptions struct {
+	IncludeCapturesDirFlag bool
+}
+
 func NewCommand(deps Dependencies) *cobra.Command {
+	return NewCommandWithOptions(deps, CommandOptions{IncludeCapturesDirFlag: true})
+}
+
+func NewCommandWithOptions(deps Dependencies, options CommandOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "replay <capture-id> [target-url]",
 		Short: "Replay a captured webhook to a target URL",
@@ -115,7 +123,9 @@ func NewCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
+	if options.IncludeCapturesDirFlag {
+		cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
+	}
 	cmd.Flags().String("base-url", runtime.DefaultReplayBaseURL, "Base URL used with the captured request URI when target-url is omitted")
 	cmd.Flags().String("method", "", "Override HTTP method")
 	cmd.Flags().StringArrayP("header", "H", nil, "Add or override header (format: key:value)")

@@ -56,8 +56,46 @@ func TestRootCommandShowsHelpByDefault(t *testing.T) {
 	}
 
 	out := output.String()
-	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") {
+	if !strings.Contains(out, "capture") || !strings.Contains(out, "captures") || !strings.Contains(out, "replay") {
 		t.Fatalf("expected default help output to include capture commands, got %q", out)
+	}
+}
+
+func TestCapturesGroupHelpShowsSharedFlagsAndExamples(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	var output bytes.Buffer
+
+	rootCmd.SetOut(&output)
+	rootCmd.SetErr(&output)
+	rootCmd.SetArgs([]string{"--config", configPath, "captures", "--help"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected captures help to succeed, got error: %v", err)
+	}
+
+	out := output.String()
+	if !strings.Contains(out, "--captures-dir") || !strings.Contains(out, "captures replay deadbeef") {
+		t.Fatalf("expected captures help to show shared flags and examples, got %q", out)
+	}
+}
+
+func TestTemplatesGroupHelpShowsSharedFlagsAndExamples(t *testing.T) {
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	rootCmd := newTestRootCommand(t)
+	var output bytes.Buffer
+
+	rootCmd.SetOut(&output)
+	rootCmd.SetErr(&output)
+	rootCmd.SetArgs([]string{"--config", configPath, "templates", "--help"})
+
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("expected templates help to succeed, got error: %v", err)
+	}
+
+	out := output.String()
+	if !strings.Contains(out, "--templates-dir") || !strings.Contains(out, "templates run github-push") {
+		t.Fatalf("expected templates help to show shared flags and examples, got %q", out)
 	}
 }
 
@@ -429,7 +467,7 @@ func TestReplayCommandReplaysCaptureByPrefix(t *testing.T) {
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
 	rootCmd.SetErr(&out)
-	rootCmd.SetArgs([]string{"--config", configPath, "captures", "replay", "beadfeed", "--base-url", targetServer.URL})
+	rootCmd.SetArgs([]string{"--config", configPath, "replay", "beadfeed", "--base-url", targetServer.URL})
 
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("execute replay command: %v", err)

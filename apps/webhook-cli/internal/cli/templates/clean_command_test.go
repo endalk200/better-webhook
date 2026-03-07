@@ -205,6 +205,7 @@ func setupCleanCmd(
 		ServiceFactory: testTemplateServiceFactory(t),
 		Prompter:       prompter,
 	})
+	cmd.Flags().String("templates-dir", "", "")
 	output := &bytes.Buffer{}
 	cmd.SetOut(output)
 	cmd.SetErr(output)

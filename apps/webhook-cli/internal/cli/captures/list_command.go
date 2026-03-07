@@ -88,7 +88,6 @@ func newListCommand(deps Dependencies) *cobra.Command {
 
 	cmd.Flags().Int("limit", 20, "Maximum number of captures to show")
 	cmd.Flags().String("provider", "", "Filter captures by provider")
-	cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
 
 	return cmd
 }

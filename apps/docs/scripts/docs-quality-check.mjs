@@ -7,6 +7,7 @@ const docsContentRoot = path.join(docsRoot, "content", "docs");
 const allowedTopLevelCommands = new Set([
   "capture",
   "captures",
+  "replay",
   "templates",
   "--version",
   "version",
@@ -131,7 +132,7 @@ function extractInternalDocsLinks(content) {
 function extractCliCommandMatches(content) {
   const matches = [];
   const commandRegex =
-    /\bbetter-webhook\s+(capture|captures|templates|--version|version)\b[^\n\r`]*/g;
+    /\bbetter-webhook\s+(capture|captures|replay|templates|--version|version)\b[^\n\r`]*/g;
   for (const match of content.matchAll(commandRegex)) {
     const value = match[0].trim();
     const index = match.index ?? 0;
@@ -174,10 +175,6 @@ async function run() {
     if (/\bcaptures\s+(show|search|save-as-template)\b/.test(content)) {
       errors.push(`${sourceFile}: contains unsupported captures subcommands`);
     }
-    if (/\bbetter-webhook\s+replay\b/.test(content)) {
-      errors.push(`${sourceFile}: contains unsupported top-level replay command`);
-    }
-
     for (const { value, index } of extractCliCommandMatches(content)) {
       const tokens = tokenizeCommand(value);
       const topLevel = tokens[1];
