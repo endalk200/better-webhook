@@ -38,15 +38,24 @@ func (Loader) Load(configPath string) (runtime.AppConfig, error) {
 	if err != nil {
 		return runtime.AppConfig{}, err
 	}
+	configDir := filepath.Dir(resolvedConfigPath)
 	tomlConfig, err := readTOMLConfig(resolvedConfigPath)
 	if err != nil {
 		return runtime.AppConfig{}, err
 	}
 	if tomlConfig.CapturesDir != nil {
-		loadedConfig.CapturesDir = *tomlConfig.CapturesDir
+		resolvedCapturesDir, resolveErr := expandPath(*tomlConfig.CapturesDir, homeDir, configDir)
+		if resolveErr != nil {
+			return runtime.AppConfig{}, fmt.Errorf("expand captures_dir: %w", resolveErr)
+		}
+		loadedConfig.CapturesDir = resolvedCapturesDir
 	}
 	if tomlConfig.TemplatesDir != nil {
-		loadedConfig.TemplatesDir = *tomlConfig.TemplatesDir
+		resolvedTemplatesDir, resolveErr := expandPath(*tomlConfig.TemplatesDir, homeDir, configDir)
+		if resolveErr != nil {
+			return runtime.AppConfig{}, fmt.Errorf("expand templates_dir: %w", resolveErr)
+		}
+		loadedConfig.TemplatesDir = resolvedTemplatesDir
 	}
 	if tomlConfig.LogLevel != nil {
 		loadedConfig.LogLevel = *tomlConfig.LogLevel
@@ -168,7 +177,7 @@ func applyEnvOverrides(cfg *runtime.AppConfig) {
 	}
 }
 
-func expandPath(pathValue, homeDir string) (string, error) {
+func expandPath(pathValue, homeDir string, relativeBase ...string) (string, error) {
 	trimmed := strings.TrimSpace(os.ExpandEnv(pathValue))
 	if trimmed == "" {
 		return "", errors.New("path cannot be empty")
@@ -191,6 +200,12 @@ func expandPath(pathValue, homeDir string) (string, error) {
 	}
 	if filepath.IsAbs(trimmed) {
 		return filepath.Clean(trimmed), nil
+	}
+	if len(relativeBase) > 0 {
+		baseDir := strings.TrimSpace(relativeBase[0])
+		if baseDir != "" {
+			return filepath.Abs(filepath.Join(baseDir, trimmed))
+		}
 	}
 	return filepath.Abs(trimmed)
 }

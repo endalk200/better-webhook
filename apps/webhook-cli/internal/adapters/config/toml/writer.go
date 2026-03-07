@@ -83,7 +83,8 @@ func renderDefaultConfigTemplate(defaults runtime.AppConfig) string {
 # Path values support:
 #   - "~" home expansion
 #   - "$ENV_VAR" expansion
-#   - relative paths (resolved against the current working directory)
+#   - relative paths in this file (resolved relative to this config file)
+#   - relative paths from environment overrides/flags (resolved against the current working directory)
 
 # Directory where captured webhook payloads are persisted.
 # Override with:

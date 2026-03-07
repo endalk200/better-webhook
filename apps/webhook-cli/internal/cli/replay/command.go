@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -193,6 +194,9 @@ func mapReplayCommandError(err error, selector string) error {
 	if errors.Is(err, appreplay.ErrInvalidBody) {
 		return fmt.Errorf("captured payload is invalid and cannot be replayed")
 	}
+	if connectivityErr := mapReplayConnectivityError(err); connectivityErr != nil {
+		return connectivityErr
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation timed out")
 	}
@@ -200,4 +204,23 @@ func mapReplayCommandError(err error, selector string) error {
 		return fmt.Errorf("operation cancelled")
 	}
 	return err
+}
+
+func mapReplayConnectivityError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		return nil
+	}
+	targetURL := strings.TrimSpace(urlErr.URL)
+	if targetURL == "" {
+		targetURL = "the target URL"
+	}
+	reason := strings.TrimSpace(urlErr.Err.Error())
+	if reason == "" {
+		reason = "request failed"
+	}
+	return fmt.Errorf("could not reach target URL %s: %s", targetURL, reason)
 }

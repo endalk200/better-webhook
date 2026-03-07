@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -59,6 +60,20 @@ func TestMapReplayCommandErrorForDeadlineExceeded(t *testing.T) {
 		t.Fatalf("expected mapped error")
 	}
 	if got := err.Error(); got != "operation timed out" {
+		t.Fatalf("unexpected error message: %q", got)
+	}
+}
+
+func TestMapReplayCommandErrorForTargetConnectivityFailure(t *testing.T) {
+	err := mapReplayCommandError(&url.Error{
+		Op:  "Post",
+		URL: "http://127.0.0.1:1/webhooks/github",
+		Err: errors.New("connection refused"),
+	}, "deadbeef")
+	if err == nil {
+		t.Fatalf("expected mapped error")
+	}
+	if got := err.Error(); got != "could not reach target URL http://127.0.0.1:1/webhooks/github: connection refused" {
 		t.Fatalf("unexpected error message: %q", got)
 	}
 }

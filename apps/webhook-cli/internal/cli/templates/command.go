@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -86,6 +87,9 @@ func mapTemplateCommandError(err error, templateID string) error {
 	if errors.Is(err, apptemplates.ErrRunSecretRequired) {
 		return fmt.Errorf("secret is required for provider signing placeholder: %w", err)
 	}
+	if connectivityErr := mapTemplateTargetConnectivityError(err); connectivityErr != nil {
+		return connectivityErr
+	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation cancelled: %w", err)
 	}
@@ -147,4 +151,23 @@ func wrapRunInvalidBodyError(message string, cause error) error {
 		message: message,
 		cause:   errors.Join(apptemplates.ErrRunInvalidBody, cause),
 	}
+}
+
+func mapTemplateTargetConnectivityError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		return nil
+	}
+	targetURL := strings.TrimSpace(urlErr.URL)
+	if targetURL == "" {
+		targetURL = "the target URL"
+	}
+	reason := strings.TrimSpace(urlErr.Err.Error())
+	if reason == "" {
+		reason = "request failed"
+	}
+	return fmt.Errorf("could not reach target URL %s: %s", targetURL, reason)
 }

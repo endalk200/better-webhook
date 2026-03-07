@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -68,7 +69,7 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 					return nil
 				}
 
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.FormatSuccess("Download complete"))
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatDownloadAllLeadMessage(result))
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), ui.NewKeyValueTable([][]string{
 					{"Downloaded", ui.Success.Render(fmt.Sprintf("%d", result.Downloaded))},
 					{"Skipped", ui.Muted.Render(fmt.Sprintf("%d", result.Skipped))},
@@ -76,6 +77,9 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 				}))
 				for _, failedID := range result.FailedIDs {
 					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s %s\n", ui.ErrorIcon, failedID)
+				}
+				if result.Failed > 0 {
+					return downloadAllPartialFailureError(result)
 				}
 				return nil
 			}
@@ -87,7 +91,7 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 				return dlErr
 			})
 			if err != nil {
-				return mapTemplateCommandError(err, downloadArgs.TemplateID)
+				return fmt.Errorf("download template %s: %w", strings.TrimSpace(downloadArgs.TemplateID), mapTemplateCommandError(err, downloadArgs.TemplateID))
 			}
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatSingleDownloadSummary(downloadResult))
 			_, _ = fmt.Fprintf(
@@ -110,11 +114,26 @@ func formatAllTemplatesAlreadyDownloadedMessage() string {
 	return "All templates already downloaded."
 }
 
+func formatDownloadAllLeadMessage(result apptemplates.DownloadAllResult) string {
+	if result.Failed > 0 {
+		return ui.FormatWarning("Download finished with failures")
+	}
+	return ui.FormatSuccess("Download complete")
+}
+
 func formatFailedCount(count int) string {
 	if count > 0 {
 		return ui.Error.Render(fmt.Sprintf("%d", count))
 	}
 	return ui.Muted.Render("0")
+}
+
+func downloadAllPartialFailureError(result apptemplates.DownloadAllResult) error {
+	return fmt.Errorf(
+		"download finished with failures: %d of %d template(s) failed",
+		result.Failed,
+		result.Total,
+	)
 }
 
 func formatSingleDownloadSummary(result apptemplates.DownloadResult) string {

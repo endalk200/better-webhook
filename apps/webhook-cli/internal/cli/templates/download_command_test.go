@@ -67,3 +67,25 @@ func TestFormatAllTemplatesAlreadyDownloadedMessage(t *testing.T) {
 		t.Fatalf("unexpected message: %q", message)
 	}
 }
+
+func TestFormatDownloadAllLeadMessageReflectsFailures(t *testing.T) {
+	successMessage := formatDownloadAllLeadMessage(apptemplates.DownloadAllResult{Downloaded: 1})
+	if !strings.Contains(successMessage, "Download complete") {
+		t.Fatalf("unexpected success message: %q", successMessage)
+	}
+
+	failureMessage := formatDownloadAllLeadMessage(apptemplates.DownloadAllResult{Downloaded: 1, Failed: 1})
+	if !strings.Contains(failureMessage, "Download finished with failures") {
+		t.Fatalf("unexpected failure message: %q", failureMessage)
+	}
+}
+
+func TestDownloadAllPartialFailureErrorIncludesCounts(t *testing.T) {
+	err := downloadAllPartialFailureError(apptemplates.DownloadAllResult{Total: 3, Failed: 1})
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := err.Error(); got != "download finished with failures: 1 of 3 template(s) failed" {
+		t.Fatalf("unexpected error message: %q", got)
+	}
+}

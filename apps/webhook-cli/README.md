@@ -53,6 +53,20 @@ better-webhook captures list
 better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
+## Configuration
+
+The CLI looks for configuration in this order:
+
+1. `--config <path>`
+2. `BETTER_WEBHOOK_CONFIG_PATH`
+3. `~/.better-webhook/config.toml`
+
+Path behavior:
+
+- `~` and `$ENV_VAR` values are expanded
+- relative paths inside the config file are resolved relative to that config file
+- relative paths passed via flags or environment variables are resolved from your current working directory
+
 ## Commands
 
 ### `capture`

@@ -984,6 +984,89 @@ func TestTemplatesDownloadAllHonorsRefreshFlag(t *testing.T) {
 	assertContainsAll(t, output, "Download complete")
 }
 
+func TestTemplatesDownloadAllReturnsErrorWhenAnyTemplateFails(t *testing.T) {
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {"id":"github-push","name":"GitHub Push","provider":"github","event":"push","file":"github/github-push.jsonc"},
+    {"id":"stripe-payment","name":"Stripe Payment","provider":"stripe","event":"payment_intent.succeeded","file":"stripe/missing.jsonc"}
+  ]
+}`))
+		case "/templates/github/github-push.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"method":"POST","body":{"ok":true}}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	rootCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
+	rootCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "--all",
+		"--templates-dir", templatesDir,
+	})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected templates download --all to fail when any template download fails")
+	}
+	if !strings.Contains(err.Error(), "download finished with failures: 1 of 2 template(s) failed") {
+		t.Fatalf("unexpected download --all error: %v", err)
+	}
+	output := normalizeCLIOutput(out.String())
+	assertContainsAll(t, output, "Download finished with failures", "Downloaded", "Failed", "stripe-payment")
+}
+
+func TestTemplatesDownloadSingleIncludesTemplateIDInError(t *testing.T) {
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {"id":"github-push","name":"GitHub Push","provider":"github","event":"push","file":"github/github-push.jsonc"}
+  ]
+}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+
+	rootCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	rootCmd.SetOut(&bytes.Buffer{})
+	rootCmd.SetErr(&bytes.Buffer{})
+	rootCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "github-push",
+		"--templates-dir", templatesDir,
+	})
+
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatalf("expected templates download to fail when template content is missing")
+	}
+	if !strings.Contains(err.Error(), "download template github-push") {
+		t.Fatalf("expected template ID in error, got %v", err)
+	}
+}
+
 func TestTemplatesDownloadSingleReportsAlreadyDownloadedAndRefreshed(t *testing.T) {
 	configPath := writeCommandTestConfig(t, t.TempDir())
 	templatesDir := t.TempDir()
