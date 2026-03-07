@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -31,20 +30,6 @@ func TestMapTemplateCommandErrorPassThrough(t *testing.T) {
 	err := mapTemplateCommandError(rootErr, "")
 	if err == nil || err.Error() != "raw failure" {
 		t.Fatalf("expected pass-through error")
-	}
-}
-
-func TestMapTemplateCommandErrorForTargetConnectivityFailure(t *testing.T) {
-	err := mapTemplateCommandError(&url.Error{
-		Op:  "Post",
-		URL: "http://127.0.0.1:1/hooks/github",
-		Err: errors.New("connection refused"),
-	}, "")
-	if err == nil {
-		t.Fatalf("expected mapped error")
-	}
-	if got, want := err.Error(), "could not reach target URL http://127.0.0.1:1/hooks/github: connection refused"; got != want {
-		t.Fatalf("error mismatch: got %q want %q", got, want)
 	}
 }
 

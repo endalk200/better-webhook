@@ -91,7 +91,8 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 				return dlErr
 			})
 			if err != nil {
-				return fmt.Errorf("download template %s: %w", strings.TrimSpace(downloadArgs.TemplateID), mapTemplateCommandError(err, downloadArgs.TemplateID))
+				templateID := strings.TrimSpace(downloadArgs.TemplateID)
+				return fmt.Errorf("download template %s: %w", templateID, mapTemplateCommandError(err, templateID))
 			}
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatSingleDownloadSummary(downloadResult))
 			_, _ = fmt.Fprintf(

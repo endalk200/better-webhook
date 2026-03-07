@@ -92,7 +92,7 @@ func resolveConfigPath(configPath string, homeDir string) (string, error) {
 	if path == "" {
 		path = runtime.DefaultConfigPath(homeDir)
 	}
-	resolved, err := expandPath(path, homeDir)
+	resolved, err := expandPath(path, homeDir, "")
 	if err != nil {
 		return "", fmt.Errorf("resolve config path %q: %w", path, err)
 	}
@@ -148,12 +148,12 @@ func normalizeConfig(cfg runtime.AppConfig, homeDir string) (runtime.AppConfig, 
 	cfg.CapturesDir = strings.TrimSpace(cfg.CapturesDir)
 	cfg.LogLevel = strings.ToLower(strings.TrimSpace(cfg.LogLevel))
 
-	expandedCapturesDir, err := expandPath(cfg.CapturesDir, homeDir)
+	expandedCapturesDir, err := expandPath(cfg.CapturesDir, homeDir, "")
 	if err != nil {
 		return runtime.AppConfig{}, fmt.Errorf("expand captures_dir: %w", err)
 	}
 	cfg.CapturesDir = expandedCapturesDir
-	expandedTemplatesDir, err := expandPath(cfg.TemplatesDir, homeDir)
+	expandedTemplatesDir, err := expandPath(cfg.TemplatesDir, homeDir, "")
 	if err != nil {
 		return runtime.AppConfig{}, fmt.Errorf("expand templates_dir: %w", err)
 	}
@@ -177,7 +177,7 @@ func applyEnvOverrides(cfg *runtime.AppConfig) {
 	}
 }
 
-func expandPath(pathValue, homeDir string, relativeBase ...string) (string, error) {
+func expandPath(pathValue, homeDir string, relativeBase string) (string, error) {
 	trimmed := strings.TrimSpace(os.ExpandEnv(pathValue))
 	if trimmed == "" {
 		return "", errors.New("path cannot be empty")
@@ -201,11 +201,9 @@ func expandPath(pathValue, homeDir string, relativeBase ...string) (string, erro
 	if filepath.IsAbs(trimmed) {
 		return filepath.Clean(trimmed), nil
 	}
-	if len(relativeBase) > 0 {
-		baseDir := strings.TrimSpace(relativeBase[0])
-		if baseDir != "" {
-			return filepath.Abs(filepath.Join(baseDir, trimmed))
-		}
+	baseDir := strings.TrimSpace(relativeBase)
+	if baseDir != "" {
+		return filepath.Abs(filepath.Join(baseDir, trimmed))
 	}
 	return filepath.Abs(trimmed)
 }

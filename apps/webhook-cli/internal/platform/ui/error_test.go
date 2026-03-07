@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -26,4 +27,24 @@ func TestFormatErrorHandlesNilError(t *testing.T) {
 			t.Fatalf("expected formatted non-nil error output, got %q", plain)
 		}
 	})
+}
+
+func TestFormatTargetConnectivityError(t *testing.T) {
+	err := FormatTargetConnectivityError(&url.Error{
+		Op:  "Post",
+		URL: "http://127.0.0.1:1/hooks/github",
+		Err: errors.New("connection refused"),
+	})
+	if err == nil {
+		t.Fatalf("expected connectivity error")
+	}
+	if got, want := err.Error(), "could not reach target URL http://127.0.0.1:1/hooks/github: connection refused"; got != want {
+		t.Fatalf("error mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestFormatTargetConnectivityErrorReturnsNilForNonURLError(t *testing.T) {
+	if err := FormatTargetConnectivityError(errors.New("boom")); err != nil {
+		t.Fatalf("expected nil for non-url error, got %v", err)
+	}
 }
