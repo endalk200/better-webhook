@@ -193,6 +193,9 @@ func mapReplayCommandError(err error, selector string) error {
 	if errors.Is(err, appreplay.ErrInvalidBody) {
 		return fmt.Errorf("captured payload is invalid and cannot be replayed")
 	}
+	if connectivityErr := ui.FormatTargetConnectivityError(err); connectivityErr != nil {
+		return connectivityErr
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation timed out")
 	}

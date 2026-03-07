@@ -76,6 +76,36 @@ func TestLoadConfigExpandsTemplatesDir(t *testing.T) {
 	}
 }
 
+func TestLoadConfigResolvesRelativePathsAgainstConfigDirectory(t *testing.T) {
+	tempDir := t.TempDir()
+	configDir := filepath.Join(tempDir, "config")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("create config dir: %v", err)
+	}
+	configPath := filepath.Join(configDir, "better-webhook.toml")
+
+	if err := os.WriteFile(configPath, []byte(`
+captures_dir = "relative-captures"
+templates_dir = "relative-templates"
+`), 0o600); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
+
+	cfg, err := NewLoader().Load(configPath)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	expectedCapturesDir := filepath.Join(configDir, "relative-captures")
+	if cfg.CapturesDir != expectedCapturesDir {
+		t.Fatalf("captures dir mismatch: got %q want %q", cfg.CapturesDir, expectedCapturesDir)
+	}
+	expectedTemplatesDir := filepath.Join(configDir, "relative-templates")
+	if cfg.TemplatesDir != expectedTemplatesDir {
+		t.Fatalf("templates dir mismatch: got %q want %q", cfg.TemplatesDir, expectedTemplatesDir)
+	}
+}
+
 func TestLoadConfigEnvTemplatesDirOverridesTOML(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "config.toml")
