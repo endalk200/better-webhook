@@ -23,12 +23,23 @@ func NewCommand(deps Dependencies) *cobra.Command {
 		Use:     "captures",
 		Aliases: []string{"c"},
 		Short:   "Manage captured webhooks",
-		RunE:    runGroupCommand,
+		Long: `Manage stored webhook captures.
+
+Shared flags like --captures-dir apply to every captures subcommand.`,
+		Example: `  better-webhook captures list
+  better-webhook captures list --captures-dir ./tmp/captures
+  better-webhook captures replay deadbeef --base-url http://localhost:3000
+  better-webhook captures delete deadbeef --force`,
+		RunE: runGroupCommand,
 	}
 
+	cmd.PersistentFlags().String("captures-dir", "", "Directory where captures are stored")
 	cmd.AddCommand(newListCommand(deps))
 	cmd.AddCommand(newDeleteCommand(deps))
-	cmd.AddCommand(replaycmd.NewCommand(deps.ReplayDependencies))
+	cmd.AddCommand(replaycmd.NewCommandWithOptions(
+		deps.ReplayDependencies,
+		replaycmd.CommandOptions{IncludeCapturesDirFlag: false},
+	))
 
 	return cmd
 }

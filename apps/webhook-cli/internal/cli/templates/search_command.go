@@ -75,7 +75,6 @@ func newSearchCommand(deps Dependencies) *cobra.Command {
 	}
 	cmd.Flags().String("provider", "", "Filter by provider")
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
-	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }
 

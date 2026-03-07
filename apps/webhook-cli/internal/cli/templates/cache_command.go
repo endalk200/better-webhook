@@ -56,6 +56,5 @@ func newCacheClearCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }

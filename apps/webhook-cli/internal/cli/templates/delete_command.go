@@ -60,7 +60,6 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
-	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }
 

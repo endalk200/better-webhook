@@ -205,6 +205,7 @@ func setupDeleteCmd(
 		ServiceFactory: testCapturesServiceFactory(t),
 		Prompter:       prompter,
 	})
+	cmd.Flags().String("captures-dir", "", "")
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 	cmd.SetOut(outBuf)

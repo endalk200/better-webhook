@@ -6,6 +6,7 @@ import (
 	capturecmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/capture"
 	capturescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/captures"
 	initcmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/init"
+	replaycmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/replay"
 	templatescmd "github.com/endalk200/better-webhook/apps/webhook-cli/internal/cli/templates"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/platform/runtime"
 )
@@ -21,20 +22,23 @@ type Dependencies struct {
 
 func NewCommand(deps Dependencies) *cobra.Command {
 	initCommand := initcmd.NewCommand(deps.InitDependencies)
+	replayCommand := replaycmd.NewCommand(deps.CapturesDependencies.ReplayDependencies)
 
 	rootCmd := &cobra.Command{
 		Use:   "better-webhook",
-		Short: "Capture and inspect webhook requests locally",
+		Short: "Capture, replay, and test webhooks locally",
 		Long: `A local CLI for capturing webhook requests with high-fidelity storage.
 
-First run:
-  better-webhook init
-Then start capturing:
-  better-webhook capture`,
+Start capturing right away:
+  better-webhook capture --port 3001
+
+Optional: write a documented config file first:
+  better-webhook init`,
 		Example: `  better-webhook init
   better-webhook capture --port 3001
   better-webhook captures list
-  better-webhook captures replay <capture-id> --base-url http://localhost:3000`,
+  better-webhook replay <capture-id> --base-url http://localhost:3000
+  better-webhook templates run github-push http://localhost:3000/api/webhooks/github`,
 		Version:       deps.Version,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -53,6 +57,7 @@ Then start capturing:
 	rootCmd.SetVersionTemplate("{{printf \"%s\\n\" .Version}}")
 	rootCmd.AddCommand(initCommand)
 	rootCmd.AddCommand(capturecmd.NewCommand(deps.CaptureDependencies))
+	rootCmd.AddCommand(replayCommand)
 	rootCmd.AddCommand(capturescmd.NewCommand(deps.CapturesDependencies))
 	rootCmd.AddCommand(templatescmd.NewCommand(deps.TemplateDependencies))
 

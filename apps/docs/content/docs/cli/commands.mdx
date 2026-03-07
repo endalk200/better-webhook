@@ -24,6 +24,8 @@ Initialize a default config file:
 better-webhook init
 ```
 
+`init` is optional. The CLI falls back to defaults when no config file exists.
+
 ## capture
 
 Start a standalone server to capture incoming webhooks.
@@ -54,6 +56,12 @@ Captured webhooks are stored locally and can be viewed with `captures list` or r
 ## captures
 
 Manage captured webhooks. This command has several subcommands.
+
+Shared options:
+
+| Option                 | Description                        |
+| ---------------------- | ---------------------------------- |
+| `--captures-dir <dir>` | Directory where captures are stored|
 
 ### captures list
 
@@ -120,6 +128,16 @@ better-webhook captures replay <capture-id> [target-url] [options]
 
 `captures replay` exits non-zero when the target response is HTTP `4xx` or `5xx`.
 
+### replay
+
+Replay is also available as a top-level shortcut for the most common debug loop.
+
+```bash
+better-webhook replay <capture-id> [target-url] [options]
+```
+
+`replay` accepts the same flags and behavior as `captures replay`, including `--captures-dir`.
+
 **Example:**
 
 ```bash
@@ -140,6 +158,12 @@ better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/githu
 ## templates
 
 Manage webhook templates. See [Templates](/docs/cli/templates) for detailed documentation.
+
+Shared options:
+
+| Option                  | Description                                 |
+| ----------------------- | ------------------------------------------- |
+| `--templates-dir <dir>` | Directory where downloaded templates live   |
 
 ### Quick Reference
 
