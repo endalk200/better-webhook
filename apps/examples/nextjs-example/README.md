@@ -1,7 +1,9 @@
 # Next.js Example
 
 A simple Next.js app demonstrating `@better-webhook/github`,
-`@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/nextjs`.
+`@better-webhook/stripe`, `@better-webhook/ragie`,
+`@better-webhook/recall`, `@better-webhook/resend`, and
+`@better-webhook/nextjs`.
 
 ## Quick Start
 
@@ -18,15 +20,19 @@ Server URL: `http://localhost:3002`
 | Variable                | Required | Description                                           |
 | ----------------------- | -------- | ----------------------------------------------------- |
 | `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures               |
+| `STRIPE_WEBHOOK_SECRET` | Yes      | Secret used to verify Stripe signatures               |
 | `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures                |
 | `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures (`whsec_...`) |
+| `RESEND_WEBHOOK_SECRET` | Yes      | Secret used to verify Resend Svix signatures          |
 
 Example:
 
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret \
+STRIPE_WEBHOOK_SECRET=whsec_your-stripe-secret \
 RAGIE_WEBHOOK_SECRET=your-ragie-secret \
 RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64 \
+RESEND_WEBHOOK_SECRET=whsec_your-resend-secret-base64 \
 pnpm --filter @better-webhook/nextjs-example dev
 ```
 
@@ -34,8 +40,10 @@ Or create a `.env.local` file:
 
 ```env
 GITHUB_WEBHOOK_SECRET=your-github-secret
+STRIPE_WEBHOOK_SECRET=whsec_your-stripe-secret
 RAGIE_WEBHOOK_SECRET=your-ragie-secret
 RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64
+RESEND_WEBHOOK_SECRET=whsec_your-resend-secret-base64
 ```
 
 ## Endpoints
@@ -44,8 +52,12 @@ RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64
 - `GET /api/webhooks/github` - GitHub endpoint info
 - `POST /api/webhooks/ragie` - Ragie webhook endpoint
 - `GET /api/webhooks/ragie` - Ragie endpoint info
+- `POST /api/webhooks/stripe` - Stripe webhook endpoint
+- `GET /api/webhooks/stripe` - Stripe endpoint info
 - `POST /api/webhooks/recall` - Recall.ai webhook endpoint
 - `GET /api/webhooks/recall` - Recall endpoint info
+- `POST /api/webhooks/resend` - Resend webhook endpoint
+- `GET /api/webhooks/resend` - Resend endpoint info
 
 ## Signed Testing
 
@@ -65,14 +77,33 @@ curl -X POST "http://localhost:3002/api/webhooks/github" \
   -d "$PAYLOAD"
 ```
 
+For Resend, sign the Svix-style payload using the `whsec_...` secret:
+
+```bash
+SECRET="whsec_your-resend-secret-base64"
+PAYLOAD='{"type":"email.delivered","created_at":"2024-11-22T23:41:12.126Z","data":{"email_id":"56761188-7520-42d8-8898-ff6fc54ce618","created_at":"2024-11-22T23:41:11.894719+00:00","from":"Acme <onboarding@resend.dev>","to":["delivered@resend.dev"],"subject":"Sending this example"}}'
+MSG_ID="msg_test_123"
+TIMESTAMP=$(date +%s)
+SIGNATURE=$(node -e 'const crypto=require("node:crypto"); const [,secret,id,timestamp,payload]=process.argv; const key=Buffer.from(secret.slice("whsec_".length),"base64"); const sig=crypto.createHmac("sha256",key).update(`${id}.${timestamp}.${payload}`).digest("base64"); process.stdout.write(sig);' "$SECRET" "$MSG_ID" "$TIMESTAMP" "$PAYLOAD")
+
+curl -X POST "http://localhost:3002/api/webhooks/resend" \
+  -H "Content-Type: application/json" \
+  -H "svix-id: $MSG_ID" \
+  -H "svix-timestamp: $TIMESTAMP" \
+  -H "svix-signature: v1,$SIGNATURE" \
+  -d "$PAYLOAD"
+```
+
 For dev-only unsigned testing, use a custom provider configured with
 `verification: "disabled"`. Do not use disabled verification in production.
 
 ## Replay Strategy Notes
 
-This example demonstrates three replay/idempotency strategies:
+This example demonstrates several replay/idempotency strategies:
 
 - Built-in replay store (`github` route) via `createInMemoryReplayStore()`
+- Built-in replay store (`stripe` route) via provider event ids
+- Built-in replay store (`resend` route) via `svix-id`
 - Custom replay store (`ragie` route) using provider replay metadata (`nonce`)
 - Manual dedupe (`recall` route) using `context.deliveryId`
 
@@ -84,5 +115,5 @@ semantics (`reserve/commit/release`) for custom stores.
 
 - `401` responses: verify secrets match the sender and your local env vars.
 - Signature mismatch: sign the exact raw payload bytes sent in `curl`.
-- `204` responses: expected for verified but unhandled event types.
+- `200`/`204` responses: verified requests may be acknowledged even when no handler is registered, depending on provider contract.
 - Duplicate events: check replay strategy and storage persistence.
