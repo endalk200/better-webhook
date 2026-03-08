@@ -19,7 +19,7 @@ export interface NextJSAdapterOptions {
   maxBodyBytes?: number;
 
   /**
-   * Callback invoked only when `result.status === 200`.
+   * Callback invoked only when a registered handler successfully processes the webhook.
    * Observer `CompletedEvent.success` can still be `true` for both 200 and 204.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;
@@ -147,7 +147,12 @@ export function toNextJS<TProviderBrand extends string = string>(
     });
 
     // Call onSuccess if applicable
-    if (result.status === 200 && result.eventType && options?.onSuccess) {
+    if (
+      result.status === 200 &&
+      result.body?.ok === true &&
+      result.eventType &&
+      options?.onSuccess
+    ) {
       try {
         await options.onSuccess(result.eventType);
       } catch {
