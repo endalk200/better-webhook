@@ -7,6 +7,7 @@
     "STRIPE_WEBHOOK_SECRET",
     "RAGIE_WEBHOOK_SECRET",
     "RECALL_WEBHOOK_SECRET",
+    "RESEND_WEBHOOK_SECRET",
     "PORT"
   ],
   "tasks": {
