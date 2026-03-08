@@ -191,6 +191,17 @@ const providerInfo = [
     color: "var(--nb-coral)",
   },
   {
+    key: "stripe",
+    name: "Stripe",
+    events: [
+      "charge.failed",
+      "checkout.session.completed",
+      "payment_intent.succeeded",
+    ],
+    package: "@better-webhook/stripe",
+    color: "var(--nb-yellow)",
+  },
+  {
     key: "ragie",
     name: "Ragie",
     events: [
@@ -219,6 +230,19 @@ const providerInfo = [
     ],
     package: "@better-webhook/recall",
     color: "var(--nb-blue)",
+  },
+  {
+    key: "resend",
+    name: "Resend",
+    events: [
+      "email.delivered",
+      "email.bounced",
+      "email.received",
+      "domain.updated",
+      "contact.created",
+    ],
+    package: "@better-webhook/resend",
+    color: "var(--nb-green)",
   },
 ];
 

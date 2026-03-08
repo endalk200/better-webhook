@@ -13,6 +13,7 @@ Core replay protection uses provider-specific replay keys:
 - Stripe: `body.id` (event id)
 - Ragie: `body.nonce` (exposed as `payload.nonce`)
 - Recall.ai: `webhook-id` or `svix-id`
+- Resend: `svix-id`
 
 When replay protection is enabled and a duplicate is detected, the default response is `409`.
 

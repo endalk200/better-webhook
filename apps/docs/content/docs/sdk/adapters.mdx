@@ -537,7 +537,7 @@ All adapters accept the same options:
 | ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `secret`    | `string`                                       | Webhook secret for signature verification. Overrides provider secret and environment variables.                   |
 | `maxBodyBytes` | `number`                                    | Optional request body size guard in bytes. Returns `413` when exceeded.                                          |
-| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after successful webhook processing. Errors from this callback are ignored.                      |
+| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after a registered handler successfully processes the webhook. Errors from this callback are ignored. |
 | `observer`  | `WebhookObserver \| WebhookObserver[]`         | Observer(s) for webhook lifecycle events. Add metrics, logging, or tracing without modifying the webhook builder. |
 
 If core replay protection is enabled on the webhook builder, adapters pass
@@ -554,7 +554,7 @@ When verifying signatures, the SDK looks for a secret in this order:
 
 1. **Adapter options** — `toNextJS(webhook, { secret: "..." })`
 2. **Provider options** — `github({ secret: "..." })`
-3. **Environment variables** — `GITHUB_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`, or `WEBHOOK_SECRET`
+3. **Environment variables** — `GITHUB_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`, `RESEND_WEBHOOK_SECRET`, or `WEBHOOK_SECRET`
 
 If the provider requires verification and no secret is found, the request is
 rejected (typically `401`). Verification is skipped only when the provider is

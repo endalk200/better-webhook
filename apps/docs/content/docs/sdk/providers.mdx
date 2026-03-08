@@ -1,6 +1,6 @@
 ---
 title: Providers
-description: Documentation for GitHub, Stripe, Ragie, and Recall.ai webhook providers with all supported events.
+description: Documentation for GitHub, Stripe, Ragie, Recall.ai, and Resend webhook providers with all supported events.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -723,6 +723,205 @@ verifies HMAC-SHA256 signatures automatically when `RECALL_WEBHOOK_SECRET` (or
 
 ---
 
+## Resend
+
+<Tabs groupId="package-manager" items={["npm", "pnpm", "yarn"]}>
+  <Tab value="npm">
+  ```bash
+  npm install @better-webhook/resend
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add @better-webhook/resend
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn add @better-webhook/resend
+  ```
+  </Tab>
+</Tabs>
+
+```ts
+import { resend } from "@better-webhook/resend";
+import {
+  email_bounced,
+  email_delivered,
+  email_received,
+} from "@better-webhook/resend/events";
+
+const webhook = resend({ secret: process.env.RESEND_WEBHOOK_SECRET })
+  .event(email_delivered, async (payload) => {
+    console.log(payload.data.email_id);
+  })
+  .event(email_bounced, async (payload) => {
+    console.log(payload.data.bounce.type);
+  })
+  .event(email_received, async (payload) => {
+    console.log(payload.data.message_id);
+  });
+```
+
+<Callout type="info">
+  Resend handlers receive the full webhook envelope: `{ type, created_at, data }`.
+  The provider reads the event type from `body.type` and validates the full
+  payload without unwrapping it.
+</Callout>
+
+### Events
+
+Import events from `@better-webhook/resend/events`:
+
+```ts
+import {
+  email_sent,
+  email_scheduled,
+  email_delivered,
+  email_delivery_delayed,
+  email_complained,
+  email_bounced,
+  email_opened,
+  email_clicked,
+  email_received,
+  email_failed,
+  email_suppressed,
+  domain_created,
+  domain_updated,
+  domain_deleted,
+  contact_created,
+  contact_updated,
+  contact_deleted,
+} from "@better-webhook/resend/events";
+```
+
+#### email.*
+
+Events:
+
+- `email.sent`
+- `email.scheduled`
+- `email.delivered`
+- `email.delivery_delayed`
+- `email.complained`
+- `email.bounced`
+- `email.opened`
+- `email.clicked`
+- `email.received`
+- `email.failed`
+- `email.suppressed`
+
+```ts
+import {
+  email_delivered,
+  email_bounced,
+  email_clicked,
+  email_received,
+} from "@better-webhook/resend/events";
+
+.event(email_delivered, async (payload) => {
+  console.log(payload.data.email_id);
+  console.log(payload.data.to);
+})
+.event(email_bounced, async (payload) => {
+  console.log(payload.data.bounce.message);
+  console.log(payload.data.bounce.subType);
+})
+.event(email_clicked, async (payload) => {
+  console.log(payload.data.click.link);
+  console.log(payload.data.click.userAgent);
+})
+.event(email_received, async (payload) => {
+  console.log(payload.data.message_id);
+  console.log(payload.data.attachments?.length ?? 0);
+})
+```
+
+**Key payload fields:**
+
+- `created_at` - Event timestamp for ordering and auditing
+- `data.email_id` - Stable Resend email identifier
+- `data.created_at` - Email object timestamp
+- `data.from` / `data.to` / `data.subject` - Core email metadata
+- `data.tags` - Tag payload from Resend; the SDK accepts both object-map and `{ name, value }[]` variants
+- `data.bounce` / `data.click` / `data.failed` / `data.suppressed` - Event-specific detail objects when present
+
+<Callout type="warn">
+  `email.received` is metadata-only. Fetch the full inbound body, headers, and
+  attachments through Resend's receiving APIs when you need the message content.
+</Callout>
+
+#### domain.*
+
+Events:
+
+- `domain.created`
+- `domain.updated`
+- `domain.deleted`
+
+```ts
+import { domain_updated } from "@better-webhook/resend/events";
+
+.event(domain_updated, async (payload) => {
+  console.log(payload.data.name);
+  console.log(payload.data.status);
+  console.log(payload.data.records.length);
+})
+```
+
+**Key payload fields:**
+
+- `data.id` - Domain identifier
+- `data.name` - Domain name
+- `data.status` - Aggregated verification status
+- `data.region` - Region where the domain is configured
+- `data.records` - Verification record details
+
+#### contact.*
+
+Events:
+
+- `contact.created`
+- `contact.updated`
+- `contact.deleted`
+
+```ts
+import { contact_created } from "@better-webhook/resend/events";
+
+.event(contact_created, async (payload) => {
+  console.log(payload.data.email);
+  console.log(payload.data.segment_ids);
+  console.log(payload.data.unsubscribed);
+})
+```
+
+**Key payload fields:**
+
+- `data.id` - Contact identifier
+- `data.audience_id` - Audience identifier
+- `data.segment_ids` - Segment memberships
+- `data.email` / `data.first_name` / `data.last_name` - Contact profile data
+- `data.unsubscribed` - Team-level unsubscribe state
+
+### Signature Verification
+
+Resend uses Svix-compatible signature headers:
+
+- `svix-id`
+- `svix-timestamp`
+- `svix-signature`
+
+The SDK verifies the exact raw request body using HMAC-SHA256 over
+`id.timestamp.rawBody` with the base64-decoded portion of the `whsec_...`
+secret. By default the signed timestamp must be within `300` seconds of the
+current time.
+
+Verified but unhandled Resend requests are acknowledged with `200` to match
+Resend's documented delivery contract, while still requiring signature
+verification before acknowledgment.
+
+---
+
 ## Replay and Idempotency
 
 Core replay protection uses provider-specific replay keys:
@@ -731,6 +930,7 @@ Core replay protection uses provider-specific replay keys:
 - Stripe: `body.id` (event id). `deliveryId` is not set.
 - Ragie: `body.nonce` (exposed as `payload.nonce`)
 - Recall.ai: `webhook-id`/`svix-id`
+- Resend: `svix-id`
 
 When replay protection is enabled and a duplicate key is detected, the default
 response is `409`.
