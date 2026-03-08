@@ -228,6 +228,7 @@ const webhook = recall()
 
 Provider timestamp support in this repository:
 
+- `@better-webhook/resend`: replay key (`svix-id`) with signed timestamp metadata
 - `@better-webhook/recall`: includes signed timestamp metadata
 - `@better-webhook/github`: replay key (`x-github-delivery`) only
 - `@better-webhook/ragie`: replay key (`nonce`) only
