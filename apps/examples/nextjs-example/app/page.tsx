@@ -5,8 +5,8 @@ export default function Home() {
       <p>
         This example demonstrates how to use <code>@better-webhook/github</code>
         , <code>@better-webhook/stripe</code>,{" "}
-        <code>@better-webhook/ragie</code>, and{" "}
-        <code>@better-webhook/recall</code> with{" "}
+        <code>@better-webhook/ragie</code>, <code>@better-webhook/recall</code>,
+        and <code>@better-webhook/resend</code> with{" "}
         <code>@better-webhook/nextjs</code>.
       </p>
 
@@ -35,6 +35,12 @@ export default function Home() {
         </li>
         <li>
           <code>GET /api/webhooks/recall</code> - Recall endpoint info
+        </li>
+        <li>
+          <code>POST /api/webhooks/resend</code> - Resend webhook endpoint
+        </li>
+        <li>
+          <code>GET /api/webhooks/resend</code> - Resend endpoint info
         </li>
       </ul>
 
