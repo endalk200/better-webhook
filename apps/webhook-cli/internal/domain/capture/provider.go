@@ -4,6 +4,7 @@ const (
 	ProviderUnknown = "unknown"
 	ProviderGitHub  = "github"
 	ProviderStripe  = "stripe"
+	ProviderResend  = "resend"
 )
 
 type DetectionContext struct {

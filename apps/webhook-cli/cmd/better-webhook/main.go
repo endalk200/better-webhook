@@ -9,6 +9,7 @@ import (
 	configtoml "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/config/toml"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/github"
+	resenddetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/resend"
 	stripedetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/stripe"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/jsonc"
 	templatestore "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/template"
@@ -74,6 +75,7 @@ func newCaptureService(capturesDir string) (*appcapture.Service, error) {
 	detector := provider.NewRegistry(
 		githubdetector.NewDetector(),
 		stripedetector.NewDetector(),
+		resenddetector.NewDetector(),
 	)
 	return appcapture.NewService(store, detector, nil, version.Version), nil
 }

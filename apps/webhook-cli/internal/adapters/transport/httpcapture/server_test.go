@@ -12,6 +12,7 @@ import (
 
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider"
 	githubdetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/github"
+	resenddetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/resend"
 	stripedetector "github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/provider/stripe"
 	"github.com/endalk200/better-webhook/apps/webhook-cli/internal/adapters/storage/jsonc"
 	appcapture "github.com/endalk200/better-webhook/apps/webhook-cli/internal/app/capture"
@@ -107,6 +108,47 @@ func TestServerCapturesStripeProviderFromSignatureHeader(t *testing.T) {
 	capture := captures[0].Capture
 	if capture.Provider != domain.ProviderStripe {
 		t.Fatalf("provider mismatch: got %q want %q", capture.Provider, domain.ProviderStripe)
+	}
+}
+
+func TestServerCapturesResendProviderFromSvixHeaders(t *testing.T) {
+	server, store := mustStartServer(t, "test-version")
+	defer stopServer(t, server)
+
+	body := `{"type":"email.delivered","created_at":"2024-11-22T23:41:12.126Z","data":{"email_id":"56761188-7520-42d8-8898-ff6fc54ce618","created_at":"2024-11-22T23:41:11.894719+00:00","from":"Acme <onboarding@resend.dev>","to":["delivered@resend.dev"],"subject":"Sending this example"}}`
+	req, err := http.NewRequest(http.MethodPost, serverURL(server)+"/webhooks/resend", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("svix-id", "msg_test_123")
+	req.Header.Set("svix-timestamp", "1730000000")
+	req.Header.Set("svix-signature", "v1,abc123")
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("send request: %v", err)
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	if response.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(response.Body)
+		t.Fatalf("expected 200 response, got %d (%s)", response.StatusCode, string(raw))
+	}
+
+	captures, err := store.List(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("list captures: %v", err)
+	}
+	if len(captures) != 1 {
+		t.Fatalf("expected one capture, got %d", len(captures))
+	}
+
+	capture := captures[0].Capture
+	if capture.Provider != domain.ProviderResend {
+		t.Fatalf("provider mismatch: got %q want %q", capture.Provider, domain.ProviderResend)
 	}
 }
 
@@ -250,6 +292,7 @@ func mustStartServer(t *testing.T, toolVersion string) (*Server, *jsonc.Store) {
 	detector := provider.NewRegistry(
 		githubdetector.NewDetector(),
 		stripedetector.NewDetector(),
+		resenddetector.NewDetector(),
 	)
 	captureService := appcapture.NewService(store, detector, nil, toolVersion)
 	server, err := NewServer(ServerOptions{
