@@ -20,7 +20,7 @@ export interface HonoAdapterOptions {
   /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
   maxBodyBytes?: number;
 
-  /** Callback invoked on successful handled processing (status 200 only) */
+  /** Callback invoked only when a registered handler succeeds with status 200. */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
   /**
@@ -170,7 +170,12 @@ export function toHono<
       return jsonResponse({ ok: false, error: "Internal server error" }, 500);
     }
 
-    if (result.status === 200 && result.eventType && options?.onSuccess) {
+    if (
+      result.status === 200 &&
+      result.body?.ok === true &&
+      result.eventType &&
+      options?.onSuccess
+    ) {
       try {
         await options.onSuccess(result.eventType);
       } catch {
