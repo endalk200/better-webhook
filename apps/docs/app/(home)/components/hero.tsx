@@ -134,7 +134,7 @@ export function Hero() {
 
             <div className="grid grid-cols-3 gap-3 mt-5">
               {[
-                { value: "3", label: "Providers", color: "var(--nb-coral)" },
+                { value: "5", label: "Providers", color: "var(--nb-coral)" },
                 { value: "5", label: "Adapters", color: "var(--nb-blue)" },
                 {
                   value: "100%",
@@ -162,7 +162,7 @@ export function Hero() {
             className={`sm:hidden grid grid-cols-3 gap-2 ${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
           >
             {[
-              { value: "3", label: "Providers", color: "var(--nb-coral)" },
+              { value: "5", label: "Providers", color: "var(--nb-coral)" },
               { value: "5", label: "Adapters", color: "var(--nb-blue)" },
               {
                 value: "100%",

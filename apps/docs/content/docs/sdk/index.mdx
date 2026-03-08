@@ -11,7 +11,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 The Better Webhook SDK provides type-safe webhook handlers with automatic signature verification. It consists of:
 
-- **Provider packages** — Type definitions and schemas for webhook sources (GitHub, Stripe, Ragie, Recall.ai)
+- **Provider packages** — Type definitions and schemas for webhook sources (GitHub, Stripe, Ragie, Recall.ai, Resend)
 - **Adapter packages** — Framework integrations (Next.js, Hono, Express, NestJS, GCP Cloud Functions)
 - **Core package** — Base functionality for custom providers
 
@@ -327,7 +327,7 @@ Signature verification happens automatically when you provide a secret. The SDK 
 
 1. **Adapter options** — Pass `secret` to the adapter function
 2. **Provider options** — Pass `secret` when creating the provider
-3. **Environment variables** — Automatically checks `GITHUB_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`, etc.
+3. **Environment variables** — Automatically checks `GITHUB_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`, `RESEND_WEBHOOK_SECRET`, etc.
 
 ```ts
 // Option 1: Adapter options
@@ -345,7 +345,8 @@ const webhook = github({
 ```
 
 Verification is evaluated before unhandled-event routing. Requests for unknown
-event types still need to pass signature verification before receiving `204`.
+event types still need to pass signature verification before receiving an
+acknowledgement status (`204` by default, `200` for providers such as Resend).
 
 <Callout type="warn">
   Always configure signature verification in production. Without it, anyone can
@@ -456,7 +457,7 @@ export const POST = toNextJS(webhook, {
 
 ## Next Steps
 
-- [Providers](/docs/sdk/providers) — GitHub, Stripe, Ragie, and Recall.ai provider documentation with all supported events
+- [Providers](/docs/sdk/providers) — GitHub, Stripe, Ragie, Recall.ai, and Resend provider documentation with all supported events
 - [Custom Providers](/docs/sdk/custom-providers) — Build provider integrations for any webhook source
 - [Replay and Idempotency](/docs/sdk/replay-idempotency) — Prevent duplicate processing with replay protection
 - [Adapters](/docs/sdk/adapters) — Framework-specific setup and configuration

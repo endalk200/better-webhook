@@ -61,6 +61,20 @@ const providers = [
     accentColor: "var(--nb-blue)",
   },
   {
+    name: "Resend",
+    status: "available" as const,
+    package: "@better-webhook/resend",
+    events: [
+      "email.delivered",
+      "email.bounced",
+      "email.received",
+      "domain.updated",
+      "contact.created",
+    ],
+    bgColor: "#111827",
+    accentColor: "var(--nb-green)",
+  },
+  {
     name: "Custom",
     status: "available" as const,
     package: "@better-webhook/core",

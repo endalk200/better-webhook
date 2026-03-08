@@ -60,8 +60,16 @@ const packages = [
     href: "https://www.npmjs.com/package/@better-webhook/ragie",
   },
   {
+    name: "@better-webhook/stripe",
+    href: "https://www.npmjs.com/package/@better-webhook/stripe",
+  },
+  {
     name: "@better-webhook/recall",
     href: "https://www.npmjs.com/package/@better-webhook/recall",
+  },
+  {
+    name: "@better-webhook/resend",
+    href: "https://www.npmjs.com/package/@better-webhook/resend",
   },
   {
     name: "@better-webhook/nextjs",
