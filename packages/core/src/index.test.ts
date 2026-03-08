@@ -47,11 +47,13 @@ function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
   verification?: "required" | "disabled";
+  verifiedUnhandledStatus?: 200 | 204;
 }): Provider<"test"> {
   return {
     name: "test",
     secret: options?.secret,
     verification: options?.verification ?? "required",
+    verifiedUnhandledStatus: options?.verifiedUnhandledStatus,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -637,6 +639,19 @@ describe("WebhookBuilder", () => {
       });
 
       expect(result.status).toBe(204);
+    });
+
+    it("should allow providers to return 200 for verified unhandled events", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const webhook = createWebhook(provider);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(200);
     });
 
     it("should verify before returning unhandled responses", async () => {
@@ -2412,6 +2427,30 @@ describe("WebhookBuilder observability", () => {
       const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
       expect(completedEvent.status).toBe(204);
       expect(completedEvent.eventType).toBeUndefined();
+    });
+
+    it("should emit completed with provider-specific unhandled status", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const onEventUnhandled = vi.fn();
+      const onCompleted = vi.fn();
+
+      const webhook = createWebhook(provider).observe({
+        onEventUnhandled,
+        onCompleted,
+      });
+
+      await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
+      expect(onCompleted).toHaveBeenCalledTimes(1);
+
+      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
+      expect(completedEvent.status).toBe(200);
+      expect(completedEvent.success).toBe(true);
     });
 
     it("should emit onBodyTooLarge and completed with 413", async () => {

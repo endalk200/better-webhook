@@ -162,6 +162,12 @@ export interface Provider<TProviderBrand extends string = string> {
   readonly verification: "required" | "disabled";
 
   /**
+   * Response status to use for verified requests when no matching handler is registered.
+   * Defaults to `204`.
+   */
+  readonly verifiedUnhandledStatus?: 200 | 204;
+
+  /**
    * Extract event type from headers or body
    * @param headers - Normalized headers from the webhook request
    * @param body - Optional parsed JSON body (for providers that include event type in body)
@@ -218,6 +224,12 @@ export interface ProviderConfig<TProviderBrand extends string = string> {
    * Use "disabled" only for trusted internal sources.
    */
   verification?: "required" | "disabled";
+
+  /**
+   * Response status to use for verified requests when no matching handler is registered.
+   * Defaults to `204`.
+   */
+  verifiedUnhandledStatus?: 200 | 204;
 
   /**
    * Extract event type from headers or body
@@ -454,7 +466,7 @@ export interface JsonParseFailedEvent extends ObservationBase {
 }
 
 /**
- * Emitted when no handler is registered for the event type (204 response)
+ * Emitted when no handler is registered for the event type.
  */
 export interface EventUnhandledEvent extends ObservationBase {
   type: "event_unhandled";
@@ -1232,6 +1244,7 @@ export function createProvider<TProviderBrand extends string = string>(
     getPayload,
     getReplayContext,
     verification = "required",
+    verifiedUnhandledStatus,
   } = config;
 
   if (verification === "required" && !verify) {
@@ -1249,6 +1262,7 @@ export function createProvider<TProviderBrand extends string = string>(
     getPayload,
     getReplayContext,
     verification,
+    verifiedUnhandledStatus,
   };
 }
 
@@ -1891,18 +1905,25 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       }
     }
 
-    // No event type or no handlers for this event → 204
+    // No event type or no handlers for this event → provider-specific ack (default 204)
     if (!eventType || !this.handlerEntries.has(eventType)) {
+      const unhandledStatus = this.provider.verifiedUnhandledStatus ?? 204;
       const durationMs = performance.now() - startTime;
       this.emit("onEventUnhandled", {
         ...createBase(eventType, deliveryId),
         type: "event_unhandled",
         durationMs,
       });
-      return completeWithReplay(204, eventType, deliveryId, undefined, {
-        commitReplayKey: false,
-        releaseReason: "event_unhandled",
-      });
+      return completeWithReplay(
+        unhandledStatus,
+        eventType,
+        deliveryId,
+        undefined,
+        {
+          commitReplayKey: false,
+          releaseReason: "event_unhandled",
+        },
+      );
     }
 
     // Extract payload from body (for providers with envelope structures like Ragie)
