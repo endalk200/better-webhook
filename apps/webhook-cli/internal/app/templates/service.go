@@ -549,37 +549,51 @@ func (s *Service) resolveResendHeaders(
 	resolver *platformplaceholders.Resolver,
 ) ([]domain.HeaderEntry, error) {
 	resolvedValues := make([]string, len(headers))
+	resolvedHeader := make([]bool, len(headers))
 	includeHeader := make([]bool, len(headers))
+	trimmedKeys := make([]string, len(headers))
 	resendMessageID := ""
 	resendTimestamp := ""
+	hasResendMessageIDHeader := false
+	hasResendTimestampHeader := false
+	usesResendMessageIDPlaceholder := false
+	usesResendTimestampPlaceholder := false
 
 	for idx, header := range headers {
 		headerKey := strings.TrimSpace(header.Key)
+		trimmedKeys[idx] = headerKey
 		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {
 			continue
 		}
 		includeHeader[idx] = true
-		if isResendSignatureHeader(headerKey) {
+		if isResendMessageIDHeader(headerKey) {
+			hasResendMessageIDHeader = true
+		}
+		if isResendTimestampHeader(headerKey) {
+			hasResendTimestampHeader = true
+		}
+		if usesResendMessageIDValue(header.Value) {
+			usesResendMessageIDPlaceholder = true
+		}
+		if usesResendTimestampValue(header.Value) {
+			usesResendTimestampPlaceholder = true
+		}
+	}
+
+	for idx, header := range headers {
+		if !includeHeader[idx] {
 			continue
 		}
-		resolvedValue, err := resolver.ResolveHeaderValue(
-			headerKey,
-			header.Value,
-			platformplaceholders.HeaderContext{
-				Provider:        provider,
-				Secret:          secret,
-				Body:            body,
-				ResendMessageID: resendMessageID,
-				ResendTimestamp: resendTimestamp,
-			},
-		)
+		headerKey := trimmedKeys[idx]
+		if !isResendMessageIDHeader(headerKey) && !isResendTimestampHeader(headerKey) {
+			continue
+		}
+		resolvedValue, err := resolveResendHeaderValue(provider, secret, body, headerKey, header.Value, resendMessageID, resendTimestamp, resolver)
 		if err != nil {
-			if errors.Is(err, platformplaceholders.ErrMissingSecret) {
-				return nil, ErrRunSecretRequired
-			}
 			return nil, err
 		}
 		resolvedValues[idx] = resolvedValue
+		resolvedHeader[idx] = true
 		if isResendMessageIDHeader(headerKey) {
 			resendMessageID = resolvedValue
 		}
@@ -588,29 +602,47 @@ func (s *Service) resolveResendHeaders(
 		}
 	}
 
+	if !hasResendMessageIDHeader && usesResendMessageIDPlaceholder {
+		resolvedValue, err := resolveResendHeaderValue(provider, secret, body, "Svix-Id", "$resend:svix-id", resendMessageID, resendTimestamp, resolver)
+		if err != nil {
+			return nil, err
+		}
+		resendMessageID = resolvedValue
+	}
+	if !hasResendTimestampHeader && usesResendTimestampPlaceholder {
+		resolvedValue, err := resolveResendHeaderValue(provider, secret, body, "Svix-Timestamp", "$resend:svix-timestamp", resendMessageID, resendTimestamp, resolver)
+		if err != nil {
+			return nil, err
+		}
+		resendTimestamp = resolvedValue
+	}
+
+	for idx, header := range headers {
+		if !includeHeader[idx] || resolvedHeader[idx] {
+			continue
+		}
+		headerKey := trimmedKeys[idx]
+		if shouldDeferResendSignatureHeader(headerKey, header.Value) {
+			continue
+		}
+		resolvedValue, err := resolveResendHeaderValue(provider, secret, body, headerKey, header.Value, resendMessageID, resendTimestamp, resolver)
+		if err != nil {
+			return nil, err
+		}
+		resolvedValues[idx] = resolvedValue
+		resolvedHeader[idx] = true
+	}
+
 	for idx, header := range headers {
 		if !includeHeader[idx] {
 			continue
 		}
-		headerKey := strings.TrimSpace(header.Key)
-		if !isResendSignatureHeader(headerKey) {
+		headerKey := trimmedKeys[idx]
+		if !shouldDeferResendSignatureHeader(headerKey, header.Value) {
 			continue
 		}
-		resolvedValue, err := resolver.ResolveHeaderValue(
-			headerKey,
-			header.Value,
-			platformplaceholders.HeaderContext{
-				Provider:        provider,
-				Secret:          secret,
-				Body:            body,
-				ResendMessageID: resendMessageID,
-				ResendTimestamp: resendTimestamp,
-			},
-		)
+		resolvedValue, err := resolveResendHeaderValue(provider, secret, body, headerKey, header.Value, resendMessageID, resendTimestamp, resolver)
 		if err != nil {
-			if errors.Is(err, platformplaceholders.ErrMissingSecret) {
-				return nil, ErrRunSecretRequired
-			}
 			return nil, err
 		}
 		resolvedValues[idx] = resolvedValue
@@ -627,6 +659,52 @@ func (s *Service) resolveResendHeaders(
 		})
 	}
 	return resolvedHeaders, nil
+}
+
+func resolveResendHeaderValue(
+	provider string,
+	secret string,
+	body []byte,
+	headerKey string,
+	headerValue string,
+	resendMessageID string,
+	resendTimestamp string,
+	resolver *platformplaceholders.Resolver,
+) (string, error) {
+	resolvedValue, err := resolver.ResolveHeaderValue(
+		headerKey,
+		headerValue,
+		platformplaceholders.HeaderContext{
+			Provider:        provider,
+			Secret:          secret,
+			Body:            body,
+			ResendMessageID: resendMessageID,
+			ResendTimestamp: resendTimestamp,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, platformplaceholders.ErrMissingSecret) {
+			return "", ErrRunSecretRequired
+		}
+		return "", err
+	}
+	return resolvedValue, nil
+}
+
+func shouldDeferResendSignatureHeader(key string, value string) bool {
+	trimmedValue := strings.TrimSpace(value)
+	if strings.EqualFold(trimmedValue, "$resend:svix-signature") {
+		return true
+	}
+	return isResendSignatureHeader(key) && strings.EqualFold(trimmedValue, "placeholder")
+}
+
+func usesResendMessageIDValue(value string) bool {
+	return strings.EqualFold(strings.TrimSpace(value), "$resend:svix-id")
+}
+
+func usesResendTimestampValue(value string) bool {
+	return strings.EqualFold(strings.TrimSpace(value), "$resend:svix-timestamp")
 }
 
 func isResendSignatureHeader(key string) bool {

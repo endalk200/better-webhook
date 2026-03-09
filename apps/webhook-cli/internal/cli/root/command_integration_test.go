@@ -949,6 +949,118 @@ func TestTemplatesRunCommandGeneratesResendSignature(t *testing.T) {
 	)
 }
 
+func TestTemplatesRunCommandGeneratesResendSignatureForCustomPlaceholderHeaders(t *testing.T) {
+	type receivedTemplateRunRequest struct {
+		Body      []byte
+		MessageID string
+		Timestamp string
+		Signature string
+	}
+	receiverCh := make(chan receivedTemplateRunRequest, 1)
+	receiverServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		body, _ := io.ReadAll(req.Body)
+		receiverCh <- receivedTemplateRunRequest{
+			Body:      body,
+			MessageID: req.Header.Get("X-Debug-Id"),
+			Timestamp: req.Header.Get("X-Debug-Timestamp"),
+			Signature: req.Header.Get("X-Debug-Signature"),
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer receiverServer.Close()
+
+	templateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/templates/templates.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "version":"1.0.0",
+  "templates":[
+    {
+      "id":"resend-email_delivered",
+      "name":"Resend Email Delivered",
+      "provider":"resend",
+      "event":"email.delivered",
+      "file":"resend/resend-email_delivered.jsonc"
+    }
+  ]
+}`))
+		case "/templates/resend/resend-email_delivered.jsonc":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+  "method":"POST",
+  "provider":"resend",
+  "headers":[
+    {"key":"Content-Type","value":"application/json"},
+    {"key":"X-Debug-Id","value":"$resend:svix-id"},
+    {"key":"X-Debug-Timestamp","value":"$resend:svix-timestamp"},
+    {"key":"X-Debug-Signature","value":"$resend:svix-signature"}
+  ],
+  "body":{"type":"email.delivered","data":{"email_id":"email_123"}}
+}`))
+		default:
+			http.NotFound(w, req)
+		}
+	}))
+	defer templateServer.Close()
+
+	configPath := writeCommandTestConfig(t, t.TempDir())
+	templatesDir := t.TempDir()
+	secret := "whsec_" + base64.StdEncoding.EncodeToString([]byte("resend-secret"))
+
+	downloadCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	downloadCmd.SetOut(&bytes.Buffer{})
+	downloadCmd.SetErr(&bytes.Buffer{})
+	downloadCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "download", "resend-email_delivered",
+		"--templates-dir", templatesDir,
+	})
+	if err := downloadCmd.Execute(); err != nil {
+		t.Fatalf("execute templates download: %v", err)
+	}
+
+	runCmd := newTestRootCommandWithTemplateRemote(t, templateServer.URL, templateServer.Client())
+	var runOut bytes.Buffer
+	runCmd.SetOut(&runOut)
+	runCmd.SetErr(&runOut)
+	runCmd.SetArgs([]string{
+		"--config", configPath,
+		"templates", "run", "resend-email_delivered", receiverServer.URL,
+		"--templates-dir", templatesDir,
+		"--secret", secret,
+	})
+	if err := runCmd.Execute(); err != nil {
+		t.Fatalf("execute templates run: %v", err)
+	}
+	select {
+	case received := <-receiverCh:
+		expectedSignature := computeResendTemplateSignature(received.Body, received.MessageID, received.Timestamp, secret)
+		if received.Signature != expectedSignature {
+			t.Fatalf("signature mismatch: got %q want %q", received.Signature, expectedSignature)
+		}
+		if received.MessageID == "" {
+			t.Fatalf("expected custom resend message id header to be present")
+		}
+		if received.Timestamp == "" {
+			t.Fatalf("expected custom resend timestamp header to be present")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for templates run request")
+	}
+
+	runOutput := normalizeCLIOutput(runOut.String())
+	assertContainsAll(t, runOutput,
+		"Executed",
+		"resend-email_delivered",
+		"resend",
+		"POST",
+		receiverServer.URL,
+		"200 OK",
+	)
+}
+
 func TestTemplatesRunCommandReturnsErrorOnHTTPErrorStatus(t *testing.T) {
 	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
