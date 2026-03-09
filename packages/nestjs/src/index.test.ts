@@ -27,11 +27,13 @@ const testEvent = defineEvent({
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
+  verifiedUnhandledStatus?: 200 | 204;
 }): Provider<"test"> {
   return {
     name: "test",
     secret: options?.secret ?? "test-secret",
     verification: "required",
+    verifiedUnhandledStatus: options?.verifiedUnhandledStatus,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -275,6 +277,22 @@ describe("toNestJS", () => {
       await handler(req);
 
       expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("should return 200 with undefined body for verified unhandled events", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const webhook = createWebhook(provider);
+      const handler = toNestJS(webhook);
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      const result = await handler(req);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toBeUndefined();
     });
 
     it("should not call onSuccess on error responses", async () => {

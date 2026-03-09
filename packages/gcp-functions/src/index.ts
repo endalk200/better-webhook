@@ -218,12 +218,12 @@ export function toGCPFunction<TProviderBrand extends string = string>(
       return;
     }
 
-    res.status(result.status).json(
-      result.body ?? {
-        ok: result.status === 200,
-        eventType: result.eventType,
-      },
-    );
+    if (result.body === undefined) {
+      res.status(result.status).end();
+      return;
+    }
+
+    res.status(result.status).json(result.body);
   };
 }
 
