@@ -291,6 +291,7 @@ function createSvixSignatureHeader(options: {
   timestamp?: number;
   id?: string;
   additionalV1Signatures?: string[];
+  validSignaturePosition?: "first" | "last";
 }): { id: string; timestamp: number; signature: string } {
   const id = options.id ?? "msg_123";
   const timestamp = options.timestamp ?? Math.floor(Date.now() / 1000);
@@ -300,15 +301,16 @@ function createSvixSignatureHeader(options: {
     timestamp,
     id,
   });
-  const signatures = [
-    validSignature,
-    ...(options.additionalV1Signatures ?? []),
-  ].map((signature) => `v1,${signature}`);
+  const additionalSignatures = options.additionalV1Signatures ?? [];
+  const signatures =
+    options.validSignaturePosition === "last"
+      ? [...additionalSignatures, validSignature]
+      : [validSignature, ...additionalSignatures];
 
   return {
     id,
     timestamp,
-    signature: signatures.join(" "),
+    signature: signatures.map((signature) => `v1,${signature}`).join(" "),
   };
 }
 
@@ -319,6 +321,7 @@ function createSignedRequest(
     timestamp?: number;
     id?: string;
     additionalV1Signatures?: string[];
+    validSignaturePosition?: "first" | "last";
   },
 ) {
   const rawBody = JSON.stringify(event);
@@ -328,6 +331,7 @@ function createSignedRequest(
     timestamp: options?.timestamp,
     id: options?.id,
     additionalV1Signatures: options?.additionalV1Signatures,
+    validSignaturePosition: options?.validSignaturePosition,
   });
 
   return {
@@ -554,6 +558,7 @@ describe("resend()", () => {
     const webhook = resend({ secret }).event(email_delivered, () => {});
     const request = createSignedRequest(emailDeliveredEvent, {
       additionalV1Signatures: ["invalid-signature"],
+      validSignaturePosition: "last",
     });
 
     const result = await webhook.process({

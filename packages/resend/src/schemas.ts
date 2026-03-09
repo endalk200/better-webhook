@@ -130,31 +130,37 @@ function createResendEventSchema<
     .passthrough();
 }
 
+/** Schema for Resend `email.sent` webhook envelopes. */
 export const ResendEmailSentEventSchema = createResendEventSchema(
   "email.sent",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.scheduled` webhook envelopes. */
 export const ResendEmailScheduledEventSchema = createResendEventSchema(
   "email.scheduled",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.delivered` webhook envelopes. */
 export const ResendEmailDeliveredEventSchema = createResendEventSchema(
   "email.delivered",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.delivery_delayed` webhook envelopes. */
 export const ResendEmailDeliveryDelayedEventSchema = createResendEventSchema(
   "email.delivery_delayed",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.complained` webhook envelopes. */
 export const ResendEmailComplainedEventSchema = createResendEventSchema(
   "email.complained",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.bounced` webhook envelopes with `data.bounce` details. */
 export const ResendEmailBouncedEventSchema = createResendEventSchema(
   "email.bounced",
   ResendEmailEventDataSchema.extend({
@@ -162,11 +168,13 @@ export const ResendEmailBouncedEventSchema = createResendEventSchema(
   }),
 );
 
+/** Schema for Resend `email.opened` webhook envelopes. */
 export const ResendEmailOpenedEventSchema = createResendEventSchema(
   "email.opened",
   ResendEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.clicked` webhook envelopes with `data.click` details. */
 export const ResendEmailClickedEventSchema = createResendEventSchema(
   "email.clicked",
   ResendEmailEventDataSchema.extend({
@@ -174,11 +182,13 @@ export const ResendEmailClickedEventSchema = createResendEventSchema(
   }),
 );
 
+/** Schema for Resend `email.received` metadata-only inbound webhook envelopes. */
 export const ResendEmailReceivedEventSchema = createResendEventSchema(
   "email.received",
   ResendReceivedEmailEventDataSchema,
 );
 
+/** Schema for Resend `email.failed` webhook envelopes with `data.failed` details. */
 export const ResendEmailFailedEventSchema = createResendEventSchema(
   "email.failed",
   ResendEmailEventDataSchema.extend({
@@ -186,6 +196,7 @@ export const ResendEmailFailedEventSchema = createResendEventSchema(
   }),
 );
 
+/** Schema for Resend `email.suppressed` webhook envelopes with `data.suppressed` details. */
 export const ResendEmailSuppressedEventSchema = createResendEventSchema(
   "email.suppressed",
   ResendEmailEventDataSchema.extend({
@@ -193,84 +204,107 @@ export const ResendEmailSuppressedEventSchema = createResendEventSchema(
   }),
 );
 
+/** Schema for Resend `contact.created` webhook envelopes. */
 export const ResendContactCreatedEventSchema = createResendEventSchema(
   "contact.created",
   ResendContactEventDataSchema,
 );
 
+/** Schema for Resend `contact.updated` webhook envelopes. */
 export const ResendContactUpdatedEventSchema = createResendEventSchema(
   "contact.updated",
   ResendContactEventDataSchema,
 );
 
+/** Schema for Resend `contact.deleted` webhook envelopes. */
 export const ResendContactDeletedEventSchema = createResendEventSchema(
   "contact.deleted",
   ResendContactEventDataSchema,
 );
 
+/** Schema for Resend `domain.created` webhook envelopes. */
 export const ResendDomainCreatedEventSchema = createResendEventSchema(
   "domain.created",
   ResendDomainEventDataSchema,
 );
 
+/** Schema for Resend `domain.updated` webhook envelopes. */
 export const ResendDomainUpdatedEventSchema = createResendEventSchema(
   "domain.updated",
   ResendDomainEventDataSchema,
 );
 
+/** Schema for Resend `domain.deleted` webhook envelopes. */
 export const ResendDomainDeletedEventSchema = createResendEventSchema(
   "domain.deleted",
   ResendDomainEventDataSchema,
 );
 
+/** Type inferred from `ResendEmailSentEventSchema`. */
 export type ResendEmailSentEvent = z.infer<typeof ResendEmailSentEventSchema>;
+/** Type inferred from `ResendEmailScheduledEventSchema`. */
 export type ResendEmailScheduledEvent = z.infer<
   typeof ResendEmailScheduledEventSchema
 >;
+/** Type inferred from `ResendEmailDeliveredEventSchema`. */
 export type ResendEmailDeliveredEvent = z.infer<
   typeof ResendEmailDeliveredEventSchema
 >;
+/** Type inferred from `ResendEmailDeliveryDelayedEventSchema`. */
 export type ResendEmailDeliveryDelayedEvent = z.infer<
   typeof ResendEmailDeliveryDelayedEventSchema
 >;
+/** Type inferred from `ResendEmailComplainedEventSchema`. */
 export type ResendEmailComplainedEvent = z.infer<
   typeof ResendEmailComplainedEventSchema
 >;
+/** Type inferred from `ResendEmailBouncedEventSchema`. */
 export type ResendEmailBouncedEvent = z.infer<
   typeof ResendEmailBouncedEventSchema
 >;
+/** Type inferred from `ResendEmailOpenedEventSchema`. */
 export type ResendEmailOpenedEvent = z.infer<
   typeof ResendEmailOpenedEventSchema
 >;
+/** Type inferred from `ResendEmailClickedEventSchema`. */
 export type ResendEmailClickedEvent = z.infer<
   typeof ResendEmailClickedEventSchema
 >;
+/** Type inferred from `ResendEmailReceivedEventSchema`. */
 export type ResendEmailReceivedEvent = z.infer<
   typeof ResendEmailReceivedEventSchema
 >;
+/** Type inferred from `ResendEmailFailedEventSchema`. */
 export type ResendEmailFailedEvent = z.infer<
   typeof ResendEmailFailedEventSchema
 >;
+/** Type inferred from `ResendEmailSuppressedEventSchema`. */
 export type ResendEmailSuppressedEvent = z.infer<
   typeof ResendEmailSuppressedEventSchema
 >;
 
+/** Type inferred from `ResendContactCreatedEventSchema`. */
 export type ResendContactCreatedEvent = z.infer<
   typeof ResendContactCreatedEventSchema
 >;
+/** Type inferred from `ResendContactUpdatedEventSchema`. */
 export type ResendContactUpdatedEvent = z.infer<
   typeof ResendContactUpdatedEventSchema
 >;
+/** Type inferred from `ResendContactDeletedEventSchema`. */
 export type ResendContactDeletedEvent = z.infer<
   typeof ResendContactDeletedEventSchema
 >;
 
+/** Type inferred from `ResendDomainCreatedEventSchema`. */
 export type ResendDomainCreatedEvent = z.infer<
   typeof ResendDomainCreatedEventSchema
 >;
+/** Type inferred from `ResendDomainUpdatedEventSchema`. */
 export type ResendDomainUpdatedEvent = z.infer<
   typeof ResendDomainUpdatedEventSchema
 >;
+/** Type inferred from `ResendDomainDeletedEventSchema`. */
 export type ResendDomainDeletedEvent = z.infer<
   typeof ResendDomainDeletedEventSchema
 >;
