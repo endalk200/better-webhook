@@ -72,6 +72,30 @@ func TestResendDetectorWithContactEnvelopeOnly(t *testing.T) {
 	}
 }
 
+func TestResendDetectorMatchesReceivedEmailWithEmptySubject(t *testing.T) {
+	detector := NewDetector()
+	result, matched := detector.Detect(domain.DetectionContext{
+		Method: "POST",
+		Path:   "/webhooks",
+		Headers: []domain.HeaderEntry{
+			{Key: "svix-id", Value: "msg_123"},
+			{Key: "svix-timestamp", Value: "1730000000"},
+			{Key: "svix-signature", Value: "v1,abc123"},
+		},
+		Body: []byte(`{"type":"email.received","created_at":"2024-11-22T23:41:12.126Z","data":{"email_id":"56761188-7520-42d8-8898-ff6fc54ce618","created_at":"2024-11-22T23:41:11.894719+00:00","from":"Acme <onboarding@resend.dev>","to":["delivered@resend.dev"],"message_id":"<example+123>","subject":""}}`),
+	})
+
+	if !matched {
+		t.Fatalf("expected detector to match Resend received email with empty subject")
+	}
+	if result.Provider != domain.ProviderResend {
+		t.Fatalf("provider mismatch: got %q want %q", result.Provider, domain.ProviderResend)
+	}
+	if result.Confidence != 0.95 {
+		t.Fatalf("confidence mismatch: got %v want %v", result.Confidence, 0.95)
+	}
+}
+
 func TestResendDetectorRejectsGenericSvixTraffic(t *testing.T) {
 	detector := NewDetector()
 	_, matched := detector.Detect(domain.DetectionContext{
