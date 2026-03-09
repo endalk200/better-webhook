@@ -29,11 +29,13 @@ const testEvent = defineEvent({
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
+  verifiedUnhandledStatus?: 200 | 204;
 }): Provider<"test"> {
   return {
     name: "test",
     secret: options?.secret ?? "test-secret",
     verification: "required",
+    verifiedUnhandledStatus: options?.verifiedUnhandledStatus,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -285,6 +287,24 @@ describe("toGCPFunction", () => {
 
       expect(state.statusCode).toBe(200);
       expect((state.jsonBody as { ok: boolean }).ok).toBe(true);
+    });
+
+    it("should return 200 with empty body for verified unhandled events", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const webhook = createWebhook(provider);
+      const handler = toGCPFunction(webhook);
+
+      const req = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: Buffer.from(JSON.stringify(validPayload)),
+      });
+      const { res, state } = createMockResponse();
+
+      await handler(req, res);
+
+      expect(state.statusCode).toBe(200);
+      expect(state.ended).toBe(true);
+      expect(state.jsonBody).toBeNull();
     });
 
     it("should pass through 409 status from process() (for duplicate delivery responses)", async () => {

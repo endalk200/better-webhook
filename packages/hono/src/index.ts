@@ -191,10 +191,7 @@ export function toHono<
       return new Response(null, { status: 204 });
     }
 
-    return jsonResponse(
-      result.body ?? { ok: result.status === 200 },
-      result.status,
-    );
+    return jsonResponse(result.body ?? null, result.status);
   };
 }
 

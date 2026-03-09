@@ -28,6 +28,7 @@ const testEvent = defineEvent({
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
+  verifiedUnhandledStatus?: 200 | 204;
 }): Provider<"test"> {
   type VerifyRawBody = Parameters<Provider<"test">["verify"]>[0];
 
@@ -35,6 +36,7 @@ function createTestProvider(options?: {
     name: "test",
     secret: options?.secret ?? "test-secret",
     verification: "required",
+    verifiedUnhandledStatus: options?.verifiedUnhandledStatus,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -286,6 +288,23 @@ describe("toHono", () => {
       } finally {
         processSpy.mockRestore();
       }
+    });
+
+    it("should return 200 with empty body for verified unhandled events", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const webhook = createWebhook(provider);
+      const app = new Hono();
+      app.post("/webhooks", toHono(webhook));
+
+      const request = createRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: JSON.stringify(validPayload),
+      });
+      const response = await app.request(request);
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe("");
+      expect(response.headers.get("content-type")).toBeNull();
     });
 
     it("should return 500 JSON when webhook processing throws unexpectedly", async () => {

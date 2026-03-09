@@ -27,11 +27,13 @@ const testEvent = defineEvent({
 function createTestProvider(options?: {
   secret?: string;
   verifyResult?: boolean;
+  verifiedUnhandledStatus?: 200 | 204;
 }): Provider<"test"> {
   return {
     name: "test",
     secret: options?.secret ?? "test-secret",
     verification: "required",
+    verifiedUnhandledStatus: options?.verifiedUnhandledStatus,
     getEventType(headers: Headers) {
       return headers["x-test-event"];
     },
@@ -165,6 +167,22 @@ describe("toNextJS", () => {
 
       const body = await response.json();
       expect(body.ok).toBe(true);
+    });
+
+    it("should return 200 with empty body for verified unhandled events", async () => {
+      const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
+      const webhook = createWebhook(provider);
+      const handler = toNextJS(webhook);
+
+      const request = createMockRequest({
+        headers: { "x-test-event": "unknown.event" },
+        body: JSON.stringify(validPayload),
+      });
+      const response = await handler(request);
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe("");
+      expect(response.headers.get("content-type")).toBeNull();
     });
 
     it("should pass through a 409 duplicate-delivery response from process()", async () => {
