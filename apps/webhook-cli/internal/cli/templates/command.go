@@ -86,6 +86,9 @@ func mapTemplateCommandError(err error, templateID string) error {
 	if errors.Is(err, apptemplates.ErrRunSecretRequired) {
 		return fmt.Errorf("secret is required for provider signing placeholder: %w", err)
 	}
+	if errors.Is(err, apptemplates.ErrRunSecretPrefixRequired) {
+		return fmt.Errorf("secret must include the required whsec_ prefix for provider signing placeholder: %w", err)
+	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("operation cancelled: %w", err)
 	}

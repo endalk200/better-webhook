@@ -49,6 +49,7 @@ var (
 	ErrMissingEnvironmentVariable      = errors.New("placeholder environment variable is not set")
 	ErrEnvironmentPlaceholdersDisabled = errors.New("environment placeholders are disabled")
 	ErrMissingSecret                   = errors.New("provider signing secret is required")
+	ErrMissingProviderSecretPrefix     = errors.New("provider signing secret is missing required prefix")
 	ErrInvalidProviderSecret           = errors.New("provider signing secret is invalid")
 	ErrMissingHeaderValue              = errors.New("required header value is missing")
 	ErrUnsupportedTimeFormat           = errors.New("time placeholder format is not supported")
@@ -417,7 +418,7 @@ func buildResendSignature(ctx HeaderContext) (string, error) {
 
 func decodeResendWebhookSecret(secret string) ([]byte, error) {
 	if !strings.HasPrefix(secret, resendWebhookSecretPrefix) {
-		return nil, ErrInvalidProviderSecret
+		return nil, fmt.Errorf("%w: expected %q", ErrMissingProviderSecretPrefix, resendWebhookSecretPrefix)
 	}
 	encodedSecret := secret[len(resendWebhookSecretPrefix):]
 	decoded, err := base64.StdEncoding.DecodeString(encodedSecret)

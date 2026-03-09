@@ -361,3 +361,26 @@ func TestResolveHeaderValueReturnsInvalidSecretErrorForResendSignature(t *testin
 		t.Fatalf("expected ErrInvalidProviderSecret, got %v", err)
 	}
 }
+
+func TestResolveHeaderValueReturnsMissingPrefixErrorForResendSignature(t *testing.T) {
+	resolver := NewResolver(
+		fixedClock{now: time.Now().UTC()},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+
+	_, err := resolver.ResolveHeaderValue("Svix-Signature", "$resend:svix-signature", HeaderContext{
+		Provider:        "resend",
+		Secret:          "dGVzdF9rZXk=",
+		Body:            []byte(`{"ok":true}`),
+		ResendMessageID: "msg_resend_123",
+		ResendTimestamp: "1771761600",
+	})
+	if !errors.Is(err, ErrMissingProviderSecretPrefix) {
+		t.Fatalf("expected ErrMissingProviderSecretPrefix, got %v", err)
+	}
+	if errors.Is(err, ErrInvalidProviderSecret) {
+		t.Fatalf("expected missing prefix error to stay distinct, got %v", err)
+	}
+}

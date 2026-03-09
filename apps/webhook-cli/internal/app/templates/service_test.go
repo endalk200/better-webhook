@@ -988,6 +988,48 @@ func TestRunReturnsSecretRequiredWhenResendSignaturePlaceholderPresent(t *testin
 	}
 }
 
+func TestRunReturnsSecretPrefixRequiredWhenResendSecretMissingPrefix(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{}
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID:       "resend-email_delivered",
+					Metadata: domain.TemplateMetadata{ID: "resend-email_delivered", Provider: "resend", Event: "email.delivered"},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "resend",
+						Headers: []domain.HeaderEntry{
+							{Key: "Svix-Id", Value: "$resend:svix-id"},
+							{Key: "Svix-Timestamp", Value: "$resend:svix-timestamp"},
+							{Key: "Svix-Signature", Value: "$resend:svix-signature"},
+						},
+						Body: []byte(`{"type":"email.delivered","data":{"email_id":"email_123"}}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, idGeneratorStub{id: "msg_resend_123"}, nil)),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "resend-email_delivered",
+		TargetURL:  "http://localhost:3000/webhooks/resend",
+		Secret:     base64.StdEncoding.EncodeToString([]byte("resend-secret")),
+		Timeout:    5 * time.Second,
+	})
+	if !errors.Is(err, ErrRunSecretPrefixRequired) {
+		t.Fatalf("expected ErrRunSecretPrefixRequired, got %v", err)
+	}
+	if dispatcher.calls != 0 {
+		t.Fatalf("expected no dispatch calls")
+	}
+}
+
 func TestRunAppliesHeaderOverrides(t *testing.T) {
 	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
 	dispatcher := &dispatcherStub{
