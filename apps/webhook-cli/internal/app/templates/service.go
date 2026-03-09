@@ -646,6 +646,7 @@ func (s *Service) resolveResendHeaders(
 			return nil, err
 		}
 		resolvedValues[idx] = resolvedValue
+		resolvedHeader[idx] = true
 	}
 
 	resolvedHeaders := make([]domain.HeaderEntry, 0, len(headers))

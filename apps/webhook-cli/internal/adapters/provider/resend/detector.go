@@ -103,7 +103,7 @@ func looksLikeResendEmailEvent(subtype string, raw json.RawMessage) bool {
 		data.CreatedAt != "" &&
 		data.From != "" &&
 		len(data.To) > 0 &&
-		data.Subject != ""
+		(subtype == "received" || data.Subject != "")
 }
 
 func looksLikeResendDomainEvent(subtype string, raw json.RawMessage) bool {
