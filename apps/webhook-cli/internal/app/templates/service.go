@@ -531,9 +531,6 @@ func (s *Service) resolveHeaders(
 			if errors.Is(resolveErr, platformplaceholders.ErrMissingSecret) {
 				return nil, ErrRunSecretRequired
 			}
-			if errors.Is(resolveErr, platformplaceholders.ErrMissingProviderSecretPrefix) {
-				return nil, ErrRunSecretPrefixRequired
-			}
 			return nil, resolveErr
 		}
 		resolvedHeaders = append(resolvedHeaders, domain.HeaderEntry{
