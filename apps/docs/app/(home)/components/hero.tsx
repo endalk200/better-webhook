@@ -24,6 +24,11 @@ export const POST = toNextJS(webhook);`;
 export function Hero() {
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const stats = [
+    { value: "5", label: "Providers", color: "var(--nb-coral)" },
+    { value: "5", label: "Adapters", color: "var(--nb-blue)" },
+    { value: "100%", label: "Type-safe", color: "var(--nb-green)" },
+  ];
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => setVisible(true));
@@ -133,15 +138,7 @@ export function Hero() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mt-5">
-              {[
-                { value: "5", label: "Providers", color: "var(--nb-coral)" },
-                { value: "5", label: "Adapters", color: "var(--nb-blue)" },
-                {
-                  value: "100%",
-                  label: "Type-safe",
-                  color: "var(--nb-green)",
-                },
-              ].map((stat) => (
+              {stats.map((stat) => (
                 <div key={stat.label} className="nb-card-flat text-center p-3">
                   <div
                     className="text-xl font-bold"
@@ -161,15 +158,7 @@ export function Hero() {
           <div
             className={`sm:hidden grid grid-cols-3 gap-2 ${visible ? "nb-animate-fade-up nb-delay-200" : "opacity-0"}`}
           >
-            {[
-              { value: "5", label: "Providers", color: "var(--nb-coral)" },
-              { value: "5", label: "Adapters", color: "var(--nb-blue)" },
-              {
-                value: "100%",
-                label: "Type-safe",
-                color: "var(--nb-green)",
-              },
-            ].map((stat) => (
+            {stats.map((stat) => (
               <div key={stat.label} className="nb-card-flat text-center p-2.5">
                 <div
                   className="text-lg font-bold"

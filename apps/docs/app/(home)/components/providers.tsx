@@ -2,88 +2,7 @@
 
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
-
-const providers = [
-  {
-    name: "GitHub",
-    status: "available" as const,
-    package: "@better-webhook/github",
-    events: [
-      "push",
-      "pull_request",
-      "issues",
-      "installation",
-      "installation_repositories",
-    ],
-    bgColor: "#24292e",
-    accentColor: "var(--nb-coral)",
-  },
-  {
-    name: "Ragie",
-    status: "available" as const,
-    package: "@better-webhook/ragie",
-    events: [
-      "document_status_updated",
-      "document_deleted",
-      "entity_extracted",
-      "connection_sync_started",
-      "connection_sync_progress",
-      "connection_sync_finished",
-    ],
-    bgColor: "#0d9488",
-    accentColor: "var(--nb-green)",
-  },
-  {
-    name: "Stripe",
-    status: "available" as const,
-    package: "@better-webhook/stripe",
-    events: [
-      "charge.failed",
-      "checkout.session.completed",
-      "payment_intent.succeeded",
-    ],
-    bgColor: "#635bff",
-    accentColor: "var(--nb-yellow)",
-  },
-  {
-    name: "Recall.ai",
-    status: "available" as const,
-    package: "@better-webhook/recall",
-    events: [
-      "participant_events.join",
-      "transcript.data",
-      "transcript.partial_data",
-      "bot.joining_call",
-      "bot.done",
-      "bot.fatal",
-    ],
-    bgColor: "#4f46e5",
-    accentColor: "var(--nb-blue)",
-  },
-  {
-    name: "Resend",
-    status: "available" as const,
-    package: "@better-webhook/resend",
-    events: [
-      "email.delivered",
-      "email.bounced",
-      "email.received",
-      "domain.updated",
-      "contact.created",
-    ],
-    bgColor: "#111827",
-    accentColor: "var(--nb-green)",
-  },
-  {
-    name: "Custom",
-    status: "available" as const,
-    package: "@better-webhook/core",
-    events: ["any.event", "you.define"],
-    bgColor: "transparent",
-    accentColor: "var(--nb-lavender)",
-    isCustom: true,
-  },
-];
+import { homepageProviders } from "./provider-data";
 
 export function ProviderShowcase() {
   return (
@@ -103,7 +22,7 @@ export function ProviderShowcase() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {providers.map((provider) => (
+          {homepageProviders.map((provider) => (
             <div
               key={provider.name}
               className="nb-card relative p-3 sm:p-4 text-center"
@@ -133,7 +52,7 @@ export function ProviderShowcase() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          {providers
+          {homepageProviders
             .filter((p) => !p.isCustom)
             .map((provider) => (
               <div key={provider.name} className="nb-card p-5">
@@ -156,10 +75,10 @@ export function ProviderShowcase() {
                 </div>
                 <div className="space-y-1.5">
                   <p className="text-xs font-bold uppercase tracking-widest text-[var(--nb-text-muted)]">
-                    Supported Events
+                    Example Events
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {provider.events.map((event) => (
+                    {provider.sampleEvents.map((event) => (
                       <span
                         key={event}
                         className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--nb-cream)] border border-[var(--nb-border-color)] text-[var(--nb-text-muted)]"
