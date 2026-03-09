@@ -24,6 +24,7 @@ import {
   ResendEmailSuppressedEventSchema,
 } from "./schemas.js";
 
+// Test fixture only - decodes to "test_key"
 const secret = "whsec_dGVzdF9rZXk=";
 const baseTimestamp = "2024-11-22T23:41:12.126Z";
 const baseEntityTimestamp = "2024-11-22T23:41:11.894719+00:00";
@@ -389,7 +390,7 @@ describe("Resend Schemas", () => {
     });
   }
 
-  it("accepts tag arrays for email events", () => {
+  it("rejects tag arrays for email events", () => {
     const result = ResendEmailSentEventSchema.safeParse({
       ...emailSentEvent,
       data: {
@@ -403,7 +404,7 @@ describe("Resend Schemas", () => {
       },
     });
 
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
   it("treats bounce diagnosticCode as optional", () => {
@@ -567,6 +568,19 @@ describe("resend()", () => {
     });
 
     expect(result.status).toBe(200);
+  });
+
+  it("rejects signatures with non-base64 characters", async () => {
+    const webhook = resend({ secret }).event(email_delivered, () => {});
+    const request = createSignedRequest(emailDeliveredEvent);
+    request.headers["svix-signature"] = `${request.headers["svix-signature"]}!`;
+
+    const result = await webhook.process({
+      headers: request.headers,
+      rawBody: request.rawBody,
+    });
+
+    expect(result.status).toBe(401);
   });
 
   it("supports replay protection using svix-id", async () => {

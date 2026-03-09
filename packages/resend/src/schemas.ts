@@ -2,16 +2,6 @@ import { z } from "zod";
 
 const ResendTagsMapSchema = z.record(z.string(), z.string());
 
-const ResendTagPairSchema = z.object({
-  name: z.string(),
-  value: z.string(),
-});
-
-const ResendTagsSchema = z.union([
-  ResendTagsMapSchema,
-  z.array(ResendTagPairSchema),
-]);
-
 const ResendEmailEventDataSchema = z
   .object({
     broadcast_id: z.string().optional(),
@@ -21,7 +11,7 @@ const ResendEmailEventDataSchema = z
     to: z.array(z.string()),
     subject: z.string(),
     template_id: z.string().optional(),
-    tags: ResendTagsSchema.optional(),
+    tags: ResendTagsMapSchema.optional(),
   })
   .passthrough();
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { toExpress } from "./index.js";
 import {
   createWebhook,
+  createInMemoryReplayStore,
   defineEvent,
   z,
   type Provider,
@@ -80,6 +81,19 @@ function createMockResponse() {
 }
 
 const validPayload = { action: "created", data: { id: 1 } };
+
+function createIgnoreDuplicateWebhook(provider: Provider<"test">) {
+  return createWebhook(provider)
+    .withReplayProtection({
+      store: createInMemoryReplayStore(),
+      policy: {
+        ttlSeconds: 60,
+        onDuplicate: "ignore",
+        key: ({ deliveryId }) => deliveryId,
+      },
+    })
+    .event(testEvent, () => {});
+}
 
 // ============================================================================
 // toExpress Tests
@@ -285,6 +299,33 @@ describe("toExpress", () => {
       await middleware(req as Request, res as Response);
 
       expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("should call onSuccess for ignored replay duplicates (200 + ok:true)", async () => {
+      const provider = createTestProvider();
+      const webhook = createIgnoreDuplicateWebhook(provider);
+      const onSuccess = vi.fn();
+      const middleware = toExpress(webhook, { onSuccess });
+
+      const createDuplicateReq = () =>
+        createMockRequest({
+          headers: {
+            "x-test-event": "test.event",
+            "x-test-delivery-id": "ignore-duplicate-express",
+          },
+          body: Buffer.from(JSON.stringify(validPayload)),
+        });
+
+      const { res: firstRes } = createMockResponse();
+      await middleware(createDuplicateReq() as Request, firstRes as Response);
+
+      const { res: secondRes, state: secondState } = createMockResponse();
+      await middleware(createDuplicateReq() as Request, secondRes as Response);
+
+      expect(secondState.statusCode).toBe(200);
+      expect(onSuccess).toHaveBeenCalledTimes(2);
+      expect(onSuccess).toHaveBeenNthCalledWith(1, "test.event");
+      expect(onSuccess).toHaveBeenNthCalledWith(2, "test.event");
     });
 
     it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {

@@ -845,7 +845,7 @@ const webhook = resend()
 - `data.email_id` - Stable Resend email identifier
 - `data.created_at` - Email object timestamp
 - `data.from` / `data.to` / `data.subject` - Core email metadata
-- `data.tags` - Tag payload from Resend; the SDK accepts both object-map and `{ name, value }[]` variants
+- `data.tags` - Tag payload from Resend as `Record<string, string>`
 - `data.bounce` / `data.click` / `data.failed` / `data.suppressed` - Event-specific detail objects when present
 
 <Callout type="warn">

@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { toHono, toHonoNode } from "./index.js";
 import {
   createWebhook,
+  createInMemoryReplayStore,
   defineEvent,
   z,
   type Provider,
@@ -69,6 +70,19 @@ function createRequest(options: {
 }
 
 const validPayload = { action: "created", data: { id: 1 } };
+
+function createIgnoreDuplicateWebhook(provider: Provider<"test">) {
+  return createWebhook(provider)
+    .withReplayProtection({
+      store: createInMemoryReplayStore(),
+      policy: {
+        ttlSeconds: 60,
+        onDuplicate: "ignore",
+        key: ({ deliveryId }) => deliveryId,
+      },
+    })
+    .event(testEvent, () => {});
+}
 
 // ============================================================================
 // toHono Tests
@@ -363,6 +377,37 @@ describe("toHono", () => {
       await app.request(request);
 
       expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("should call onSuccess for ignored replay duplicates (200 + ok:true)", async () => {
+      const provider = createTestProvider();
+      const webhook = createIgnoreDuplicateWebhook(provider);
+      const onSuccess = vi.fn();
+      const app = new Hono();
+      app.post("/webhooks", toHono(webhook, { onSuccess }));
+
+      const firstRequest = createRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "ignore-duplicate-hono",
+        },
+        body: JSON.stringify(validPayload),
+      });
+      const secondRequest = createRequest({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "ignore-duplicate-hono",
+        },
+        body: JSON.stringify(validPayload),
+      });
+
+      await app.request(firstRequest);
+      const duplicateResponse = await app.request(secondRequest);
+
+      expect(duplicateResponse.status).toBe(200);
+      expect(onSuccess).toHaveBeenCalledTimes(2);
+      expect(onSuccess).toHaveBeenNthCalledWith(1, "test.event");
+      expect(onSuccess).toHaveBeenNthCalledWith(2, "test.event");
     });
 
     it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {
