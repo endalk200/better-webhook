@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Github, Terminal, Code2, Copy, Check } from "lucide-react";
+import { homepageProviders } from "./provider-data";
 
 const codeBlock = `import { github } from "@better-webhook/github";
 import { push, pull_request } from "@better-webhook/github/events";
@@ -24,8 +25,15 @@ export const POST = toNextJS(webhook);`;
 export function Hero() {
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const providerCount = homepageProviders.filter(
+    (provider) => !provider.isCustom,
+  ).length;
   const stats = [
-    { value: "5", label: "Providers", color: "var(--nb-coral)" },
+    {
+      value: String(providerCount),
+      label: "Providers",
+      color: "var(--nb-coral)",
+    },
     { value: "5", label: "Adapters", color: "var(--nb-blue)" },
     { value: "100%", label: "Type-safe", color: "var(--nb-green)" },
   ];

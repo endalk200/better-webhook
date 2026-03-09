@@ -232,9 +232,9 @@ const contactCreatedEvent = {
     segment_ids: ["78261eea-8f8b-4381-83c6-79fa7120f1cf"],
     created_at: "2024-11-17T19:32:22.980Z",
     updated_at: "2024-11-17T19:32:22.980Z",
-    email: "steve.wozniak@gmail.com",
-    first_name: "Steve",
-    last_name: "Wozniak",
+    email: "contact@example.com",
+    first_name: "Example",
+    last_name: "Contact",
     unsubscribed: false,
   },
 };
@@ -248,9 +248,9 @@ const contactUpdatedEvent = {
     segment_ids: ["78261eea-8f8b-4381-83c6-79fa7120f1cf"],
     created_at: "2024-11-17T19:32:22.980Z",
     updated_at: "2024-11-17T19:32:22.980Z",
-    email: "steve.wozniak@gmail.com",
-    first_name: "Steve",
-    last_name: "Wozniak",
+    email: "contact@example.com",
+    first_name: "Example",
+    last_name: "Contact",
     unsubscribed: false,
   },
 };
@@ -264,9 +264,9 @@ const contactDeletedEvent = {
     segment_ids: [],
     created_at: "2024-11-17T19:32:22.980Z",
     updated_at: "2024-11-17T19:32:22.980Z",
-    email: "steve.wozniak@gmail.com",
-    first_name: "Steve",
-    last_name: "Wozniak",
+    email: "contact@example.com",
+    first_name: "Example",
+    last_name: "Contact",
     unsubscribed: true,
   },
 };
@@ -473,9 +473,27 @@ describe("resend()", () => {
 
     expect(result.status).toBe(200);
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]![0].data.email).toBe(
-      "steve.wozniak@gmail.com",
+    expect(handler.mock.calls[0]![0].data.email).toBe("contact@example.com");
+  });
+
+  it("accepts webhook secrets without base64 padding", async () => {
+    const unpaddedSecret = "whsec_dGVzdF9rZXk";
+    const handler = vi.fn();
+    const webhook = resend({ secret: unpaddedSecret }).event(
+      email_delivered,
+      handler,
     );
+    const request = createSignedRequest(emailDeliveredEvent, {
+      secret: unpaddedSecret,
+    });
+
+    const result = await webhook.process({
+      headers: request.headers,
+      rawBody: request.rawBody,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("returns 200 for verified but unhandled events", async () => {

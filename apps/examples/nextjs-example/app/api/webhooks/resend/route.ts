@@ -1,7 +1,6 @@
 import {
   createInMemoryReplayStore,
   createWebhookStats,
-  type WebhookObserver,
 } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
 import { resend } from "@better-webhook/resend";
@@ -24,27 +23,25 @@ const supportedEvents = [
   "contact.created",
 ];
 
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
+const loggingObserver = {
+  onRequestReceived: (event: { rawBodyBytes: number; eventType?: string }) => {
     console.log(
       `📥 Resend webhook received (${event.rawBodyBytes} bytes): ${event.eventType ?? "unknown"}`,
     );
   },
-  onCompleted: (event) => {
+  onCompleted: (event: { status: number; durationMs: number }) => {
     console.log(
       `📊 Resend completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
     );
   },
 };
 
-function countTags(
-  tags: Record<string, string> | { name: string; value: string }[] | undefined,
-): number {
+function countTags(tags: Record<string, string> | undefined): number {
   if (!tags) {
     return 0;
   }
 
-  return Array.isArray(tags) ? tags.length : Object.keys(tags).length;
+  return Object.keys(tags).length;
 }
 
 const webhook = resend()

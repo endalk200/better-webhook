@@ -19,8 +19,9 @@ export interface NextJSAdapterOptions {
   maxBodyBytes?: number;
 
   /**
-   * Callback invoked when processing returns a successful 200 acknowledgement.
+   * Callback invoked when processing returns a successful 200 acknowledgement with `body.ok === true`.
    * This includes replay duplicates configured with `onDuplicate: "ignore"`.
+   * This excludes provider-specific 200 acknowledgements where no handler ran, such as verified but unhandled Resend events.
    * Observer `CompletedEvent.success` can still be `true` for both 200 and 204.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;

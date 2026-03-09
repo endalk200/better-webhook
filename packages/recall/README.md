@@ -97,7 +97,7 @@ Recall webhook verification is enabled by default. Provide a workspace secret wi
 - `webhook-timestamp` / `svix-timestamp`
 - `webhook-signature` / `svix-signature`
 
-using HMAC-SHA256 over `id.timestamp.rawBody`. Requests with stale timestamps are rejected to limit replay attacks.
+using HMAC-SHA256 over `${id}.${timestamp}.${rawBody}`. Requests with stale timestamps are rejected to limit replay attacks.
 
 ## Replay Protection and Idempotency
 

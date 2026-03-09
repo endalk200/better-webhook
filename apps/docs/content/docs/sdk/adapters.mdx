@@ -537,7 +537,7 @@ All adapters accept the same options:
 | ----------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `secret`    | `string`                                       | Webhook secret for signature verification. Overrides provider secret and environment variables.                   |
 | `maxBodyBytes` | `number`                                    | Optional request body size guard in bytes. Returns `413` when exceeded.                                          |
-| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after a registered handler successfully processes the webhook. Errors from this callback are ignored. |
+| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Callback invoked after a successful `200` acknowledgement with `body.ok === true` (including ignored duplicates, excluding verified-but-unhandled `200` acknowledgements such as Resend). Errors from this callback are ignored. |
 | `observer`  | `WebhookObserver \| WebhookObserver[]`         | Observer(s) for webhook lifecycle events. Add metrics, logging, or tracing without modifying the webhook builder. |
 
 If core replay protection is enabled on the webhook builder, adapters pass

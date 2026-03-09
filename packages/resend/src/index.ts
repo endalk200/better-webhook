@@ -11,6 +11,8 @@ const DEFAULT_TIMESTAMP_TOLERANCE_SECONDS = 60 * 5;
 const WEBHOOK_SECRET_PREFIX = "whsec_";
 const STRICT_BASE64_PATTERN =
   /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const STRICT_BASE64_UNPADDED_PATTERN =
+  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}|[A-Za-z0-9+/]{3})?$/;
 
 export type { ResendProvider } from "./events.js";
 
@@ -56,8 +58,23 @@ function normalizeBody(rawBody: string | Buffer): string {
   return typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
 }
 
-function isStrictBase64(value: string): boolean {
-  return value.length > 0 && STRICT_BASE64_PATTERN.test(value);
+function normalizeStrictBase64(
+  value: string,
+  options?: { allowUnpadded?: boolean },
+): string | undefined {
+  if (value.length === 0) {
+    return undefined;
+  }
+
+  if (STRICT_BASE64_PATTERN.test(value)) {
+    return value;
+  }
+
+  if (!options?.allowUnpadded || !STRICT_BASE64_UNPADDED_PATTERN.test(value)) {
+    return undefined;
+  }
+
+  return value.padEnd(value.length + ((4 - (value.length % 4)) % 4), "=");
 }
 
 function parseUnixTimestamp(value: string): number | undefined {
@@ -79,12 +96,15 @@ function decodeWebhookSecret(secret: string): Buffer | undefined {
   }
 
   const encodedSecret = secret.slice(WEBHOOK_SECRET_PREFIX.length);
-  if (!isStrictBase64(encodedSecret)) {
+  const normalizedSecret = normalizeStrictBase64(encodedSecret, {
+    allowUnpadded: true,
+  });
+  if (!normalizedSecret) {
     return undefined;
   }
 
   try {
-    const decoded = Buffer.from(encodedSecret, "base64");
+    const decoded = Buffer.from(normalizedSecret, "base64");
     if (decoded.length === 0) {
       return undefined;
     }
@@ -95,13 +115,18 @@ function decodeWebhookSecret(secret: string): Buffer | undefined {
 }
 
 function secureCompareBase64(left: string, right: string): boolean {
-  if (!isStrictBase64(left) || !isStrictBase64(right)) {
+  const normalizedLeft = normalizeStrictBase64(left, { allowUnpadded: true });
+  const normalizedRight = normalizeStrictBase64(right, {
+    allowUnpadded: true,
+  });
+
+  if (!normalizedLeft || !normalizedRight) {
     return false;
   }
 
   try {
-    const leftBuffer = Buffer.from(left, "base64");
-    const rightBuffer = Buffer.from(right, "base64");
+    const leftBuffer = Buffer.from(normalizedLeft, "base64");
+    const rightBuffer = Buffer.from(normalizedRight, "base64");
 
     if (leftBuffer.length !== rightBuffer.length) {
       return false;
