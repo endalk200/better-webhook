@@ -20,7 +20,10 @@ export interface HonoAdapterOptions {
   /** Maximum request body size in bytes (optional, returns 413 when exceeded) */
   maxBodyBytes?: number;
 
-  /** Callback invoked only when a registered handler succeeds with status 200. */
+  /**
+   * Callback invoked when processing returns a successful 200 acknowledgement.
+   * This includes replay duplicates configured with `onDuplicate: "ignore"`.
+   */
   onSuccess?: (eventType: string) => void | Promise<void>;
 
   /**

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { toNestJS, type NestJSRequest } from "./index.js";
 import {
   createWebhook,
+  createInMemoryReplayStore,
   defineEvent,
   z,
   type Provider,
@@ -56,6 +57,19 @@ function createMockRequest(options: {
 }
 
 const validPayload = { action: "created", data: { id: 1 } };
+
+function createIgnoreDuplicateWebhook(provider: Provider<"test">) {
+  return createWebhook(provider)
+    .withReplayProtection({
+      store: createInMemoryReplayStore(),
+      policy: {
+        ttlSeconds: 60,
+        onDuplicate: "ignore",
+        key: ({ deliveryId }) => deliveryId,
+      },
+    })
+    .event(testEvent, () => {});
+}
 
 // ============================================================================
 // toNestJS Tests
@@ -274,6 +288,30 @@ describe("toNestJS", () => {
       await handler(req);
 
       expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("should call onSuccess for ignored replay duplicates (200 + ok:true)", async () => {
+      const provider = createTestProvider();
+      const webhook = createIgnoreDuplicateWebhook(provider);
+      const onSuccess = vi.fn();
+      const handler = toNestJS(webhook, { onSuccess });
+
+      const createDuplicateReq = () =>
+        createMockRequest({
+          headers: {
+            "x-test-event": "test.event",
+            "x-test-delivery-id": "ignore-duplicate-nestjs",
+          },
+          rawBody: JSON.stringify(validPayload),
+        });
+
+      await handler(createDuplicateReq());
+      const duplicateResult = await handler(createDuplicateReq());
+
+      expect(duplicateResult.statusCode).toBe(200);
+      expect(onSuccess).toHaveBeenCalledTimes(2);
+      expect(onSuccess).toHaveBeenNthCalledWith(1, "test.event");
+      expect(onSuccess).toHaveBeenNthCalledWith(2, "test.event");
     });
 
     it("should return 413 and not call onSuccess when body exceeds maxBodyBytes", async () => {

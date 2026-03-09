@@ -9,6 +9,8 @@ import {
 
 const DEFAULT_TIMESTAMP_TOLERANCE_SECONDS = 60 * 5;
 const WEBHOOK_SECRET_PREFIX = "whsec_";
+const STRICT_BASE64_PATTERN =
+  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 export type { ResendProvider } from "./events.js";
 
@@ -54,6 +56,10 @@ function normalizeBody(rawBody: string | Buffer): string {
   return typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
 }
 
+function isStrictBase64(value: string): boolean {
+  return value.length > 0 && STRICT_BASE64_PATTERN.test(value);
+}
+
 function parseUnixTimestamp(value: string): number | undefined {
   if (!/^\d+$/.test(value)) {
     return undefined;
@@ -72,11 +78,13 @@ function decodeWebhookSecret(secret: string): Buffer | undefined {
     return undefined;
   }
 
+  const encodedSecret = secret.slice(WEBHOOK_SECRET_PREFIX.length);
+  if (!isStrictBase64(encodedSecret)) {
+    return undefined;
+  }
+
   try {
-    const decoded = Buffer.from(
-      secret.slice(WEBHOOK_SECRET_PREFIX.length),
-      "base64",
-    );
+    const decoded = Buffer.from(encodedSecret, "base64");
     if (decoded.length === 0) {
       return undefined;
     }
@@ -87,6 +95,10 @@ function decodeWebhookSecret(secret: string): Buffer | undefined {
 }
 
 function secureCompareBase64(left: string, right: string): boolean {
+  if (!isStrictBase64(left) || !isStrictBase64(right)) {
+    return false;
+  }
+
   try {
     const leftBuffer = Buffer.from(left, "base64");
     const rightBuffer = Buffer.from(right, "base64");

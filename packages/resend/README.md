@@ -147,8 +147,7 @@ instances and restarts.
 - `email.received` webhooks contain metadata only. Fetch the full inbound body,
   headers, and attachments through Resend's receiving APIs if you need message
   content.
-- Resend's public docs show `tags` as an object map, while some official
-  examples use an array of `{ name, value }`. This package accepts both shapes.
+- `data.tags` follows Resend's documented `Record<string, string>` shape.
 
 ## Environment Variables
 

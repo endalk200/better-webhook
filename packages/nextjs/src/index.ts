@@ -19,7 +19,8 @@ export interface NextJSAdapterOptions {
   maxBodyBytes?: number;
 
   /**
-   * Callback invoked only when a registered handler successfully processes the webhook.
+   * Callback invoked when processing returns a successful 200 acknowledgement.
+   * This includes replay duplicates configured with `onDuplicate: "ignore"`.
    * Observer `CompletedEvent.success` can still be `true` for both 200 and 204.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;
