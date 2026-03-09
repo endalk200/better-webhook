@@ -28,8 +28,9 @@ export interface NestJSAdapterOptions {
   maxBodyBytes?: number;
 
   /**
-   * Callback invoked when processing returns a successful 200 acknowledgement.
+   * Callback invoked when processing returns a successful 200 acknowledgement with `body.ok === true`.
    * This includes replay duplicates configured with `onDuplicate: "ignore"`.
+   * This excludes provider-specific 200 acknowledgements where no handler ran, such as verified but unhandled Resend events.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;
 

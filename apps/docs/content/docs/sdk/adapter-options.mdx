@@ -13,7 +13,7 @@ All adapters support the same core options.
 | ------ | ---- | ----------- |
 | `secret` | `string` | Secret used for signature verification. Overrides provider/env defaults. |
 | `maxBodyBytes` | `number` | Optional body-size guard. Returns `413` when exceeded. |
-| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Called after a registered handler successfully processes the webhook. |
+| `onSuccess` | `(eventType: string) => void \| Promise<void>` | Called after a successful `200` acknowledgement with `body.ok === true` (including ignored duplicates, excluding verified-but-unhandled `200` acknowledgements such as Resend). |
 | `observer` | `WebhookObserver \| WebhookObserver[]` | Observer hooks for metrics/logging/tracing. |
 
 ## Secret resolution order

@@ -509,10 +509,10 @@ func (s *Service) resolveHeaders(
 	headers []domain.HeaderEntry,
 	resolver *platformplaceholders.Resolver,
 ) ([]domain.HeaderEntry, error) {
-	resolvedHeaders := make([]domain.HeaderEntry, 0, len(headers))
 	if strings.EqualFold(provider, "resend") {
 		return s.resolveResendHeaders(provider, secret, body, headers, resolver)
 	}
+	resolvedHeaders := make([]domain.HeaderEntry, 0, len(headers))
 	for _, header := range headers {
 		headerKey := strings.TrimSpace(header.Key)
 		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {

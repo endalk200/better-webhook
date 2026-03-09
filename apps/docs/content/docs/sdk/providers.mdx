@@ -916,9 +916,9 @@ Resend uses Svix-compatible signature headers:
 - `svix-signature`
 
 The SDK verifies the exact raw request body using HMAC-SHA256 over
-`id.timestamp.rawBody` with the base64-decoded portion of the `whsec_...`
-secret. By default the signed timestamp must be within `300` seconds of the
-current time.
+`${id}.${timestamp}.${rawBody}` with the base64-decoded portion of the
+`whsec_...` secret. By default the signed timestamp must be within `300`
+seconds of the current time.
 
 Verified but unhandled Resend requests are acknowledged with `200` to match
 Resend's documented delivery contract, while still requiring signature

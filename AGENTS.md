@@ -25,3 +25,5 @@ NOTE:
 
 - This app has no users yet, make whatever changes you need without worrying about users or data or migrations.
 - Docs content under `apps/docs/content` can get out of date so whenever you make changes to the CLI or the SDK, you should see if you need to update the docs.
+- Running repo-wide tasks in parallel can trigger a flaky lint failure in `packages/stripe` where ESLint tries to read a temporary `tsup.config.bundled_*.mjs` file while `tsup` is creating/removing it. If `pnpm run lint` fails with `ENOENT` for that file during concurrent verification, rerun lint on its own after the build-related tasks finish.
+- Editor/LSP diagnostics in example apps can sometimes claim `@better-webhook/core` is missing exported types even when the workspace package exports them correctly; if that happens, verify against `packages/core/dist/index.d.ts` and repo typecheck output before making API changes based only on the editor error.

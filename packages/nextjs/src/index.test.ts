@@ -68,7 +68,10 @@ function createMockRequest(options: {
 
 const validPayload = { action: "created", data: { id: 1 } };
 
-function createIgnoreDuplicateWebhook(provider: Provider<"test">) {
+function createIgnoreDuplicateWebhook(
+  provider: Provider<"test">,
+  handler = () => {},
+) {
   return createWebhook(provider)
     .withReplayProtection({
       store: createInMemoryReplayStore(),
@@ -78,7 +81,7 @@ function createIgnoreDuplicateWebhook(provider: Provider<"test">) {
         key: ({ deliveryId }) => deliveryId,
       },
     })
-    .event(testEvent, () => {});
+    .event(testEvent, handler);
 }
 
 // ============================================================================
@@ -301,7 +304,8 @@ describe("toNextJS", () => {
 
     it("should call onSuccess for ignored replay duplicates (200 + ok:true)", async () => {
       const provider = createTestProvider();
-      const webhook = createIgnoreDuplicateWebhook(provider);
+      const handlerSpy = vi.fn();
+      const webhook = createIgnoreDuplicateWebhook(provider, handlerSpy);
       const onSuccess = vi.fn();
       const handler = toNextJS(webhook, { onSuccess });
 
@@ -324,6 +328,7 @@ describe("toNextJS", () => {
       const duplicateResponse = await handler(secondRequest);
 
       expect(duplicateResponse.status).toBe(200);
+      expect(handlerSpy).toHaveBeenCalledTimes(1);
       expect(onSuccess).toHaveBeenCalledTimes(2);
       expect(onSuccess).toHaveBeenNthCalledWith(1, "test.event");
       expect(onSuccess).toHaveBeenNthCalledWith(2, "test.event");
