@@ -827,6 +827,125 @@ func TestRunResendSignatureUsesHeaderOverrides(t *testing.T) {
 	}
 }
 
+func TestRunResendPlaceholderValuesStayConsistentAcrossHeaderNames(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{result: DispatchResult{StatusCode: 200, StatusText: "OK"}}
+	secret := "whsec_" + base64.StdEncoding.EncodeToString([]byte("resend-secret"))
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID:       "resend-email_delivered",
+					Metadata: domain.TemplateMetadata{ID: "resend-email_delivered", Provider: "resend", Event: "email.delivered"},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "resend",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-Debug-Id", Value: "$resend:svix-id"},
+							{Key: "Svix-Id", Value: "$resend:svix-id"},
+							{Key: "X-Debug-Timestamp", Value: "$resend:svix-timestamp"},
+							{Key: "Svix-Timestamp", Value: "$resend:svix-timestamp"},
+							{Key: "X-Debug-Signature", Value: "$resend:svix-signature"},
+							{Key: "Svix-Signature", Value: "$resend:svix-signature"},
+						},
+						Body: []byte(`{"type":"email.delivered","data":{"email_id":"email_123"}}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, idGeneratorStub{id: "msg_resend_123"}, nil)),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "resend-email_delivered",
+		TargetURL:  "http://localhost:3000/webhooks/resend",
+		Secret:     secret,
+		Timeout:    5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("run resend template with non-canonical placeholders: %v", err)
+	}
+
+	messageID := headerValue(dispatcher.lastRequest.Headers, "Svix-Id")
+	if messageID != "msg_resend_123" {
+		t.Fatalf("svix id mismatch: got %q", messageID)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Id"); got != messageID {
+		t.Fatalf("debug id mismatch: got %q want %q", got, messageID)
+	}
+	expectedTimestamp := fmt.Sprintf("%d", now.Unix())
+	if got := headerValue(dispatcher.lastRequest.Headers, "Svix-Timestamp"); got != expectedTimestamp {
+		t.Fatalf("svix timestamp mismatch: got %q want %q", got, expectedTimestamp)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Timestamp"); got != expectedTimestamp {
+		t.Fatalf("debug timestamp mismatch: got %q want %q", got, expectedTimestamp)
+	}
+	expectedSignature := computeResendSignature(dispatcher.lastRequest.Body, messageID, expectedTimestamp, secret)
+	if got := headerValue(dispatcher.lastRequest.Headers, "Svix-Signature"); got != expectedSignature {
+		t.Fatalf("svix signature mismatch: got %q want %q", got, expectedSignature)
+	}
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Signature"); got != expectedSignature {
+		t.Fatalf("debug signature mismatch: got %q want %q", got, expectedSignature)
+	}
+}
+
+func TestRunResendSignaturePlaceholderWorksWithoutCanonicalHeaders(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
+	dispatcher := &dispatcherStub{result: DispatchResult{StatusCode: 200, StatusText: "OK"}}
+	secret := "whsec_" + base64.StdEncoding.EncodeToString([]byte("resend-secret"))
+	service := NewService(
+		&localStoreStub{
+			items: []domain.LocalTemplate{
+				{
+					ID:       "resend-email_delivered",
+					Metadata: domain.TemplateMetadata{ID: "resend-email_delivered", Provider: "resend", Event: "email.delivered"},
+					Template: domain.WebhookTemplate{
+						Method:   "POST",
+						Provider: "resend",
+						Headers: []domain.HeaderEntry{
+							{Key: "X-Debug-Id", Value: "$resend:svix-id"},
+							{Key: "X-Debug-Timestamp", Value: "$resend:svix-timestamp"},
+							{Key: "X-Debug-Signature", Value: "$resend:svix-signature"},
+						},
+						Body: []byte(`{"type":"email.delivered","data":{"email_id":"email_123"}}`),
+					},
+				},
+			},
+		},
+		&remoteStoreStub{},
+		&cacheStoreStub{},
+		clockStub{now: now},
+		WithDispatcher(dispatcher),
+		WithPlaceholderResolver(platformplaceholders.NewResolver(clockStub{now: now}, idGeneratorStub{id: "msg_resend_456"}, nil)),
+	)
+	_, err := service.Run(context.Background(), RunRequest{
+		TemplateID: "resend-email_delivered",
+		TargetURL:  "http://localhost:3000/webhooks/resend",
+		Secret:     secret,
+		Timeout:    5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("run resend template with only non-canonical placeholders: %v", err)
+	}
+
+	messageID := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Id")
+	if messageID != "msg_resend_456" {
+		t.Fatalf("debug id mismatch: got %q", messageID)
+	}
+	timestamp := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Timestamp")
+	expectedTimestamp := fmt.Sprintf("%d", now.Unix())
+	if timestamp != expectedTimestamp {
+		t.Fatalf("debug timestamp mismatch: got %q want %q", timestamp, expectedTimestamp)
+	}
+	expectedSignature := computeResendSignature(dispatcher.lastRequest.Body, messageID, timestamp, secret)
+	if got := headerValue(dispatcher.lastRequest.Headers, "X-Debug-Signature"); got != expectedSignature {
+		t.Fatalf("debug signature mismatch: got %q want %q", got, expectedSignature)
+	}
+}
+
 func TestRunReturnsSecretRequiredWhenResendSignaturePlaceholderPresent(t *testing.T) {
 	now := time.Date(2026, time.February, 22, 11, 0, 0, 0, time.UTC)
 	dispatcher := &dispatcherStub{}
