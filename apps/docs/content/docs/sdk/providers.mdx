@@ -812,6 +812,7 @@ Events:
 - `email.suppressed`
 
 ```ts
+import { resend } from "@better-webhook/resend";
 import {
   email_delivered,
   email_bounced,
@@ -819,22 +820,23 @@ import {
   email_received,
 } from "@better-webhook/resend/events";
 
-.event(email_delivered, async (payload) => {
-  console.log(payload.data.email_id);
-  console.log(payload.data.to);
-})
-.event(email_bounced, async (payload) => {
-  console.log(payload.data.bounce.message);
-  console.log(payload.data.bounce.subType);
-})
-.event(email_clicked, async (payload) => {
-  console.log(payload.data.click.link);
-  console.log(payload.data.click.userAgent);
-})
-.event(email_received, async (payload) => {
-  console.log(payload.data.message_id);
-  console.log(payload.data.attachments?.length ?? 0);
-})
+const webhook = resend()
+  .event(email_delivered, async (payload) => {
+    console.log(payload.data.email_id);
+    console.log(payload.data.to);
+  })
+  .event(email_bounced, async (payload) => {
+    console.log(payload.data.bounce.message);
+    console.log(payload.data.bounce.subType);
+  })
+  .event(email_clicked, async (payload) => {
+    console.log(payload.data.click.link);
+    console.log(payload.data.click.userAgent);
+  })
+  .event(email_received, async (payload) => {
+    console.log(payload.data.message_id);
+    console.log(payload.data.attachments?.length ?? 0);
+  });
 ```
 
 **Key payload fields:**
@@ -860,13 +862,14 @@ Events:
 - `domain.deleted`
 
 ```ts
+import { resend } from "@better-webhook/resend";
 import { domain_updated } from "@better-webhook/resend/events";
 
-.event(domain_updated, async (payload) => {
+const webhook = resend().event(domain_updated, async (payload) => {
   console.log(payload.data.name);
   console.log(payload.data.status);
   console.log(payload.data.records.length);
-})
+});
 ```
 
 **Key payload fields:**
@@ -886,13 +889,14 @@ Events:
 - `contact.deleted`
 
 ```ts
+import { resend } from "@better-webhook/resend";
 import { contact_created } from "@better-webhook/resend/events";
 
-.event(contact_created, async (payload) => {
+const webhook = resend().event(contact_created, async (payload) => {
   console.log(payload.data.email);
   console.log(payload.data.segment_ids);
   console.log(payload.data.unsubscribed);
-})
+});
 ```
 
 **Key payload fields:**

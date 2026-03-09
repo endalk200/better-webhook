@@ -37,6 +37,16 @@ const loggingObserver: WebhookObserver = {
   },
 };
 
+function countTags(
+  tags: Record<string, string> | { name: string; value: string }[] | undefined,
+): number {
+  if (!tags) {
+    return 0;
+  }
+
+  return Array.isArray(tags) ? tags.length : Object.keys(tags).length;
+}
+
 const webhook = resend()
   .observe(stats.observer)
   .observe(loggingObserver)
@@ -46,8 +56,8 @@ const webhook = resend()
   .event(email_delivered, async (payload) => {
     console.log("✅ email.delivered", {
       emailId: payload.data.email_id,
-      to: payload.data.to,
-      subject: payload.data.subject,
+      recipientCount: payload.data.to.length,
+      tagCount: countTags(payload.data.tags),
     });
   })
   .event(email_bounced, async (payload) => {
@@ -55,7 +65,6 @@ const webhook = resend()
       emailId: payload.data.email_id,
       bounceType: payload.data.bounce.type,
       bounceSubType: payload.data.bounce.subType,
-      message: payload.data.bounce.message,
     });
   })
   .event(email_received, async (payload) => {
@@ -71,7 +80,6 @@ const webhook = resend()
   .event(domain_updated, async (payload) => {
     console.log("🌐 domain.updated", {
       domainId: payload.data.id,
-      name: payload.data.name,
       status: payload.data.status,
       recordCount: payload.data.records.length,
     });
@@ -79,8 +87,8 @@ const webhook = resend()
   .event(contact_created, async (payload) => {
     console.log("👤 contact.created", {
       contactId: payload.data.id,
-      email: payload.data.email,
       audienceId: payload.data.audience_id,
+      segmentCount: payload.data.segment_ids.length,
       unsubscribed: payload.data.unsubscribed,
     });
   })

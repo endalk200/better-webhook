@@ -327,7 +327,7 @@ Signature verification happens automatically when you provide a secret. The SDK 
 
 1. **Adapter options** — Pass `secret` to the adapter function
 2. **Provider options** — Pass `secret` when creating the provider
-3. **Environment variables** — Automatically checks `GITHUB_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`, `RAGIE_WEBHOOK_SECRET`, `RECALL_WEBHOOK_SECRET`, `RESEND_WEBHOOK_SECRET`, etc.
+3. **Environment variables** — Automatically checks `<PROVIDER>_WEBHOOK_SECRET`, then `WEBHOOK_SECRET` as a fallback (for example `GITHUB_WEBHOOK_SECRET`)
 
 ```ts
 // Option 1: Adapter options
