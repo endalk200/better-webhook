@@ -72,7 +72,7 @@ For deep details, use the docs source and package-level READMEs. The root README
 
 ## Security behavior notes
 
-- Incoming requests are signature-verified before unhandled events return `204`.
+- Incoming requests are signature-verified before verified but unhandled events return the provider's acknowledgement status (`204` by default; some providers such as Resend use `200`).
 - When core replay protection is enabled, duplicate replay keys return `409` by default.
 
 ## Local development
