@@ -10,6 +10,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import { homepageProviders } from "./provider-data";
 
 type Framework = "nextjs" | "hono" | "express" | "nestjs" | "gcp-functions";
 
@@ -176,76 +177,6 @@ const frameworkLabels: Record<Framework, string> = {
   "gcp-functions": "GCP",
 };
 
-const providerInfo = [
-  {
-    key: "github",
-    name: "GitHub",
-    events: [
-      "push",
-      "pull_request",
-      "issues",
-      "installation",
-      "installation_repositories",
-    ],
-    package: "@better-webhook/github",
-    color: "var(--nb-coral)",
-  },
-  {
-    key: "stripe",
-    name: "Stripe",
-    events: [
-      "charge.failed",
-      "checkout.session.completed",
-      "payment_intent.succeeded",
-    ],
-    package: "@better-webhook/stripe",
-    color: "var(--nb-yellow)",
-  },
-  {
-    key: "ragie",
-    name: "Ragie",
-    events: [
-      "document_status_updated",
-      "document_deleted",
-      "entity_extracted",
-      "connection_sync_started",
-      "connection_sync_progress",
-      "connection_sync_finished",
-    ],
-    package: "@better-webhook/ragie",
-    color: "var(--nb-green)",
-  },
-  {
-    key: "recall",
-    name: "Recall.ai",
-    events: [
-      "participant_events.join",
-      "participant_events.leave",
-      "participant_events.chat_message",
-      "transcript.data",
-      "transcript.partial_data",
-      "bot.joining_call",
-      "bot.done",
-      "bot.fatal",
-    ],
-    package: "@better-webhook/recall",
-    color: "var(--nb-blue)",
-  },
-  {
-    key: "resend",
-    name: "Resend",
-    events: [
-      "email.delivered",
-      "email.bounced",
-      "email.received",
-      "domain.updated",
-      "contact.created",
-    ],
-    package: "@better-webhook/resend",
-    color: "var(--nb-green)",
-  },
-];
-
 export function SDKSection() {
   const [activeFramework, setActiveFramework] = useState<Framework>("nextjs");
   const [copiedInstall, setCopiedInstall] = useState(false);
@@ -375,39 +306,47 @@ export function SDKSection() {
             Available Providers
           </h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            {providerInfo.map((provider) => (
-              <div key={provider.key} className="nb-card p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] font-bold text-lg"
-                    style={{ color: provider.color }}
-                  >
-                    {provider.name[0]}
+            {homepageProviders
+              .filter((provider) => !provider.isCustom)
+              .map((provider) => {
+                const displayedEvents = provider.sampleEvents.slice(0, 4);
+                const totalEvents =
+                  provider.totalEvents ?? provider.sampleEvents.length;
+
+                return (
+                  <div key={provider.key} className="nb-card p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] font-bold text-lg"
+                        style={{ color: provider.accentColor }}
+                      >
+                        {provider.name[0]}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">{provider.name}</h4>
+                        <code className="text-xs text-[var(--nb-text-muted)] font-mono">
+                          {provider.package}
+                        </code>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {displayedEvents.map((event) => (
+                        <span
+                          key={event}
+                          className="text-[10px] font-mono px-2 py-0.5 bg-[var(--nb-cream)] border border-[var(--nb-border-color)] text-[var(--nb-text-muted)]"
+                        >
+                          {event}
+                        </span>
+                      ))}
+                      {totalEvents > displayedEvents.length && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 text-[var(--nb-text-muted)]">
+                          +{totalEvents - displayedEvents.length} more
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-sm">{provider.name}</h4>
-                    <code className="text-xs text-[var(--nb-text-muted)] font-mono">
-                      {provider.package}
-                    </code>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {provider.events.slice(0, 4).map((event) => (
-                    <span
-                      key={event}
-                      className="text-[10px] font-mono px-2 py-0.5 bg-[var(--nb-cream)] border border-[var(--nb-border-color)] text-[var(--nb-text-muted)]"
-                    >
-                      {event}
-                    </span>
-                  ))}
-                  {provider.events.length > 4 && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 text-[var(--nb-text-muted)]">
-                      +{provider.events.length - 4} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
 
