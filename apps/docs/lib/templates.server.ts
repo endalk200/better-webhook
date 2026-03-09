@@ -79,6 +79,55 @@ function stripJsonComments(jsonc: string): string {
   return result;
 }
 
+function stripTrailingCommas(json: string): string {
+  let result = "";
+  let i = 0;
+  let inString = false;
+
+  while (i < json.length) {
+    const char = json[i]!;
+
+    if (inString) {
+      result += char;
+      if (char === "\\" && i + 1 < json.length) {
+        result += json[i + 1];
+        i += 2;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      result += char;
+      i++;
+      continue;
+    }
+
+    if (char === ",") {
+      let lookahead = i + 1;
+      while (lookahead < json.length && /\s/.test(json[lookahead]!)) {
+        lookahead++;
+      }
+
+      const next = json[lookahead];
+      if (next === "}" || next === "]") {
+        i++;
+        continue;
+      }
+    }
+
+    result += char;
+    i++;
+  }
+
+  return result;
+}
+
 export function getTemplates(): TemplateMetadata[] {
   const templatesPath = resolveTemplatesPath();
 
@@ -93,7 +142,9 @@ export function getTemplates(): TemplateMetadata[] {
 
   let index: TemplateIndex;
   try {
-    index = JSON.parse(stripJsonComments(raw)) as TemplateIndex;
+    index = JSON.parse(
+      stripTrailingCommas(stripJsonComments(raw)),
+    ) as TemplateIndex;
   } catch (error) {
     throw new Error(
       `Failed to parse templates index at "${templatesPath}". ${String(error)}`,
