@@ -3,6 +3,7 @@ package placeholders
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -258,5 +259,105 @@ func TestResolveHeaderValueReturnsSecretErrorForStripeSignature(t *testing.T) {
 	})
 	if !errors.Is(err, ErrMissingSecret) {
 		t.Fatalf("expected ErrMissingSecret, got %v", err)
+	}
+}
+
+func TestResolveHeaderValueGeneratesResendSvixIDAndTimestamp(t *testing.T) {
+	now := time.Date(2026, time.February, 22, 12, 0, 0, 0, time.UTC)
+	resolver := NewResolver(
+		fixedClock{now: now},
+		fixedIDGenerator{id: "msg_resend_123"},
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+
+	messageID, err := resolver.ResolveHeaderValue("Svix-Id", "$resend:svix-id", HeaderContext{
+		Provider: "resend",
+	})
+	if err != nil {
+		t.Fatalf("resolve resend message id: %v", err)
+	}
+	if messageID != "msg_resend_123" {
+		t.Fatalf("message id mismatch: got %q", messageID)
+	}
+
+	timestamp, err := resolver.ResolveHeaderValue("Svix-Timestamp", "$resend:svix-timestamp", HeaderContext{
+		Provider: "resend",
+	})
+	if err != nil {
+		t.Fatalf("resolve resend timestamp: %v", err)
+	}
+	if timestamp != fmt.Sprintf("%d", now.Unix()) {
+		t.Fatalf("timestamp mismatch: got %q", timestamp)
+	}
+}
+
+func TestResolveHeaderValueGeneratesResendSignature(t *testing.T) {
+	resolver := NewResolver(
+		fixedClock{now: time.Now().UTC()},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+	body := []byte(`{"ok":true}`)
+	secretBytes := []byte("resend-secret")
+	secret := "whsec_" + base64.StdEncoding.EncodeToString(secretBytes)
+
+	value, err := resolver.ResolveHeaderValue("Svix-Signature", "$resend:svix-signature", HeaderContext{
+		Provider:        "resend",
+		Secret:          secret,
+		Body:            body,
+		ResendMessageID: "msg_resend_123",
+		ResendTimestamp: "1771761600",
+	})
+	if err != nil {
+		t.Fatalf("resolve resend signature: %v", err)
+	}
+
+	signature := hmac.New(sha256.New, secretBytes)
+	_, _ = fmt.Fprintf(signature, "%s.%s.%s", "msg_resend_123", "1771761600", string(body))
+	expected := "v1," + base64.StdEncoding.EncodeToString(signature.Sum(nil))
+	if value != expected {
+		t.Fatalf("signature mismatch: got %q want %q", value, expected)
+	}
+}
+
+func TestResolveHeaderValueReturnsSecretErrorForResendSignature(t *testing.T) {
+	resolver := NewResolver(
+		fixedClock{now: time.Now().UTC()},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+
+	_, err := resolver.ResolveHeaderValue("Svix-Signature", "$resend:svix-signature", HeaderContext{
+		Provider:        "resend",
+		Secret:          "",
+		Body:            []byte(`{"ok":true}`),
+		ResendMessageID: "msg_resend_123",
+		ResendTimestamp: "1771761600",
+	})
+	if !errors.Is(err, ErrMissingSecret) {
+		t.Fatalf("expected ErrMissingSecret, got %v", err)
+	}
+}
+
+func TestResolveHeaderValueReturnsInvalidSecretErrorForResendSignature(t *testing.T) {
+	resolver := NewResolver(
+		fixedClock{now: time.Now().UTC()},
+		nil,
+		nil,
+		WithEnvironmentPlaceholdersEnabled(true),
+	)
+
+	_, err := resolver.ResolveHeaderValue("Svix-Signature", "$resend:svix-signature", HeaderContext{
+		Provider:        "resend",
+		Secret:          "whsec_not-base64!",
+		Body:            []byte(`{"ok":true}`),
+		ResendMessageID: "msg_resend_123",
+		ResendTimestamp: "1771761600",
+	})
+	if !errors.Is(err, ErrInvalidProviderSecret) {
+		t.Fatalf("expected ErrInvalidProviderSecret, got %v", err)
 	}
 }

@@ -371,31 +371,9 @@ func (s *Service) Run(ctx context.Context, request RunRequest) (RunResult, error
 		provider = strings.TrimSpace(localTemplate.Metadata.Provider)
 	}
 	resolvedSecret := s.resolveProviderSecret(provider, request.Secret)
-	resolvedHeaders := make([]domain.HeaderEntry, 0, len(mergedHeaders))
-	for _, header := range mergedHeaders {
-		headerKey := strings.TrimSpace(header.Key)
-		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {
-			continue
-		}
-		resolvedValue, resolveErr := resolver.ResolveHeaderValue(
-			headerKey,
-			header.Value,
-			platformplaceholders.HeaderContext{
-				Provider: provider,
-				Secret:   resolvedSecret,
-				Body:     resolvedBody,
-			},
-		)
-		if resolveErr != nil {
-			if errors.Is(resolveErr, platformplaceholders.ErrMissingSecret) {
-				return RunResult{}, ErrRunSecretRequired
-			}
-			return RunResult{}, resolveErr
-		}
-		resolvedHeaders = append(resolvedHeaders, domain.HeaderEntry{
-			Key:   headerKey,
-			Value: resolvedValue,
-		})
+	resolvedHeaders, err := s.resolveHeaders(provider, resolvedSecret, resolvedBody, mergedHeaders, resolver)
+	if err != nil {
+		return RunResult{}, err
 	}
 
 	dispatched, err := s.dispatcher.Dispatch(ctx, DispatchRequest{
@@ -522,6 +500,145 @@ func providerOrUnknown(provider string) string {
 		return "unknown"
 	}
 	return provider
+}
+
+func (s *Service) resolveHeaders(
+	provider string,
+	secret string,
+	body []byte,
+	headers []domain.HeaderEntry,
+	resolver *platformplaceholders.Resolver,
+) ([]domain.HeaderEntry, error) {
+	resolvedHeaders := make([]domain.HeaderEntry, 0, len(headers))
+	if strings.EqualFold(provider, "resend") {
+		return s.resolveResendHeaders(provider, secret, body, headers, resolver)
+	}
+	for _, header := range headers {
+		headerKey := strings.TrimSpace(header.Key)
+		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {
+			continue
+		}
+		resolvedValue, resolveErr := resolver.ResolveHeaderValue(
+			headerKey,
+			header.Value,
+			platformplaceholders.HeaderContext{
+				Provider: provider,
+				Secret:   secret,
+				Body:     body,
+			},
+		)
+		if resolveErr != nil {
+			if errors.Is(resolveErr, platformplaceholders.ErrMissingSecret) {
+				return nil, ErrRunSecretRequired
+			}
+			return nil, resolveErr
+		}
+		resolvedHeaders = append(resolvedHeaders, domain.HeaderEntry{
+			Key:   headerKey,
+			Value: resolvedValue,
+		})
+	}
+	return resolvedHeaders, nil
+}
+
+func (s *Service) resolveResendHeaders(
+	provider string,
+	secret string,
+	body []byte,
+	headers []domain.HeaderEntry,
+	resolver *platformplaceholders.Resolver,
+) ([]domain.HeaderEntry, error) {
+	resolvedValues := make([]string, len(headers))
+	includeHeader := make([]bool, len(headers))
+	resendMessageID := ""
+	resendTimestamp := ""
+
+	for idx, header := range headers {
+		headerKey := strings.TrimSpace(header.Key)
+		if headerKey == "" || platformhttprequest.ShouldSkipHopByHopHeader(headerKey) {
+			continue
+		}
+		includeHeader[idx] = true
+		if isResendSignatureHeader(headerKey) {
+			continue
+		}
+		resolvedValue, err := resolver.ResolveHeaderValue(
+			headerKey,
+			header.Value,
+			platformplaceholders.HeaderContext{
+				Provider:        provider,
+				Secret:          secret,
+				Body:            body,
+				ResendMessageID: resendMessageID,
+				ResendTimestamp: resendTimestamp,
+			},
+		)
+		if err != nil {
+			if errors.Is(err, platformplaceholders.ErrMissingSecret) {
+				return nil, ErrRunSecretRequired
+			}
+			return nil, err
+		}
+		resolvedValues[idx] = resolvedValue
+		if isResendMessageIDHeader(headerKey) {
+			resendMessageID = resolvedValue
+		}
+		if isResendTimestampHeader(headerKey) {
+			resendTimestamp = resolvedValue
+		}
+	}
+
+	for idx, header := range headers {
+		if !includeHeader[idx] {
+			continue
+		}
+		headerKey := strings.TrimSpace(header.Key)
+		if !isResendSignatureHeader(headerKey) {
+			continue
+		}
+		resolvedValue, err := resolver.ResolveHeaderValue(
+			headerKey,
+			header.Value,
+			platformplaceholders.HeaderContext{
+				Provider:        provider,
+				Secret:          secret,
+				Body:            body,
+				ResendMessageID: resendMessageID,
+				ResendTimestamp: resendTimestamp,
+			},
+		)
+		if err != nil {
+			if errors.Is(err, platformplaceholders.ErrMissingSecret) {
+				return nil, ErrRunSecretRequired
+			}
+			return nil, err
+		}
+		resolvedValues[idx] = resolvedValue
+	}
+
+	resolvedHeaders := make([]domain.HeaderEntry, 0, len(headers))
+	for idx, header := range headers {
+		if !includeHeader[idx] {
+			continue
+		}
+		resolvedHeaders = append(resolvedHeaders, domain.HeaderEntry{
+			Key:   strings.TrimSpace(header.Key),
+			Value: resolvedValues[idx],
+		})
+	}
+	return resolvedHeaders, nil
+}
+
+func isResendSignatureHeader(key string) bool {
+	return strings.EqualFold(strings.TrimSpace(key), "svix-signature")
+}
+
+func isResendMessageIDHeader(key string) bool {
+	return strings.EqualFold(strings.TrimSpace(key), "svix-id")
+}
+
+func isResendTimestampHeader(key string) bool {
+	return strings.EqualFold(strings.TrimSpace(key), "svix-timestamp")
 }
 
 func toRequestHeaders(headers []domain.HeaderEntry) []platformhttprequest.HeaderEntry {

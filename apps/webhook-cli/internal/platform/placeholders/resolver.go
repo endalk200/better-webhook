@@ -3,6 +3,7 @@ package placeholders
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -21,23 +22,35 @@ const (
 	timeRFC3339Placeholder              = "$time:rfc3339"
 	githubSignature256Placeholder       = "$github:x-hub-signature-256"
 	stripeSignaturePlaceholder          = "$stripe:signature"
+	resendSvixIDPlaceholder             = "$resend:svix-id"
+	resendSvixTimestampPlaceholder      = "$resend:svix-timestamp"
+	resendSvixSignaturePlaceholder      = "$resend:svix-signature"
 	legacySignaturePlaceholder          = "placeholder"
 	githubProvider                      = "github"
 	stripeProvider                      = "stripe"
+	resendProvider                      = "resend"
 	githubSignatureHeader               = "x-hub-signature-256"
 	stripeSignatureHeader               = "stripe-signature"
+	resendSvixIDHeader                  = "svix-id"
+	resendSvixTimestampHeader           = "svix-timestamp"
+	resendSvixSignatureHeader           = "svix-signature"
 	githubSignaturePrefix               = "sha256="
 	stripeSignaturePrefix               = "t=%d,v1=%s"
+	resendSignaturePrefix               = "v1,%s"
+	resendWebhookSecretPrefix           = "whsec_"
 	genericEnvironmentPrefixPlaceholder = "$env:"
 	genericTimePrefixPlaceholder        = "$time:"
 	githubPrefixPlaceholder             = "$github:"
 	stripePrefixPlaceholder             = "$stripe:"
+	resendPrefixPlaceholder             = "$resend:"
 )
 
 var (
 	ErrMissingEnvironmentVariable      = errors.New("placeholder environment variable is not set")
 	ErrEnvironmentPlaceholdersDisabled = errors.New("environment placeholders are disabled")
 	ErrMissingSecret                   = errors.New("provider signing secret is required")
+	ErrInvalidProviderSecret           = errors.New("provider signing secret is invalid")
+	ErrMissingHeaderValue              = errors.New("required header value is missing")
 	ErrUnsupportedTimeFormat           = errors.New("time placeholder format is not supported")
 	ErrUnsupportedProviderToken        = errors.New("provider placeholder token is not supported")
 )
@@ -45,9 +58,11 @@ var (
 type ResolverOption func(*Resolver)
 
 type HeaderContext struct {
-	Provider string
-	Secret   string
-	Body     []byte
+	Provider        string
+	Secret          string
+	Body            []byte
+	ResendMessageID string
+	ResendTimestamp string
 }
 
 type Resolver struct {
@@ -122,10 +137,21 @@ func (r *Resolver) ResolveBody(body json.RawMessage) ([]byte, error) {
 
 func (r *Resolver) ResolveHeaderValue(key string, value string, ctx HeaderContext) (string, error) {
 	trimmedValue := strings.TrimSpace(value)
-	if isGitHubSignaturePlaceholder(strings.TrimSpace(key), trimmedValue, strings.TrimSpace(ctx.Provider)) {
+	trimmedKey := strings.TrimSpace(key)
+	trimmedProvider := strings.TrimSpace(ctx.Provider)
+	if isResendSvixIDPlaceholder(trimmedKey, trimmedValue, trimmedProvider) {
+		return r.buildResendMessageID(ctx), nil
+	}
+	if isResendSvixTimestampPlaceholder(trimmedKey, trimmedValue, trimmedProvider) {
+		return r.buildResendTimestamp(ctx), nil
+	}
+	if isResendSignaturePlaceholder(trimmedKey, trimmedValue, trimmedProvider) {
+		return buildResendSignature(ctx)
+	}
+	if isGitHubSignaturePlaceholder(trimmedKey, trimmedValue, trimmedProvider) {
 		return buildGitHubSignature(ctx.Body, ctx.Secret)
 	}
-	if isStripeSignaturePlaceholder(strings.TrimSpace(key), trimmedValue, strings.TrimSpace(ctx.Provider)) {
+	if isStripeSignaturePlaceholder(trimmedKey, trimmedValue, trimmedProvider) {
 		return r.buildStripeSignature(ctx.Body, ctx.Secret)
 	}
 	resolved, err := r.resolveString(trimmedValue)
@@ -133,7 +159,7 @@ func (r *Resolver) ResolveHeaderValue(key string, value string, ctx HeaderContex
 		return "", err
 	}
 	// Safety net in case resolution leaves a provider token unresolved.
-	if strings.HasPrefix(resolved, githubPrefixPlaceholder) || strings.HasPrefix(resolved, stripePrefixPlaceholder) {
+	if strings.HasPrefix(resolved, githubPrefixPlaceholder) || strings.HasPrefix(resolved, stripePrefixPlaceholder) || strings.HasPrefix(resolved, resendPrefixPlaceholder) {
 		return "", fmt.Errorf("%w: %s", ErrUnsupportedProviderToken, resolved)
 	}
 	return resolved, nil
@@ -223,7 +249,7 @@ func (r *Resolver) resolveInterpolatedToken(value string) (string, int, bool, er
 		return r.resolveEnvironmentToken(value)
 	case strings.HasPrefix(value, genericTimePrefixPlaceholder):
 		return "", 0, false, fmt.Errorf("%w: %s", ErrUnsupportedTimeFormat, readPlaceholderToken(value))
-	case strings.HasPrefix(value, githubPrefixPlaceholder), strings.HasPrefix(value, stripePrefixPlaceholder):
+	case strings.HasPrefix(value, githubPrefixPlaceholder), strings.HasPrefix(value, stripePrefixPlaceholder), strings.HasPrefix(value, resendPrefixPlaceholder):
 		return "", 0, false, fmt.Errorf("%w: %s", ErrUnsupportedProviderToken, readPlaceholderToken(value))
 	default:
 		return "", 0, false, nil
@@ -317,6 +343,41 @@ func isStripeSignaturePlaceholder(key string, value string, provider string) boo
 		strings.EqualFold(value, legacySignaturePlaceholder)
 }
 
+func isResendSvixIDPlaceholder(_ string, value string, provider string) bool {
+	return strings.EqualFold(value, resendSvixIDPlaceholder) && strings.EqualFold(provider, resendProvider)
+}
+
+func isResendSvixTimestampPlaceholder(_ string, value string, provider string) bool {
+	return strings.EqualFold(value, resendSvixTimestampPlaceholder) && strings.EqualFold(provider, resendProvider)
+}
+
+func isResendSignaturePlaceholder(key string, value string, provider string) bool {
+	if strings.EqualFold(value, resendSvixSignaturePlaceholder) {
+		return strings.EqualFold(provider, resendProvider)
+	}
+	return strings.EqualFold(provider, resendProvider) &&
+		strings.EqualFold(key, resendSvixSignatureHeader) &&
+		strings.EqualFold(value, legacySignaturePlaceholder)
+}
+
+func (r *Resolver) buildResendMessageID(ctx HeaderContext) string {
+	if trimmed := strings.TrimSpace(ctx.ResendMessageID); trimmed != "" {
+		return trimmed
+	}
+	generatedID := strings.TrimSpace(r.idGenerator.NewID())
+	if strings.HasPrefix(strings.ToLower(generatedID), "msg_") {
+		return generatedID
+	}
+	return "msg_" + generatedID
+}
+
+func (r *Resolver) buildResendTimestamp(ctx HeaderContext) string {
+	if trimmed := strings.TrimSpace(ctx.ResendTimestamp); trimmed != "" {
+		return trimmed
+	}
+	return fmt.Sprintf("%d", r.clock.Now().UTC().Unix())
+}
+
 func buildGitHubSignature(body []byte, secret string) (string, error) {
 	trimmedSecret := strings.TrimSpace(secret)
 	if trimmedSecret == "" {
@@ -327,6 +388,46 @@ func buildGitHubSignature(body []byte, secret string) (string, error) {
 		return "", err
 	}
 	return githubSignaturePrefix + hex.EncodeToString(signature.Sum(nil)), nil
+}
+
+func buildResendSignature(ctx HeaderContext) (string, error) {
+	trimmedSecret := strings.TrimSpace(ctx.Secret)
+	if trimmedSecret == "" {
+		return "", ErrMissingSecret
+	}
+	trimmedMessageID := strings.TrimSpace(ctx.ResendMessageID)
+	if trimmedMessageID == "" {
+		return "", fmt.Errorf("%w: %s", ErrMissingHeaderValue, resendSvixIDHeader)
+	}
+	trimmedTimestamp := strings.TrimSpace(ctx.ResendTimestamp)
+	if trimmedTimestamp == "" {
+		return "", fmt.Errorf("%w: %s", ErrMissingHeaderValue, resendSvixTimestampHeader)
+	}
+	decodedSecret, err := decodeResendWebhookSecret(trimmedSecret)
+	if err != nil {
+		return "", err
+	}
+	signedPayload := trimmedMessageID + "." + trimmedTimestamp + "." + string(ctx.Body)
+	signature := hmac.New(sha256.New, decodedSecret)
+	if _, err := signature.Write([]byte(signedPayload)); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(resendSignaturePrefix, base64.StdEncoding.EncodeToString(signature.Sum(nil))), nil
+}
+
+func decodeResendWebhookSecret(secret string) ([]byte, error) {
+	if !strings.HasPrefix(secret, resendWebhookSecretPrefix) {
+		return nil, ErrInvalidProviderSecret
+	}
+	encodedSecret := secret[len(resendWebhookSecretPrefix):]
+	decoded, err := base64.StdEncoding.DecodeString(encodedSecret)
+	if err != nil {
+		decoded, err = base64.RawStdEncoding.DecodeString(encodedSecret)
+	}
+	if err != nil || len(decoded) == 0 {
+		return nil, ErrInvalidProviderSecret
+	}
+	return decoded, nil
 }
 
 func (r *Resolver) buildStripeSignature(body []byte, secret string) (string, error) {
