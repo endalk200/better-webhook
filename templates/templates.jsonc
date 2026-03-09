@@ -9,7 +9,7 @@
       "event": "push",
       "file": "github/github-push.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#push"
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#push",
     },
     {
       "id": "github-pull_request",
@@ -19,7 +19,7 @@
       "event": "pull_request",
       "file": "github/github-pull_request.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request"
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request",
     },
     {
       "id": "github-issues",
@@ -29,7 +29,7 @@
       "event": "issues",
       "file": "github/github-issues.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues"
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#issues",
     },
     {
       "id": "github-installation",
@@ -39,7 +39,7 @@
       "event": "installation",
       "file": "github/github-installation.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation"
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation",
     },
     {
       "id": "github-installation_repositories",
@@ -49,7 +49,7 @@
       "event": "installation_repositories",
       "file": "github/github-installation_repositories.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories"
+      "docsUrl": "https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories",
     },
     {
       "id": "ragie-document_status_updated",
@@ -59,7 +59,7 @@
       "event": "document_status_updated",
       "file": "ragie/ragie-document_status_updated.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_status_updated"
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_status_updated",
     },
     {
       "id": "ragie-document_deleted",
@@ -69,7 +69,7 @@
       "event": "document_deleted",
       "file": "ragie/ragie-document_deleted.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_deleted"
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#document_deleted",
     },
     {
       "id": "ragie-entity_extracted",
@@ -79,7 +79,7 @@
       "event": "entity_extracted",
       "file": "ragie/ragie-entity_extracted.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/webhooks#entity_extracted"
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#entity_extracted",
     },
     {
       "id": "ragie-connection_sync_started",
@@ -89,7 +89,7 @@
       "event": "connection_sync_started",
       "file": "ragie/ragie-connection_sync_started.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks",
     },
     {
       "id": "ragie-connection_sync_progress",
@@ -99,7 +99,7 @@
       "event": "connection_sync_progress",
       "file": "ragie/ragie-connection_sync_progress.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks",
     },
     {
       "id": "ragie-connection_sync_finished",
@@ -109,7 +109,7 @@
       "event": "connection_sync_finished",
       "file": "ragie/ragie-connection_sync_finished.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks"
+      "docsUrl": "https://docs.ragie.ai/docs/monitoring-a-sync-using-webhooks",
     },
     {
       "id": "ragie-connection_limit_exceeded",
@@ -119,7 +119,7 @@
       "event": "connection_limit_exceeded",
       "file": "ragie/ragie-connection_limit_exceeded.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/webhooks#connection_limit_exceeded"
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#connection_limit_exceeded",
     },
     {
       "id": "ragie-partition_limit_exceeded",
@@ -129,7 +129,7 @@
       "event": "partition_limit_exceeded",
       "file": "ragie/ragie-partition_limit_exceeded.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.ragie.ai/docs/webhooks#partition_limit_exceeded"
+      "docsUrl": "https://docs.ragie.ai/docs/webhooks#partition_limit_exceeded",
     },
     {
       "id": "recall-participant_events_join",
@@ -139,7 +139,7 @@
       "event": "participant_events.join",
       "file": "recall/recall-participant_events_join.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_leave",
@@ -149,7 +149,7 @@
       "event": "participant_events.leave",
       "file": "recall/recall-participant_events_leave.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_update",
@@ -159,7 +159,7 @@
       "event": "participant_events.update",
       "file": "recall/recall-participant_events_update.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_speech_on",
@@ -169,7 +169,7 @@
       "event": "participant_events.speech_on",
       "file": "recall/recall-participant_events_speech_on.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_speech_off",
@@ -179,7 +179,7 @@
       "event": "participant_events.speech_off",
       "file": "recall/recall-participant_events_speech_off.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_webcam_on",
@@ -189,7 +189,7 @@
       "event": "participant_events.webcam_on",
       "file": "recall/recall-participant_events_webcam_on.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_webcam_off",
@@ -199,7 +199,7 @@
       "event": "participant_events.webcam_off",
       "file": "recall/recall-participant_events_webcam_off.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_screenshare_on",
@@ -209,7 +209,7 @@
       "event": "participant_events.screenshare_on",
       "file": "recall/recall-participant_events_screenshare_on.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_screenshare_off",
@@ -219,7 +219,7 @@
       "event": "participant_events.screenshare_off",
       "file": "recall/recall-participant_events_screenshare_off.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-participant_events_chat_message",
@@ -229,7 +229,7 @@
       "event": "participant_events.chat_message",
       "file": "recall/recall-participant_events_chat_message.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-webhook-endpoints.md",
     },
     {
       "id": "recall-transcript_data",
@@ -239,7 +239,7 @@
       "event": "transcript.data",
       "file": "recall/recall-transcript_data.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md",
     },
     {
       "id": "recall-transcript_partial_data",
@@ -249,7 +249,7 @@
       "event": "transcript.partial_data",
       "file": "recall/recall-transcript_partial_data.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md"
+      "docsUrl": "https://docs.recall.ai/docs/real-time-event-payloads.md",
     },
     {
       "id": "recall-bot_joining_call",
@@ -259,7 +259,7 @@
       "event": "bot.joining_call",
       "file": "recall/recall-bot_joining_call.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_in_waiting_room",
@@ -269,7 +269,7 @@
       "event": "bot.in_waiting_room",
       "file": "recall/recall-bot_in_waiting_room.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_in_call_not_recording",
@@ -279,7 +279,7 @@
       "event": "bot.in_call_not_recording",
       "file": "recall/recall-bot_in_call_not_recording.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_recording_permission_allowed",
@@ -289,7 +289,7 @@
       "event": "bot.recording_permission_allowed",
       "file": "recall/recall-bot_recording_permission_allowed.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_recording_permission_denied",
@@ -299,7 +299,7 @@
       "event": "bot.recording_permission_denied",
       "file": "recall/recall-bot_recording_permission_denied.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_in_call_recording",
@@ -309,7 +309,7 @@
       "event": "bot.in_call_recording",
       "file": "recall/recall-bot_in_call_recording.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_call_ended",
@@ -319,7 +319,7 @@
       "event": "bot.call_ended",
       "file": "recall/recall-bot_call_ended.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_done",
@@ -329,7 +329,7 @@
       "event": "bot.done",
       "file": "recall/recall-bot_done.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_fatal",
@@ -339,7 +339,7 @@
       "event": "bot.fatal",
       "file": "recall/recall-bot_fatal.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_breakout_room_entered",
@@ -349,7 +349,7 @@
       "event": "bot.breakout_room_entered",
       "file": "recall/recall-bot_breakout_room_entered.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_breakout_room_left",
@@ -359,7 +359,7 @@
       "event": "bot.breakout_room_left",
       "file": "recall/recall-bot_breakout_room_left.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_breakout_room_opened",
@@ -369,7 +369,7 @@
       "event": "bot.breakout_room_opened",
       "file": "recall/recall-bot_breakout_room_opened.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
     },
     {
       "id": "recall-bot_breakout_room_closed",
@@ -379,7 +379,177 @@
       "event": "bot.breakout_room_closed",
       "file": "recall/recall-bot_breakout_room_closed.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events"
+      "docsUrl": "https://docs.recall.ai/docs/bot-status-change-events",
+    },
+    {
+      "id": "resend-email_sent",
+      "name": "Resend Email Sent",
+      "description": "Resend email sent event triggered when the API request succeeds and Resend begins delivery",
+      "provider": "resend",
+      "event": "email.sent",
+      "file": "resend/resend-email_sent.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/sent",
+    },
+    {
+      "id": "resend-email_scheduled",
+      "name": "Resend Email Scheduled",
+      "description": "Resend email scheduled event triggered when an email is accepted for future delivery",
+      "provider": "resend",
+      "event": "email.scheduled",
+      "file": "resend/resend-email_scheduled.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/scheduled",
+    },
+    {
+      "id": "resend-email_delivered",
+      "name": "Resend Email Delivered",
+      "description": "Resend email delivered event triggered when Resend hands an email off to the recipient mail server",
+      "provider": "resend",
+      "event": "email.delivered",
+      "file": "resend/resend-email_delivered.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/delivered",
+    },
+    {
+      "id": "resend-email_delivery_delayed",
+      "name": "Resend Email Delivery Delayed",
+      "description": "Resend email delivery delayed event triggered when delivery is temporarily delayed",
+      "provider": "resend",
+      "event": "email.delivery_delayed",
+      "file": "resend/resend-email_delivery_delayed.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/delivery-delayed",
+    },
+    {
+      "id": "resend-email_complained",
+      "name": "Resend Email Complained",
+      "description": "Resend email complained event triggered when a recipient marks a delivered message as spam",
+      "provider": "resend",
+      "event": "email.complained",
+      "file": "resend/resend-email_complained.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/complained",
+    },
+    {
+      "id": "resend-email_bounced",
+      "name": "Resend Email Bounced",
+      "description": "Resend email bounced event triggered when the recipient mail server permanently rejects delivery",
+      "provider": "resend",
+      "event": "email.bounced",
+      "file": "resend/resend-email_bounced.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/bounced",
+    },
+    {
+      "id": "resend-email_opened",
+      "name": "Resend Email Opened",
+      "description": "Resend email opened event triggered when a recipient opens a tracked message",
+      "provider": "resend",
+      "event": "email.opened",
+      "file": "resend/resend-email_opened.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/opened",
+    },
+    {
+      "id": "resend-email_clicked",
+      "name": "Resend Email Clicked",
+      "description": "Resend email clicked event triggered when a recipient clicks a tracked link",
+      "provider": "resend",
+      "event": "email.clicked",
+      "file": "resend/resend-email_clicked.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/clicked",
+    },
+    {
+      "id": "resend-email_received",
+      "name": "Resend Email Received",
+      "description": "Resend email received event triggered when inbound email metadata is captured",
+      "provider": "resend",
+      "event": "email.received",
+      "file": "resend/resend-email_received.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/received",
+    },
+    {
+      "id": "resend-email_failed",
+      "name": "Resend Email Failed",
+      "description": "Resend email failed event triggered when sending fails before delivery",
+      "provider": "resend",
+      "event": "email.failed",
+      "file": "resend/resend-email_failed.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/failed",
+    },
+    {
+      "id": "resend-email_suppressed",
+      "name": "Resend Email Suppressed",
+      "description": "Resend email suppressed event triggered when sending is blocked by a suppression rule",
+      "provider": "resend",
+      "event": "email.suppressed",
+      "file": "resend/resend-email_suppressed.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/emails/suppressed",
+    },
+    {
+      "id": "resend-contact_created",
+      "name": "Resend Contact Created",
+      "description": "Resend contact created event triggered when a contact is added to an audience",
+      "provider": "resend",
+      "event": "contact.created",
+      "file": "resend/resend-contact_created.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/contacts/created",
+    },
+    {
+      "id": "resend-contact_updated",
+      "name": "Resend Contact Updated",
+      "description": "Resend contact updated event triggered when a saved contact changes",
+      "provider": "resend",
+      "event": "contact.updated",
+      "file": "resend/resend-contact_updated.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/contacts/updated",
+    },
+    {
+      "id": "resend-contact_deleted",
+      "name": "Resend Contact Deleted",
+      "description": "Resend contact deleted event triggered when a contact is removed from an audience",
+      "provider": "resend",
+      "event": "contact.deleted",
+      "file": "resend/resend-contact_deleted.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/contacts/deleted",
+    },
+    {
+      "id": "resend-domain_created",
+      "name": "Resend Domain Created",
+      "description": "Resend domain created event triggered when a domain is added for sending or receiving",
+      "provider": "resend",
+      "event": "domain.created",
+      "file": "resend/resend-domain_created.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/domains/created",
+    },
+    {
+      "id": "resend-domain_updated",
+      "name": "Resend Domain Updated",
+      "description": "Resend domain updated event triggered when domain verification state changes",
+      "provider": "resend",
+      "event": "domain.updated",
+      "file": "resend/resend-domain_updated.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/domains/updated",
+    },
+    {
+      "id": "resend-domain_deleted",
+      "name": "Resend Domain Deleted",
+      "description": "Resend domain deleted event triggered when a domain is removed",
+      "provider": "resend",
+      "event": "domain.deleted",
+      "file": "resend/resend-domain_deleted.jsonc",
+      "version": "1.0.0",
+      "docsUrl": "https://resend.com/docs/webhooks/domains/deleted",
     },
     {
       "id": "stripe-charge_failed",
@@ -389,7 +559,7 @@
       "event": "charge.failed",
       "file": "stripe/stripe-charge_failed.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-charge.failed"
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-charge.failed",
     },
     {
       "id": "stripe-checkout_session_completed",
@@ -399,7 +569,7 @@
       "event": "checkout.session.completed",
       "file": "stripe/stripe-checkout_session_completed.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-checkout.session.completed"
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-checkout.session.completed",
     },
     {
       "id": "stripe-payment_intent_succeeded",
@@ -409,7 +579,7 @@
       "event": "payment_intent.succeeded",
       "file": "stripe/stripe-payment_intent_succeeded.jsonc",
       "version": "1.0.0",
-      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-payment_intent.succeeded"
-    }
-  ]
+      "docsUrl": "https://docs.stripe.com/api/events/types#event_types-payment_intent.succeeded",
+    },
+  ],
 }
