@@ -65,7 +65,7 @@ const ResendReceivedEmailEventDataSchema = z
     bcc: z.array(z.string()).optional(),
     cc: z.array(z.string()).optional(),
     message_id: z.string(),
-    subject: z.string(),
+    subject: z.string().default(""),
     attachments: z.array(ResendReceivedAttachmentSchema).optional(),
   })
   .passthrough();

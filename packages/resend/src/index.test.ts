@@ -3,7 +3,12 @@ import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createInMemoryReplayStore } from "@better-webhook/core";
 import { resend } from "./index.js";
-import { contact_created, domain_updated, email_delivered } from "./events.js";
+import {
+  contact_created,
+  domain_updated,
+  email_delivered,
+  email_received,
+} from "./events.js";
 import {
   ResendContactCreatedEventSchema,
   ResendContactDeletedEventSchema,
@@ -422,6 +427,20 @@ describe("Resend Schemas", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it("accepts email.received payloads without subject and normalizes it", () => {
+    const { subject: _subject, ...receivedDataWithoutSubject } =
+      emailReceivedEvent.data;
+    const result = ResendEmailReceivedEventSchema.safeParse({
+      ...emailReceivedEvent,
+      data: receivedDataWithoutSubject,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.data.subject).toBe("");
+    }
+  });
 });
 
 describe("resend()", () => {
@@ -507,6 +526,26 @@ describe("resend()", () => {
 
     expect(result.status).toBe(200);
     expect(result.body).toBeUndefined();
+  });
+
+  it("processes email.received events without subject", async () => {
+    const handler = vi.fn();
+    const webhook = resend({ secret }).event(email_received, handler);
+    const { subject: _subject, ...receivedDataWithoutSubject } =
+      emailReceivedEvent.data;
+    const request = createSignedRequest({
+      ...emailReceivedEvent,
+      data: receivedDataWithoutSubject,
+    });
+
+    const result = await webhook.process({
+      headers: request.headers,
+      rawBody: request.rawBody,
+    });
+
+    expect(result.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]![0].data.subject).toBe("");
   });
 
   it("rejects requests when svix headers are missing", async () => {
