@@ -147,6 +147,8 @@ instances and restarts.
 - `email.received` webhooks contain metadata only. Fetch the full inbound body,
   headers, and attachments through Resend's receiving APIs if you need message
   content.
+- `email.received` payloads may omit `data.subject`; the schema normalizes a
+  missing subject to `""`.
 - `data.tags` follows Resend's documented `Record<string, string>` shape.
 
 ## Environment Variables
