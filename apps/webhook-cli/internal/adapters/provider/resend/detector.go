@@ -149,7 +149,7 @@ func looksLikeResendContactEvent(subtype string, raw json.RawMessage) bool {
 		data.CreatedAt != "" &&
 		data.UpdatedAt != "" &&
 		data.Email != "" &&
-		data.Unsubscribe != nil
+		(subtype == "deleted" || data.Unsubscribe != nil)
 }
 
 func isKnownResendEmailSubtype(subtype string) bool {

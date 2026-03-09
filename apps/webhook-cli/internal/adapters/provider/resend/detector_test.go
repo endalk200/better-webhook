@@ -96,6 +96,30 @@ func TestResendDetectorMatchesReceivedEmailWithEmptySubject(t *testing.T) {
 	}
 }
 
+func TestResendDetectorMatchesDeletedContactWithoutUnsubscribed(t *testing.T) {
+	detector := NewDetector()
+	result, matched := detector.Detect(domain.DetectionContext{
+		Method: "POST",
+		Path:   "/webhooks",
+		Headers: []domain.HeaderEntry{
+			{Key: "svix-id", Value: "msg_123"},
+			{Key: "svix-timestamp", Value: "1730000000"},
+			{Key: "svix-signature", Value: "v1,abc123"},
+		},
+		Body: []byte(`{"type":"contact.deleted","created_at":"2024-11-17T19:32:22.980Z","data":{"id":"e169aa45-1ecf-4183-9955-b1499d5701d3","audience_id":"78261eea-8f8b-4381-83c6-79fa7120f1cf","created_at":"2024-11-17T19:32:22.980Z","updated_at":"2024-11-17T19:32:22.980Z","email":"steve.wozniak@gmail.com"}}`),
+	})
+
+	if !matched {
+		t.Fatalf("expected detector to match Resend deleted contact without unsubscribed")
+	}
+	if result.Provider != domain.ProviderResend {
+		t.Fatalf("provider mismatch: got %q want %q", result.Provider, domain.ProviderResend)
+	}
+	if result.Confidence != 0.95 {
+		t.Fatalf("confidence mismatch: got %v want %v", result.Confidence, 0.95)
+	}
+}
+
 func TestResendDetectorRejectsGenericSvixTraffic(t *testing.T) {
 	detector := NewDetector()
 	_, matched := detector.Detect(domain.DetectionContext{
