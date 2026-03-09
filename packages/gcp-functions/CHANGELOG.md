@@ -1,5 +1,13 @@
 # @better-webhook/gcp-functions
 
+## 0.5.4
+
+### Patch Changes
+
+- b547738: chore: adds status code override for unhandled webhook events that are verified
+- Updated dependencies [b547738]
+  - @better-webhook/core@0.11.4
+
 ## 0.5.3
 
 ### Patch Changes

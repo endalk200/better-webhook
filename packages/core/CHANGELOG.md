@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.11.4
+
+### Patch Changes
+
+- b547738: chore: adds status code override for unhandled webhook events that are verified
+
 ## 0.11.3
 
 ### Patch Changes
