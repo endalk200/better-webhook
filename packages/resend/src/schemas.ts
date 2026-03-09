@@ -84,6 +84,13 @@ const ResendContactEventDataSchema = z
   })
   .passthrough();
 
+const ResendContactDeletedEventDataSchema = ResendContactEventDataSchema.extend(
+  {
+    segment_ids: z.array(z.string()).optional(),
+    unsubscribed: z.boolean().optional(),
+  },
+).passthrough();
+
 const ResendDomainRecordSchema = z
   .object({
     record: z.string(),
@@ -209,7 +216,7 @@ export const ResendContactUpdatedEventSchema = createResendEventSchema(
 /** Schema for Resend `contact.deleted` webhook envelopes. */
 export const ResendContactDeletedEventSchema = createResendEventSchema(
   "contact.deleted",
-  ResendContactEventDataSchema,
+  ResendContactDeletedEventDataSchema,
 );
 
 /** Schema for Resend `domain.created` webhook envelopes. */

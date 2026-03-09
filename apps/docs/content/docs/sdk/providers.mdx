@@ -903,9 +903,9 @@ const webhook = resend().event(contact_created, async (payload) => {
 
 - `data.id` - Contact identifier
 - `data.audience_id` - Audience identifier
-- `data.segment_ids` - Segment memberships
+- `data.segment_ids` - Segment memberships; may be omitted on `contact.deleted`
 - `data.email` / `data.first_name` / `data.last_name` - Contact profile data
-- `data.unsubscribed` - Team-level unsubscribe state
+- `data.unsubscribed` - Team-level unsubscribe state; may be omitted on `contact.deleted`
 
 ### Signature Verification
 

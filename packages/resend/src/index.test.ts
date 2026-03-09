@@ -276,6 +276,20 @@ const contactDeletedEvent = {
   },
 };
 
+const contactDeletedEventWithoutState = {
+  type: "contact.deleted",
+  created_at: "2024-11-17T19:32:22.980Z",
+  data: {
+    id: "e169aa45-1ecf-4183-9955-b1499d5701d3",
+    audience_id: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
+    created_at: "2024-11-17T19:32:22.980Z",
+    updated_at: "2024-11-17T19:32:22.980Z",
+    email: "contact@example.com",
+    first_name: "Example",
+    last_name: "Contact",
+  },
+};
+
 function createSvixSignature(options: {
   body: string;
   secret: string;
@@ -440,6 +454,32 @@ describe("Resend Schemas", () => {
     if (result.success) {
       expect(result.data.data.subject).toBe("");
     }
+  });
+
+  it("accepts contact.deleted payloads without segment_ids and unsubscribed", () => {
+    const result = ResendContactDeletedEventSchema.safeParse(
+      contactDeletedEventWithoutState,
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.data.segment_ids).toBeUndefined();
+      expect(result.data.data.unsubscribed).toBeUndefined();
+    }
+  });
+
+  it("keeps contact.created payloads strict about segment_ids and unsubscribed", () => {
+    const {
+      segment_ids: _segmentIDs,
+      unsubscribed: _unsubscribed,
+      ...data
+    } = contactCreatedEvent.data;
+    const result = ResendContactCreatedEventSchema.safeParse({
+      ...contactCreatedEvent,
+      data,
+    });
+
+    expect(result.success).toBe(false);
   });
 });
 
