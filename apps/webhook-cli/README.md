@@ -43,6 +43,9 @@ better-webhook --version
 ## Quick start
 
 ```bash
+# Optional: generate a documented config file first
+better-webhook init
+
 # 1) Start capture server
 better-webhook capture --port 3001
 
@@ -50,7 +53,7 @@ better-webhook capture --port 3001
 better-webhook captures list
 
 # 3) Replay a capture to your app
-better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
+better-webhook replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
 ## Commands
@@ -68,26 +71,27 @@ better-webhook capture [--host 127.0.0.1] [--port 3001] [--verbose]
 Manage stored captures.
 
 ```bash
-better-webhook captures list [--limit 20] [--provider github]
-better-webhook captures delete <capture-id> [--force]
-better-webhook captures replay <capture-id> [target-url]
+better-webhook captures [--captures-dir ./tmp/captures] list [--limit 20] [--provider github]
+better-webhook captures [--captures-dir ./tmp/captures] delete <capture-id> [--force]
+better-webhook captures [--captures-dir ./tmp/captures] replay <capture-id> [target-url]
+better-webhook replay [--captures-dir ./tmp/captures] <capture-id> [target-url]
 ```
 
-`captures replay` supports `--base-url`, `--method`, `--header`, `--timeout`, and `--verbose`.
+`replay` and `captures replay` support `--base-url`, `--method`, `--header`, `--timeout`, and `--verbose`.
 
 ### `templates`
 
 Manage and execute templates:
 
 ```bash
-better-webhook templates list
-better-webhook templates download <template-id>
-better-webhook templates list --local
-better-webhook templates delete <template-id>
-better-webhook templates search <query>
-better-webhook templates cache clear
-better-webhook templates clean
-better-webhook templates run <template-id> [target-url]
+better-webhook templates [--templates-dir ./tmp/templates] list
+better-webhook templates [--templates-dir ./tmp/templates] download <template-id>
+better-webhook templates [--templates-dir ./tmp/templates] list --local
+better-webhook templates [--templates-dir ./tmp/templates] delete <template-id>
+better-webhook templates [--templates-dir ./tmp/templates] search <query>
+better-webhook templates [--templates-dir ./tmp/templates] cache clear
+better-webhook templates [--templates-dir ./tmp/templates] clean
+better-webhook templates [--templates-dir ./tmp/templates] run <template-id> [target-url]
 ```
 
 `templates run` supports `--secret`, `--allow-env-placeholders`, `--header`, `--timeout`, and `--verbose`.

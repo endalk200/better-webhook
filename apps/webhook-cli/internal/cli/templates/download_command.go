@@ -102,7 +102,6 @@ func newDownloadCommand(deps Dependencies) *cobra.Command {
 
 	cmd.Flags().Bool("all", false, "Download all templates")
 	cmd.Flags().Bool("refresh", false, "Force refresh template index and re-download existing templates")
-	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }
 

@@ -85,7 +85,6 @@ func newDeleteCommand(deps Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
-	cmd.Flags().String("captures-dir", "", "Directory where captures are stored")
 	return cmd
 }
 

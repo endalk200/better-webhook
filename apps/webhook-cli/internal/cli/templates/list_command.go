@@ -95,6 +95,5 @@ func newListCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().String("provider", "", "Filter by provider")
 	cmd.Flags().Bool("refresh", false, "Force refresh the template index cache")
 	cmd.Flags().Bool("local", false, "List downloaded local templates instead of remote templates")
-	cmd.Flags().String("templates-dir", "", "Directory where templates are stored")
 	return cmd
 }

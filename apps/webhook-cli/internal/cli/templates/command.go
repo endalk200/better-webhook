@@ -26,9 +26,17 @@ func NewCommand(deps Dependencies) *cobra.Command {
 		Use:     "templates",
 		Aliases: []string{"t"},
 		Short:   "Manage webhook templates",
-		RunE:    runTemplateGroupCommand,
+		Long: `Manage remote and local webhook templates.
+
+Shared flags like --templates-dir apply to every templates subcommand.`,
+		Example: `  better-webhook templates list
+  better-webhook templates list --templates-dir ./tmp/templates --local
+  better-webhook templates download github-push
+  better-webhook templates run github-push http://localhost:3000/api/webhooks/github`,
+		RunE: runTemplateGroupCommand,
 	}
 
+	cmd.PersistentFlags().String("templates-dir", "", "Directory where templates are stored")
 	cmd.AddCommand(newListCommand(deps))
 	cmd.AddCommand(newDownloadCommand(deps))
 	cmd.AddCommand(newDeleteCommand(deps))

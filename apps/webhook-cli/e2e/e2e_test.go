@@ -55,7 +55,7 @@ func TestCaptureLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list captures: %v\noutput:\n%s", err, listOutput)
 	}
-	if !strings.Contains(listOutput, "Captured webhooks:") {
+	if !strings.Contains(listOutput, "Showing 1 capture(s)") {
 		t.Fatalf("expected captures list output, got:\n%s", listOutput)
 	}
 
@@ -143,11 +143,11 @@ func TestReplayCapturedWebhook(t *testing.T) {
 	}))
 	defer targetServer.Close()
 
-	replayOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "captures", "replay", id, "--base-url", targetServer.URL)
+	replayOutput, err := runCLI(t, binaryPath, nil, "--config", configPath, "replay", id, "--base-url", targetServer.URL)
 	if err != nil {
 		t.Fatalf("replay command: %v\noutput:\n%s", err, replayOutput)
 	}
-	if !strings.Contains(replayOutput, "Status: 204 No Content") {
+	if !strings.Contains(replayOutput, "204 No Content") {
 		t.Fatalf("expected replay status output, got:\n%s", replayOutput)
 	}
 
@@ -262,9 +262,9 @@ func startCaptureServer(t *testing.T, binaryPath string, configPath string) (*ex
 		case line := <-lines:
 			outputLog.WriteString(line)
 			outputLog.WriteByte('\n')
-			const prefix = "Webhook capture server listening on http://"
-			if strings.Contains(line, prefix) {
-				address := strings.TrimPrefix(strings.TrimSpace(strings.SplitN(line, prefix, 2)[1]), "http://")
+			const prefix = "Listening on http://"
+			if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+				address := strings.TrimSpace(strings.TrimPrefix(line, prefix))
 				return cmd, address, &outputLog, stopStreams
 			}
 		case <-deadline:
@@ -317,7 +317,7 @@ func isInterruptExit(err error) bool {
 
 func extractCaptureID(t *testing.T, listOutput string) string {
 	t.Helper()
-	re := regexp.MustCompile(`(?m)^- ([0-9a-f]{8}) \[`)
+	re := regexp.MustCompile(`(?m)│\s*([0-9a-f]{8})\s*│`)
 	matches := re.FindStringSubmatch(listOutput)
 	if len(matches) < 2 {
 		t.Fatalf("failed to extract capture ID from output:\n%s", listOutput)
