@@ -1,0 +1,25 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "Webhook-Id", "value": "msg_recall_recording_done_001" },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "recording.done",
+    "data": {
+      "data": {
+        "code": "done",
+        "sub_code": null,
+        "updated_at": "2026-02-12T10:55:00.000Z",
+      },
+      "recording": { "id": "rec_123", "metadata": {} },
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
+  },
+  "provider": "recall",
+  "event": "recording.done",
+  "description": "Recall recording done webhook",
+}

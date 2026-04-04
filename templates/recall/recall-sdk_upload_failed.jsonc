@@ -1,0 +1,25 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "Webhook-Id", "value": "msg_recall_sdk_upload_failed_001" },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "sdk_upload.failed",
+    "data": {
+      "data": {
+        "code": "failed",
+        "sub_code": null,
+        "updated_at": "2026-02-12T11:06:00.000Z",
+      },
+      "recording": { "id": "rec_sdk_123", "metadata": {} },
+      "sdk_upload": { "id": "sdk_upload_123", "metadata": {} },
+    },
+  },
+  "provider": "recall",
+  "event": "sdk_upload.failed",
+  "description": "Recall desktop SDK upload failed webhook",
+}

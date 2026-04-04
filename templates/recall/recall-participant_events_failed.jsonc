@@ -1,0 +1,29 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    {
+      "key": "Webhook-Id",
+      "value": "msg_recall_participant_events_failed_001",
+    },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "participant_events.failed",
+    "data": {
+      "data": {
+        "code": "failed",
+        "sub_code": "artifact_capture_failed",
+        "updated_at": "2026-02-12T10:48:00.000Z",
+      },
+      "participant_events": { "id": "pe_artifact_123", "metadata": {} },
+      "recording": { "id": "rec_123", "metadata": {} },
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
+  },
+  "provider": "recall",
+  "event": "participant_events.failed",
+  "description": "Recall participant events artifact failed webhook",
+}

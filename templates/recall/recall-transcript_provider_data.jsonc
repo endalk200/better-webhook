@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "Webhook-Id", "value": "msg_recall_transcript_provider_data_001" },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "transcript.provider_data",
+    "data": {
+      "data": {
+        "provider": "third_party_transcriber",
+        "payload": {
+          "utterance_id": "utt_123",
+          "confidence": 0.98,
+          "raw_text": "hello from provider",
+        },
+      },
+      "realtime_endpoint": { "id": "rt_ep_123", "metadata": {} },
+      "transcript": { "id": "tr_123", "metadata": {} },
+      "recording": { "id": "rec_123", "metadata": {} },
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
+  },
+  "provider": "recall",
+  "event": "transcript.provider_data",
+  "description": "Recall transcript provider data event",
+}
