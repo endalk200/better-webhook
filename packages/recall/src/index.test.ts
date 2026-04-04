@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createHmac } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createInMemoryReplayStore } from "@better-webhook/core";
 import { recall } from "./index.js";
@@ -94,8 +95,21 @@ type RecallFixture = {
 
 function loadFixture(name: string): RecallFixture {
   const content = readFileSync(resolve(templatesDir, `${name}.jsonc`), "utf-8");
-  const normalizedContent = content.replace(/,\s*([}\]])/g, "$1");
-  return JSON.parse(normalizedContent) as RecallFixture;
+  const errors: ParseError[] = [];
+  const fixture = parse(content, errors, {
+    allowTrailingComma: true,
+    disallowComments: false,
+  });
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Failed to parse Recall fixture ${name}: ${errors
+        .map((error) => printParseErrorCode(error.error))
+        .join(", ")}`,
+    );
+  }
+
+  return fixture as RecallFixture;
 }
 
 function createRecallSignature(options: {
