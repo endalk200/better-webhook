@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -113,36 +112,39 @@ function getChangedPublishablePackages(changedFiles) {
 }
 
 function validateChangesetStatus() {
-  const tempFile = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), "better-webhook-changeset-")),
-    "status.json",
+  const tempDir = fs.mkdtempSync(
+    path.join(repoRoot, ".changeset-status-check-"),
   );
-
-  const result = run("pnpm", [
-    "exec",
-    "changeset",
-    "status",
-    "--output",
-    tempFile,
-    "--since",
-    baseRef,
-  ]);
-
-  if (result.status !== 0) {
-    const details = [];
-
-    if (result.stderr) {
-      details.push(result.stderr);
-    }
-
-    fail("Changeset validation failed.", details);
-  }
+  const tempFile = path.join(tempDir, "status.json");
+  const outputFile = path.relative(repoRoot, tempFile);
 
   try {
+    const result = run("pnpm", [
+      "exec",
+      "changeset",
+      "status",
+      "--output",
+      outputFile,
+      "--since",
+      baseRef,
+    ]);
+
+    if (result.status !== 0) {
+      const details = [];
+
+      if (result.stderr) {
+        details.push(result.stderr);
+      }
+
+      fail("Changeset validation failed.", details);
+    }
+
     const status = JSON.parse(fs.readFileSync(tempFile, "utf8"));
     return Array.isArray(status.releases) ? status.releases : [];
   } catch (error) {
     fail("Failed to parse changeset status JSON.", [String(error)]);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 }
 
