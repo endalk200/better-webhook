@@ -1,10 +1,17 @@
 import { defineEvent } from "@better-webhook/core";
 import {
-  RecallParticipantEventSchema,
+  RecallBotEventSchema,
+  RecallCalendarSyncEventsEventSchema,
+  RecallCalendarUpdateEventSchema,
   RecallParticipantChatMessageEventSchema,
+  RecallParticipantEventSchema,
+  RecallParticipantEventsArtifactEventSchema,
+  RecallRecordingEventSchema,
+  RecallSdkUploadEventSchema,
+  RecallTranscriptArtifactEventSchema,
   RecallTranscriptDataEventSchema,
   RecallTranscriptPartialDataEventSchema,
-  RecallBotEventSchema,
+  RecallTranscriptProviderDataEventSchema,
 } from "./schemas.js";
 
 export type RecallProvider = "recall";
@@ -69,6 +76,30 @@ export const participant_events_chat_message = defineEvent({
   provider: "recall" as const,
 });
 
+export const participant_events_processing = defineEvent({
+  name: "participant_events.processing",
+  schema: RecallParticipantEventsArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const participant_events_done = defineEvent({
+  name: "participant_events.done",
+  schema: RecallParticipantEventsArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const participant_events_failed = defineEvent({
+  name: "participant_events.failed",
+  schema: RecallParticipantEventsArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const participant_events_deleted = defineEvent({
+  name: "participant_events.deleted",
+  schema: RecallParticipantEventsArtifactEventSchema,
+  provider: "recall" as const,
+});
+
 export const transcript_data = defineEvent({
   name: "transcript.data",
   schema: RecallTranscriptDataEventSchema,
@@ -78,6 +109,60 @@ export const transcript_data = defineEvent({
 export const transcript_partial_data = defineEvent({
   name: "transcript.partial_data",
   schema: RecallTranscriptPartialDataEventSchema,
+  provider: "recall" as const,
+});
+
+export const transcript_provider_data = defineEvent({
+  name: "transcript.provider_data",
+  schema: RecallTranscriptProviderDataEventSchema,
+  provider: "recall" as const,
+});
+
+export const transcript_processing = defineEvent({
+  name: "transcript.processing",
+  schema: RecallTranscriptArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const transcript_done = defineEvent({
+  name: "transcript.done",
+  schema: RecallTranscriptArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const transcript_failed = defineEvent({
+  name: "transcript.failed",
+  schema: RecallTranscriptArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const transcript_deleted = defineEvent({
+  name: "transcript.deleted",
+  schema: RecallTranscriptArtifactEventSchema,
+  provider: "recall" as const,
+});
+
+export const recording_processing = defineEvent({
+  name: "recording.processing",
+  schema: RecallRecordingEventSchema,
+  provider: "recall" as const,
+});
+
+export const recording_done = defineEvent({
+  name: "recording.done",
+  schema: RecallRecordingEventSchema,
+  provider: "recall" as const,
+});
+
+export const recording_failed = defineEvent({
+  name: "recording.failed",
+  schema: RecallRecordingEventSchema,
+  provider: "recall" as const,
+});
+
+export const recording_deleted = defineEvent({
+  name: "recording.deleted",
+  schema: RecallRecordingEventSchema,
   provider: "recall" as const,
 });
 
@@ -159,12 +244,55 @@ export const bot_breakout_room_closed = defineEvent({
   provider: "recall" as const,
 });
 
+export const calendar_update = defineEvent({
+  name: "calendar.update",
+  schema: RecallCalendarUpdateEventSchema,
+  provider: "recall" as const,
+});
+
+export const calendar_sync_events = defineEvent({
+  name: "calendar.sync_events",
+  schema: RecallCalendarSyncEventsEventSchema,
+  provider: "recall" as const,
+});
+
+export const sdk_upload_recording_started = defineEvent({
+  name: "sdk_upload.recording_started",
+  schema: RecallSdkUploadEventSchema,
+  provider: "recall" as const,
+});
+
+export const sdk_upload_recording_ended = defineEvent({
+  name: "sdk_upload.recording_ended",
+  schema: RecallSdkUploadEventSchema,
+  provider: "recall" as const,
+});
+
+export const sdk_upload_complete = defineEvent({
+  name: "sdk_upload.complete",
+  schema: RecallSdkUploadEventSchema,
+  provider: "recall" as const,
+});
+
+export const sdk_upload_failed = defineEvent({
+  name: "sdk_upload.failed",
+  schema: RecallSdkUploadEventSchema,
+  provider: "recall" as const,
+});
+
 export type {
   RecallParticipantEvent,
   RecallParticipantChatMessageEvent,
   RecallTranscriptDataEvent,
   RecallTranscriptPartialDataEvent,
+  RecallTranscriptProviderDataEvent,
   RecallBotEvent,
+  RecallRecordingEvent,
+  RecallTranscriptArtifactEvent,
+  RecallParticipantEventsArtifactEvent,
+  RecallCalendarUpdateEvent,
+  RecallCalendarSyncEventsEvent,
+  RecallSdkUploadEvent,
   RecallParticipantEventsJoinEvent,
   RecallParticipantEventsLeaveEvent,
   RecallParticipantEventsUpdateEvent,
@@ -190,4 +318,20 @@ export type {
   RecallBotBreakoutRoomLeftEvent,
   RecallBotBreakoutRoomOpenedEvent,
   RecallBotBreakoutRoomClosedEvent,
+  RecallRecordingProcessingEvent,
+  RecallRecordingDoneEvent,
+  RecallRecordingFailedEvent,
+  RecallRecordingDeletedEvent,
+  RecallTranscriptProcessingEvent,
+  RecallTranscriptDoneEvent,
+  RecallTranscriptFailedEvent,
+  RecallTranscriptDeletedEvent,
+  RecallParticipantEventsProcessingEvent,
+  RecallParticipantEventsDoneEvent,
+  RecallParticipantEventsFailedEvent,
+  RecallParticipantEventsDeletedEvent,
+  RecallSdkUploadRecordingStartedEvent,
+  RecallSdkUploadRecordingEndedEvent,
+  RecallSdkUploadCompleteEvent,
+  RecallSdkUploadFailedEvent,
 } from "./schemas.js";

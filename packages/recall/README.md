@@ -5,6 +5,9 @@
 
 Handle Recall.ai webhooks with type-safe payload validation and built-in request verification.
 
+This package focuses on Recall webhook delivery. It does not currently model
+Recall websocket-only realtime media streams.
+
 ## Installation
 
 ```bash
@@ -72,6 +75,28 @@ export const POST = toNextJS(webhook);
 
 - `transcript_data` (`transcript.data`)
 - `transcript_partial_data` (`transcript.partial_data`)
+- `transcript_provider_data` (`transcript.provider_data`)
+
+### Recording Events
+
+- `recording_processing` (`recording.processing`)
+- `recording_done` (`recording.done`)
+- `recording_failed` (`recording.failed`)
+- `recording_deleted` (`recording.deleted`)
+
+### Transcript Artifact Events
+
+- `transcript_processing` (`transcript.processing`)
+- `transcript_done` (`transcript.done`)
+- `transcript_failed` (`transcript.failed`)
+- `transcript_deleted` (`transcript.deleted`)
+
+### Participant Events Artifact Events
+
+- `participant_events_processing` (`participant_events.processing`)
+- `participant_events_done` (`participant_events.done`)
+- `participant_events_failed` (`participant_events.failed`)
+- `participant_events_deleted` (`participant_events.deleted`)
 
 ### Bot Events
 
@@ -89,6 +114,18 @@ export const POST = toNextJS(webhook);
 - `bot_breakout_room_opened` (`bot.breakout_room_opened`)
 - `bot_breakout_room_closed` (`bot.breakout_room_closed`)
 
+### Calendar V2 Events
+
+- `calendar_update` (`calendar.update`)
+- `calendar_sync_events` (`calendar.sync_events`)
+
+### Desktop SDK Upload Events
+
+- `sdk_upload_recording_started` (`sdk_upload.recording_started`)
+- `sdk_upload_recording_ended` (`sdk_upload.recording_ended`)
+- `sdk_upload_complete` (`sdk_upload.complete`)
+- `sdk_upload_failed` (`sdk_upload.failed`)
+
 ## Signature Verification
 
 Recall webhook verification is enabled by default. Provide a workspace secret with the `whsec_` prefix. The provider verifies:
@@ -98,6 +135,22 @@ Recall webhook verification is enabled by default. Provide a workspace secret wi
 - `webhook-signature` / `svix-signature`
 
 using HMAC-SHA256 over `${id}.${timestamp}.${rawBody}`. Requests with stale timestamps are rejected to limit replay attacks.
+
+If both `webhook-*` and `svix-*` headers are present for the same field, the
+values must match. Mismatched aliased headers are rejected.
+
+The request must be verified against the exact raw request bytes. Frameworks
+that parse and then re-stringify JSON can break verification.
+
+Secrets resolve in this order:
+
+1. explicit adapter or `.process()` secret
+2. `recall({ secret })`
+3. `RECALL_WEBHOOK_SECRET`
+4. `WEBHOOK_SECRET`
+
+Handler payloads receive the unwrapped Recall `body.data` object, not the full
+`{ event, data }` envelope.
 
 ## Replay Protection and Idempotency
 
@@ -122,6 +175,8 @@ The provider already validates signed timestamps during verification; you can
 also configure core `timestampToleranceSeconds` as an additional replay guard.
 For production deduplication, use a shared replay store with atomic reservation
 semantics (`reserve/commit/release`).
+
+Verified but unhandled Recall webhook events return `204`.
 
 ## License
 
