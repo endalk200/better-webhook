@@ -93,6 +93,10 @@ export {
 
 export {
   RecallSdkUploadEventSchema,
+  RecallSdkUploadRecordingStartedEventSchema,
+  RecallSdkUploadRecordingEndedEventSchema,
+  RecallSdkUploadCompleteEventSchema,
+  RecallSdkUploadFailedEventSchema,
   type RecallSdkUploadEvent,
   type RecallSdkUploadRecordingStartedEvent,
   type RecallSdkUploadRecordingEndedEvent,

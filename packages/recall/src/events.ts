@@ -25,7 +25,10 @@ import {
   RecallRecordingDoneEventSchema,
   RecallRecordingFailedEventSchema,
   RecallRecordingProcessingEventSchema,
-  RecallSdkUploadEventSchema,
+  RecallSdkUploadCompleteEventSchema,
+  RecallSdkUploadFailedEventSchema,
+  RecallSdkUploadRecordingEndedEventSchema,
+  RecallSdkUploadRecordingStartedEventSchema,
   RecallTranscriptDataEventSchema,
   RecallTranscriptDeletedEventSchema,
   RecallTranscriptDoneEventSchema,
@@ -279,25 +282,25 @@ export const calendar_sync_events = defineEvent({
 
 export const sdk_upload_recording_started = defineEvent({
   name: "sdk_upload.recording_started",
-  schema: RecallSdkUploadEventSchema,
+  schema: RecallSdkUploadRecordingStartedEventSchema,
   provider: "recall" as const,
 });
 
 export const sdk_upload_recording_ended = defineEvent({
   name: "sdk_upload.recording_ended",
-  schema: RecallSdkUploadEventSchema,
+  schema: RecallSdkUploadRecordingEndedEventSchema,
   provider: "recall" as const,
 });
 
 export const sdk_upload_complete = defineEvent({
   name: "sdk_upload.complete",
-  schema: RecallSdkUploadEventSchema,
+  schema: RecallSdkUploadCompleteEventSchema,
   provider: "recall" as const,
 });
 
 export const sdk_upload_failed = defineEvent({
   name: "sdk_upload.failed",
-  schema: RecallSdkUploadEventSchema,
+  schema: RecallSdkUploadFailedEventSchema,
   provider: "recall" as const,
 });
 

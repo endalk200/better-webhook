@@ -64,7 +64,11 @@ import {
   RecallParticipantEventsDoneEventSchema,
   RecallRecordingEventSchema,
   RecallRecordingDoneEventSchema,
+  RecallSdkUploadCompleteEventSchema,
   RecallSdkUploadEventSchema,
+  RecallSdkUploadFailedEventSchema,
+  RecallSdkUploadRecordingEndedEventSchema,
+  RecallSdkUploadRecordingStartedEventSchema,
   RecallTranscriptArtifactEventSchema,
   RecallTranscriptDataEventSchema,
   RecallTranscriptPartialDataEventSchema,
@@ -377,6 +381,49 @@ describe("Recall Schemas", () => {
         loadFixture("recall-participant_events_done").body.data,
       ).success,
     ).toBe(true);
+    expect(
+      RecallSdkUploadRecordingStartedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_recording_started").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallSdkUploadRecordingEndedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_recording_ended").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallSdkUploadCompleteEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_complete").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallSdkUploadFailedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_failed").body.data,
+      ).success,
+    ).toBe(true);
+  });
+
+  it("rejects sdk upload payloads when data.code does not match the event schema", () => {
+    expect(
+      RecallSdkUploadRecordingStartedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_complete").body.data,
+      ).success,
+    ).toBe(false);
+    expect(
+      RecallSdkUploadRecordingEndedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_failed").body.data,
+      ).success,
+    ).toBe(false);
+    expect(
+      RecallSdkUploadCompleteEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_recording_started").body.data,
+      ).success,
+    ).toBe(false);
+    expect(
+      RecallSdkUploadFailedEventSchema.safeParse(
+        loadFixture("recall-sdk_upload_recording_ended").body.data,
+      ).success,
+    ).toBe(false);
   });
 });
 
