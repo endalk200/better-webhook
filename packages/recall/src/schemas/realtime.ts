@@ -6,7 +6,9 @@ import {
   RecallTimestampSchema,
 } from "./base.js";
 
-function createParticipantEventSchema(dataSchema: z.ZodTypeAny) {
+function createParticipantEventSchema<TDataSchema extends z.ZodTypeAny>(
+  dataSchema: TDataSchema,
+) {
   return z
     .object({
       data: dataSchema,
@@ -18,7 +20,9 @@ function createParticipantEventSchema(dataSchema: z.ZodTypeAny) {
     .passthrough();
 }
 
-function createTranscriptEventSchema(dataSchema: z.ZodTypeAny) {
+function createTranscriptEventSchema<TDataSchema extends z.ZodTypeAny>(
+  dataSchema: TDataSchema,
+) {
   return z
     .object({
       data: dataSchema,
