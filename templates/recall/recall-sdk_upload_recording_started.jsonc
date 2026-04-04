@@ -1,0 +1,28 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    {
+      "key": "Webhook-Id",
+      "value": "msg_recall_sdk_upload_recording_started_001",
+    },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "sdk_upload.recording_started",
+    "data": {
+      "data": {
+        "code": "recording_started",
+        "sub_code": null,
+        "updated_at": "2026-02-12T11:03:00.000Z",
+      },
+      "recording": { "id": "rec_sdk_123", "metadata": {} },
+      "sdk_upload": { "id": "sdk_upload_123", "metadata": {} },
+    },
+  },
+  "provider": "recall",
+  "event": "sdk_upload.recording_started",
+  "description": "Recall desktop SDK upload recording started webhook",
+}

@@ -1,0 +1,20 @@
+{
+  "method": "POST",
+  "headers": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "Webhook-Id", "value": "msg_recall_calendar_sync_events_001" },
+    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Signature", "value": "placeholder" },
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
+  ],
+  "body": {
+    "event": "calendar.sync_events",
+    "data": {
+      "calendar_id": "cal_123",
+      "last_updated_ts": "2026-02-12T10:40:00.000Z",
+    },
+  },
+  "provider": "recall",
+  "event": "calendar.sync_events",
+  "description": "Recall calendar sync events webhook",
+}
