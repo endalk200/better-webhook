@@ -1,16 +1,37 @@
 import { defineEvent } from "@better-webhook/core";
 import {
-  RecallBotEventSchema,
+  RecallBotBreakoutRoomClosedEventSchema,
+  RecallBotBreakoutRoomEnteredEventSchema,
+  RecallBotBreakoutRoomLeftEventSchema,
+  RecallBotBreakoutRoomOpenedEventSchema,
+  RecallBotCallEndedEventSchema,
   RecallCalendarSyncEventsEventSchema,
   RecallCalendarUpdateEventSchema,
+  RecallBotDoneEventSchema,
+  RecallBotFatalEventSchema,
+  RecallBotInCallNotRecordingEventSchema,
+  RecallBotInCallRecordingEventSchema,
+  RecallBotInWaitingRoomEventSchema,
+  RecallBotJoiningCallEventSchema,
+  RecallBotRecordingPermissionAllowedEventSchema,
+  RecallBotRecordingPermissionDeniedEventSchema,
   RecallParticipantChatMessageEventSchema,
   RecallParticipantEventSchema,
-  RecallParticipantEventsArtifactEventSchema,
-  RecallRecordingEventSchema,
+  RecallParticipantEventsDeletedEventSchema,
+  RecallParticipantEventsDoneEventSchema,
+  RecallParticipantEventsFailedEventSchema,
+  RecallParticipantEventsProcessingEventSchema,
+  RecallRecordingDeletedEventSchema,
+  RecallRecordingDoneEventSchema,
+  RecallRecordingFailedEventSchema,
+  RecallRecordingProcessingEventSchema,
   RecallSdkUploadEventSchema,
-  RecallTranscriptArtifactEventSchema,
   RecallTranscriptDataEventSchema,
+  RecallTranscriptDeletedEventSchema,
+  RecallTranscriptDoneEventSchema,
+  RecallTranscriptFailedEventSchema,
   RecallTranscriptPartialDataEventSchema,
+  RecallTranscriptProcessingEventSchema,
   RecallTranscriptProviderDataEventSchema,
 } from "./schemas.js";
 
@@ -78,25 +99,25 @@ export const participant_events_chat_message = defineEvent({
 
 export const participant_events_processing = defineEvent({
   name: "participant_events.processing",
-  schema: RecallParticipantEventsArtifactEventSchema,
+  schema: RecallParticipantEventsProcessingEventSchema,
   provider: "recall" as const,
 });
 
 export const participant_events_done = defineEvent({
   name: "participant_events.done",
-  schema: RecallParticipantEventsArtifactEventSchema,
+  schema: RecallParticipantEventsDoneEventSchema,
   provider: "recall" as const,
 });
 
 export const participant_events_failed = defineEvent({
   name: "participant_events.failed",
-  schema: RecallParticipantEventsArtifactEventSchema,
+  schema: RecallParticipantEventsFailedEventSchema,
   provider: "recall" as const,
 });
 
 export const participant_events_deleted = defineEvent({
   name: "participant_events.deleted",
-  schema: RecallParticipantEventsArtifactEventSchema,
+  schema: RecallParticipantEventsDeletedEventSchema,
   provider: "recall" as const,
 });
 
@@ -120,127 +141,127 @@ export const transcript_provider_data = defineEvent({
 
 export const transcript_processing = defineEvent({
   name: "transcript.processing",
-  schema: RecallTranscriptArtifactEventSchema,
+  schema: RecallTranscriptProcessingEventSchema,
   provider: "recall" as const,
 });
 
 export const transcript_done = defineEvent({
   name: "transcript.done",
-  schema: RecallTranscriptArtifactEventSchema,
+  schema: RecallTranscriptDoneEventSchema,
   provider: "recall" as const,
 });
 
 export const transcript_failed = defineEvent({
   name: "transcript.failed",
-  schema: RecallTranscriptArtifactEventSchema,
+  schema: RecallTranscriptFailedEventSchema,
   provider: "recall" as const,
 });
 
 export const transcript_deleted = defineEvent({
   name: "transcript.deleted",
-  schema: RecallTranscriptArtifactEventSchema,
+  schema: RecallTranscriptDeletedEventSchema,
   provider: "recall" as const,
 });
 
 export const recording_processing = defineEvent({
   name: "recording.processing",
-  schema: RecallRecordingEventSchema,
+  schema: RecallRecordingProcessingEventSchema,
   provider: "recall" as const,
 });
 
 export const recording_done = defineEvent({
   name: "recording.done",
-  schema: RecallRecordingEventSchema,
+  schema: RecallRecordingDoneEventSchema,
   provider: "recall" as const,
 });
 
 export const recording_failed = defineEvent({
   name: "recording.failed",
-  schema: RecallRecordingEventSchema,
+  schema: RecallRecordingFailedEventSchema,
   provider: "recall" as const,
 });
 
 export const recording_deleted = defineEvent({
   name: "recording.deleted",
-  schema: RecallRecordingEventSchema,
+  schema: RecallRecordingDeletedEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_joining_call = defineEvent({
   name: "bot.joining_call",
-  schema: RecallBotEventSchema,
+  schema: RecallBotJoiningCallEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_in_waiting_room = defineEvent({
   name: "bot.in_waiting_room",
-  schema: RecallBotEventSchema,
+  schema: RecallBotInWaitingRoomEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_in_call_not_recording = defineEvent({
   name: "bot.in_call_not_recording",
-  schema: RecallBotEventSchema,
+  schema: RecallBotInCallNotRecordingEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_recording_permission_allowed = defineEvent({
   name: "bot.recording_permission_allowed",
-  schema: RecallBotEventSchema,
+  schema: RecallBotRecordingPermissionAllowedEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_recording_permission_denied = defineEvent({
   name: "bot.recording_permission_denied",
-  schema: RecallBotEventSchema,
+  schema: RecallBotRecordingPermissionDeniedEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_in_call_recording = defineEvent({
   name: "bot.in_call_recording",
-  schema: RecallBotEventSchema,
+  schema: RecallBotInCallRecordingEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_call_ended = defineEvent({
   name: "bot.call_ended",
-  schema: RecallBotEventSchema,
+  schema: RecallBotCallEndedEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_done = defineEvent({
   name: "bot.done",
-  schema: RecallBotEventSchema,
+  schema: RecallBotDoneEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_fatal = defineEvent({
   name: "bot.fatal",
-  schema: RecallBotEventSchema,
+  schema: RecallBotFatalEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_breakout_room_entered = defineEvent({
   name: "bot.breakout_room_entered",
-  schema: RecallBotEventSchema,
+  schema: RecallBotBreakoutRoomEnteredEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_breakout_room_left = defineEvent({
   name: "bot.breakout_room_left",
-  schema: RecallBotEventSchema,
+  schema: RecallBotBreakoutRoomLeftEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_breakout_room_opened = defineEvent({
   name: "bot.breakout_room_opened",
-  schema: RecallBotEventSchema,
+  schema: RecallBotBreakoutRoomOpenedEventSchema,
   provider: "recall" as const,
 });
 
 export const bot_breakout_room_closed = defineEvent({
   name: "bot.breakout_room_closed",
-  schema: RecallBotEventSchema,
+  schema: RecallBotBreakoutRoomClosedEventSchema,
   provider: "recall" as const,
 });
 

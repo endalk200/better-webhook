@@ -54,16 +54,21 @@ import {
 } from "./events.js";
 import {
   RecallBotEventSchema,
+  RecallBotDoneEventSchema,
+  RecallBotJoiningCallEventSchema,
   RecallCalendarSyncEventsEventSchema,
   RecallCalendarUpdateEventSchema,
   RecallParticipantChatMessageEventSchema,
   RecallParticipantEventSchema,
   RecallParticipantEventsArtifactEventSchema,
+  RecallParticipantEventsDoneEventSchema,
   RecallRecordingEventSchema,
+  RecallRecordingDoneEventSchema,
   RecallSdkUploadEventSchema,
   RecallTranscriptArtifactEventSchema,
   RecallTranscriptDataEventSchema,
   RecallTranscriptPartialDataEventSchema,
+  RecallTranscriptDoneEventSchema,
   RecallTranscriptProviderDataEventSchema,
 } from "./schemas.js";
 
@@ -321,6 +326,57 @@ describe("Recall Schemas", () => {
       bot: {},
     });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects bot event payloads when data.code does not match the event schema", () => {
+    const payload = loadFixture("recall-bot_done").body.data;
+    const result = RecallBotJoiningCallEventSchema.safeParse(payload);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects recording artifact payloads when data.code does not match the event schema", () => {
+    const payload = loadFixture("recall-recording_processing").body.data;
+    const result = RecallRecordingDoneEventSchema.safeParse(payload);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects transcript artifact payloads when data.code does not match the event schema", () => {
+    const payload = loadFixture("recall-transcript_failed").body.data;
+    const result = RecallTranscriptDoneEventSchema.safeParse(payload);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects participant events artifact payloads when data.code does not match the event schema", () => {
+    const payload = loadFixture("recall-participant_events_failed").body.data;
+    const result = RecallParticipantEventsDoneEventSchema.safeParse(payload);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts matching event-specific schemas for status-driven Recall events", () => {
+    expect(
+      RecallBotDoneEventSchema.safeParse(
+        loadFixture("recall-bot_done").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallRecordingDoneEventSchema.safeParse(
+        loadFixture("recall-recording_done").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallTranscriptDoneEventSchema.safeParse(
+        loadFixture("recall-transcript_done").body.data,
+      ).success,
+    ).toBe(true);
+    expect(
+      RecallParticipantEventsDoneEventSchema.safeParse(
+        loadFixture("recall-participant_events_done").body.data,
+      ).success,
+    ).toBe(true);
   });
 });
 

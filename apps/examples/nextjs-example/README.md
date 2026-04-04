@@ -105,7 +105,7 @@ This example demonstrates several replay/idempotency strategies:
 - Built-in replay store (`stripe` route) via provider event ids
 - Built-in replay store (`resend` route) via `svix-id`
 - Custom replay store (`ragie` route) using provider replay metadata (`nonce`)
-- Manual dedupe (`recall` route) using `context.deliveryId`
+- Built-in replay store (`recall` route) via `webhook-id` / `svix-id`
 
 For production, use a shared persistent store (for example Redis) so replay
 state survives restarts and works across instances. Use atomic reservation
