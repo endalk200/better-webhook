@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import type { TemplateMetadata } from "./templates";
 
 interface TemplateIndex {
@@ -25,109 +26,6 @@ function resolveTemplatesPath(): string {
   return templatesPath;
 }
 
-function stripJsonComments(jsonc: string): string {
-  let result = "";
-  let i = 0;
-  let inString = false;
-
-  while (i < jsonc.length) {
-    const char = jsonc[i]!;
-
-    if (inString) {
-      result += char;
-      if (char === "\\" && i + 1 < jsonc.length) {
-        result += jsonc[i + 1];
-        i += 2;
-        continue;
-      }
-      if (char === '"') {
-        inString = false;
-      }
-      i++;
-      continue;
-    }
-
-    if (char === '"') {
-      inString = true;
-      result += char;
-      i++;
-      continue;
-    }
-
-    if (char === "/" && i + 1 < jsonc.length) {
-      const next = jsonc[i + 1];
-      if (next === "/") {
-        while (i < jsonc.length && jsonc[i] !== "\n") i++;
-        continue;
-      }
-      if (next === "*") {
-        i += 2;
-        while (
-          i + 1 < jsonc.length &&
-          !(jsonc[i] === "*" && jsonc[i + 1] === "/")
-        )
-          i++;
-        i += 2;
-        continue;
-      }
-    }
-
-    result += char;
-    i++;
-  }
-
-  return result;
-}
-
-function stripTrailingCommas(json: string): string {
-  let result = "";
-  let i = 0;
-  let inString = false;
-
-  while (i < json.length) {
-    const char = json[i]!;
-
-    if (inString) {
-      result += char;
-      if (char === "\\" && i + 1 < json.length) {
-        result += json[i + 1];
-        i += 2;
-        continue;
-      }
-      if (char === '"') {
-        inString = false;
-      }
-      i++;
-      continue;
-    }
-
-    if (char === '"') {
-      inString = true;
-      result += char;
-      i++;
-      continue;
-    }
-
-    if (char === ",") {
-      let lookahead = i + 1;
-      while (lookahead < json.length && /\s/.test(json[lookahead]!)) {
-        lookahead++;
-      }
-
-      const next = json[lookahead];
-      if (next === "}" || next === "]") {
-        i++;
-        continue;
-      }
-    }
-
-    result += char;
-    i++;
-  }
-
-  return result;
-}
-
 export function getTemplates(): TemplateMetadata[] {
   const templatesPath = resolveTemplatesPath();
 
@@ -142,9 +40,19 @@ export function getTemplates(): TemplateMetadata[] {
 
   let index: TemplateIndex;
   try {
-    index = JSON.parse(
-      stripTrailingCommas(stripJsonComments(raw)),
-    ) as TemplateIndex;
+    const errors: ParseError[] = [];
+    const parsed = parse(raw, errors, {
+      allowTrailingComma: true,
+      disallowComments: false,
+    });
+
+    if (errors.length > 0) {
+      throw new Error(
+        errors.map((error) => printParseErrorCode(error.error)).join(", "),
+      );
+    }
+
+    index = parsed as TemplateIndex;
   } catch (error) {
     throw new Error(
       `Failed to parse templates index at "${templatesPath}". ${String(error)}`,

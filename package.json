@@ -20,7 +20,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
     "prettier": "^3.6.2",
-    "turbo": "^2.8.13",
+    "turbo": "^2.9.3",
     "typescript": "^5.6.3",
     "vitest": "^4.0.16"
   },
