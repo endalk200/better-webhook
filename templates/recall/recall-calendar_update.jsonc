@@ -3,10 +3,11 @@
   "headers": [
     { "key": "Content-Type", "value": "application/json" },
     { "key": "Webhook-Id", "value": "msg_recall_calendar_update_001" },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770894420" },
     { "key": "Webhook-Signature", "value": "placeholder" },
     { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
+  // Calendar fixtures have no event-body timestamp, so the header carries the sample delivery time.
   "body": {
     "event": "calendar.update",
     "data": {

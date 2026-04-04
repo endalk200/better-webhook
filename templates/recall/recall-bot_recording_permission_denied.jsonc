@@ -4,11 +4,11 @@
     { "key": "Content-Type", "value": "application/json" },
     {
       "key": "Webhook-Id",
-      "value": "msg_recall_bot_recording_permission_denied_001"
+      "value": "msg_recall_bot_recording_permission_denied_001",
     },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770891540" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "bot.recording_permission_denied",
@@ -16,12 +16,12 @@
       "data": {
         "code": "recording_permission_denied",
         "sub_code": "host_denied_recording",
-        "updated_at": "2026-02-12T10:19:00.000Z"
+        "updated_at": "2026-02-12T10:19:00.000Z",
       },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "bot.recording_permission_denied",
-  "description": "Recall bot recording permission denied status event"
+  "description": "Recall bot recording permission denied status event",
 }

@@ -4,11 +4,11 @@
     { "key": "Content-Type", "value": "application/json" },
     {
       "key": "Webhook-Id",
-      "value": "msg_recall_participant_chat_message_001"
+      "value": "msg_recall_participant_chat_message_001",
     },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770891000" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "participant_events.chat_message",
@@ -20,24 +20,24 @@
           "is_host": true,
           "platform": "google_meet",
           "extra_data": {},
-          "email": "ada@example.com"
+          "email": "ada@example.com",
         },
         "timestamp": {
           "absolute": "2026-02-12T10:10:00.000Z",
-          "relative": 601.2
+          "relative": 601.2,
         },
         "data": {
           "text": "Hello team",
-          "to": "all"
-        }
+          "to": "all",
+        },
       },
       "realtime_endpoint": { "id": "rt_ep_123", "metadata": {} },
       "participant_events": { "id": "pe_123", "metadata": {} },
       "recording": { "id": "rec_123", "metadata": {} },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "participant_events.chat_message",
-  "description": "Recall participant chat message event"
+  "description": "Recall participant chat message event",
 }

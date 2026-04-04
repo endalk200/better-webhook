@@ -3,9 +3,9 @@
   "headers": [
     { "key": "Content-Type", "value": "application/json" },
     { "key": "Webhook-Id", "value": "msg_recall_bot_in_waiting_room_001" },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770891360" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "bot.in_waiting_room",
@@ -13,12 +13,12 @@
       "data": {
         "code": "in_waiting_room",
         "sub_code": null,
-        "updated_at": "2026-02-12T10:16:00.000Z"
+        "updated_at": "2026-02-12T10:16:00.000Z",
       },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "bot.in_waiting_room",
-  "description": "Recall bot in waiting room status event"
+  "description": "Recall bot in waiting room status event",
 }

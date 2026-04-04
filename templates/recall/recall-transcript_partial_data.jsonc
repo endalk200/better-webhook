@@ -4,11 +4,11 @@
     { "key": "Content-Type", "value": "application/json" },
     {
       "key": "Webhook-Id",
-      "value": "msg_recall_transcript_partial_data_001"
+      "value": "msg_recall_transcript_partial_data_001",
     },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770891120" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "transcript.partial_data",
@@ -18,8 +18,8 @@
           {
             "text": "partial",
             "start_timestamp": { "relative": 20.1 },
-            "end_timestamp": null
-          }
+            "end_timestamp": null,
+          },
         ],
         "participant": {
           "id": 201,
@@ -27,16 +27,16 @@
           "is_host": false,
           "platform": "zoom",
           "extra_data": {},
-          "email": "grace@example.com"
-        }
+          "email": "grace@example.com",
+        },
       },
       "realtime_endpoint": { "id": "rt_ep_123", "metadata": {} },
       "transcript": { "id": "tr_123", "metadata": {} },
       "recording": { "id": "rec_123", "metadata": {} },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "transcript.partial_data",
-  "description": "Recall transcript partial utterance event"
+  "description": "Recall transcript partial utterance event",
 }

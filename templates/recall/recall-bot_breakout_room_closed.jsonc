@@ -4,11 +4,11 @@
     { "key": "Content-Type", "value": "application/json" },
     {
       "key": "Webhook-Id",
-      "value": "msg_recall_bot_breakout_room_closed_001"
+      "value": "msg_recall_bot_breakout_room_closed_001",
     },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770892560" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "bot.breakout_room_closed",
@@ -16,12 +16,12 @@
       "data": {
         "code": "breakout_room_closed",
         "sub_code": null,
-        "updated_at": "2026-02-12T10:36:00.000Z"
+        "updated_at": "2026-02-12T10:36:00.000Z",
       },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "bot.breakout_room_closed",
-  "description": "Recall bot breakout room closed status event"
+  "description": "Recall bot breakout room closed status event",
 }

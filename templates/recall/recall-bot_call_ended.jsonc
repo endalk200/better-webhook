@@ -3,9 +3,9 @@
   "headers": [
     { "key": "Content-Type", "value": "application/json" },
     { "key": "Webhook-Id", "value": "msg_recall_bot_call_ended_001" },
-    { "key": "Webhook-Timestamp", "value": "1731705121" },
+    { "key": "Webhook-Timestamp", "value": "1770892200" },
     { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
   ],
   "body": {
     "event": "bot.call_ended",
@@ -13,12 +13,12 @@
       "data": {
         "code": "call_ended",
         "sub_code": "meeting_ended",
-        "updated_at": "2026-02-12T10:30:00.000Z"
+        "updated_at": "2026-02-12T10:30:00.000Z",
       },
-      "bot": { "id": "bot_123", "metadata": {} }
-    }
+      "bot": { "id": "bot_123", "metadata": {} },
+    },
   },
   "provider": "recall",
   "event": "bot.call_ended",
-  "description": "Recall bot call ended status event"
+  "description": "Recall bot call ended status event",
 }
