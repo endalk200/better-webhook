@@ -4,7 +4,9 @@
 
 ### Patch Changes
 
-- b547738: chore: adds status code override for unhandled webhook events that are verified
+- Clarified dependency note: verified-but-unhandled status overrides were added
+  in `@better-webhook/core`; `@better-webhook/recall` continues to use the
+  default `204` response for verified but unhandled events.
 - Updated dependencies [b547738]
   - @better-webhook/core@0.11.4
 

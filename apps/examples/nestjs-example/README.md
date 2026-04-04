@@ -64,9 +64,10 @@ For dev-only unsigned testing, use a custom provider configured with
 
 ## Replay Strategy Notes
 
-This controller demonstrates manual in-memory dedupe on selected handlers:
+This controller demonstrates replay protection strategies:
 
-- GitHub and Recall use `context.deliveryId`
+- GitHub uses the built-in replay store via `context.deliveryId`
+- Recall uses the built-in replay store via `webhook-id` / `svix-id`
 - Ragie uses `payload.nonce` from the signed envelope
 
 For production, use a shared replay store so duplicate detection works across

@@ -6,6 +6,30 @@ import {
   RecallTimestampSchema,
 } from "./base.js";
 
+function createParticipantEventSchema(dataSchema: z.ZodTypeAny) {
+  return z
+    .object({
+      data: dataSchema,
+      realtime_endpoint: RecallResourceSchema,
+      participant_events: RecallResourceSchema,
+      recording: RecallResourceSchema,
+      bot: RecallResourceSchema.optional(),
+    })
+    .passthrough();
+}
+
+function createTranscriptEventSchema(dataSchema: z.ZodTypeAny) {
+  return z
+    .object({
+      data: dataSchema,
+      realtime_endpoint: RecallResourceSchema,
+      transcript: RecallResourceSchema,
+      recording: RecallResourceSchema,
+      bot: RecallResourceSchema.optional(),
+    })
+    .passthrough();
+}
+
 const RecallParticipantEventDataSchema = z
   .object({
     participant: RecallParticipantSchema,
@@ -27,25 +51,13 @@ const RecallParticipantChatMessageDataSchema = z
   })
   .passthrough();
 
-const RecallParticipantEventEnvelopeSchema = z
-  .object({
-    data: RecallParticipantEventDataSchema,
-    realtime_endpoint: RecallResourceSchema,
-    participant_events: RecallResourceSchema,
-    recording: RecallResourceSchema,
-    bot: RecallResourceSchema.optional(),
-  })
-  .passthrough();
+const RecallParticipantEventEnvelopeSchema = createParticipantEventSchema(
+  RecallParticipantEventDataSchema,
+);
 
-const RecallParticipantChatMessageEnvelopeSchema = z
-  .object({
-    data: RecallParticipantChatMessageDataSchema,
-    realtime_endpoint: RecallResourceSchema,
-    participant_events: RecallResourceSchema,
-    recording: RecallResourceSchema,
-    bot: RecallResourceSchema.optional(),
-  })
-  .passthrough();
+const RecallParticipantChatMessageEnvelopeSchema = createParticipantEventSchema(
+  RecallParticipantChatMessageDataSchema,
+);
 
 const RecallTranscriptWordSchema = z
   .object({
@@ -71,25 +83,13 @@ const RecallTranscriptDataSchema = z
   })
   .passthrough();
 
-const RecallTranscriptEnvelopeSchema = z
-  .object({
-    data: RecallTranscriptDataSchema,
-    realtime_endpoint: RecallResourceSchema,
-    transcript: RecallResourceSchema,
-    recording: RecallResourceSchema,
-    bot: RecallResourceSchema.optional(),
-  })
-  .passthrough();
+const RecallTranscriptEnvelopeSchema = createTranscriptEventSchema(
+  RecallTranscriptDataSchema,
+);
 
-const RecallTranscriptProviderDataEnvelopeSchema = z
-  .object({
-    data: z.unknown(),
-    realtime_endpoint: RecallResourceSchema,
-    transcript: RecallResourceSchema,
-    recording: RecallResourceSchema,
-    bot: RecallResourceSchema.optional(),
-  })
-  .passthrough();
+const RecallTranscriptProviderDataEnvelopeSchema = createTranscriptEventSchema(
+  z.unknown(),
+);
 
 export const RecallParticipantEventSchema =
   RecallParticipantEventEnvelopeSchema;

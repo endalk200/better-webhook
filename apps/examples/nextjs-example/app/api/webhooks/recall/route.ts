@@ -1,4 +1,8 @@
-import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
+import {
+  createInMemoryReplayStore,
+  createWebhookStats,
+  type WebhookObserver,
+} from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
 import { recall } from "@better-webhook/recall";
 import {
@@ -30,9 +34,7 @@ import {
 } from "@better-webhook/recall/events";
 
 const stats = createWebhookStats();
-// Manual if-based dedupe strategy example (no core replay store).
-// This Set is unbounded; for production prefer withReplayProtection + createInMemoryReplayStore.
-const processedDeliveryIds = new Set<string>();
+const recallReplayStore = createInMemoryReplayStore();
 
 const loggingObserver: WebhookObserver = {
   onRequestReceived: (event) => {
@@ -50,16 +52,8 @@ const loggingObserver: WebhookObserver = {
 const webhook = recall()
   .observe(stats.observer)
   .observe(loggingObserver)
+  .withReplayProtection({ store: recallReplayStore })
   .event(participant_events_join, async (payload, context) => {
-    if (context.deliveryId && processedDeliveryIds.has(context.deliveryId)) {
-      // Manual dedupe skips handler work and still returns 200.
-      // Core replay protection returns 409 for duplicates by default.
-      console.log(`Duplicate Recall delivery detected: ${context.deliveryId}`);
-      return;
-    }
-    if (context.deliveryId) {
-      processedDeliveryIds.add(context.deliveryId);
-    }
     console.log("🟢 participant joined", {
       eventType: context.eventType,
       participantId: payload.data.participant.id,
