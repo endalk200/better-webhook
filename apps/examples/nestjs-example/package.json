@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/nestjs-example",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "description": "NestJS example for better-webhook",

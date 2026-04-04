@@ -1,5 +1,11 @@
 # @better-webhook/recall
 
+## 0.3.0
+
+### Minor Changes
+
+- 70a65f0: Expand Recall webhook coverage across recording, transcript, calendar, and SDK upload events while tightening signature verification and replay handling.
+
 ## 0.2.4
 
 ### Patch Changes
