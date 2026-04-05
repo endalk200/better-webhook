@@ -322,6 +322,22 @@ async handleGitHub(@Req() req: any, @Res() res: Response) {
 Use `maxBodyBytes` as an app-layer guard. Keep proxy/gateway request-size
 limits configured for earlier rejection.
 
+## OpenTelemetry
+
+Add observability on the builder, then pass that builder to `toNestJS(...)`:
+
+```ts
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+private webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(push, handler);
+```
+
 ## Response Codes
 
 | Code  | Meaning                                                           |

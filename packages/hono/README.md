@@ -226,19 +226,16 @@ app.post(
 Use `maxBodyBytes` as an app-layer guard. Keep edge/proxy limits configured for
 early rejection before the request body is fully buffered.
 
-### Observer
+### OpenTelemetry
+
+Add instrumentation on the webhook builder instead of the adapter:
 
 ```ts
-import { createWebhookStats } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
-const stats = createWebhookStats();
-
-app.post(
-  "/webhooks/github",
-  toHono(webhook, {
-    observer: stats.observer,
-  }),
-);
+const webhook = github()
+  .instrument(createOpenTelemetryInstrumentation())
+  .event(push, handler);
 ```
 
 ## Response Codes

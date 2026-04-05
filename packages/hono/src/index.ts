@@ -1,10 +1,6 @@
 import { type Context } from "hono";
 import { cloneRawRequest } from "hono/request";
-import {
-  type WebhookBuilder,
-  type ProcessResult,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { type WebhookBuilder, type ProcessResult } from "@better-webhook/core";
 
 // ============================================================================
 // Types
@@ -26,12 +22,6 @@ export interface HonoAdapterOptions {
    * This excludes provider-specific 200 acknowledgements where no handler ran, such as verified but unhandled Resend events.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;
-
-  /**
-   * Observer(s) for webhook lifecycle events.
-   * Use this to add observability without modifying the webhook builder.
-   */
-  observer?: WebhookObserver | WebhookObserver[];
 }
 
 /**
@@ -125,11 +115,6 @@ export function toHono<
   webhook: WebhookBuilder<TProviderBrand>,
   options?: HonoAdapterOptions,
 ): HonoHandler<C> {
-  // Apply observer(s) if provided
-  const instrumentedWebhook = options?.observer
-    ? webhook.observe(options.observer)
-    : webhook;
-
   return async (c: C): Promise<Response> => {
     if (c.req.method !== "POST") {
       return new Response(
@@ -164,7 +149,7 @@ export function toHono<
 
     let result: ProcessResult;
     try {
-      result = await instrumentedWebhook.process({
+      result = await webhook.process({
         headers,
         rawBody,
         secret: options?.secret,
