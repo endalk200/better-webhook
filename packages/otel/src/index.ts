@@ -162,13 +162,21 @@ export function createOpenTelemetryInstrumentation(
     includeReplayKeyAttribute: options.includeReplayKeyAttribute ?? false,
   };
 
-  const tracer = trace.getTracer(PACKAGE_NAME);
-  const instruments = resolvedOptions.emitMetrics
-    ? createMetricInstruments()
-    : undefined;
+  let instruments: MetricInstruments | undefined;
+
+  const getInstruments = (): MetricInstruments | undefined => {
+    if (!resolvedOptions.emitMetrics) {
+      return undefined;
+    }
+
+    instruments ??= createMetricInstruments();
+    return instruments;
+  };
 
   return {
     onRequestStart(context: WebhookInstrumentationContext) {
+      const tracer = trace.getTracer(PACKAGE_NAME);
+      const requestInstruments = getInstruments();
       const span = tracer.startSpan(
         "better-webhook.process",
         {
@@ -185,9 +193,11 @@ export function createOpenTelemetryInstrumentation(
       };
 
       recordCounter(
-        instruments?.requests,
+        requestInstruments?.requests,
         buildMetricAttributes(context, resolvedOptions),
       );
+
+      const activeSpanContext = trace.setSpan(otelContext.active(), span);
 
       const syncSpanContext = (): void => {
         span.setAttributes(
@@ -213,10 +223,13 @@ export function createOpenTelemetryInstrumentation(
       };
 
       return {
+        async wrapHandler(next: () => Promise<void>) {
+          await otelContext.with(activeSpanContext, next);
+        },
         onBodyTooLarge(data: WebhookBodyTooLargeData) {
           span.setAttribute("better_webhook.body_too_large", true);
           recordCounter(
-            instruments?.bodyTooLarge,
+            requestInstruments?.bodyTooLarge,
             buildMetricAttributes(context, resolvedOptions, {
               "better_webhook.outcome": "body_too_large",
             }),
@@ -242,7 +255,7 @@ export function createOpenTelemetryInstrumentation(
           state.verificationOutcome = "failed";
           span.setAttribute("better_webhook.verification_outcome", "failed");
           recordCounter(
-            instruments?.verificationFailures,
+            requestInstruments?.verificationFailures,
             buildMetricAttributes(context, resolvedOptions, {
               "better_webhook.outcome": "verification_failed",
             }),
@@ -282,7 +295,7 @@ export function createOpenTelemetryInstrumentation(
           state.replayOutcome = "duplicate";
           span.setAttribute("better_webhook.replay_outcome", "duplicate");
           recordCounter(
-            instruments?.replayDuplicates,
+            requestInstruments?.replayDuplicates,
             buildMetricAttributes(context, resolvedOptions, {
               "better_webhook.outcome": "replay_duplicate",
               "better_webhook.duplicate_behavior": data.behavior,
@@ -334,7 +347,7 @@ export function createOpenTelemetryInstrumentation(
             "failed",
           );
           recordCounter(
-            instruments?.schemaValidationFailures,
+            requestInstruments?.schemaValidationFailures,
             buildMetricAttributes(context, resolvedOptions, {
               "better_webhook.outcome": "schema_validation_failed",
             }),
@@ -360,7 +373,7 @@ export function createOpenTelemetryInstrumentation(
         onHandlerFailed(data: WebhookHandlerFailedData) {
           recordUnexpectedFailure(data.error);
           recordCounter(
-            instruments?.handlerFailures,
+            requestInstruments?.handlerFailures,
             buildMetricAttributes(context, resolvedOptions, {
               "better_webhook.outcome": "handler_failed",
             }),
@@ -401,8 +414,11 @@ export function createOpenTelemetryInstrumentation(
               "better_webhook.success": data.success,
             },
           );
-          recordCounter(instruments?.completed, metricAttributes);
-          instruments?.duration.record(data.durationMs, metricAttributes);
+          recordCounter(requestInstruments?.completed, metricAttributes);
+          requestInstruments?.duration.record(
+            data.durationMs,
+            metricAttributes,
+          );
           span.end();
         },
       };

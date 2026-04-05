@@ -57,7 +57,9 @@ Use the attribute options carefully:
 
 ## Runtime Setup
 
-The package uses the OpenTelemetry API, so it is safe to install without configuring an SDK. To export traces and metrics, register an OpenTelemetry SDK and exporters in your application runtime.
+The package uses the OpenTelemetry API, so it is safe to install without configuring an SDK. To export traces and metrics, register an OpenTelemetry SDK and exporters in your application runtime before your app starts handling requests.
+
+The `better-webhook.process` span is also made active while user handlers run, so spans created inside handlers become children of the request span when your runtime has a working OpenTelemetry context manager.
 
 ## Adapter Usage
 
