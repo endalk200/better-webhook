@@ -117,6 +117,9 @@ function validateChangesetStatus() {
   );
   const tempFile = path.join(tempDir, "status.json");
   const outputFile = path.relative(repoRoot, tempFile);
+  let releases = [];
+  let failureMessage = null;
+  let failureDetails = [];
 
   try {
     const result = run("pnpm", [
@@ -130,22 +133,28 @@ function validateChangesetStatus() {
     ]);
 
     if (result.status !== 0) {
-      const details = [];
-
       if (result.stderr) {
-        details.push(result.stderr);
+        failureDetails.push(result.stderr);
       }
 
-      fail("Changeset validation failed.", details);
+      failureMessage = "Changeset validation failed.";
+      return releases;
     }
 
     const status = JSON.parse(fs.readFileSync(tempFile, "utf8"));
-    return Array.isArray(status.releases) ? status.releases : [];
+    releases = Array.isArray(status.releases) ? status.releases : [];
   } catch (error) {
-    fail("Failed to parse changeset status JSON.", [String(error)]);
+    failureMessage = "Failed to parse changeset status JSON.";
+    failureDetails = [String(error)];
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
+
+  if (failureMessage) {
+    fail(failureMessage, failureDetails);
+  }
+
+  return releases;
 }
 
 const changedFiles = getChangedFiles();
