@@ -19,7 +19,7 @@
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "@hono/node-server": "^1.19.7",
-    "hono": "4.12.0",
+    "hono": "4.12.7",
     "@better-webhook/stripe": "workspace:*"
   },
   "devDependencies": {
