@@ -2,6 +2,7 @@
   "title": "SDK",
   "pages": [
     "index",
+    "opentelemetry",
     "providers",
     "custom-providers",
     "replay-idempotency",

@@ -1,6 +1,6 @@
 ---
 title: Adapter Options
-description: Shared adapter options for secrets, limits, callbacks, and observability.
+description: Shared adapter options for secrets, limits, and success callbacks.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -14,8 +14,6 @@ All adapters support the same core options.
 | `secret` | `string` | Secret used for signature verification. Overrides provider/env defaults. |
 | `maxBodyBytes` | `number` | Optional body-size guard. Returns `413` when exceeded. |
 | `onSuccess` | `(eventType: string) => void \| Promise<void>` | Called after a successful `200` acknowledgement with `body.ok === true` (including ignored duplicates, excluding verified-but-unhandled `200` acknowledgements such as Resend). |
-| `observer` | `WebhookObserver \| WebhookObserver[]` | Observer hooks for metrics/logging/tracing. |
-
 ## Secret resolution order
 
 When verifying signatures, secret lookup order is:
@@ -23,16 +21,6 @@ When verifying signatures, secret lookup order is:
 1. Adapter options
 2. Provider options
 3. Environment variables (`<PROVIDER>_WEBHOOK_SECRET`, then `WEBHOOK_SECRET` as a fallback; for example `GITHUB_WEBHOOK_SECRET` or `RESEND_WEBHOOK_SECRET`)
-
-## Observability example
-
-```ts
-import { createWebhookStats } from "@better-webhook/core";
-import { toNextJS } from "@better-webhook/nextjs";
-
-const stats = createWebhookStats();
-export const POST = toNextJS(webhook, { observer: stats.observer });
-```
 
 <Callout type="warn">
   Keep framework and edge/proxy body limits configured in addition to `maxBodyBytes`.
