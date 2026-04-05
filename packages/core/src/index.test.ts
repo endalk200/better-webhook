@@ -16,6 +16,9 @@ import {
   type Headers,
   type HandlerContext,
   type ReplayContext,
+  type WebhookInstrumentation,
+  type WebhookRequestInstrumentation,
+  type WebhookInstrumentationContext,
 } from "./index.js";
 
 // ============================================================================
@@ -1988,49 +1991,57 @@ describe("customWebhook", () => {
 });
 
 // ============================================================================
-// Observer Tests
+// Instrumentation Tests
 // ============================================================================
 
-import {
-  type WebhookObserver,
-  type RequestReceivedEvent,
-  type BodyTooLargeEvent,
-  type CompletedEvent,
-  type JsonParseFailedEvent,
-  type EventUnhandledEvent,
-  type VerificationSucceededEvent,
-  type VerificationFailedEvent,
-  type SchemaValidationSucceededEvent,
-  type SchemaValidationFailedEvent,
-  type HandlerStartedEvent,
-  type HandlerSucceededEvent,
-  type HandlerFailedEvent,
-  type ReplaySkippedEvent,
-  type ReplayFreshnessRejectedEvent,
-  type ReplayReservedEvent,
-  type ReplayDuplicateEvent,
-  type ReplayCommittedEvent,
-  type ReplayReleasedEvent,
-  createWebhookStats,
-} from "./index.js";
+function createInstrumentationRecorder() {
+  const contexts: WebhookInstrumentationContext[] = [];
+  const hooks: Record<string, ReturnType<typeof vi.fn>> = {
+    onBodyTooLarge: vi.fn(),
+    onJsonParseFailed: vi.fn(),
+    onVerificationSucceeded: vi.fn(),
+    onVerificationFailed: vi.fn(),
+    onReplaySkipped: vi.fn(),
+    onReplayFreshnessRejected: vi.fn(),
+    onReplayReserved: vi.fn(),
+    onReplayDuplicate: vi.fn(),
+    onReplayCommitted: vi.fn(),
+    onReplayReleased: vi.fn(),
+    onEventUnhandled: vi.fn(),
+    onSchemaValidationSucceeded: vi.fn(),
+    onSchemaValidationFailed: vi.fn(),
+    onHandlerStarted: vi.fn(),
+    onHandlerSucceeded: vi.fn(),
+    onHandlerFailed: vi.fn(),
+    onCompleted: vi.fn(),
+  };
 
-describe("WebhookBuilder observability", () => {
-  describe("observe()", () => {
+  const instrumentation: WebhookInstrumentation = {
+    onRequestStart(context) {
+      contexts.push(context);
+      return hooks as unknown as WebhookRequestInstrumentation;
+    },
+  };
+
+  return { instrumentation, contexts, hooks };
+}
+
+describe("WebhookBuilder instrumentation", () => {
+  describe("instrument()", () => {
     it("should return a new builder instance", () => {
       const provider = createTestProvider();
       const builder1 = createWebhook(provider);
-      const builder2 = builder1.observe({});
+      const builder2 = builder1.instrument({});
 
       expect(builder1).not.toBe(builder2);
     });
 
-    it("should accept a single observer", async () => {
+    it("should accept a single instrumentation", async () => {
       const provider = createTestProvider();
-      const onCompleted = vi.fn();
-      const observer: WebhookObserver = { onCompleted };
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe(observer)
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2039,16 +2050,16 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onCompleted).toHaveBeenCalledTimes(1);
+      expect(hooks.onCompleted).toHaveBeenCalledTimes(1);
     });
 
-    it("should accept an array of observers", async () => {
+    it("should accept an array of instrumentations", async () => {
       const provider = createTestProvider();
-      const onCompleted1 = vi.fn();
-      const onCompleted2 = vi.fn();
+      const first = createInstrumentationRecorder();
+      const second = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
+        .instrument([first.instrumentation, second.instrumentation])
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2057,18 +2068,18 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onCompleted1).toHaveBeenCalledTimes(1);
-      expect(onCompleted2).toHaveBeenCalledTimes(1);
+      expect(first.hooks.onCompleted).toHaveBeenCalledTimes(1);
+      expect(second.hooks.onCompleted).toHaveBeenCalledTimes(1);
     });
 
-    it("should chain multiple observe() calls", async () => {
+    it("should chain multiple instrument() calls", async () => {
       const provider = createTestProvider();
-      const onCompleted1 = vi.fn();
-      const onCompleted2 = vi.fn();
+      const first = createInstrumentationRecorder();
+      const second = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onCompleted: onCompleted1 })
-        .observe({ onCompleted: onCompleted2 })
+        .instrument(first.instrumentation)
+        .instrument(second.instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2077,18 +2088,18 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onCompleted1).toHaveBeenCalledTimes(1);
-      expect(onCompleted2).toHaveBeenCalledTimes(1);
+      expect(first.hooks.onCompleted).toHaveBeenCalledTimes(1);
+      expect(second.hooks.onCompleted).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("lifecycle events", () => {
-    it("should emit onRequestReceived at start of processing", async () => {
+  describe("request lifecycle", () => {
+    it("should provide request context at request start", async () => {
       const provider = createTestProvider();
-      const onRequestReceived = vi.fn();
+      const { instrumentation, contexts } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onRequestReceived })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2097,66 +2108,21 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onRequestReceived).toHaveBeenCalledTimes(1);
-      const event = onRequestReceived.mock.calls[0]![0] as RequestReceivedEvent;
-      expect(event.type).toBe("request_received");
-      expect(event.provider).toBe("test");
-      expect(event.rawBodyBytes).toBeGreaterThan(0);
-      expect(event.receivedAt).toBeInstanceOf(Date);
-    });
-
-    it("should emit onCompleted with success for 200 response", async () => {
-      const provider = createTestProvider();
-      const onCompleted = vi.fn();
-
-      const webhook = createWebhook(provider)
-        .observe({ onCompleted })
-        .event(testEvent, () => {});
-
-      await webhook.process({
-        headers: { "x-test-event": "test.event" },
-        rawBody: JSON.stringify(validPayload),
-        secret: "test-secret",
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0]).toMatchObject({
+        provider: "test",
+        eventType: "test.event",
       });
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(event.type).toBe("completed");
-      expect(event.status).toBe(200);
-      expect(event.success).toBe(true);
-      expect(event.eventType).toBe("test.event");
-      expect(event.durationMs).toBeGreaterThanOrEqual(0);
+      expect(contexts[0]?.rawBodyBytes).toBeGreaterThan(0);
+      expect(contexts[0]?.receivedAt).toBeInstanceOf(Date);
     });
 
-    it("should emit onCompleted with success for 204 response", async () => {
+    it("should update context deliveryId when available", async () => {
       const provider = createTestProvider();
-      const onCompleted = vi.fn();
+      const { instrumentation, contexts } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onCompleted })
-        .event(testEvent, () => {});
-
-      await webhook.process({
-        headers: { "x-test-event": "unknown.event" },
-        rawBody: JSON.stringify(validPayload),
-        secret: "test-secret",
-      });
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(event.type).toBe("completed");
-      expect(event.status).toBe(204);
-      expect(event.success).toBe(true);
-      expect(event.eventType).toBe("unknown.event");
-      expect(event.durationMs).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should include deliveryId in observation events when available", async () => {
-      const provider = createTestProvider();
-      const onCompleted = vi.fn();
-
-      const webhook = createWebhook(provider)
-        .observe({ onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2168,19 +2134,15 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const event = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(event.deliveryId).toBe("delivery-123");
-      expect(event.eventType).toBe("test.event");
+      expect(contexts[0]?.deliveryId).toBe("delivery-123");
     });
 
-    it("should emit onReplaySkipped when replay key is unavailable", async () => {
+    it("should emit onCompleted with success for 200 response", async () => {
       const provider = createTestProvider();
-      const onReplaySkipped = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .withReplayProtection({ store: createInMemoryReplayStore() })
-        .observe({ onReplaySkipped })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2189,20 +2151,65 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onReplaySkipped).toHaveBeenCalledTimes(1);
-      const event = onReplaySkipped.mock.calls[0]![0] as ReplaySkippedEvent;
-      expect(event.type).toBe("replay_skipped");
-      expect(event.reason).toBe("missing_key");
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 200,
+          success: true,
+        }),
+      );
+    });
+
+    it("should emit onCompleted with success for 204 response", async () => {
+      const provider = createTestProvider();
+      const { instrumentation, hooks, contexts } =
+        createInstrumentationRecorder();
+
+      const webhook = createWebhook(provider)
+        .instrument(instrumentation)
+        .event(testEvent, () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "unknown.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 204,
+          success: true,
+        }),
+      );
+      expect(contexts[0]?.eventType).toBe("unknown.event");
+    });
+
+    it("should emit onReplaySkipped when replay key is unavailable", async () => {
+      const provider = createTestProvider();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
+
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .instrument(instrumentation)
+        .event(testEvent, () => {});
+
+      await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(hooks.onReplaySkipped).toHaveBeenCalledWith({
+        reason: "missing_key",
+      });
     });
 
     it("should emit replay reservation and commit events for successful requests", async () => {
       const provider = createTestProvider();
-      const onReplayReserved = vi.fn();
-      const onReplayCommitted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
         .withReplayProtection({ store: createInMemoryReplayStore() })
-        .observe({ onReplayReserved, onReplayCommitted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2214,27 +2221,25 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onReplayReserved).toHaveBeenCalledTimes(1);
-      const reservedEvent = onReplayReserved.mock
-        .calls[0]![0] as ReplayReservedEvent;
-      expect(reservedEvent.type).toBe("replay_reserved");
-      expect(reservedEvent.replayKey).toBe("test:replay-observation-success");
-      expect(reservedEvent.storeMode).toBe("atomic");
-
-      expect(onReplayCommitted).toHaveBeenCalledTimes(1);
-      const committedEvent = onReplayCommitted.mock
-        .calls[0]![0] as ReplayCommittedEvent;
-      expect(committedEvent.type).toBe("replay_committed");
-      expect(committedEvent.replayKey).toBe("test:replay-observation-success");
-      expect(committedEvent.ttlSeconds).toBeGreaterThan(0);
+      expect(hooks.onReplayReserved).toHaveBeenCalledWith(
+        expect.objectContaining({
+          replayKey: "test:replay-observation-success",
+        }),
+      );
+      expect(hooks.onReplayCommitted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          replayKey: "test:replay-observation-success",
+          ttlSeconds: expect.any(Number),
+        }),
+      );
     });
 
     it("should emit onReplayDuplicate when duplicate is detected", async () => {
       const provider = createTestProvider();
-      const onReplayDuplicate = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
       const webhook = createWebhook(provider)
         .withReplayProtection({ store: createInMemoryReplayStore() })
-        .observe({ onReplayDuplicate })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       const request = {
@@ -2249,22 +2254,20 @@ describe("WebhookBuilder observability", () => {
       await webhook.process(request);
       await webhook.process(request);
 
-      expect(onReplayDuplicate).toHaveBeenCalledTimes(1);
-      const duplicateEvent = onReplayDuplicate.mock
-        .calls[0]![0] as ReplayDuplicateEvent;
-      expect(duplicateEvent.type).toBe("replay_duplicate");
-      expect(duplicateEvent.replayKey).toBe(
-        "test:replay-observation-duplicate",
+      expect(hooks.onReplayDuplicate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          replayKey: "test:replay-observation-duplicate",
+          behavior: "conflict",
+        }),
       );
-      expect(duplicateEvent.behavior).toBe("conflict");
     });
 
     it("should emit onReplayReleased when processing fails after reservation", async () => {
       const provider = createTestProvider();
-      const onReplayReleased = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
       const webhook = createWebhook(provider)
         .withReplayProtection({ store: createInMemoryReplayStore() })
-        .observe({ onReplayReleased })
+        .instrument(instrumentation)
         .event(testEvent, () => {
           throw new Error("handler failed");
         });
@@ -2278,21 +2281,20 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onReplayReleased).toHaveBeenCalledTimes(1);
-      const releasedEvent = onReplayReleased.mock
-        .calls[0]![0] as ReplayReleasedEvent;
-      expect(releasedEvent.type).toBe("replay_released");
-      expect(releasedEvent.reason).toBe("processing_failed");
-      expect(releasedEvent.replayKey).toBe("test:replay-observation-release");
+      expect(hooks.onReplayReleased).toHaveBeenCalledWith(
+        expect.objectContaining({
+          replayKey: "test:replay-observation-release",
+          reason: "processing_failed",
+        }),
+      );
     });
 
     it("should emit onReplayReleased for unhandled events without committing", async () => {
       const provider = createTestProvider();
-      const onReplayCommitted = vi.fn();
-      const onReplayReleased = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
       const webhook = createWebhook(provider)
         .withReplayProtection({ store: createInMemoryReplayStore() })
-        .observe({ onReplayCommitted, onReplayReleased });
+        .instrument(instrumentation);
 
       const result = await webhook.process({
         headers: {
@@ -2304,13 +2306,13 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(result.status).toBe(204);
-      expect(onReplayCommitted).not.toHaveBeenCalled();
-      expect(onReplayReleased).toHaveBeenCalledTimes(1);
-      const releasedEvent = onReplayReleased.mock
-        .calls[0]![0] as ReplayReleasedEvent;
-      expect(releasedEvent.type).toBe("replay_released");
-      expect(releasedEvent.reason).toBe("event_unhandled");
-      expect(releasedEvent.replayKey).toBe("test:replay-observation-unhandled");
+      expect(hooks.onReplayCommitted).not.toHaveBeenCalled();
+      expect(hooks.onReplayReleased).toHaveBeenCalledWith(
+        expect.objectContaining({
+          replayKey: "test:replay-observation-unhandled",
+          reason: "event_unhandled",
+        }),
+      );
     });
 
     it("should emit onReplayFreshnessRejected when timestamp is outside tolerance", async () => {
@@ -2324,7 +2326,7 @@ describe("WebhookBuilder observability", () => {
           };
         },
       };
-      const onReplayFreshnessRejected = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
       const webhook = createWebhook(provider)
         .withReplayProtection({
           store: createInMemoryReplayStore(),
@@ -2335,7 +2337,7 @@ describe("WebhookBuilder observability", () => {
               context.replayKey,
           },
         })
-        .observe({ onReplayFreshnessRejected })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       const result = await webhook.process({
@@ -2345,21 +2347,18 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(result.status).toBe(409);
-      expect(onReplayFreshnessRejected).toHaveBeenCalledTimes(1);
-      const freshnessEvent = onReplayFreshnessRejected.mock
-        .calls[0]![0] as ReplayFreshnessRejectedEvent;
-      expect(freshnessEvent.type).toBe("replay_freshness_rejected");
-      expect(freshnessEvent.timestamp).toBe(nowSeconds - 90);
-      expect(freshnessEvent.toleranceSeconds).toBe(30);
+      expect(hooks.onReplayFreshnessRejected).toHaveBeenCalledWith({
+        timestamp: nowSeconds - 90,
+        toleranceSeconds: 30,
+      });
     });
 
     it("should emit onJsonParseFailed for invalid JSON", async () => {
       const provider = createTestProvider();
-      const onJsonParseFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onJsonParseFailed, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2367,25 +2366,23 @@ describe("WebhookBuilder observability", () => {
         rawBody: "not valid json",
       });
 
-      expect(onJsonParseFailed).toHaveBeenCalledTimes(1);
-      const event = onJsonParseFailed.mock.calls[0]![0] as JsonParseFailedEvent;
-      expect(event.type).toBe("json_parse_failed");
-      expect(event.error).toBeDefined();
-
-      // Should also emit completed
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(400);
-      expect(completedEvent.success).toBe(false);
+      expect(hooks.onJsonParseFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.any(String),
+          durationMs: expect.any(Number),
+        }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400, success: false }),
+      );
     });
 
     it("should emit onEventUnhandled for 204 response", async () => {
       const provider = createTestProvider();
-      const onEventUnhandled = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onEventUnhandled, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2394,22 +2391,21 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
-      const event = onEventUnhandled.mock.calls[0]![0] as EventUnhandledEvent;
-      expect(event.type).toBe("event_unhandled");
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(204);
+      expect(hooks.onEventUnhandled).toHaveBeenCalledWith(
+        expect.objectContaining({ durationMs: expect.any(Number) }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 204 }),
+      );
     });
 
     it("should emit onEventUnhandled when no event type is found", async () => {
       const provider = createTestProvider();
-      const onEventUnhandled = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks, contexts } =
+        createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onEventUnhandled, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2418,26 +2414,18 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
-      const event = onEventUnhandled.mock.calls[0]![0] as EventUnhandledEvent;
-      expect(event.type).toBe("event_unhandled");
-      expect(event.eventType).toBeUndefined();
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(204);
-      expect(completedEvent.eventType).toBeUndefined();
+      expect(hooks.onEventUnhandled).toHaveBeenCalledTimes(1);
+      expect(contexts[0]?.eventType).toBeUndefined();
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 204 }),
+      );
     });
 
     it("should emit completed with provider-specific unhandled status", async () => {
       const provider = createTestProvider({ verifiedUnhandledStatus: 200 });
-      const onEventUnhandled = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
-      const webhook = createWebhook(provider).observe({
-        onEventUnhandled,
-        onCompleted,
-      });
+      const webhook = createWebhook(provider).instrument(instrumentation);
 
       await webhook.process({
         headers: { "x-test-event": "unknown.event" },
@@ -2445,21 +2433,18 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onEventUnhandled).toHaveBeenCalledTimes(1);
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(200);
-      expect(completedEvent.success).toBe(true);
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 200, success: true }),
+      );
     });
 
     it("should emit onBodyTooLarge and completed with 413", async () => {
       const provider = createTestProvider();
-      const onBodyTooLarge = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks, contexts } =
+        createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onBodyTooLarge, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       const result = await webhook.process({
@@ -2473,28 +2458,19 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(result.status).toBe(413);
-
-      expect(onBodyTooLarge).toHaveBeenCalledTimes(1);
-      const bodyTooLargeEvent = onBodyTooLarge.mock
-        .calls[0]![0] as BodyTooLargeEvent;
-      expect(bodyTooLargeEvent.type).toBe("body_too_large");
-      expect(bodyTooLargeEvent.maxBodyBytes).toBe(10);
-      expect(bodyTooLargeEvent.deliveryId).toBe("delivery-413");
-      expect(bodyTooLargeEvent.rawBodyBytes).toBeGreaterThan(10);
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(413);
-      expect(completedEvent.success).toBe(false);
-      expect(completedEvent.deliveryId).toBe("delivery-413");
+      expect(hooks.onBodyTooLarge).toHaveBeenCalledWith({ maxBodyBytes: 10 });
+      expect(contexts[0]?.deliveryId).toBe("delivery-413");
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 413, success: false }),
+      );
     });
 
     it("should emit onVerificationSucceeded when verification passes", async () => {
       const provider = createTestProvider({ verifyResult: true });
-      const onVerificationSucceeded = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onVerificationSucceeded })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2503,21 +2479,17 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onVerificationSucceeded).toHaveBeenCalledTimes(1);
-      const event = onVerificationSucceeded.mock
-        .calls[0]![0] as VerificationSucceededEvent;
-      expect(event.type).toBe("verification_succeeded");
-      expect(event.verifyDurationMs).toBeGreaterThanOrEqual(0);
+      expect(hooks.onVerificationSucceeded).toHaveBeenCalledWith(
+        expect.objectContaining({ durationMs: expect.any(Number) }),
+      );
     });
 
     it("should not emit verification events when verification is disabled", async () => {
       const provider = createTestProvider({ verification: "disabled" });
-      const onVerificationSucceeded = vi.fn();
-      const onVerificationFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onVerificationSucceeded, onVerificationFailed, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2526,20 +2498,19 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onVerificationSucceeded).not.toHaveBeenCalled();
-      expect(onVerificationFailed).not.toHaveBeenCalled();
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(200);
+      expect(hooks.onVerificationSucceeded).not.toHaveBeenCalled();
+      expect(hooks.onVerificationFailed).not.toHaveBeenCalled();
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 200 }),
+      );
     });
 
     it("should emit onVerificationFailed when verification fails", async () => {
       const provider = createTestProvider({ verifyResult: false });
-      const onVerificationFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onVerificationFailed, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2548,23 +2519,23 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onVerificationFailed).toHaveBeenCalledTimes(1);
-      const event = onVerificationFailed.mock
-        .calls[0]![0] as VerificationFailedEvent;
-      expect(event.type).toBe("verification_failed");
-      expect(event.reason).toBe("Signature verification failed");
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(401);
+      expect(hooks.onVerificationFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reason: "Signature verification failed",
+          durationMs: expect.any(Number),
+        }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 401 }),
+      );
     });
 
     it("should emit onSchemaValidationSucceeded when validation passes", async () => {
       const provider = createTestProvider();
-      const onSchemaValidationSucceeded = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onSchemaValidationSucceeded })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2573,20 +2544,17 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
-      const event = onSchemaValidationSucceeded.mock
-        .calls[0]![0] as SchemaValidationSucceededEvent;
-      expect(event.type).toBe("schema_validation_succeeded");
-      expect(event.validateDurationMs).toBeGreaterThanOrEqual(0);
+      expect(hooks.onSchemaValidationSucceeded).toHaveBeenCalledWith(
+        expect.objectContaining({ durationMs: expect.any(Number) }),
+      );
     });
 
     it("should emit onSchemaValidationFailed when validation fails", async () => {
       const provider = createTestProvider();
-      const onSchemaValidationFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onSchemaValidationFailed, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
@@ -2595,19 +2563,18 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onSchemaValidationFailed).toHaveBeenCalledTimes(1);
-      const event = onSchemaValidationFailed.mock
-        .calls[0]![0] as SchemaValidationFailedEvent;
-      expect(event.type).toBe("schema_validation_failed");
-      expect(event.error).toBeDefined();
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(400);
+      expect(hooks.onSchemaValidationFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.any(String),
+          durationMs: expect.any(Number),
+        }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
     });
 
-    it("should not emit schema validation events when no schema is registered for the event", async () => {
-      // Create a provider without using defineEvent (raw handler without schema)
+    it("should still emit schema validation success for z.any() schemas", async () => {
       const provider: Provider<"test-no-schema"> = {
         name: "test",
         verification: "required",
@@ -2622,24 +2589,17 @@ describe("WebhookBuilder observability", () => {
         },
       };
 
-      // Define an event without schema validation (using z.any())
       const noSchemaEvent = defineEvent({
         name: "test.event",
         schema: z.any(),
         provider: "test-no-schema" as const,
       });
 
-      const onSchemaValidationSucceeded = vi.fn();
-      const onSchemaValidationFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
       const handler = vi.fn();
 
       const webhook = createWebhook(provider)
-        .observe({
-          onSchemaValidationSucceeded,
-          onSchemaValidationFailed,
-          onCompleted,
-        })
+        .instrument(instrumentation)
         .event(noSchemaEvent, handler);
 
       await webhook.process({
@@ -2649,21 +2609,19 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
-      // Schema validation still happens but with z.any() so it always succeeds
-      expect(onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
-      expect(onSchemaValidationFailed).not.toHaveBeenCalled();
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(200);
+      expect(hooks.onSchemaValidationSucceeded).toHaveBeenCalledTimes(1);
+      expect(hooks.onSchemaValidationFailed).not.toHaveBeenCalled();
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 200 }),
+      );
     });
 
     it("should emit onHandlerStarted and onHandlerSucceeded for each handler", async () => {
       const provider = createTestProvider();
-      const onHandlerStarted = vi.fn();
-      const onHandlerSucceeded = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onHandlerStarted, onHandlerSucceeded })
+        .instrument(instrumentation)
         .event(testEvent, () => {})
         .event(testEvent, () => {});
 
@@ -2673,33 +2631,32 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onHandlerStarted).toHaveBeenCalledTimes(2);
-      expect(onHandlerSucceeded).toHaveBeenCalledTimes(2);
-
-      // Check first handler
-      const startEvent1 = onHandlerStarted.mock
-        .calls[0]![0] as HandlerStartedEvent;
-      expect(startEvent1.handlerIndex).toBe(0);
-      expect(startEvent1.handlerCount).toBe(2);
-
-      const successEvent1 = onHandlerSucceeded.mock
-        .calls[0]![0] as HandlerSucceededEvent;
-      expect(successEvent1.handlerIndex).toBe(0);
-      expect(successEvent1.handlerDurationMs).toBeGreaterThanOrEqual(0);
-
-      // Check second handler
-      const startEvent2 = onHandlerStarted.mock
-        .calls[1]![0] as HandlerStartedEvent;
-      expect(startEvent2.handlerIndex).toBe(1);
+      expect(hooks.onHandlerStarted).toHaveBeenCalledTimes(2);
+      expect(hooks.onHandlerSucceeded).toHaveBeenCalledTimes(2);
+      expect(hooks.onHandlerStarted).toHaveBeenNthCalledWith(1, {
+        handlerIndex: 0,
+        handlerCount: 2,
+      });
+      expect(hooks.onHandlerStarted).toHaveBeenNthCalledWith(2, {
+        handlerIndex: 1,
+        handlerCount: 2,
+      });
+      expect(hooks.onHandlerSucceeded).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          handlerIndex: 0,
+          handlerCount: 2,
+          durationMs: expect.any(Number),
+        }),
+      );
     });
 
     it("should emit onHandlerFailed when handler throws", async () => {
       const provider = createTestProvider();
-      const onHandlerFailed = vi.fn();
-      const onCompleted = vi.fn();
+      const { instrumentation, hooks } = createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
-        .observe({ onHandlerFailed, onCompleted })
+        .instrument(instrumentation)
         .event(testEvent, () => {
           throw new Error("Handler error");
         });
@@ -2710,27 +2667,36 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      expect(onHandlerFailed).toHaveBeenCalledTimes(1);
-      const event = onHandlerFailed.mock.calls[0]![0] as HandlerFailedEvent;
-      expect(event.type).toBe("handler_failed");
-      expect(event.error.message).toBe("Handler error");
-
-      expect(onCompleted).toHaveBeenCalledTimes(1);
-      const completedEvent = onCompleted.mock.calls[0]![0] as CompletedEvent;
-      expect(completedEvent.status).toBe(500);
+      expect(hooks.onHandlerFailed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "Handler error" }),
+          handlerIndex: 0,
+          handlerCount: 1,
+          durationMs: expect.any(Number),
+        }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 500 }),
+      );
     });
   });
 
-  describe("observer error handling", () => {
-    it("should swallow observer errors and continue processing", async () => {
+  describe("instrumentation error handling", () => {
+    it("should swallow request-start instrumentation errors and continue processing", async () => {
       const provider = createTestProvider();
-      const onRequestReceived = vi.fn(() => {
-        throw new Error("Observer error");
-      });
       const onCompleted = vi.fn();
 
       const webhook = createWebhook(provider)
-        .observe({ onRequestReceived, onCompleted })
+        .instrument({
+          onRequestStart() {
+            throw new Error("Instrumentation error");
+          },
+        })
+        .instrument({
+          onRequestStart() {
+            return { onCompleted };
+          },
+        })
         .event(testEvent, () => {});
 
       const result = await webhook.process({
@@ -2739,21 +2705,30 @@ describe("WebhookBuilder observability", () => {
         secret: "test-secret",
       });
 
-      // Processing should succeed despite observer error
       expect(result.status).toBe(200);
-      expect(onRequestReceived).toHaveBeenCalledTimes(1);
       expect(onCompleted).toHaveBeenCalledTimes(1);
     });
 
-    it("should continue calling other observers if one throws", async () => {
+    it("should continue calling other instrumentations if one throws", async () => {
       const provider = createTestProvider();
-      const onCompleted1 = vi.fn(() => {
-        throw new Error("Observer 1 error");
+      const failingOnCompleted = vi.fn(() => {
+        throw new Error("Instrumentation error");
       });
-      const onCompleted2 = vi.fn();
+      const succeedingOnCompleted = vi.fn();
 
       const webhook = createWebhook(provider)
-        .observe([{ onCompleted: onCompleted1 }, { onCompleted: onCompleted2 }])
+        .instrument([
+          {
+            onRequestStart() {
+              return { onCompleted: failingOnCompleted };
+            },
+          },
+          {
+            onRequestStart() {
+              return { onCompleted: succeedingOnCompleted };
+            },
+          },
+        ])
         .event(testEvent, () => {});
 
       const result = await webhook.process({
@@ -2763,181 +2738,8 @@ describe("WebhookBuilder observability", () => {
       });
 
       expect(result.status).toBe(200);
-      expect(onCompleted1).toHaveBeenCalledTimes(1);
-      expect(onCompleted2).toHaveBeenCalledTimes(1);
+      expect(failingOnCompleted).toHaveBeenCalledTimes(1);
+      expect(succeedingOnCompleted).toHaveBeenCalledTimes(1);
     });
-  });
-});
-
-// ============================================================================
-// createWebhookStats Tests
-// ============================================================================
-
-describe("createWebhookStats", () => {
-  it("should track total requests and success/error counts", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider)
-      .observe(stats.observer)
-      .event(testEvent, () => {});
-
-    // Successful request
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    let snapshot = stats.snapshot();
-    expect(snapshot.totalRequests).toBe(1);
-    expect(snapshot.successCount).toBe(1);
-    expect(snapshot.errorCount).toBe(0);
-
-    // Failed request (invalid JSON)
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: "invalid json",
-      secret: "test-secret",
-    });
-
-    snapshot = stats.snapshot();
-    expect(snapshot.totalRequests).toBe(2);
-    expect(snapshot.successCount).toBe(1);
-    expect(snapshot.errorCount).toBe(1);
-  });
-
-  it("should count unhandled 204 responses as successful", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-    const webhook = createWebhook(provider).observe(stats.observer);
-
-    await webhook.process({
-      headers: { "x-test-event": "unknown.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.totalRequests).toBe(1);
-    expect(snapshot.successCount).toBe(1);
-    expect(snapshot.errorCount).toBe(0);
-  });
-
-  it("should not track by event type when event type is unknown", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider).observe(stats.observer);
-
-    await webhook.process({
-      headers: {},
-      rawBody: JSON.stringify(validPayload),
-    });
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.totalRequests).toBe(1);
-    expect(Object.keys(snapshot.byEventType)).toHaveLength(0);
-  });
-
-  it("should track by provider", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider)
-      .observe(stats.observer)
-      .event(testEvent, () => {});
-
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.byProvider["test"]).toEqual({
-      total: 1,
-      success: 1,
-      error: 0,
-    });
-  });
-
-  it("should track by event type", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider)
-      .observe(stats.observer)
-      .event(testEvent, () => {})
-      .event(anotherEvent, () => {});
-
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    await webhook.process({
-      headers: { "x-test-event": "another.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.byEventType["test.event"]).toEqual({
-      total: 1,
-      success: 1,
-      error: 0,
-    });
-    expect(snapshot.byEventType["another.event"]).toEqual({
-      total: 1,
-      success: 1,
-      error: 0,
-    });
-  });
-
-  it("should calculate average duration", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider)
-      .observe(stats.observer)
-      .event(testEvent, () => {});
-
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.avgDurationMs).toBeGreaterThanOrEqual(0);
-  });
-
-  it("should reset stats", async () => {
-    const provider = createTestProvider();
-    const stats = createWebhookStats();
-
-    const webhook = createWebhook(provider)
-      .observe(stats.observer)
-      .event(testEvent, () => {});
-
-    await webhook.process({
-      headers: { "x-test-event": "test.event" },
-      rawBody: JSON.stringify(validPayload),
-      secret: "test-secret",
-    });
-
-    expect(stats.snapshot().totalRequests).toBe(1);
-
-    stats.reset();
-
-    const snapshot = stats.snapshot();
-    expect(snapshot.totalRequests).toBe(0);
-    expect(snapshot.successCount).toBe(0);
-    expect(snapshot.errorCount).toBe(0);
-    expect(snapshot.avgDurationMs).toBe(0);
-    expect(Object.keys(snapshot.byProvider)).toHaveLength(0);
-    expect(Object.keys(snapshot.byEventType)).toHaveLength(0);
   });
 });
