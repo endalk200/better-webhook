@@ -1,5 +1,12 @@
 # @better-webhook/resend
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.12.0
+
 ## 0.1.1
 
 ### Patch Changes

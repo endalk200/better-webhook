@@ -1,5 +1,12 @@
 # @better-webhook/ragie
 
+## 0.6.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @better-webhook/core@0.12.0
+
 ## 0.6.4
 
 ### Patch Changes

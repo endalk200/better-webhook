@@ -1,5 +1,13 @@
 # @better-webhook/core
 
+## 0.12.0
+
+### Minor Changes
+
+- Replace the old observer API with request-scoped instrumentation hooks and add the new `@better-webhook/otel` package for OpenTelemetry integration.
+
+  Update the framework adapters and docs to use builder-level `.instrument(...)` wiring instead of adapter-level observer options.
+
 ## 0.11.4
 
 ### Patch Changes
