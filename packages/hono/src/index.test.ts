@@ -450,6 +450,20 @@ describe("toHono", () => {
       expect(response.status).toBe(413);
       expect(onSuccess).not.toHaveBeenCalled();
     });
+
+    it("should throw when legacy observer option is passed", () => {
+      const provider = createTestProvider();
+      const webhook = createWebhook(provider).event(testEvent, () => {});
+
+      expect(() =>
+        toHono(webhook, {
+          observer: {},
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any),
+      ).toThrow(
+        "`observer` is no longer supported in @better-webhook/hono. Use `webhook.instrument(...)` instead.",
+      );
+    });
   });
 
   describe("header normalization", () => {

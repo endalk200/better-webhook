@@ -519,6 +519,10 @@ export interface WebhookCompletedData {
 }
 
 export interface WebhookRequestInstrumentation {
+  wrapHandler?(
+    next: () => Promise<void>,
+    data: WebhookHandlerStartedData,
+  ): Promise<void> | void;
   onBodyTooLarge?(data: WebhookBodyTooLargeData): void;
   onJsonParseFailed?(data: WebhookJsonParseFailedData): void;
   onVerificationSucceeded?(data: WebhookVerificationSucceededData): void;
@@ -1244,9 +1248,12 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     );
 
     let parsedBody: unknown;
+    let eventType: string | undefined;
+    let deliveryId: string | undefined;
     let reservedReplayKey: string | undefined;
     let replayStoreForRequest: ReplayStore | undefined;
     let replayPolicyForRequest: ResolvedReplayPolicy | undefined;
+    let completedResult: ProcessResult | undefined;
 
     // Helper to emit completed event and return result
     const complete = (
@@ -1255,6 +1262,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       deliveryId?: string,
       body?: { ok: boolean; error?: string },
     ): ProcessResult => {
+      if (completedResult) {
+        return completedResult;
+      }
+
       const durationMs = performance.now() - requestStartTime;
       instrumentationContext.eventType = eventType;
       instrumentationContext.deliveryId = deliveryId;
@@ -1263,7 +1274,8 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         durationMs,
         success: status === 200 || status === 204,
       });
-      return { status, eventType, body };
+      completedResult = { status, eventType, body };
+      return completedResult;
     };
 
     const failReplayProtection = async (
@@ -1368,387 +1380,405 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     };
 
     const effectiveMaxBodyBytes = maxBodyBytes ?? this.maxBodyBytesLimit;
-    const deliveryId = this.provider.getDeliveryId(headers);
-    instrumentationContext.deliveryId = deliveryId;
     if (
       effectiveMaxBodyBytes !== undefined &&
       (!Number.isInteger(effectiveMaxBodyBytes) || effectiveMaxBodyBytes <= 0)
     ) {
       throw new RangeError("maxBodyBytes must be a positive integer");
     }
-    if (
-      effectiveMaxBodyBytes !== undefined &&
-      rawBodyBytes > effectiveMaxBodyBytes
-    ) {
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onBodyTooLarge",
-        {
-          maxBodyBytes: effectiveMaxBodyBytes,
-        },
-      );
-      return complete(413, undefined, deliveryId, {
-        ok: false,
-        error: "Payload too large",
-      });
-    }
 
-    // Convert raw body to string for consistent downstream handling
-    const bodyString =
-      typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
-
-    // Parse JSON body early (needed for getEventType and getPayload)
-    const parseStartTime = performance.now();
     try {
-      parsedBody = JSON.parse(bodyString);
-    } catch (e) {
-      const durationMs = performance.now() - parseStartTime;
-      const error = e instanceof Error ? e.message : "Invalid JSON";
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onJsonParseFailed",
-        {
-          durationMs,
-          error,
-        },
-      );
-      return complete(400, undefined, undefined, {
-        ok: false,
-        error: "Invalid JSON body",
-      });
-    }
+      deliveryId = this.provider.getDeliveryId(headers);
+      instrumentationContext.deliveryId = deliveryId;
 
-    // Get event type (pass parsed body for providers that extract type from body)
-    const eventType = this.provider.getEventType(headers, parsedBody);
-    instrumentationContext.eventType = eventType;
-
-    // Resolve secret: options.secret → provider.secret → env vars
-    const resolvedSecret =
-      secret || this.provider.secret || this.getEnvSecret(this.provider.name);
-
-    // Enforce verification unless explicitly disabled
-    if (this.provider.verification !== "disabled") {
-      if (!resolvedSecret) {
-        const reason = "Missing webhook secret";
-
+      if (
+        effectiveMaxBodyBytes !== undefined &&
+        rawBodyBytes > effectiveMaxBodyBytes
+      ) {
         this.emitRequestInstrumentation(
           requestInstrumentations,
-          "onVerificationFailed",
+          "onBodyTooLarge",
           {
-            reason,
-            durationMs: 0,
+            maxBodyBytes: effectiveMaxBodyBytes,
           },
         );
-
-        if (this.verificationFailedHandler) {
-          try {
-            await this.verificationFailedHandler(reason, headers);
-          } catch {
-            // Ignore errors from verification failed handler
-          }
-        }
-
-        return complete(401, eventType, deliveryId, {
+        return complete(413, undefined, deliveryId, {
           ok: false,
-          error: reason,
+          error: "Payload too large",
         });
       }
 
-      const verifyStartTime = performance.now();
-      const isValid = this.provider.verify(rawBody, headers, resolvedSecret);
-      const verifyDurationMs = performance.now() - verifyStartTime;
+      const bodyString =
+        typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
 
-      if (!isValid) {
-        const reason = "Signature verification failed";
+      const parseStartTime = performance.now();
+      try {
+        parsedBody = JSON.parse(bodyString);
+      } catch (e) {
+        const durationMs = performance.now() - parseStartTime;
+        const error = e instanceof Error ? e.message : "Invalid JSON";
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onJsonParseFailed",
+          {
+            durationMs,
+            error,
+          },
+        );
+        return complete(400, undefined, deliveryId, {
+          ok: false,
+          error: "Invalid JSON body",
+        });
+      }
+
+      eventType = this.provider.getEventType(headers, parsedBody);
+      instrumentationContext.eventType = eventType;
+
+      const resolvedSecret =
+        secret || this.provider.secret || this.getEnvSecret(this.provider.name);
+
+      if (this.provider.verification !== "disabled") {
+        if (!resolvedSecret) {
+          const reason = "Missing webhook secret";
+
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onVerificationFailed",
+            {
+              reason,
+              durationMs: 0,
+            },
+          );
+
+          if (this.verificationFailedHandler) {
+            try {
+              await this.verificationFailedHandler(reason, headers);
+            } catch {
+              // Ignore errors from verification failed handler
+            }
+          }
+
+          return complete(401, eventType, deliveryId, {
+            ok: false,
+            error: reason,
+          });
+        }
+
+        const verifyStartTime = performance.now();
+        const isValid = this.provider.verify(rawBody, headers, resolvedSecret);
+        const verifyDurationMs = performance.now() - verifyStartTime;
+
+        if (!isValid) {
+          const reason = "Signature verification failed";
+
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onVerificationFailed",
+            {
+              reason,
+              durationMs: verifyDurationMs,
+            },
+          );
+
+          if (this.verificationFailedHandler) {
+            try {
+              await this.verificationFailedHandler(reason, headers);
+            } catch {
+              // Ignore errors from verification failed handler
+            }
+          }
+
+          return complete(401, eventType, deliveryId, {
+            ok: false,
+            error: reason,
+          });
+        }
 
         this.emitRequestInstrumentation(
           requestInstrumentations,
-          "onVerificationFailed",
+          "onVerificationSucceeded",
           {
-            reason,
             durationMs: verifyDurationMs,
           },
         );
-
-        if (this.verificationFailedHandler) {
-          try {
-            await this.verificationFailedHandler(reason, headers);
-          } catch {
-            // Ignore errors from verification failed handler
-          }
-        }
-
-        return complete(401, eventType, deliveryId, {
-          ok: false,
-          error: reason,
-        });
       }
 
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onVerificationSucceeded",
-        {
-          durationMs: verifyDurationMs,
-        },
-      );
-    }
+      if (this.replayProtection) {
+        const replayPolicy = this.replayProtection.policy;
+        const replayStore = this.replayProtection.store;
+        try {
+          const providerReplayContext = this.provider.getReplayContext?.(
+            headers,
+            parsedBody,
+          );
+          const replayContext: ReplayContext = {
+            provider: this.provider.name,
+            eventType,
+            deliveryId,
+            replayKey: providerReplayContext?.replayKey,
+            timestamp: providerReplayContext?.timestamp,
+          };
 
-    if (this.replayProtection) {
-      const replayPolicy = this.replayProtection.policy;
-      const replayStore = this.replayProtection.store;
-      try {
-        const providerReplayContext = this.provider.getReplayContext?.(
-          headers,
-          parsedBody,
-        );
-        const replayContext: ReplayContext = {
-          provider: this.provider.name,
-          eventType,
-          deliveryId,
-          replayKey: providerReplayContext?.replayKey,
-          timestamp: providerReplayContext?.timestamp,
-        };
+          if (
+            replayPolicy.timestampToleranceSeconds !== undefined &&
+            replayContext.timestamp !== undefined
+          ) {
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const ageInSeconds = Math.abs(nowSeconds - replayContext.timestamp);
+            if (ageInSeconds > replayPolicy.timestampToleranceSeconds) {
+              this.emitRequestInstrumentation(
+                requestInstrumentations,
+                "onReplayFreshnessRejected",
+                {
+                  timestamp: replayContext.timestamp,
+                  toleranceSeconds: replayPolicy.timestampToleranceSeconds,
+                },
+              );
+              return complete(409, eventType, deliveryId, {
+                ok: false,
+                error: REPLAY_TIMESTAMP_OUTSIDE_TOLERANCE_ERROR,
+              });
+            }
+          }
 
-        if (
-          replayPolicy.timestampToleranceSeconds !== undefined &&
-          replayContext.timestamp !== undefined
-        ) {
-          const nowSeconds = Math.floor(Date.now() / 1000);
-          const ageInSeconds = Math.abs(nowSeconds - replayContext.timestamp);
-          if (ageInSeconds > replayPolicy.timestampToleranceSeconds) {
+          const replayKey = replayPolicy.key(replayContext);
+          if (!replayKey) {
             this.emitRequestInstrumentation(
               requestInstrumentations,
-              "onReplayFreshnessRejected",
+              "onReplaySkipped",
               {
-                timestamp: replayContext.timestamp,
-                toleranceSeconds: replayPolicy.timestampToleranceSeconds,
+                reason: "missing_key",
               },
             );
-            return complete(409, eventType, deliveryId, {
-              ok: false,
-              error: REPLAY_TIMESTAMP_OUTSIDE_TOLERANCE_ERROR,
-            });
-          }
-        }
+          } else {
+            const reserveResult = await replayStore.reserve(
+              replayKey,
+              replayPolicy.inFlightTtlSeconds,
+            );
+            if (reserveResult === "duplicate") {
+              this.emitRequestInstrumentation(
+                requestInstrumentations,
+                "onReplayDuplicate",
+                {
+                  replayKey,
+                  behavior: replayPolicy.onDuplicate,
+                },
+              );
+              if (replayPolicy.onDuplicate === "ignore") {
+                return complete(200, eventType, deliveryId, { ok: true });
+              }
+              return complete(409, eventType, deliveryId, {
+                ok: false,
+                error: DUPLICATE_WEBHOOK_ERROR,
+              });
+            }
 
-        const replayKey = replayPolicy.key(replayContext);
-        if (!replayKey) {
-          this.emitRequestInstrumentation(
-            requestInstrumentations,
-            "onReplaySkipped",
-            {
-              reason: "missing_key",
-            },
-          );
-        } else {
-          const reserveResult = await replayStore.reserve(
-            replayKey,
-            replayPolicy.inFlightTtlSeconds,
-          );
-          if (reserveResult === "duplicate") {
+            reservedReplayKey = replayKey;
+            replayStoreForRequest = replayStore;
+            replayPolicyForRequest = replayPolicy;
             this.emitRequestInstrumentation(
               requestInstrumentations,
-              "onReplayDuplicate",
+              "onReplayReserved",
               {
                 replayKey,
-                behavior: replayPolicy.onDuplicate,
+                inFlightTtlSeconds: replayPolicy.inFlightTtlSeconds,
               },
             );
-            if (replayPolicy.onDuplicate === "ignore") {
-              return complete(200, eventType, deliveryId, { ok: true });
-            }
-            return complete(409, eventType, deliveryId, {
-              ok: false,
-              error: DUPLICATE_WEBHOOK_ERROR,
-            });
           }
+        } catch (error) {
+          if (reservedReplayKey && replayStoreForRequest) {
+            try {
+              await replayStoreForRequest.release(reservedReplayKey);
+            } catch {
+              // Ignore release failures after replay errors.
+            }
+            reservedReplayKey = undefined;
+          }
+          return failReplayProtection(error, eventType, deliveryId);
+        }
+      }
 
-          reservedReplayKey = replayKey;
-          replayStoreForRequest = replayStore;
-          replayPolicyForRequest = replayPolicy;
+      if (!eventType || !this.handlerEntries.has(eventType)) {
+        const unhandledStatus = this.provider.verifiedUnhandledStatus ?? 204;
+        const durationMs = performance.now() - requestStartTime;
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onEventUnhandled",
+          {
+            durationMs,
+          },
+        );
+        return completeWithReplay(
+          unhandledStatus,
+          eventType,
+          deliveryId,
+          undefined,
+          {
+            commitReplayKey: false,
+            releaseReason: "event_unhandled",
+          },
+        );
+      }
+
+      const payloadToValidate = this.provider.getPayload
+        ? this.provider.getPayload(parsedBody)
+        : parsedBody;
+
+      const entry = this.handlerEntries.get(eventType)!;
+      const schema = entry.schema;
+      let payload: unknown;
+
+      if (schema) {
+        const validateStartTime = performance.now();
+        const result = schema.safeParse(payloadToValidate);
+        const validateDurationMs = performance.now() - validateStartTime;
+
+        if (!result.success) {
+          const zodError = result.error as ZodError;
+
           this.emitRequestInstrumentation(
             requestInstrumentations,
-            "onReplayReserved",
+            "onSchemaValidationFailed",
             {
-              replayKey,
-              inFlightTtlSeconds: replayPolicy.inFlightTtlSeconds,
+              durationMs: validateDurationMs,
+              error: zodError.message,
             },
           );
-        }
-      } catch (error) {
-        if (reservedReplayKey && replayStoreForRequest) {
-          try {
-            await replayStoreForRequest.release(reservedReplayKey);
-          } catch {
-            // Ignore release failures after replay errors.
+
+          if (this.errorHandler) {
+            try {
+              await this.errorHandler(zodError, {
+                eventType,
+                deliveryId,
+                payload: payloadToValidate,
+              });
+            } catch {
+              // Ignore errors from error handler
+            }
           }
-          reservedReplayKey = undefined;
+
+          return completeWithReplay(400, eventType, deliveryId, {
+            ok: false,
+            error: "Schema validation failed",
+          });
         }
-        return failReplayProtection(error, eventType, deliveryId);
-      }
-    }
-
-    // No event type or no handlers for this event → provider-specific ack (default 204)
-    if (!eventType || !this.handlerEntries.has(eventType)) {
-      const unhandledStatus = this.provider.verifiedUnhandledStatus ?? 204;
-      const durationMs = performance.now() - requestStartTime;
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onEventUnhandled",
-        {
-          durationMs,
-        },
-      );
-      return completeWithReplay(
-        unhandledStatus,
-        eventType,
-        deliveryId,
-        undefined,
-        {
-          commitReplayKey: false,
-          releaseReason: "event_unhandled",
-        },
-      );
-    }
-
-    // Extract payload from body (for providers with envelope structures like Ragie)
-    // If getPayload is not defined, use the entire parsed body
-    const payloadToValidate = this.provider.getPayload
-      ? this.provider.getPayload(parsedBody)
-      : parsedBody;
-
-    // Get the handler entry which contains both schema and handlers
-    const entry = this.handlerEntries.get(eventType)!;
-    const schema = entry.schema;
-    let payload: unknown;
-
-    if (schema) {
-      const validateStartTime = performance.now();
-      const result = schema.safeParse(payloadToValidate);
-      const validateDurationMs = performance.now() - validateStartTime;
-
-      if (!result.success) {
-        const zodError = result.error as ZodError;
 
         this.emitRequestInstrumentation(
           requestInstrumentations,
-          "onSchemaValidationFailed",
+          "onSchemaValidationSucceeded",
           {
             durationMs: validateDurationMs,
-            error: zodError.message,
           },
         );
 
-        if (this.errorHandler) {
-          try {
-            await this.errorHandler(zodError, {
-              eventType,
-              deliveryId,
-              payload: payloadToValidate,
-            });
-          } catch {
-            // Ignore errors from error handler
-          }
-        }
-
-        return completeWithReplay(400, eventType, deliveryId, {
-          ok: false,
-          error: "Schema validation failed",
-        });
+        payload = result.data;
+      } else {
+        payload = payloadToValidate;
       }
 
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onSchemaValidationSucceeded",
-        {
-          durationMs: validateDurationMs,
-        },
-      );
+      const handlerContext: HandlerContext = {
+        eventType,
+        provider: this.provider.name,
+        deliveryId,
+        headers,
+        rawBody: bodyString,
+        receivedAt,
+      };
 
-      payload = result.data;
-    } else {
-      payload = payloadToValidate;
-    }
+      const eventHandlers = entry.handlers;
+      const handlerCount = eventHandlers.length;
 
-    // Build handler context
-    const handlerContext: HandlerContext = {
-      eventType,
-      provider: this.provider.name,
-      deliveryId,
-      headers,
-      rawBody: bodyString,
-      receivedAt,
-    };
-
-    // Execute handlers sequentially
-    const eventHandlers = entry.handlers;
-    const handlerCount = eventHandlers.length;
-
-    for (
-      let handlerIndex = 0;
-      handlerIndex < eventHandlers.length;
-      handlerIndex++
-    ) {
-      const handler = eventHandlers[handlerIndex]!;
-
-      this.emitRequestInstrumentation(
-        requestInstrumentations,
-        "onHandlerStarted",
-        {
+      for (
+        let handlerIndex = 0;
+        handlerIndex < eventHandlers.length;
+        handlerIndex++
+      ) {
+        const handler = eventHandlers[handlerIndex]!;
+        const handlerData: WebhookHandlerStartedData = {
           handlerIndex,
           handlerCount,
-        },
-      );
-
-      const handlerStartTime = performance.now();
-      try {
-        await handler(payload, handlerContext);
-        const handlerDurationMs = performance.now() - handlerStartTime;
+        };
 
         this.emitRequestInstrumentation(
           requestInstrumentations,
-          "onHandlerSucceeded",
-          {
-            handlerIndex,
-            handlerCount,
-            durationMs: handlerDurationMs,
-          },
-        );
-      } catch (error) {
-        const handlerDurationMs = performance.now() - handlerStartTime;
-        const err = error instanceof Error ? error : new Error(String(error));
-
-        this.emitRequestInstrumentation(
-          requestInstrumentations,
-          "onHandlerFailed",
-          {
-            handlerIndex,
-            handlerCount,
-            durationMs: handlerDurationMs,
-            error: err,
-          },
+          "onHandlerStarted",
+          handlerData,
         );
 
-        if (this.errorHandler) {
-          try {
-            await this.errorHandler(err, {
-              eventType,
-              deliveryId,
-              payload,
-            });
-          } catch {
-            // Ignore errors from error handler
+        const handlerStartTime = performance.now();
+        try {
+          await this.executeWithHandlerInstrumentation(
+            requestInstrumentations,
+            handlerData,
+            async () => {
+              await handler(payload, handlerContext);
+            },
+          );
+          const handlerDurationMs = performance.now() - handlerStartTime;
+
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onHandlerSucceeded",
+            {
+              handlerIndex,
+              handlerCount,
+              durationMs: handlerDurationMs,
+            },
+          );
+        } catch (error) {
+          const handlerDurationMs = performance.now() - handlerStartTime;
+          const err = error instanceof Error ? error : new Error(String(error));
+
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onHandlerFailed",
+            {
+              handlerIndex,
+              handlerCount,
+              durationMs: handlerDurationMs,
+              error: err,
+            },
+          );
+
+          if (this.errorHandler) {
+            try {
+              await this.errorHandler(err, {
+                eventType,
+                deliveryId,
+                payload,
+              });
+            } catch {
+              // Ignore errors from error handler
+            }
           }
+
+          return completeWithReplay(500, eventType, deliveryId, {
+            ok: false,
+            error: "Handler execution failed",
+          });
         }
-
-        return completeWithReplay(500, eventType, deliveryId, {
-          ok: false,
-          error: "Handler execution failed",
-        });
       }
-    }
 
-    return completeWithReplay(200, eventType, deliveryId, { ok: true });
+      return completeWithReplay(200, eventType, deliveryId, { ok: true });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (this.errorHandler) {
+        try {
+          await this.errorHandler(err, {
+            eventType: eventType ?? "unknown",
+            deliveryId,
+            payload: parsedBody,
+          });
+        } catch {
+          // Ignore errors from error handler
+        }
+      }
+
+      return completeWithReplay(500, eventType, deliveryId, {
+        ok: false,
+        error: "Internal server error",
+      });
+    }
   }
 
   /**
@@ -1820,6 +1850,51 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         // Swallow instrumentation errors - they must never break webhook processing
       }
     }
+  }
+
+  private async executeWithHandlerInstrumentation(
+    requestInstrumentations: WebhookRequestInstrumentation[],
+    data: WebhookHandlerStartedData,
+    executeHandler: () => Promise<void>,
+  ): Promise<void> {
+    const runWithInstrumentation = async (index: number): Promise<void> => {
+      const requestInstrumentation = requestInstrumentations[index];
+      if (!requestInstrumentation) {
+        await executeHandler();
+        return;
+      }
+
+      const wrapHandler = requestInstrumentation.wrapHandler;
+      if (!wrapHandler) {
+        await runWithInstrumentation(index + 1);
+        return;
+      }
+
+      let nextPromise: Promise<void> | undefined;
+      const next = (): Promise<void> => {
+        nextPromise ??= runWithInstrumentation(index + 1);
+        return nextPromise;
+      };
+
+      try {
+        await wrapHandler(next, data);
+        if (!nextPromise) {
+          await runWithInstrumentation(index + 1);
+          return;
+        }
+
+        await nextPromise;
+      } catch {
+        if (nextPromise) {
+          await nextPromise;
+          return;
+        }
+
+        await runWithInstrumentation(index + 1);
+      }
+    };
+
+    await runWithInstrumentation(0);
   }
 
   /**
