@@ -1,5 +1,13 @@
 # @better-webhook/hono
 
+## 0.4.1
+
+### Patch Changes
+
+- 6163009: feat: introduce webhook instrumentation API for enhanced observability
+- Updated dependencies [6163009]
+  - @better-webhook/core@0.12.1
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @better-webhook/nestjs
 
+## 0.12.1
+
+### Patch Changes
+
+- Updated dependencies [6163009]
+  - @better-webhook/core@0.12.1
+
 ## 0.12.0
 
 ### Minor Changes

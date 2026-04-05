@@ -1,5 +1,18 @@
 # @better-webhook/express-example
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [6163009]
+  - @better-webhook/core@0.12.1
+  - @better-webhook/otel@0.1.1
+  - @better-webhook/express@0.13.1
+  - @better-webhook/github@0.9.6
+  - @better-webhook/ragie@0.6.6
+  - @better-webhook/recall@0.3.2
+  - @better-webhook/stripe@0.1.4
+
 ## 0.0.4
 
 ### Patch Changes
