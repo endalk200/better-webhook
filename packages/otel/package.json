@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/otel",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "OpenTelemetry instrumentation for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
