@@ -115,6 +115,12 @@ export function toHono<
   webhook: WebhookBuilder<TProviderBrand>,
   options?: HonoAdapterOptions,
 ): HonoHandler<C> {
+  if (options && "observer" in (options as Record<string, unknown>)) {
+    throw new Error(
+      "`observer` is no longer supported in @better-webhook/hono. Use `webhook.instrument(...)` instead.",
+    );
+  }
+
   return async (c: C): Promise<Response> => {
     if (c.req.method !== "POST") {
       return new Response(

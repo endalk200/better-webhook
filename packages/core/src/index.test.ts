@@ -739,6 +739,119 @@ describe("WebhookBuilder", () => {
       );
     });
 
+    it("should return 500 when getDeliveryId throws and still emit completion", async () => {
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getDeliveryId() {
+          throw new Error("delivery id failed");
+        },
+      };
+      const { instrumentation, hooks } = createInstrumentationRecorder();
+      const onError = vi.fn();
+      const webhook = createWebhook(provider)
+        .instrument(instrumentation)
+        .event(testEvent, () => {})
+        .onError(onError);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Internal server error");
+      expect(hooks.onCompleted).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "delivery id failed" }),
+        expect.objectContaining({ eventType: "unknown", payload: undefined }),
+      );
+    });
+
+    it("should return 500 when getEventType throws and still emit completion", async () => {
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        getEventType() {
+          throw new Error("event type failed");
+        },
+      };
+      const { instrumentation, hooks } = createInstrumentationRecorder();
+      const webhook = createWebhook(provider)
+        .instrument(instrumentation)
+        .event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-event-type-error",
+        },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Internal server error");
+      expect(hooks.onCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it("should return 500 when verify throws and still emit completion", async () => {
+      const provider: Provider<"test"> = {
+        ...createTestProvider(),
+        verify() {
+          throw new Error("verify failed");
+        },
+      };
+      const { instrumentation, hooks } = createInstrumentationRecorder();
+      const webhook = createWebhook(provider)
+        .instrument(instrumentation)
+        .event(testEvent, () => {});
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+        secret: "test-secret",
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Internal server error");
+      expect(hooks.onCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it("should release replay reservations when getPayload throws", async () => {
+      const provider: Provider<"test"> = {
+        ...createTestProvider({ verification: "disabled" }),
+        getPayload() {
+          throw new Error("payload extraction failed");
+        },
+      };
+      const { instrumentation, hooks } = createInstrumentationRecorder();
+      const webhook = createWebhook(provider)
+        .withReplayProtection({ store: createInMemoryReplayStore() })
+        .instrument(instrumentation)
+        .event(testEvent, () => {});
+      const request = {
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "payload-error-replay-key",
+        },
+        rawBody: JSON.stringify(validPayload),
+      };
+
+      const firstResult = await webhook.process(request);
+      const secondResult = await webhook.process(request);
+
+      expect(firstResult.status).toBe(500);
+      expect(secondResult.status).toBe(500);
+      expect(hooks.onReplayReleased).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          replayKey: "test:payload-error-replay-key",
+          reason: "processing_failed",
+        }),
+      );
+      expect(hooks.onCompleted).toHaveBeenCalledTimes(2);
+    });
+
     it("should return 409 when replay protection detects duplicates", async () => {
       const provider = createTestProvider();
       const store = createInMemoryReplayStore();
@@ -1997,6 +2110,7 @@ describe("customWebhook", () => {
 function createInstrumentationRecorder() {
   const contexts: WebhookInstrumentationContext[] = [];
   const hooks: Record<string, ReturnType<typeof vi.fn>> = {
+    wrapHandler: vi.fn(),
     onBodyTooLarge: vi.fn(),
     onJsonParseFailed: vi.fn(),
     onVerificationSucceeded: vi.fn(),
@@ -2355,14 +2469,18 @@ describe("WebhookBuilder instrumentation", () => {
 
     it("should emit onJsonParseFailed for invalid JSON", async () => {
       const provider = createTestProvider();
-      const { instrumentation, hooks } = createInstrumentationRecorder();
+      const { instrumentation, hooks, contexts } =
+        createInstrumentationRecorder();
 
       const webhook = createWebhook(provider)
         .instrument(instrumentation)
         .event(testEvent, () => {});
 
       await webhook.process({
-        headers: { "x-test-event": "test.event" },
+        headers: {
+          "x-test-event": "test.event",
+          "x-test-delivery-id": "delivery-invalid-json",
+        },
         rawBody: "not valid json",
       });
 
@@ -2375,6 +2493,7 @@ describe("WebhookBuilder instrumentation", () => {
       expect(hooks.onCompleted).toHaveBeenCalledWith(
         expect.objectContaining({ status: 400, success: false }),
       );
+      expect(contexts[0]?.deliveryId).toBe("delivery-invalid-json");
     });
 
     it("should emit onEventUnhandled for 204 response", async () => {
@@ -2678,6 +2797,106 @@ describe("WebhookBuilder instrumentation", () => {
       expect(hooks.onCompleted).toHaveBeenCalledWith(
         expect.objectContaining({ status: 500 }),
       );
+    });
+
+    it("should let instrumentations wrap handler execution in registration order", async () => {
+      const order: string[] = [];
+      const webhook = createWebhook(
+        createTestProvider({ verification: "disabled" }),
+      )
+        .instrument([
+          {
+            onRequestStart() {
+              return {
+                async wrapHandler(next) {
+                  order.push("first:before");
+                  await next();
+                  order.push("first:after");
+                },
+              };
+            },
+          },
+          {
+            onRequestStart() {
+              return {
+                async wrapHandler(next) {
+                  order.push("second:before");
+                  await next();
+                  order.push("second:after");
+                },
+              };
+            },
+          },
+        ])
+        .event(testEvent, () => {
+          order.push("handler");
+        });
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(result.status).toBe(200);
+      expect(order).toEqual([
+        "first:before",
+        "second:before",
+        "handler",
+        "second:after",
+        "first:after",
+      ]);
+    });
+
+    it("should swallow wrapHandler errors without breaking processing", async () => {
+      const handler = vi.fn();
+      const webhook = createWebhook(
+        createTestProvider({ verification: "disabled" }),
+      )
+        .instrument({
+          onRequestStart() {
+            return {
+              wrapHandler() {
+                throw new Error("wrapper failed");
+              },
+            };
+          },
+        })
+        .event(testEvent, handler);
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(result.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("should preserve handler errors when wrapHandler throws after next", async () => {
+      const webhook = createWebhook(
+        createTestProvider({ verification: "disabled" }),
+      )
+        .instrument({
+          onRequestStart() {
+            return {
+              async wrapHandler(next) {
+                await next();
+                throw new Error("wrapper failed after next");
+              },
+            };
+          },
+        })
+        .event(testEvent, () => {
+          throw new Error("handler failed");
+        });
+
+      const result = await webhook.process({
+        headers: { "x-test-event": "test.event" },
+        rawBody: JSON.stringify(validPayload),
+      });
+
+      expect(result.status).toBe(500);
+      expect(result.body?.error).toBe("Handler execution failed");
     });
   });
 

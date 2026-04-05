@@ -604,7 +604,7 @@ const webhook = github()
 
 Instrumentation callbacks are isolated from webhook processing. If an instrumentation callback throws, webhook processing still continues.
 
-The instrumentation API is request-scoped: `onRequestStart(context)` can return a `WebhookRequestInstrumentation` object for downstream lifecycle callbacks such as verification failures, replay events, handler failures, and completion.
+The instrumentation API is request-scoped: `onRequestStart(context)` can return a `WebhookRequestInstrumentation` object for downstream lifecycle callbacks such as verification failures, replay events, handler failures, completion, and optional handler wrapping.
 
 ## API Reference
 
@@ -718,13 +718,33 @@ interface WebhookInstrumentation {
 }
 
 interface WebhookRequestInstrumentation {
-  onCompleted?(data: {
-    status: number;
-    durationMs: number;
-    success: boolean;
-  }): void;
+  wrapHandler?(
+    next: () => Promise<void>,
+    data: WebhookHandlerStartedData,
+  ): Promise<void> | void;
+  onBodyTooLarge?(data: WebhookBodyTooLargeData): void;
+  onJsonParseFailed?(data: WebhookJsonParseFailedData): void;
+  onVerificationSucceeded?(data: WebhookVerificationSucceededData): void;
+  onVerificationFailed?(data: WebhookVerificationFailedData): void;
+  onReplaySkipped?(data: WebhookReplaySkippedData): void;
+  onReplayFreshnessRejected?(data: WebhookReplayFreshnessRejectedData): void;
+  onReplayReserved?(data: WebhookReplayReservedData): void;
+  onReplayDuplicate?(data: WebhookReplayDuplicateData): void;
+  onReplayCommitted?(data: WebhookReplayCommittedData): void;
+  onReplayReleased?(data: WebhookReplayReleasedData): void;
+  onEventUnhandled?(data: WebhookEventUnhandledData): void;
+  onSchemaValidationSucceeded?(
+    data: WebhookSchemaValidationSucceededData,
+  ): void;
+  onSchemaValidationFailed?(data: WebhookSchemaValidationFailedData): void;
+  onHandlerStarted?(data: WebhookHandlerStartedData): void;
+  onHandlerSucceeded?(data: WebhookHandlerSucceededData): void;
+  onHandlerFailed?(data: WebhookHandlerFailedData): void;
+  onCompleted?(data: WebhookCompletedData): void;
 }
 ```
+
+When implementing `wrapHandler`, call `next()` at most once and await or return it.
 
 ## License
 
