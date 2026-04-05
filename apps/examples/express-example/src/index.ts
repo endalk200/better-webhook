@@ -1,12 +1,9 @@
 import express from "express";
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toExpress } from "@better-webhook/express";
 import { github } from "@better-webhook/github";
 import { issues, pull_request, push } from "@better-webhook/github/events";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { recall } from "@better-webhook/recall";
 import {
   bot_breakout_room_closed,
@@ -51,44 +48,18 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Create stats collectors for observability
-const githubStats = createWebhookStats();
-const ragieStats = createWebhookStats();
-const stripeStats = createWebhookStats();
-const recallStats = createWebhookStats();
 const githubReplayStore = createInMemoryReplayStore();
 const ragieReplayStore = createInMemoryReplayStore();
 const stripeReplayStore = createInMemoryReplayStore();
 const recallReplayStore = createInMemoryReplayStore();
 
-// Custom observer for logging webhook lifecycle events
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `📥 [${event.provider}] Webhook received (${event.rawBodyBytes} bytes)`,
-    );
-  },
-  onCompleted: (event) => {
-    const status = event.success ? "✓" : "✗";
-    console.log(
-      `📊 [${event.provider}] ${status} Completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-  onVerificationFailed: (event) => {
-    console.warn(`🔐 [${event.provider}] Verification failed: ${event.reason}`);
-  },
-  onHandlerFailed: (event) => {
-    console.error(
-      `💥 [${event.provider}] Handler ${event.handlerIndex} failed:`,
-      event.error.message,
-    );
-  },
-};
+const otelInstrumentation = createOpenTelemetryInstrumentation({
+  includeEventTypeAttribute: true,
+});
 
 // Create a GitHub webhook handler with observability
 const githubWebhook = github()
-  .observe(githubStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: githubReplayStore })
   .event(push, async (payload, context) => {
     console.log("📦 Push event received!");
@@ -127,8 +98,7 @@ const githubWebhook = github()
 
 // Create a Ragie webhook handler with observability
 const ragieWebhook = ragie()
-  .observe(ragieStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: ragieReplayStore })
   .event(document_status_updated, async (payload) => {
     console.log("📄 Document status updated!");
@@ -157,8 +127,7 @@ const ragieWebhook = ragie()
 
 // Create a Recall webhook handler with observability
 const recallWebhook = recall()
-  .observe(recallStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: recallReplayStore })
   .event(participant_events_join, async (payload, context) => {
     console.log("🟢 Recall participant joined");
@@ -296,8 +265,7 @@ const recallWebhook = recall()
 
 // Create a Stripe webhook handler with observability
 const stripeWebhook = stripe()
-  .observe(stripeStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: stripeReplayStore })
   .event(charge_failed, async (payload) => {
     console.log("💳 Stripe charge failed");
@@ -377,17 +345,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Stats endpoint - demonstrates observability
-app.get("/stats", (_req, res) => {
-  res.json({
-    github: githubStats.snapshot(),
-    ragie: ragieStats.snapshot(),
-    stripe: stripeStats.snapshot(),
-    recall: recallStats.snapshot(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // Start the server
 app.listen(PORT, () => {
   console.log(`
@@ -400,7 +357,6 @@ app.listen(PORT, () => {
    - Recall: http://localhost:${PORT}/webhooks/recall
    
    Health check: http://localhost:${PORT}/health
-   Stats:        http://localhost:${PORT}/stats
 
    Environment variables:
    - GITHUB_WEBHOOK_SECRET (for GitHub webhooks)

@@ -43,50 +43,22 @@ import {
   payment_intent_succeeded,
 } from "@better-webhook/stripe/events";
 import { toNestJS, type NestJSResult } from "@better-webhook/nestjs";
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
 // Extend Request type to include rawBody
 interface RawBodyRequest extends Request {
   rawBody?: Buffer;
 }
 
-// Create stats collectors for observability
-const githubStats = createWebhookStats();
-const ragieStats = createWebhookStats();
-const stripeStats = createWebhookStats();
-const recallStats = createWebhookStats();
 const githubReplayStore = createInMemoryReplayStore();
 const ragieReplayStore = createInMemoryReplayStore();
 const stripeReplayStore = createInMemoryReplayStore();
 const recallReplayStore = createInMemoryReplayStore();
 
-// Custom observer for logging webhook lifecycle events
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `📥 [${event.provider}] Webhook received (${event.rawBodyBytes} bytes)`,
-    );
-  },
-  onCompleted: (event) => {
-    const status = event.success ? "✓" : "✗";
-    console.log(
-      `📊 [${event.provider}] ${status} Completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-  onVerificationFailed: (event) => {
-    console.warn(`🔐 [${event.provider}] Verification failed: ${event.reason}`);
-  },
-  onHandlerFailed: (event) => {
-    console.error(
-      `💥 [${event.provider}] Handler ${event.handlerIndex} failed:`,
-      event.error.message,
-    );
-  },
-};
+const otelInstrumentation = createOpenTelemetryInstrumentation({
+  includeEventTypeAttribute: true,
+});
 
 const logRecallParticipantEvent = async (
   payload: { data: { participant: { name: string | null } } },
@@ -117,8 +89,7 @@ export class WebhooksController {
 
   // Create a GitHub webhook handler with observability
   private githubWebhook = github()
-    .observe(githubStats.observer)
-    .observe(loggingObserver)
+    .instrument(otelInstrumentation)
     .withReplayProtection({ store: githubReplayStore })
     .event(push, async (payload, context) => {
       console.log("📦 Push event received!");
@@ -157,8 +128,7 @@ export class WebhooksController {
 
   // Create a Ragie webhook handler with observability
   private ragieWebhook = ragie()
-    .observe(ragieStats.observer)
-    .observe(loggingObserver)
+    .instrument(otelInstrumentation)
     .withReplayProtection({ store: ragieReplayStore })
     .event(document_status_updated, async (payload) => {
       console.log("📄 Document status updated!");
@@ -186,8 +156,7 @@ export class WebhooksController {
     });
 
   private recallWebhook = recall()
-    .observe(recallStats.observer)
-    .observe(loggingObserver)
+    .instrument(otelInstrumentation)
     .withReplayProtection({ store: recallReplayStore })
     .event(participant_events_join, async (payload, context) => {
       await logRecallParticipantEvent(payload, context);
@@ -237,8 +206,7 @@ export class WebhooksController {
     });
 
   private stripeWebhook = stripe()
-    .observe(stripeStats.observer)
-    .observe(loggingObserver)
+    .instrument(otelInstrumentation)
     .withReplayProtection({ store: stripeReplayStore })
     .event(charge_failed, async (payload) => {
       console.log("💳 Stripe charge failed");
@@ -427,17 +395,6 @@ export class WebhooksController {
   healthCheck(): object {
     return {
       status: "ok",
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  @Get("stats")
-  getStats(): object {
-    return {
-      github: githubStats.snapshot(),
-      ragie: ragieStats.snapshot(),
-      stripe: stripeStats.snapshot(),
-      recall: recallStats.snapshot(),
       timestamp: new Date().toISOString(),
     };
   }

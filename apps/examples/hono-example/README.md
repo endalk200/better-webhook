@@ -37,7 +37,6 @@ pnpm --filter @better-webhook/hono-example dev
 - `POST /webhooks/ragie` - Ragie webhook endpoint
 - `POST /webhooks/recall` - Recall.ai webhook endpoint
 - `GET /health` - Health check
-- `GET /stats` - In-memory webhook stats
 
 ## Signed Testing
 

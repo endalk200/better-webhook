@@ -15,6 +15,7 @@
     "@better-webhook/core": "workspace:*",
     "@better-webhook/express": "workspace:*",
     "@better-webhook/github": "workspace:*",
+    "@better-webhook/otel": "workspace:*",
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "express": "^4.21.2",

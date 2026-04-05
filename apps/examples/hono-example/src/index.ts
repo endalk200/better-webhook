@@ -1,12 +1,9 @@
 import { serve } from "@hono/node-server";
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { github } from "@better-webhook/github";
 import { issues, pull_request, push } from "@better-webhook/github/events";
 import { toHonoNode } from "@better-webhook/hono";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { recall } from "@better-webhook/recall";
 import {
   bot_breakout_room_closed,
@@ -52,37 +49,14 @@ import { Hono } from "hono";
 const app = new Hono();
 const port = Number(process.env.PORT ?? "3004");
 
-const githubStats = createWebhookStats();
-const ragieStats = createWebhookStats();
-const stripeStats = createWebhookStats();
-const recallStats = createWebhookStats();
 const githubReplayStore = createInMemoryReplayStore();
 const ragieReplayStore = createInMemoryReplayStore();
 const stripeReplayStore = createInMemoryReplayStore();
 const recallReplayStore = createInMemoryReplayStore();
 
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `[${event.provider}] webhook received (${event.rawBodyBytes} bytes)`,
-    );
-  },
-  onCompleted: (event) => {
-    const status = event.success ? "ok" : "failed";
-    console.log(
-      `[${event.provider}] ${status}: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-  onVerificationFailed: (event) => {
-    console.warn(`[${event.provider}] verification failed: ${event.reason}`);
-  },
-  onHandlerFailed: (event) => {
-    console.error(
-      `[${event.provider}] handler ${event.handlerIndex} failed:`,
-      event.error.message,
-    );
-  },
-};
+const otelInstrumentation = createOpenTelemetryInstrumentation({
+  includeEventTypeAttribute: true,
+});
 
 const logRecallParticipantEvent = async (
   payload: { data: { participant: { name: string | null } } },
@@ -101,8 +75,7 @@ const logRecallBotCodeEvent = async (
 };
 
 const githubWebhook = github()
-  .observe(githubStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: githubReplayStore })
   .event(push, async (payload, context) => {
     console.log("Push event received");
@@ -134,8 +107,7 @@ const githubWebhook = github()
   });
 
 const ragieWebhook = ragie()
-  .observe(ragieStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: ragieReplayStore })
   .event(document_status_updated, async (payload) => {
     console.log("Document status updated");
@@ -163,8 +135,7 @@ const ragieWebhook = ragie()
   });
 
 const recallWebhook = recall()
-  .observe(recallStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: recallReplayStore })
   .event(participant_events_join, async (payload, context) => {
     await logRecallParticipantEvent(payload, context);
@@ -214,8 +185,7 @@ const recallWebhook = recall()
   });
 
 const stripeWebhook = stripe()
-  .observe(stripeStats.observer)
-  .observe(loggingObserver)
+  .instrument(otelInstrumentation)
   .withReplayProtection({ store: stripeReplayStore })
   .event(charge_failed, async (payload) => {
     console.log("Stripe charge failed");
@@ -287,16 +257,6 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get("/stats", (c) => {
-  return c.json({
-    github: githubStats.snapshot(),
-    ragie: ragieStats.snapshot(),
-    stripe: stripeStats.snapshot(),
-    recall: recallStats.snapshot(),
-    timestamp: new Date().toISOString(),
-  });
-});
-
 serve(
   {
     fetch: app.fetch,
@@ -318,7 +278,6 @@ serve(
       `Recall endpoint: http://localhost:${info.port}/webhooks/recall`,
     );
     console.log(`Health check:    http://localhost:${info.port}/health`);
-    console.log(`Stats:           http://localhost:${info.port}/stats`);
     console.log("Environment variables:");
     console.log("- GITHUB_WEBHOOK_SECRET");
     console.log("- RAGIE_WEBHOOK_SECRET");
