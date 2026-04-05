@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.12.1
+
+### Patch Changes
+
+- 6163009: feat: introduce webhook instrumentation API for enhanced observability
+
 ## 0.12.0
 
 ### Minor Changes

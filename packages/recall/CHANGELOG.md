@@ -1,5 +1,12 @@
 # @better-webhook/recall
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [6163009]
+  - @better-webhook/core@0.12.1
+
 ## 0.3.1
 
 ### Patch Changes
