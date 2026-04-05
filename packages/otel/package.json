@@ -52,12 +52,15 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@better-webhook/core": "workspace:*",
+    "@better-webhook/core": "workspace:*"
+  },
+  "peerDependencies": {
     "@opentelemetry/api": "^1.9.0"
   },
   "devDependencies": {
     "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
     "@types/node": "^24.3.1",
     "eslint": "^9.35.0",
     "tsup": "^8.5.0",

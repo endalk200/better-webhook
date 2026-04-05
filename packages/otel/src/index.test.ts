@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { metrics, trace } from "@opentelemetry/api";
 import {
   createWebhook,
   defineEvent,
@@ -96,6 +97,8 @@ const telemetry = vi.hoisted(() => {
     spans,
     counterCalls,
     histogramCalls,
+    activeContext: {},
+    withCalls: [] as unknown[],
     tracer: {
       startSpan: vi.fn(
         (name: string, options?: { attributes?: Record<string, unknown> }) => {
@@ -121,19 +124,25 @@ const telemetry = vi.hoisted(() => {
       spans.length = 0;
       counterCalls.clear();
       histogramCalls.clear();
+      this.withCalls.length = 0;
     },
   };
 });
 
 vi.mock("@opentelemetry/api", () => ({
   context: {
-    active: () => ({}),
+    active: () => telemetry.activeContext,
+    with: (_context: unknown, fn: () => Promise<void>) => {
+      telemetry.withCalls.push(_context);
+      return fn();
+    },
   },
   metrics: {
-    getMeter: () => telemetry.meter,
+    getMeter: vi.fn(() => telemetry.meter),
   },
   trace: {
-    getTracer: () => telemetry.tracer,
+    getTracer: vi.fn(() => telemetry.tracer),
+    setSpan: vi.fn((context: unknown, span: unknown) => ({ context, span })),
   },
   SpanKind: {
     INTERNAL: 0,
@@ -173,6 +182,7 @@ function createTestProvider(options?: {
 describe("createOpenTelemetryInstrumentation", () => {
   beforeEach(() => {
     telemetry.reset();
+    vi.clearAllMocks();
   });
 
   it("creates one processing span and completion metrics", async () => {
@@ -374,5 +384,78 @@ describe("createOpenTelemetryInstrumentation", () => {
 
     const span = telemetry.spans[0]!;
     expect(span.attributes["better_webhook.delivery_id"]).toBe("delivery-123");
+  });
+
+  it("acquires tracer and meter lazily when requests are processed", async () => {
+    const instrumentation = createOpenTelemetryInstrumentation();
+
+    expect(trace.getTracer).not.toHaveBeenCalled();
+    expect(metrics.getMeter).not.toHaveBeenCalled();
+
+    const webhook = createWebhook(createTestProvider())
+      .instrument(instrumentation)
+      .event(testEvent, () => {});
+
+    await webhook.process({
+      headers: { "x-test-event": "test.event" },
+      rawBody: JSON.stringify({ id: 1 }),
+      secret: "test-secret",
+    });
+
+    expect(trace.getTracer).toHaveBeenCalledTimes(1);
+    expect(metrics.getMeter).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs handler execution inside the active processing span context", async () => {
+    const contextsSeen: unknown[] = [];
+    const instrumentation = createOpenTelemetryInstrumentation();
+    const requestInstrumentation = instrumentation.onRequestStart?.({
+      provider: "test",
+      rawBodyBytes: 8,
+      receivedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    expect(requestInstrumentation?.wrapHandler).toBeTypeOf("function");
+
+    await requestInstrumentation?.wrapHandler?.(
+      async () => {
+        contextsSeen.push(telemetry.activeContext);
+      },
+      {
+        handlerIndex: 0,
+        handlerCount: 1,
+      },
+    );
+
+    expect(telemetry.withCalls).toHaveLength(1);
+    expect(telemetry.withCalls[0]).toMatchObject({
+      context: telemetry.activeContext,
+      span: telemetry.spans[0],
+    });
+    expect(contextsSeen).toEqual([telemetry.activeContext]);
+  });
+
+  it("keeps deliveryId completion attributes for invalid JSON when opted in", async () => {
+    const webhook = createWebhook(createTestProvider())
+      .instrument(
+        createOpenTelemetryInstrumentation({
+          includeDeliveryIdAttribute: true,
+        }),
+      )
+      .event(testEvent, () => {});
+
+    await webhook.process({
+      headers: {
+        "x-test-event": "test.event",
+        "x-test-delivery-id": "delivery-invalid-json",
+      },
+      rawBody: "not json",
+      secret: "test-secret",
+    });
+
+    expect(telemetry.spans[0]?.attributes["better_webhook.delivery_id"]).toBe(
+      "delivery-invalid-json",
+    );
   });
 });
