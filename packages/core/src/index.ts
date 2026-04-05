@@ -421,424 +421,129 @@ export interface ReplayProtectionOptions {
 }
 
 // ============================================================================
-// Observability Types
+// Instrumentation Types
 // ============================================================================
 
-/**
- * Common fields included in all observation events
- */
-export interface ObservationBase {
-  /** Provider name (e.g., "github", "stripe") - always present */
+export interface WebhookInstrumentationContext {
   provider: string;
-
-  /** Event type (e.g., "push", "order.created") - present when known */
   eventType?: string;
-
-  /** Delivery ID from provider headers - present when available */
   deliveryId?: string;
-
-  /** Size of the raw request body in bytes */
   rawBodyBytes: number;
-
-  /** High-resolution timestamp when processing started (from performance.now()) */
-  startTime: number;
-
-  /** Timestamp when the webhook was received */
   receivedAt: Date;
 }
 
-/**
- * Emitted when a webhook request is first received
- */
-export interface RequestReceivedEvent extends ObservationBase {
-  type: "request_received";
-}
-
-/**
- * Emitted when JSON parsing fails
- */
-export interface JsonParseFailedEvent extends ObservationBase {
-  type: "json_parse_failed";
-  /** Duration in milliseconds */
-  durationMs: number;
-  /** The parse error message */
-  error: string;
-}
-
-/**
- * Emitted when no handler is registered for the event type.
- */
-export interface EventUnhandledEvent extends ObservationBase {
-  type: "event_unhandled";
-  /** Duration in milliseconds */
-  durationMs: number;
-}
-
-/**
- * Emitted when the request body exceeds the configured size limit
- */
-export interface BodyTooLargeEvent extends ObservationBase {
-  type: "body_too_large";
-  /** Configured maximum body size in bytes */
+export interface WebhookBodyTooLargeData {
   maxBodyBytes: number;
 }
 
-/**
- * Emitted when signature verification succeeds
- */
-export interface VerificationSucceededEvent extends ObservationBase {
-  type: "verification_succeeded";
-  /** Duration of verification in milliseconds */
-  verifyDurationMs: number;
-}
-
-/**
- * Emitted when signature verification fails
- */
-export interface VerificationFailedEvent extends ObservationBase {
-  type: "verification_failed";
-  /** Duration of verification in milliseconds */
-  verifyDurationMs: number;
-  /** Reason for failure */
-  reason: string;
-}
-
-/**
- * Emitted when schema validation succeeds
- */
-export interface SchemaValidationSucceededEvent extends ObservationBase {
-  type: "schema_validation_succeeded";
-  /** Duration of validation in milliseconds */
-  validateDurationMs: number;
-}
-
-/**
- * Emitted when schema validation fails
- */
-export interface SchemaValidationFailedEvent extends ObservationBase {
-  type: "schema_validation_failed";
-  /** Duration of validation in milliseconds */
-  validateDurationMs: number;
-  /** Validation error message */
+export interface WebhookJsonParseFailedData {
   error: string;
+  durationMs: number;
 }
 
-/**
- * Emitted when a handler starts execution
- */
-export interface HandlerStartedEvent extends ObservationBase {
-  type: "handler_started";
-  /** Zero-based index of the handler in the chain */
-  handlerIndex: number;
-  /** Total number of handlers registered for this event */
-  handlerCount: number;
+export interface WebhookVerificationSucceededData {
+  durationMs: number;
 }
 
-/**
- * Emitted when a handler completes successfully
- */
-export interface HandlerSucceededEvent extends ObservationBase {
-  type: "handler_succeeded";
-  /** Zero-based index of the handler in the chain */
-  handlerIndex: number;
-  /** Total number of handlers registered for this event */
-  handlerCount: number;
-  /** Duration of this handler in milliseconds */
-  handlerDurationMs: number;
+export interface WebhookVerificationFailedData {
+  reason: string;
+  durationMs: number;
 }
 
-/**
- * Emitted when a handler throws an error
- */
-export interface HandlerFailedEvent extends ObservationBase {
-  type: "handler_failed";
-  /** Zero-based index of the handler in the chain */
-  handlerIndex: number;
-  /** Total number of handlers registered for this event */
-  handlerCount: number;
-  /** Duration of this handler in milliseconds */
-  handlerDurationMs: number;
-  /** The error that was thrown */
-  error: Error;
-}
-
-/**
- * Emitted when replay protection is skipped because no replay key can be derived
- */
-export interface ReplaySkippedEvent extends ObservationBase {
-  type: "replay_skipped";
+export interface WebhookReplaySkippedData {
   reason: "missing_key";
 }
 
-/**
- * Emitted when replay freshness policy rejects a timestamp
- */
-export interface ReplayFreshnessRejectedEvent extends ObservationBase {
-  type: "replay_freshness_rejected";
+export interface WebhookReplayFreshnessRejectedData {
   timestamp: number;
   toleranceSeconds: number;
 }
 
-/**
- * Emitted when replay key reservation succeeds
- */
-export interface ReplayReservedEvent extends ObservationBase {
-  type: "replay_reserved";
+export interface WebhookReplayReservedData {
   replayKey: string;
   inFlightTtlSeconds: number;
-  storeMode: "atomic";
 }
 
-/**
- * Emitted when replay protection detects a duplicate delivery
- */
-export interface ReplayDuplicateEvent extends ObservationBase {
-  type: "replay_duplicate";
+export interface WebhookReplayDuplicateData {
   replayKey: string;
   behavior: ReplayDuplicateBehavior;
 }
 
-/**
- * Emitted when replay key is committed after successful processing
- */
-export interface ReplayCommittedEvent extends ObservationBase {
-  type: "replay_committed";
+export interface WebhookReplayCommittedData {
   replayKey: string;
   ttlSeconds: number;
 }
 
 export type ReplayReleaseReason = "processing_failed" | "event_unhandled";
 
-/**
- * Emitted when replay key reservation is released after processing does not commit
- */
-export interface ReplayReleasedEvent extends ObservationBase {
-  type: "replay_released";
+export interface WebhookReplayReleasedData {
   replayKey: string;
   reason: ReplayReleaseReason;
 }
 
-/**
- * Emitted when webhook processing completes (always emitted)
- */
-export interface CompletedEvent extends ObservationBase {
-  type: "completed";
-  /** Final HTTP status code */
-  status: number;
-  /** Total duration in milliseconds */
+export interface WebhookEventUnhandledData {
   durationMs: number;
-  /** Whether processing was successful (status 200 or 204) */
+}
+
+export interface WebhookSchemaValidationSucceededData {
+  durationMs: number;
+}
+
+export interface WebhookSchemaValidationFailedData {
+  durationMs: number;
+  error: string;
+}
+
+export interface WebhookHandlerStartedData {
+  handlerIndex: number;
+  handlerCount: number;
+}
+
+export interface WebhookHandlerSucceededData {
+  handlerIndex: number;
+  handlerCount: number;
+  durationMs: number;
+}
+
+export interface WebhookHandlerFailedData {
+  handlerIndex: number;
+  handlerCount: number;
+  durationMs: number;
+  error: Error;
+}
+
+export interface WebhookCompletedData {
+  status: number;
+  durationMs: number;
   success: boolean;
 }
 
-/**
- * Union of all observation event types
- */
-export type ObservationEvent =
-  | RequestReceivedEvent
-  | JsonParseFailedEvent
-  | EventUnhandledEvent
-  | BodyTooLargeEvent
-  | VerificationSucceededEvent
-  | VerificationFailedEvent
-  | SchemaValidationSucceededEvent
-  | SchemaValidationFailedEvent
-  | HandlerStartedEvent
-  | HandlerSucceededEvent
-  | HandlerFailedEvent
-  | ReplaySkippedEvent
-  | ReplayFreshnessRejectedEvent
-  | ReplayReservedEvent
-  | ReplayDuplicateEvent
-  | ReplayCommittedEvent
-  | ReplayReleasedEvent
-  | CompletedEvent;
-
-/**
- * Observer interface for webhook lifecycle events.
- * All methods are optional - implement only the ones you need.
- *
- * @example
- * ```ts
- * const observer: WebhookObserver = {
- *   onRequestReceived: (event) => {
- *     console.log(`Received webhook from ${event.provider}`);
- *   },
- *   onCompleted: (event) => {
- *     metrics.histogram('webhook_duration_ms', event.durationMs, {
- *       provider: event.provider,
- *       eventType: event.eventType,
- *       status: event.status,
- *     });
- *   },
- * };
- *
- * const webhook = github()
- *   .observe(observer)
- *   .event(push, handler);
- * ```
- */
-export interface WebhookObserver {
-  /** Called when a webhook request is first received */
-  onRequestReceived?: (event: RequestReceivedEvent) => void;
-
-  /** Called when JSON parsing fails */
-  onJsonParseFailed?: (event: JsonParseFailedEvent) => void;
-
-  /** Called when no handler is registered for the event type */
-  onEventUnhandled?: (event: EventUnhandledEvent) => void;
-
-  /** Called when request body exceeds the configured size limit */
-  onBodyTooLarge?: (event: BodyTooLargeEvent) => void;
-
-  /** Called when signature verification succeeds */
-  onVerificationSucceeded?: (event: VerificationSucceededEvent) => void;
-
-  /** Called when signature verification fails */
-  onVerificationFailed?: (event: VerificationFailedEvent) => void;
-
-  /** Called when schema validation succeeds */
-  onSchemaValidationSucceeded?: (event: SchemaValidationSucceededEvent) => void;
-
-  /** Called when schema validation fails */
-  onSchemaValidationFailed?: (event: SchemaValidationFailedEvent) => void;
-
-  /** Called when a handler starts execution */
-  onHandlerStarted?: (event: HandlerStartedEvent) => void;
-
-  /** Called when a handler completes successfully */
-  onHandlerSucceeded?: (event: HandlerSucceededEvent) => void;
-
-  /** Called when a handler throws an error */
-  onHandlerFailed?: (event: HandlerFailedEvent) => void;
-
-  /** Called when replay protection is skipped due to missing key material */
-  onReplaySkipped?: (event: ReplaySkippedEvent) => void;
-
-  /** Called when replay freshness policy rejects a stale/future timestamp */
-  onReplayFreshnessRejected?: (event: ReplayFreshnessRejectedEvent) => void;
-
-  /** Called when replay key reservation succeeds */
-  onReplayReserved?: (event: ReplayReservedEvent) => void;
-
-  /** Called when a duplicate replay key is detected */
-  onReplayDuplicate?: (event: ReplayDuplicateEvent) => void;
-
-  /** Called when replay key is committed after successful processing */
-  onReplayCommitted?: (event: ReplayCommittedEvent) => void;
-
-  /** Called when replay reservation is released after failed processing */
-  onReplayReleased?: (event: ReplayReleasedEvent) => void;
-
-  /** Called when webhook processing completes (always called) */
-  onCompleted?: (event: CompletedEvent) => void;
+export interface WebhookRequestInstrumentation {
+  onBodyTooLarge?(data: WebhookBodyTooLargeData): void;
+  onJsonParseFailed?(data: WebhookJsonParseFailedData): void;
+  onVerificationSucceeded?(data: WebhookVerificationSucceededData): void;
+  onVerificationFailed?(data: WebhookVerificationFailedData): void;
+  onReplaySkipped?(data: WebhookReplaySkippedData): void;
+  onReplayFreshnessRejected?(data: WebhookReplayFreshnessRejectedData): void;
+  onReplayReserved?(data: WebhookReplayReservedData): void;
+  onReplayDuplicate?(data: WebhookReplayDuplicateData): void;
+  onReplayCommitted?(data: WebhookReplayCommittedData): void;
+  onReplayReleased?(data: WebhookReplayReleasedData): void;
+  onEventUnhandled?(data: WebhookEventUnhandledData): void;
+  onSchemaValidationSucceeded?(
+    data: WebhookSchemaValidationSucceededData,
+  ): void;
+  onSchemaValidationFailed?(data: WebhookSchemaValidationFailedData): void;
+  onHandlerStarted?(data: WebhookHandlerStartedData): void;
+  onHandlerSucceeded?(data: WebhookHandlerSucceededData): void;
+  onHandlerFailed?(data: WebhookHandlerFailedData): void;
+  onCompleted?(data: WebhookCompletedData): void;
 }
 
-/**
- * Helper to create a simple in-memory stats collector
- *
- * @example
- * ```ts
- * const stats = createWebhookStats();
- *
- * const webhook = github()
- *   .observe(stats.observer)
- *   .event(push, handler);
- *
- * // Later, get stats
- * console.log(stats.snapshot());
- * // {
- * //   totalRequests: 150,
- * //   successCount: 145,
- * //   errorCount: 5,
- * //   byProvider: { github: { total: 150, success: 145, error: 5 } },
- * //   byEventType: { push: { total: 100, success: 98, error: 2 }, ... },
- * //   avgDurationMs: 23.5,
- * // }
- * ```
- */
-export function createWebhookStats(): {
-  observer: WebhookObserver;
-  snapshot: () => WebhookStatsSnapshot;
-  reset: () => void;
-} {
-  let totalRequests = 0;
-  let successCount = 0;
-  let errorCount = 0;
-  let totalDurationMs = 0;
-  const byProvider: Record<
-    string,
-    { total: number; success: number; error: number }
-  > = {};
-  const byEventType: Record<
-    string,
-    { total: number; success: number; error: number }
-  > = {};
-
-  const observer: WebhookObserver = {
-    onCompleted: (event) => {
-      totalRequests++;
-      totalDurationMs += event.durationMs;
-
-      if (event.success) {
-        successCount++;
-      } else {
-        errorCount++;
-      }
-
-      // Track by provider
-      let providerStats = byProvider[event.provider];
-      if (!providerStats) {
-        providerStats = { total: 0, success: 0, error: 0 };
-        byProvider[event.provider] = providerStats;
-      }
-      providerStats.total++;
-      if (event.success) {
-        providerStats.success++;
-      } else {
-        providerStats.error++;
-      }
-
-      // Track by event type (if known)
-      if (event.eventType) {
-        let eventStats = byEventType[event.eventType];
-        if (!eventStats) {
-          eventStats = { total: 0, success: 0, error: 0 };
-          byEventType[event.eventType] = eventStats;
-        }
-        eventStats.total++;
-        if (event.success) {
-          eventStats.success++;
-        } else {
-          eventStats.error++;
-        }
-      }
-    },
-  };
-
-  const snapshot = (): WebhookStatsSnapshot => ({
-    totalRequests,
-    successCount,
-    errorCount,
-    byProvider: { ...byProvider },
-    byEventType: { ...byEventType },
-    avgDurationMs: totalRequests > 0 ? totalDurationMs / totalRequests : 0,
-  });
-
-  const reset = () => {
-    totalRequests = 0;
-    successCount = 0;
-    errorCount = 0;
-    totalDurationMs = 0;
-    for (const key of Object.keys(byProvider)) {
-      delete byProvider[key];
-    }
-    for (const key of Object.keys(byEventType)) {
-      delete byEventType[key];
-    }
-  };
-
-  return { observer, snapshot, reset };
+export interface WebhookInstrumentation {
+  onRequestStart?(
+    context: WebhookInstrumentationContext,
+  ): WebhookRequestInstrumentation | void;
 }
 
 const DEFAULT_REPLAY_TTL_SECONDS = 24 * 60 * 60;
@@ -1019,21 +724,6 @@ export function createInMemoryReplayStore(
   options?: InMemoryReplayStoreOptions,
 ): ReplayStore {
   return new InMemoryReplayStore(options);
-}
-
-/**
- * Snapshot of webhook statistics
- */
-export interface WebhookStatsSnapshot {
-  totalRequests: number;
-  successCount: number;
-  errorCount: number;
-  byProvider: Record<string, { total: number; success: number; error: number }>;
-  byEventType: Record<
-    string,
-    { total: number; success: number; error: number }
-  >;
-  avgDurationMs: number;
 }
 
 // ============================================================================
@@ -1350,7 +1040,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   private errorHandler?: ErrorHandler;
   private verificationFailedHandler?: VerificationFailedHandler;
   private maxBodyBytesLimit?: number;
-  private readonly observers: WebhookObserver[] = [];
+  private readonly instrumentations: WebhookInstrumentation[] = [];
   private replayProtection?: {
     store: ReplayStore;
     policy: ResolvedReplayPolicy;
@@ -1361,38 +1051,17 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
   }
 
   /**
-   * Register an observer for webhook lifecycle events
-   * Returns a new builder instance for immutable chaining
-   *
-   * @param observer - The observer to register (or array of observers)
-   *
-   * @example
-   * ```ts
-   * const stats = createWebhookStats();
-   *
-   * const webhook = github()
-   *   .observe(stats.observer)
-   *   .event(push, handler);
-   *
-   * // Custom observer
-   * const webhook = github()
-   *   .observe({
-   *     onCompleted: (event) => {
-   *       metrics.histogram('webhook_duration_ms', event.durationMs, {
-   *         provider: event.provider,
-   *         eventType: event.eventType,
-   *       });
-   *     },
-   *   })
-   *   .event(push, handler);
-   * ```
+   * Register instrumentation for webhook lifecycle events.
+   * Returns a new builder instance for immutable chaining.
    */
-  observe(
-    observer: WebhookObserver | WebhookObserver[],
+  instrument(
+    instrumentation: WebhookInstrumentation | WebhookInstrumentation[],
   ): WebhookBuilder<TProviderBrand> {
     const newBuilder = this.clone();
-    const observersToAdd = Array.isArray(observer) ? observer : [observer];
-    newBuilder.observers.push(...observersToAdd);
+    const instrumentationsToAdd = Array.isArray(instrumentation)
+      ? instrumentation
+      : [instrumentation];
+    newBuilder.instrumentations.push(...instrumentationsToAdd);
     return newBuilder;
   }
 
@@ -1553,7 +1222,6 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
    */
   async process(options: ProcessOptions): Promise<ProcessResult> {
     const { rawBody, secret, maxBodyBytes } = options;
-    const startTime = performance.now();
     const receivedAt = new Date();
 
     // Normalize headers to lowercase
@@ -1564,18 +1232,16 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         ? Buffer.byteLength(rawBody, "utf-8")
         : rawBody.byteLength;
 
-    // Helper to create base observation fields
-    const createBase = (
-      eventType?: string,
-      deliveryId?: string,
-    ): ObservationBase => ({
+    const instrumentationContext: WebhookInstrumentationContext = {
       provider: this.provider.name,
-      eventType,
-      deliveryId,
       rawBodyBytes,
-      startTime,
       receivedAt,
-    });
+    };
+
+    const requestStartTime = performance.now();
+    const requestInstrumentations = this.createRequestInstrumentations(
+      instrumentationContext,
+    );
 
     let parsedBody: unknown;
     let reservedReplayKey: string | undefined;
@@ -1589,10 +1255,10 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       deliveryId?: string,
       body?: { ok: boolean; error?: string },
     ): ProcessResult => {
-      const durationMs = performance.now() - startTime;
-      this.emit("onCompleted", {
-        ...createBase(eventType, deliveryId),
-        type: "completed",
+      const durationMs = performance.now() - requestStartTime;
+      instrumentationContext.eventType = eventType;
+      instrumentationContext.deliveryId = deliveryId;
+      this.emitRequestInstrumentation(requestInstrumentations, "onCompleted", {
         status,
         durationMs,
         success: status === 200 || status === 204,
@@ -1653,21 +1319,25 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
           options?.commitReplayKey ?? (status === 200 || status === 204);
         if (shouldCommitReplay) {
           await replayStore.commit(replayKey, replayPolicy.ttlSeconds);
-          this.emit("onReplayCommitted", {
-            ...createBase(eventType, deliveryId),
-            type: "replay_committed",
-            replayKey,
-            ttlSeconds: replayPolicy.ttlSeconds,
-          });
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onReplayCommitted",
+            {
+              replayKey,
+              ttlSeconds: replayPolicy.ttlSeconds,
+            },
+          );
         } else {
           const releaseReason = options?.releaseReason ?? "processing_failed";
           await replayStore.release(replayKey);
-          this.emit("onReplayReleased", {
-            ...createBase(eventType, deliveryId),
-            type: "replay_released",
-            replayKey,
-            reason: releaseReason,
-          });
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onReplayReleased",
+            {
+              replayKey,
+              reason: releaseReason,
+            },
+          );
         }
         return undefined;
       } catch (error) {
@@ -1697,14 +1367,9 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       return complete(status, eventType, deliveryId, body);
     };
 
-    // Emit request received
-    this.emit("onRequestReceived", {
-      ...createBase(),
-      type: "request_received",
-    });
-
     const effectiveMaxBodyBytes = maxBodyBytes ?? this.maxBodyBytesLimit;
     const deliveryId = this.provider.getDeliveryId(headers);
+    instrumentationContext.deliveryId = deliveryId;
     if (
       effectiveMaxBodyBytes !== undefined &&
       (!Number.isInteger(effectiveMaxBodyBytes) || effectiveMaxBodyBytes <= 0)
@@ -1715,11 +1380,13 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       effectiveMaxBodyBytes !== undefined &&
       rawBodyBytes > effectiveMaxBodyBytes
     ) {
-      this.emit("onBodyTooLarge", {
-        ...createBase(undefined, deliveryId),
-        type: "body_too_large",
-        maxBodyBytes: effectiveMaxBodyBytes,
-      });
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onBodyTooLarge",
+        {
+          maxBodyBytes: effectiveMaxBodyBytes,
+        },
+      );
       return complete(413, undefined, deliveryId, {
         ok: false,
         error: "Payload too large",
@@ -1737,12 +1404,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     } catch (e) {
       const durationMs = performance.now() - parseStartTime;
       const error = e instanceof Error ? e.message : "Invalid JSON";
-      this.emit("onJsonParseFailed", {
-        ...createBase(),
-        type: "json_parse_failed",
-        durationMs,
-        error,
-      });
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onJsonParseFailed",
+        {
+          durationMs,
+          error,
+        },
+      );
       return complete(400, undefined, undefined, {
         ok: false,
         error: "Invalid JSON body",
@@ -1751,6 +1420,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
 
     // Get event type (pass parsed body for providers that extract type from body)
     const eventType = this.provider.getEventType(headers, parsedBody);
+    instrumentationContext.eventType = eventType;
 
     // Resolve secret: options.secret → provider.secret → env vars
     const resolvedSecret =
@@ -1761,12 +1431,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       if (!resolvedSecret) {
         const reason = "Missing webhook secret";
 
-        this.emit("onVerificationFailed", {
-          ...createBase(eventType, deliveryId),
-          type: "verification_failed",
-          verifyDurationMs: 0,
-          reason,
-        });
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onVerificationFailed",
+          {
+            reason,
+            durationMs: 0,
+          },
+        );
 
         if (this.verificationFailedHandler) {
           try {
@@ -1789,12 +1461,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       if (!isValid) {
         const reason = "Signature verification failed";
 
-        this.emit("onVerificationFailed", {
-          ...createBase(eventType, deliveryId),
-          type: "verification_failed",
-          verifyDurationMs,
-          reason,
-        });
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onVerificationFailed",
+          {
+            reason,
+            durationMs: verifyDurationMs,
+          },
+        );
 
         if (this.verificationFailedHandler) {
           try {
@@ -1810,11 +1484,13 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         });
       }
 
-      this.emit("onVerificationSucceeded", {
-        ...createBase(eventType, deliveryId),
-        type: "verification_succeeded",
-        verifyDurationMs,
-      });
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onVerificationSucceeded",
+        {
+          durationMs: verifyDurationMs,
+        },
+      );
     }
 
     if (this.replayProtection) {
@@ -1840,12 +1516,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
           const nowSeconds = Math.floor(Date.now() / 1000);
           const ageInSeconds = Math.abs(nowSeconds - replayContext.timestamp);
           if (ageInSeconds > replayPolicy.timestampToleranceSeconds) {
-            this.emit("onReplayFreshnessRejected", {
-              ...createBase(eventType, deliveryId),
-              type: "replay_freshness_rejected",
-              timestamp: replayContext.timestamp,
-              toleranceSeconds: replayPolicy.timestampToleranceSeconds,
-            });
+            this.emitRequestInstrumentation(
+              requestInstrumentations,
+              "onReplayFreshnessRejected",
+              {
+                timestamp: replayContext.timestamp,
+                toleranceSeconds: replayPolicy.timestampToleranceSeconds,
+              },
+            );
             return complete(409, eventType, deliveryId, {
               ok: false,
               error: REPLAY_TIMESTAMP_OUTSIDE_TOLERANCE_ERROR,
@@ -1855,23 +1533,27 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
 
         const replayKey = replayPolicy.key(replayContext);
         if (!replayKey) {
-          this.emit("onReplaySkipped", {
-            ...createBase(eventType, deliveryId),
-            type: "replay_skipped",
-            reason: "missing_key",
-          });
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onReplaySkipped",
+            {
+              reason: "missing_key",
+            },
+          );
         } else {
           const reserveResult = await replayStore.reserve(
             replayKey,
             replayPolicy.inFlightTtlSeconds,
           );
           if (reserveResult === "duplicate") {
-            this.emit("onReplayDuplicate", {
-              ...createBase(eventType, deliveryId),
-              type: "replay_duplicate",
-              replayKey,
-              behavior: replayPolicy.onDuplicate,
-            });
+            this.emitRequestInstrumentation(
+              requestInstrumentations,
+              "onReplayDuplicate",
+              {
+                replayKey,
+                behavior: replayPolicy.onDuplicate,
+              },
+            );
             if (replayPolicy.onDuplicate === "ignore") {
               return complete(200, eventType, deliveryId, { ok: true });
             }
@@ -1884,13 +1566,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
           reservedReplayKey = replayKey;
           replayStoreForRequest = replayStore;
           replayPolicyForRequest = replayPolicy;
-          this.emit("onReplayReserved", {
-            ...createBase(eventType, deliveryId),
-            type: "replay_reserved",
-            replayKey,
-            inFlightTtlSeconds: replayPolicy.inFlightTtlSeconds,
-            storeMode: "atomic",
-          });
+          this.emitRequestInstrumentation(
+            requestInstrumentations,
+            "onReplayReserved",
+            {
+              replayKey,
+              inFlightTtlSeconds: replayPolicy.inFlightTtlSeconds,
+            },
+          );
         }
       } catch (error) {
         if (reservedReplayKey && replayStoreForRequest) {
@@ -1908,12 +1591,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     // No event type or no handlers for this event → provider-specific ack (default 204)
     if (!eventType || !this.handlerEntries.has(eventType)) {
       const unhandledStatus = this.provider.verifiedUnhandledStatus ?? 204;
-      const durationMs = performance.now() - startTime;
-      this.emit("onEventUnhandled", {
-        ...createBase(eventType, deliveryId),
-        type: "event_unhandled",
-        durationMs,
-      });
+      const durationMs = performance.now() - requestStartTime;
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onEventUnhandled",
+        {
+          durationMs,
+        },
+      );
       return completeWithReplay(
         unhandledStatus,
         eventType,
@@ -1945,12 +1630,14 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
       if (!result.success) {
         const zodError = result.error as ZodError;
 
-        this.emit("onSchemaValidationFailed", {
-          ...createBase(eventType, deliveryId),
-          type: "schema_validation_failed",
-          validateDurationMs,
-          error: zodError.message,
-        });
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onSchemaValidationFailed",
+          {
+            durationMs: validateDurationMs,
+            error: zodError.message,
+          },
+        );
 
         if (this.errorHandler) {
           try {
@@ -1970,11 +1657,13 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
         });
       }
 
-      this.emit("onSchemaValidationSucceeded", {
-        ...createBase(eventType, deliveryId),
-        type: "schema_validation_succeeded",
-        validateDurationMs,
-      });
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onSchemaValidationSucceeded",
+        {
+          durationMs: validateDurationMs,
+        },
+      );
 
       payload = result.data;
     } else {
@@ -2002,37 +1691,43 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     ) {
       const handler = eventHandlers[handlerIndex]!;
 
-      this.emit("onHandlerStarted", {
-        ...createBase(eventType, deliveryId),
-        type: "handler_started",
-        handlerIndex,
-        handlerCount,
-      });
+      this.emitRequestInstrumentation(
+        requestInstrumentations,
+        "onHandlerStarted",
+        {
+          handlerIndex,
+          handlerCount,
+        },
+      );
 
       const handlerStartTime = performance.now();
       try {
         await handler(payload, handlerContext);
         const handlerDurationMs = performance.now() - handlerStartTime;
 
-        this.emit("onHandlerSucceeded", {
-          ...createBase(eventType, deliveryId),
-          type: "handler_succeeded",
-          handlerIndex,
-          handlerCount,
-          handlerDurationMs,
-        });
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onHandlerSucceeded",
+          {
+            handlerIndex,
+            handlerCount,
+            durationMs: handlerDurationMs,
+          },
+        );
       } catch (error) {
         const handlerDurationMs = performance.now() - handlerStartTime;
         const err = error instanceof Error ? error : new Error(String(error));
 
-        this.emit("onHandlerFailed", {
-          ...createBase(eventType, deliveryId),
-          type: "handler_failed",
-          handlerIndex,
-          handlerCount,
-          handlerDurationMs,
-          error: err,
-        });
+        this.emitRequestInstrumentation(
+          requestInstrumentations,
+          "onHandlerFailed",
+          {
+            handlerIndex,
+            handlerCount,
+            durationMs: handlerDurationMs,
+            error: err,
+          },
+        );
 
         if (this.errorHandler) {
           try {
@@ -2083,29 +1778,46 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
     newBuilder.maxBodyBytesLimit = this.maxBodyBytesLimit;
     newBuilder.replayProtection = this.replayProtection;
 
-    // Copy observers
-    newBuilder.observers.push(...this.observers);
+    // Copy instrumentation
+    newBuilder.instrumentations.push(...this.instrumentations);
 
     return newBuilder;
   }
 
-  /**
-   * Safely emit an observation event to all observers
-   * Errors from observers are caught and ignored to prevent breaking webhook processing
-   */
-  private emit<K extends keyof WebhookObserver>(
-    method: K,
-    event: Parameters<NonNullable<WebhookObserver[K]>>[0],
-  ): void {
-    for (const observer of this.observers) {
+  private createRequestInstrumentations(
+    context: WebhookInstrumentationContext,
+  ): WebhookRequestInstrumentation[] {
+    const requestInstrumentations: WebhookRequestInstrumentation[] = [];
+    for (const instrumentation of this.instrumentations) {
       try {
-        const handler = observer[method];
-        if (handler) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (handler as any)(event);
+        const requestInstrumentation =
+          instrumentation.onRequestStart?.(context);
+        if (requestInstrumentation) {
+          requestInstrumentations.push(requestInstrumentation);
         }
       } catch {
-        // Swallow observer errors - they must never break webhook processing
+        // Swallow instrumentation errors - they must never break webhook processing
+      }
+    }
+    return requestInstrumentations;
+  }
+
+  private emitRequestInstrumentation<
+    K extends keyof WebhookRequestInstrumentation,
+  >(
+    requestInstrumentations: WebhookRequestInstrumentation[],
+    method: K,
+    data: Parameters<NonNullable<WebhookRequestInstrumentation[K]>>[0],
+  ): void {
+    for (const requestInstrumentation of requestInstrumentations) {
+      try {
+        const handler = requestInstrumentation[method];
+        if (handler) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (handler as any)(data);
+        }
+      } catch {
+        // Swallow instrumentation errors - they must never break webhook processing
       }
     }
   }
