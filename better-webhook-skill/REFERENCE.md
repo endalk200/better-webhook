@@ -12,16 +12,16 @@ Immutable fluent builder. Every method returns a **new** builder instance.
 import { WebhookBuilder } from "@better-webhook/core";
 ```
 
-| Method                          | Signature                                                                          | Description                                           |
-| ------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `event(event, handler)`         | `.event<E>(event: E, handler: EventHandler<InferEventPayload<E>>): WebhookBuilder` | Register a typed handler for a specific event         |
-| `onError(handler)`              | `.onError(handler: ErrorHandler): WebhookBuilder`                                  | Register an error handler                             |
-| `onVerificationFailed(handler)` | `.onVerificationFailed(handler: VerificationFailedHandler): WebhookBuilder`        | Register a verification failure handler               |
-| `observe(observer)`             | `.observe(observer: WebhookObserver \| WebhookObserver[]): WebhookBuilder`         | Register lifecycle observer(s)                        |
-| `withReplayProtection(options)` | `.withReplayProtection(options: ReplayProtectionOptions): WebhookBuilder`          | Enable replay/idempotency protection                  |
-| `maxBodyBytes(bytes)`           | `.maxBodyBytes(bytes: number): WebhookBuilder`                                     | Set max request body size (returns 413 when exceeded) |
-| `process(options)`              | `.process(options: ProcessOptions): Promise<ProcessResult>`                        | Process an incoming webhook (used by adapters)        |
-| `getProvider()`                 | `.getProvider(): Provider<TProviderBrand>`                                         | Get the underlying provider                           |
+| Method                          | Signature                                                                                          | Description                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `event(event, handler)`         | `.event<E>(event: E, handler: EventHandler<InferEventPayload<E>>): WebhookBuilder`                 | Register a typed handler for a specific event         |
+| `onError(handler)`              | `.onError(handler: ErrorHandler): WebhookBuilder`                                                  | Register an error handler                             |
+| `onVerificationFailed(handler)` | `.onVerificationFailed(handler: VerificationFailedHandler): WebhookBuilder`                        | Register a verification failure handler               |
+| `instrument(instrumentation)`   | `.instrument(instrumentation: WebhookInstrumentation \| WebhookInstrumentation[]): WebhookBuilder` | Register lifecycle instrumentation                    |
+| `withReplayProtection(options)` | `.withReplayProtection(options: ReplayProtectionOptions): WebhookBuilder`                          | Enable replay/idempotency protection                  |
+| `maxBodyBytes(bytes)`           | `.maxBodyBytes(bytes: number): WebhookBuilder`                                                     | Set max request body size (returns 413 when exceeded) |
+| `process(options)`              | `.process(options: ProcessOptions): Promise<ProcessResult>`                                        | Process an incoming webhook (used by adapters)        |
+| `getProvider()`                 | `.getProvider(): Provider<TProviderBrand>`                                                         | Get the underlying provider                           |
 
 ### defineEvent()
 
@@ -129,7 +129,7 @@ const webhook = github()
       inFlightTtlSeconds: 60, // reservation TTL during processing
       timestampToleranceSeconds: 300, // optional freshness window
       key: (ctx) => `${ctx.provider}:${ctx.replayKey}`, // build canonical key
-      onDuplicate: "conflict", // "conflict" (409) | "ignore" (204)
+      onDuplicate: "conflict", // "conflict" (409) | "ignore" (200 ok:true)
     },
   });
 ```
@@ -147,76 +147,33 @@ interface AtomicReplayStore {
 }
 ```
 
-### Observer / Stats
+### Instrumentation
 
 ```ts
-import { createWebhookStats, type WebhookObserver } from "@better-webhook/core";
+import { type WebhookInstrumentation } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
-// Built-in stats collector
-const stats = createWebhookStats();
-const webhook = github().observe(stats.observer).event(push, handler);
-console.log(stats.snapshot());
-// { totalRequests, successCount, errorCount, byProvider, byEventType, avgDurationMs }
-stats.reset();
+const webhook = github()
+  .instrument(createOpenTelemetryInstrumentation())
+  .event(push, handler);
 
-// Custom observer (all methods are optional)
-const observer: WebhookObserver = {
-  onRequestReceived: (event) => {
-    /* provider, eventType?, rawBodyBytes, receivedAt */
-  },
-  onVerificationSucceeded: (event) => {
-    /* verifyDurationMs */
-  },
-  onVerificationFailed: (event) => {
-    /* verifyDurationMs, reason */
-  },
-  onSchemaValidationSucceeded: (event) => {
-    /* validateDurationMs */
-  },
-  onSchemaValidationFailed: (event) => {
-    /* validateDurationMs, error */
-  },
-  onHandlerStarted: (event) => {
-    /* handlerIndex, handlerCount */
-  },
-  onHandlerSucceeded: (event) => {
-    /* handlerIndex, handlerCount, handlerDurationMs */
-  },
-  onHandlerFailed: (event) => {
-    /* handlerIndex, handlerCount, handlerDurationMs, error */
-  },
-  onEventUnhandled: (event) => {
-    /* durationMs */
-  },
-  onBodyTooLarge: (event) => {
-    /* maxBodyBytes */
-  },
-  onJsonParseFailed: (event) => {
-    /* durationMs, error */
-  },
-  onReplaySkipped: (event) => {
-    /* reason: "missing_key" */
-  },
-  onReplayFreshnessRejected: (event) => {
-    /* timestamp, toleranceSeconds */
-  },
-  onReplayReserved: (event) => {
-    /* replayKey, inFlightTtlSeconds */
-  },
-  onReplayDuplicate: (event) => {
-    /* replayKey, behavior */
-  },
-  onReplayCommitted: (event) => {
-    /* replayKey, ttlSeconds */
-  },
-  onReplayReleased: (event) => {
-    /* replayKey, reason */
-  },
-  onCompleted: (event) => {
-    /* status, durationMs, success */
+const instrumentation: WebhookInstrumentation = {
+  onRequestStart(context) {
+    return {
+      onVerificationFailed(data) {
+        console.warn("verification failed", context.provider, data.reason);
+      },
+      onCompleted(data) {
+        console.log(context.provider, data.status, data.durationMs);
+      },
+    };
   },
 };
 ```
+
+`WebhookInstrumentation` is request-scoped. `onRequestStart(...)` receives mutable request context and can return a `WebhookRequestInstrumentation` object with lifecycle callbacks such as `onVerificationFailed`, `onSchemaValidationFailed`, `onHandlerFailed`, and `onCompleted`.
+
+For production traces and metrics, prefer `createOpenTelemetryInstrumentation()` from `@better-webhook/otel`.
 
 ### Key Types
 
@@ -396,7 +353,6 @@ interface CommonAdapterOptions {
   secret?: string; // override provider secret
   maxBodyBytes?: number; // max body size (returns 413)
   onSuccess?: (eventType: string) => void; // called on status 200 only
-  observer?: WebhookObserver | WebhookObserver[]; // lifecycle observers
 }
 ```
 
