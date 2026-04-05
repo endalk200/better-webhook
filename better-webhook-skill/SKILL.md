@@ -10,7 +10,7 @@ Type-safe webhook handlers for Node.js with automatic signature verification.
 ## Quick Start
 
 ```bash
-npm install @better-webhook/core @better-webhook/github @better-webhook/nextjs
+npm install @better-webhook/github @better-webhook/nextjs
 ```
 
 ```ts
@@ -38,7 +38,7 @@ export const POST = toNextJS(webhook);
 ## Architecture: Provider -> Builder -> Adapter
 
 1. **Provider** — defines the webhook source (events, verification, payload extraction)
-2. **Builder** — `WebhookBuilder` registers event handlers, error handlers, observers, replay protection (immutable — each method returns a new instance)
+2. **Builder** — `WebhookBuilder` registers event handlers, error handlers, instrumentation, replay protection (immutable — each method returns a new instance)
 3. **Adapter** — converts the builder into a framework-specific handler
 
 ## Package Selection
@@ -56,6 +56,8 @@ export const POST = toNextJS(webhook);
 | GitHub         | `@better-webhook/github` | `github(options?)`      |
 | Ragie          | `@better-webhook/ragie`  | `ragie(options?)`       |
 | Recall.ai      | `@better-webhook/recall` | `recall(options?)`      |
+| Stripe         | `@better-webhook/stripe` | `stripe(options?)`      |
+| Resend         | `@better-webhook/resend` | `resend(options?)`      |
 | Custom         | `@better-webhook/core`   | `customWebhook(config)` |
 
 ## Secret Resolution Order
@@ -69,11 +71,35 @@ Secrets are resolved in this order (first non-empty wins):
 
 ## Key Rules
 
-- Always install `@better-webhook/core` + one provider + one adapter
+- Install one provider package + one adapter package for normal usage
+- Install `@better-webhook/core` when you need custom providers, replay store types, helper utilities, or custom instrumentation types
 - Import events from `@better-webhook/{provider}/events` for tree-shaking
 - Express requires `express.raw({ type: 'application/json' })` middleware on the webhook route
 - NestJS requires `rawBody: true` in `NestFactory.create` options
-- The builder is immutable — `.event()`, `.onError()`, `.observe()` all return new instances
+- Observability is configured on the builder with `.instrument(...)`, not on adapters
+- The builder is immutable — `.event()`, `.onError()`, `.instrument()`, `.withReplayProtection()`, and `.maxBodyBytes()` all return new instances
+
+## Observability
+
+- Use `@better-webhook/otel` for OpenTelemetry traces and metrics
+- Attach instrumentation at the builder level before passing the webhook to an adapter
+- Adapters do not accept observability options beyond `onSuccess`
+- `createOpenTelemetryInstrumentation()` emits one processing span per request by default
+- `eventType`, `deliveryId`, and `replayKey` attributes are opt-in because they can raise cardinality
+
+```ts
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+const webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(push, handler);
+```
 
 ## Details
 

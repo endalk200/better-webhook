@@ -3,7 +3,7 @@
 ## Next.js + GitHub
 
 ```bash
-npm install @better-webhook/core @better-webhook/github @better-webhook/nextjs
+npm install @better-webhook/core @better-webhook/github @better-webhook/nextjs @better-webhook/otel
 ```
 
 ```ts
@@ -11,12 +11,9 @@ npm install @better-webhook/core @better-webhook/github @better-webhook/nextjs
 import { github } from "@better-webhook/github";
 import { push, pull_request, issues } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
-import {
-  createWebhookStats,
-  createInMemoryReplayStore,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
-const stats = createWebhookStats();
 const replayStore = createInMemoryReplayStore();
 
 const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
@@ -40,7 +37,7 @@ const webhook = github({ secret: process.env.GITHUB_WEBHOOK_SECRET })
   .onVerificationFailed((reason, headers) => {
     console.warn("Verification failed:", reason);
   })
-  .observe(stats.observer)
+  .instrument(createOpenTelemetryInstrumentation())
   .withReplayProtection({ store: replayStore })
   .maxBodyBytes(1024 * 1024); // 1MB limit
 
@@ -169,10 +166,10 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.listen(3000, () => console.log("Server running on port 3000"));
 ```
 
-## Express + Multiple Providers with Stats
+## Express + Multiple Providers with OpenTelemetry
 
 ```bash
-npm install @better-webhook/core @better-webhook/github @better-webhook/ragie @better-webhook/express express
+npm install @better-webhook/core @better-webhook/github @better-webhook/ragie @better-webhook/express @better-webhook/otel express
 ```
 
 ```ts
@@ -183,34 +180,37 @@ import { push } from "@better-webhook/github/events";
 import { ragie } from "@better-webhook/ragie";
 import { document_status_updated } from "@better-webhook/ragie/events";
 import { toExpress } from "@better-webhook/express";
-import { createWebhookStats } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
 const app = express();
-const stats = createWebhookStats();
+const instrumentation = createOpenTelemetryInstrumentation();
 
-const githubWebhook = github().event(push, async (payload) => {
-  console.log(`Push to ${payload.repository.full_name}`);
-});
+const githubWebhook = github()
+  .instrument(instrumentation)
+  .event(push, async (payload) => {
+    console.log(`Push to ${payload.repository.full_name}`);
+  });
 
-const ragieWebhook = ragie().event(document_status_updated, async (payload) => {
-  console.log(`Document ${payload.document_id}: ${payload.status}`);
-});
+const ragieWebhook = ragie()
+  .instrument(instrumentation)
+  .event(document_status_updated, async (payload) => {
+    console.log(`Document ${payload.document_id}: ${payload.status}`);
+  });
 
 app.post(
   "/webhooks/github",
   express.raw({ type: "application/json" }),
-  toExpress(githubWebhook, { observer: stats.observer }),
+  toExpress(githubWebhook),
 );
 
 app.post(
   "/webhooks/ragie",
   express.raw({ type: "application/json" }),
-  toExpress(ragieWebhook, { observer: stats.observer }),
+  toExpress(ragieWebhook),
 );
 
-// Stats endpoint
 app.use(express.json());
-app.get("/stats", (req, res) => res.json(stats.snapshot()));
+app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.listen(3000);
 ```
@@ -501,70 +501,67 @@ const store = new RedisReplayStore(redis);
 const webhook = github().withReplayProtection({ store }).event(push, handler);
 ```
 
-## Observability — Logging Observer
+## Observability - Custom Instrumentation
 
 ```ts
-import { type WebhookObserver } from "@better-webhook/core";
+import { type WebhookInstrumentation } from "@better-webhook/core";
 
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
+const loggingInstrumentation: WebhookInstrumentation = {
+  onRequestStart(context) {
     console.log(
-      `[webhook] Received ${event.provider} webhook (${event.rawBodyBytes} bytes)`,
+      `[webhook] Received ${context.provider} webhook (${context.rawBodyBytes} bytes)`,
     );
-  },
-  onVerificationFailed: (event) => {
-    console.warn(
-      `[webhook] Verification failed for ${event.provider}: ${event.reason}`,
-    );
-  },
-  onSchemaValidationFailed: (event) => {
-    console.error(
-      `[webhook] Schema validation failed for ${event.eventType}: ${event.error}`,
-    );
-  },
-  onHandlerFailed: (event) => {
-    console.error(
-      `[webhook] Handler ${event.handlerIndex} failed for ${event.eventType}:`,
-      event.error,
-    );
-  },
-  onCompleted: (event) => {
-    console.log(
-      `[webhook] ${event.provider}/${event.eventType} -> ${event.status} (${event.durationMs.toFixed(1)}ms)`,
-    );
+
+    return {
+      onVerificationFailed(data) {
+        console.warn(
+          `[webhook] Verification failed for ${context.provider}: ${data.reason}`,
+        );
+      },
+      onSchemaValidationFailed(data) {
+        console.error(
+          `[webhook] Schema validation failed for ${context.eventType}: ${data.error}`,
+        );
+      },
+      onHandlerFailed(data) {
+        console.error(
+          `[webhook] Handler ${data.handlerIndex} failed for ${context.eventType}:`,
+          data.error,
+        );
+      },
+      onCompleted(data) {
+        console.log(
+          `[webhook] ${context.provider}/${context.eventType} -> ${data.status} (${data.durationMs.toFixed(1)}ms)`,
+        );
+      },
+    };
   },
 };
 
-const webhook = github().observe(loggingObserver).event(push, handler);
+const webhook = github()
+  .instrument(loggingInstrumentation)
+  .event(push, handler);
 ```
 
-## Observability — Metrics Observer (Prometheus-style)
+## Observability - OpenTelemetry
 
 ```ts
-import { type WebhookObserver } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
-const metricsObserver: WebhookObserver = {
-  onCompleted: (event) => {
-    // Emit to your metrics system
-    metrics.histogram("webhook_duration_ms", event.durationMs, {
-      provider: event.provider,
-      event_type: event.eventType ?? "unknown",
-      status: String(event.status),
-      success: String(event.success),
-    });
-    metrics.increment("webhook_requests_total", {
-      provider: event.provider,
-      event_type: event.eventType ?? "unknown",
-      status: String(event.status),
-    });
-  },
-  onVerificationFailed: (event) => {
-    metrics.increment("webhook_verification_failures_total", {
-      provider: event.provider,
-    });
-  },
-};
+const webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(push, handler);
 ```
+
+Notes:
+
+- Instrumentation is attached to the builder, not to `toNextJS`, `toExpress`, `toHono`, `toNestJS`, or `toGCPFunction`
+- `eventType`, `deliveryId`, and `replayKey` attributes are opt-in to avoid accidental high-cardinality telemetry
+- `onDuplicate: "ignore"` returns `200` with `{ ok: true }`, so adapter `onSuccess` callbacks still run
 
 ## Secret Management Patterns
 
