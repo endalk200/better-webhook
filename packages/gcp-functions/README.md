@@ -218,6 +218,22 @@ http(
 Use `maxBodyBytes` as an app-layer guard. Keep gateway and platform request-size
 limits configured to reject large payloads earlier.
 
+## OpenTelemetry
+
+Add observability on the builder before converting it to a Cloud Function:
+
+```ts
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+const webhook = ragie()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(document_status_updated, handler);
+```
+
 ## Raw Body for Signature Verification
 
 For signature verification to work correctly, the raw request body must be available. GCP Cloud Functions with the Functions Framework provide `req.rawBody` automatically.

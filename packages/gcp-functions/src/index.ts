@@ -1,8 +1,4 @@
-import {
-  type WebhookBuilder,
-  type ProcessResult,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { type WebhookBuilder, type ProcessResult } from "@better-webhook/core";
 
 // ============================================================================
 // Types
@@ -62,23 +58,6 @@ export interface GCPFunctionAdapterOptions {
    * This excludes provider-specific 200 acknowledgements where no handler ran, such as verified but unhandled Resend events.
    */
   onSuccess?: (eventType: string) => void | Promise<void>;
-
-  /**
-   * Observer(s) for webhook lifecycle events.
-   * Use this to add observability without modifying the webhook builder.
-   *
-   * @example
-   * ```ts
-   * import { createWebhookStats } from '@better-webhook/core';
-   *
-   * const stats = createWebhookStats();
-   *
-   * http('webhookHandler', toGCPFunction(webhook, {
-   *   observer: stats.observer,
-   * }));
-   * ```
-   */
-  observer?: WebhookObserver | WebhookObserver[];
 }
 
 /**
@@ -138,11 +117,6 @@ export function toGCPFunction<TProviderBrand extends string = string>(
   webhook: WebhookBuilder<TProviderBrand>,
   options?: GCPFunctionAdapterOptions,
 ): GCPFunctionHandler {
-  // Apply observer(s) if provided
-  const instrumentedWebhook = options?.observer
-    ? webhook.observe(options.observer)
-    : webhook;
-
   return async (
     req: GCPFunctionRequest,
     res: GCPFunctionResponse,
@@ -191,7 +165,7 @@ export function toGCPFunction<TProviderBrand extends string = string>(
     }
 
     // Process the webhook
-    const result: ProcessResult = await instrumentedWebhook.process({
+    const result: ProcessResult = await webhook.process({
       headers: req.headers,
       rawBody,
       secret: options?.secret,

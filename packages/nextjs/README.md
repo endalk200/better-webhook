@@ -202,6 +202,22 @@ export const POST = toNextJS(webhook, {
 Use `maxBodyBytes` as an app-layer guard. Keep platform/runtime request-size
 limits configured as the first line of defense.
 
+## OpenTelemetry
+
+Add observability on the builder before exporting the route handler:
+
+```ts
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+const webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(push, handler);
+```
+
 ## Response Codes
 
 The adapter returns appropriate HTTP status codes:

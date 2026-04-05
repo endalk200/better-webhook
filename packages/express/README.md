@@ -259,6 +259,22 @@ app.post(
 Use adapter-level `maxBodyBytes` as an app-layer guard. Keep your
 `express.raw({ limit })` and edge/proxy limits configured as well.
 
+### OpenTelemetry
+
+Add observability on the builder before passing it to the adapter:
+
+```ts
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+const webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
+  .event(push, handler);
+```
+
 ## Response Codes
 
 | Code  | Meaning                                                           |
