@@ -1,0 +1,98 @@
+---
+title: OpenTelemetry
+description: Add OpenTelemetry traces and metrics to better-webhook handlers.
+---
+
+# OpenTelemetry
+
+Use `@better-webhook/otel` to emit traces and metrics from webhook processing.
+
+## Install
+
+```bash
+pnpm add @better-webhook/otel @opentelemetry/api
+```
+
+`@better-webhook/otel` hooks into the builder-level instrumentation API exposed by `@better-webhook/core`. Add it to the webhook builder before passing the builder to any adapter.
+
+## Builder Integration
+
+```ts
+import { github } from "@better-webhook/github";
+import { push } from "@better-webhook/github/events";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
+
+const webhook = github()
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: false,
+      includeDeliveryIdAttribute: false,
+      includeReplayKeyAttribute: false,
+    }),
+  )
+  .event(push, async (payload) => {
+    console.log(payload.repository.full_name);
+  });
+```
+
+## Defaults
+
+- Emits one processing span per webhook request
+- Emits metrics for request count, completion count, duration, and failure paths
+- Uses low-cardinality attributes by default
+- Leaves `eventType`, `deliveryId`, and `replayKey` opt-in
+- Emits span events for major lifecycle transitions by default
+
+## Option Reference
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `emitMetrics` | `true` | Emit OTel counters and histograms |
+| `emitSpanEvents` | `true` | Add span events for verification, replay, validation, handler, and completion lifecycle events |
+| `includeEventTypeAttribute` | `false` | Add `better_webhook.event_type` to spans and metrics |
+| `includeDeliveryIdAttribute` | `false` | Add `better_webhook.delivery_id` to spans |
+| `includeReplayKeyAttribute` | `false` | Add `better_webhook.replay_key` to replay-related span events |
+
+## Cardinality Guidance
+
+- `eventType` is often acceptable if your provider emits a bounded set of events
+- `deliveryId` is request-unique for many providers, so leave it off unless you explicitly need per-delivery trace correlation
+- `replayKey` can also be highly unique, so leave it off unless debugging replay behavior
+
+## What Gets Emitted
+
+Spans:
+
+- One span named `better-webhook.process` per request
+- Provider and body-size attributes by default
+- Completion attributes including HTTP status and success outcome
+
+Metrics:
+
+- `better_webhook.requests`
+- `better_webhook.completed`
+- `better_webhook.duration`
+- `better_webhook.verification_failures`
+- `better_webhook.schema_validation_failures`
+- `better_webhook.handler_failures`
+- `better_webhook.replay_duplicates`
+- `better_webhook.body_too_large`
+
+## Adapter Example
+
+```ts
+import express from "express";
+import { toExpress } from "@better-webhook/express";
+
+app.post(
+  "/webhooks/github",
+  express.raw({ type: "application/json" }),
+  toExpress(webhook),
+);
+```
+
+Observability is configured on the builder, not on adapter options.
+
+## Runtime Setup
+
+This package uses the OpenTelemetry API. Your application still needs to register an OpenTelemetry SDK and exporters if you want telemetry to be exported anywhere.

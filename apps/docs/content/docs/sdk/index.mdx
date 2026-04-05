@@ -396,64 +396,30 @@ const webhook = github()
 
 ## Observability
 
-Add metrics, logging, and tracing to your webhook handlers with the built-in observer API:
+Add tracing and metrics with `@better-webhook/otel` at the builder level:
 
 ```ts
 import { github } from "@better-webhook/github";
 import { push } from "@better-webhook/github/events";
-import { createWebhookStats } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { toNextJS } from "@better-webhook/nextjs";
 
-// Built-in stats collector
-const stats = createWebhookStats();
-
 const webhook = github()
-  .observe(stats.observer)
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
   .event(push, async (payload) => {
     console.log(`Push to ${payload.repository.name}`);
   });
 
 export const POST = toNextJS(webhook);
-
-// Access stats anytime
-console.log(stats.snapshot());
-// { totalRequests: 150, successCount: 145, errorCount: 5, ... }
 ```
 
-### Custom Observers
+Use builder-level instrumentation for all frameworks. Adapters do not accept observability plugins.
 
-Create custom observers to integrate with your metrics infrastructure:
-
-```ts
-import { type WebhookObserver } from "@better-webhook/core";
-
-const metricsObserver: WebhookObserver = {
-  onCompleted: (event) => {
-    metrics.histogram("webhook_duration_ms", event.durationMs, {
-      provider: event.provider,
-      eventType: event.eventType,
-      status: String(event.status),
-    });
-  },
-  onHandlerFailed: (event) => {
-    logger.error("Webhook handler failed", {
-      error: event.error.message,
-      provider: event.provider,
-      eventType: event.eventType,
-    });
-  },
-};
-
-const webhook = github().observe(metricsObserver).event(push, handler);
-```
-
-You can also add observers at the adapter level:
-
-```ts
-export const POST = toNextJS(webhook, {
-  observer: metricsObserver,
-});
-```
+See [OpenTelemetry](/docs/sdk/opentelemetry) for configuration details and cardinality guidance.
 
 ## Next Steps
 
@@ -463,4 +429,4 @@ export const POST = toNextJS(webhook, {
 - [Adapters](/docs/sdk/adapters) — Framework-specific setup and configuration
 - [NestJS Adapter](/docs/sdk/nestjs-adapter) — Raw body and response handling for NestJS
 - [GCP Functions Adapter](/docs/sdk/gcp-functions-adapter) — Cloud Functions setup for 1st and 2nd gen
-- [Adapter Options](/docs/sdk/adapter-options) — Shared options for secrets, limits, and observability
+- [Adapter Options](/docs/sdk/adapter-options) — Shared options for secrets, limits, and callbacks
