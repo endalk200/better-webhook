@@ -1,4 +1,10 @@
 import express from "express";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import {
+  ConsoleMetricExporter,
+  PeriodicExportingMetricReader,
+} from "@opentelemetry/sdk-metrics";
+import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base";
 import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toExpress } from "@better-webhook/express";
 import { github } from "@better-webhook/github";
@@ -44,6 +50,16 @@ import {
   checkout_session_completed,
   payment_intent_succeeded,
 } from "@better-webhook/stripe/events";
+
+const otelSdk = new NodeSDK({
+  traceExporter: new ConsoleSpanExporter(),
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new ConsoleMetricExporter(),
+    exportIntervalMillis: 5_000,
+  }),
+});
+
+await otelSdk.start();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

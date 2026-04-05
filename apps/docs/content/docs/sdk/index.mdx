@@ -117,6 +117,8 @@ Install a provider and an adapter for your framework:
   </Tab>
 </Tabs>
 
+If you also use builder-level observability, install `@better-webhook/otel` too.
+
 ## Quick Example
 
 <Tabs items={['Next.js', 'Express', 'NestJS', 'GCP Cloud Functions', 'Hono']}>
@@ -418,6 +420,8 @@ export const POST = toNextJS(webhook);
 ```
 
 Use builder-level instrumentation for all frameworks. Adapters do not accept observability plugins.
+
+`@better-webhook/otel` wires the builder into the OpenTelemetry API. To actually export traces and metrics, your application still needs to register an OpenTelemetry SDK and exporters.
 
 See [OpenTelemetry](/docs/sdk/opentelemetry) for configuration details and cardinality guidance.
 

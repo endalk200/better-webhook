@@ -4,6 +4,8 @@ A simple Express server demonstrating `@better-webhook/github`,
 `@better-webhook/ragie`, `@better-webhook/recall`, and
 `@better-webhook/express`.
 
+This example also boots a local OpenTelemetry SDK with console exporters so spans and metrics are visible immediately while you send test webhooks.
+
 ## Quick Start
 
 ```bash
@@ -75,6 +77,7 @@ custom `ReplayStore`, see `apps/examples/nextjs-example/app/api/webhooks`.
 
 ## Troubleshooting
 
+- No telemetry output: wait a few seconds for the metric export interval, then check the server console for span and metric output.
 - `401` responses: verify secrets match the sender and your local env vars.
 - Signature mismatch: sign the exact raw payload bytes sent in `curl`.
 - Express raw body: keep `express.raw({ type: "application/json" })` on webhook routes.
