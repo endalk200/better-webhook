@@ -96,3 +96,5 @@ Observability is configured on the builder, not on adapter options.
 ## Runtime Setup
 
 This package uses the OpenTelemetry API. Your application still needs to register an OpenTelemetry SDK and exporters if you want telemetry to be exported anywhere.
+
+Register the SDK before your app starts handling requests. `@better-webhook/otel` also makes the webhook processing span active while your handler runs, so spans you create inside handlers will inherit from `better-webhook.process` when the SDK context manager is configured.
