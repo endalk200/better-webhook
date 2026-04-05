@@ -1,9 +1,6 @@
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { stripe } from "@better-webhook/stripe";
 import {
   charge_failed,
@@ -11,25 +8,14 @@ import {
   payment_intent_succeeded,
 } from "@better-webhook/stripe/events";
 
-const stats = createWebhookStats();
 const replayStore = createInMemoryReplayStore();
 
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `📥 Stripe webhook received (${event.rawBodyBytes} bytes): ${event.eventType ?? "unknown"}`,
-    );
-  },
-  onCompleted: (event) => {
-    console.log(
-      `📊 Stripe completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-};
-
 const webhook = stripe()
-  .observe(stats.observer)
-  .observe(loggingObserver)
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
   .withReplayProtection({
     store: replayStore,
   })
@@ -63,10 +49,6 @@ export const POST = toNextJS(webhook, {
   secret: process.env.STRIPE_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
     console.log(`✅ Successfully processed Stripe ${eventType} event`);
-    const snapshot = stats.snapshot();
-    console.log(
-      `📈 Stats: ${snapshot.totalRequests} total, ${snapshot.successCount} success, avg ${snapshot.avgDurationMs.toFixed(2)}ms`,
-    );
   },
 });
 

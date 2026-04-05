@@ -1,42 +1,18 @@
 import { github } from "@better-webhook/github";
 import { push, pull_request, issues } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
-import {
-  createWebhookStats,
-  createInMemoryReplayStore,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 
-// Create an in-memory stats collector for observability
-const stats = createWebhookStats();
 // Core replay protection with built-in in-memory store
 const replayStore = createInMemoryReplayStore();
 
-// Custom observer for logging lifecycle events
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `📥 Webhook received from ${event.provider} (${event.rawBodyBytes} bytes)`,
-    );
-  },
-  onCompleted: (event) => {
-    console.log(
-      `📊 Request completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-  onHandlerFailed: (event) => {
-    console.error(
-      `💥 Handler ${event.handlerIndex} failed after ${event.handlerDurationMs.toFixed(2)}ms:`,
-      event.error.message,
-    );
-  },
-};
-
-// Create a GitHub webhook handler with observability
 const webhook = github()
-  // Add observers for metrics and logging
-  .observe(stats.observer)
-  .observe(loggingObserver)
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
   .withReplayProtection({
     store: replayStore,
   })
@@ -82,11 +58,6 @@ export const POST = toNextJS(webhook, {
   secret: process.env.GITHUB_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
     console.log(`✅ Successfully processed ${eventType} event`);
-    // Log current stats
-    const snapshot = stats.snapshot();
-    console.log(
-      `📈 Stats: ${snapshot.totalRequests} total, ${snapshot.successCount} success, avg ${snapshot.avgDurationMs.toFixed(2)}ms`,
-    );
   },
 });
 

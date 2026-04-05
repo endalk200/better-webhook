@@ -1,9 +1,6 @@
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-  type WebhookObserver,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { recall } from "@better-webhook/recall";
 import {
   participant_events_join,
@@ -33,25 +30,14 @@ import {
   bot_breakout_room_closed,
 } from "@better-webhook/recall/events";
 
-const stats = createWebhookStats();
 const recallReplayStore = createInMemoryReplayStore();
 
-const loggingObserver: WebhookObserver = {
-  onRequestReceived: (event) => {
-    console.log(
-      `📥 Recall webhook received (${event.rawBodyBytes} bytes): ${event.eventType ?? "unknown"}`,
-    );
-  },
-  onCompleted: (event) => {
-    console.log(
-      `📊 Recall completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-};
-
 const webhook = recall()
-  .observe(stats.observer)
-  .observe(loggingObserver)
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
   .withReplayProtection({ store: recallReplayStore })
   .event(participant_events_join, async (payload, context) => {
     console.log("🟢 participant joined", {
@@ -243,10 +229,6 @@ export const POST = toNextJS(webhook, {
   secret: process.env.RECALL_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
     console.log(`✅ Successfully processed Recall ${eventType} event`);
-    const snapshot = stats.snapshot();
-    console.log(
-      `📈 Stats: ${snapshot.totalRequests} total, ${snapshot.successCount} success, avg ${snapshot.avgDurationMs.toFixed(2)}ms`,
-    );
   },
 });
 

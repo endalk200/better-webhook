@@ -39,7 +39,6 @@ pnpm --filter @better-webhook/nestjs-example dev
 - `POST /webhooks/recall` - Recall.ai webhook endpoint
 - `GET /webhooks/recall` - Recall endpoint info
 - `GET /health` - Health check
-- `GET /stats` - In-memory webhook stats
 
 ## Signed Testing
 

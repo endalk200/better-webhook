@@ -1,8 +1,6 @@
-import {
-  createInMemoryReplayStore,
-  createWebhookStats,
-} from "@better-webhook/core";
+import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
+import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { resend } from "@better-webhook/resend";
 import {
   contact_created,
@@ -12,7 +10,6 @@ import {
   email_received,
 } from "@better-webhook/resend/events";
 
-const stats = createWebhookStats();
 const replayStore = createInMemoryReplayStore();
 
 const supportedEvents = [
@@ -23,19 +20,6 @@ const supportedEvents = [
   "contact.created",
 ];
 
-const loggingObserver = {
-  onRequestReceived: (event: { rawBodyBytes: number; eventType?: string }) => {
-    console.log(
-      `📥 Resend webhook received (${event.rawBodyBytes} bytes): ${event.eventType ?? "unknown"}`,
-    );
-  },
-  onCompleted: (event: { status: number; durationMs: number }) => {
-    console.log(
-      `📊 Resend completed: status=${event.status}, duration=${event.durationMs.toFixed(2)}ms`,
-    );
-  },
-};
-
 function countTags(tags: Record<string, string> | undefined): number {
   if (!tags) {
     return 0;
@@ -45,8 +29,11 @@ function countTags(tags: Record<string, string> | undefined): number {
 }
 
 const webhook = resend()
-  .observe(stats.observer)
-  .observe(loggingObserver)
+  .instrument(
+    createOpenTelemetryInstrumentation({
+      includeEventTypeAttribute: true,
+    }),
+  )
   .withReplayProtection({
     store: replayStore,
   })
@@ -101,10 +88,6 @@ export const POST = toNextJS(webhook, {
   secret: process.env.RESEND_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
     console.log(`✅ Successfully processed Resend ${eventType} event`);
-    const snapshot = stats.snapshot();
-    console.log(
-      `📈 Stats: ${snapshot.totalRequests} total, ${snapshot.successCount} success, avg ${snapshot.avgDurationMs.toFixed(2)}ms`,
-    );
   },
 });
 
