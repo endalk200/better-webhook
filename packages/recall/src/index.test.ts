@@ -77,6 +77,12 @@ import {
   RecallTranscriptProviderDataEventSchema,
 } from "./schemas.js";
 
+function expectType<T>(_value: T): void {}
+
+recall().event(bot_joining_call, (payload) => {
+  expectType<"joining_call">(payload.data.code);
+});
+
 const secret = `whsec_${Buffer.from("recall-test-secret").toString("base64")}`;
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const templatesDir = resolve(currentDir, "../../../templates/recall");

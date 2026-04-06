@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z, type ZodSchema, type ZodError } from "zod";
 
-interface SchemaLike<TOutput = unknown> {
+interface ZodSchemaLike<TOutput = unknown> {
   safeParse(input: unknown):
     | {
         success: true;
@@ -13,6 +13,9 @@ interface SchemaLike<TOutput = unknown> {
       };
 }
 
+type InferZodSchemaLikeOutput<TSchema> =
+  TSchema extends ZodSchemaLike<infer TOutput> ? TOutput : never;
+
 /**
  * Normalized headers with lowercase keys
  */
@@ -23,7 +26,7 @@ export type Headers = Record<string, string | undefined>;
  * and compile-time type information for tree-shakeable imports.
  *
  * @template TName - The event name literal type (e.g., "push")
- * @template TSchema - The Zod schema type
+ * @template TSchema - The Zod-compatible schema type
  * @template TProvider - The provider brand (e.g., "github")
  *
  * @example
@@ -38,13 +41,13 @@ export type Headers = Record<string, string | undefined>;
  */
 export interface WebhookEvent<
   TName extends string = string,
-  TSchema extends SchemaLike = SchemaLike,
+  TSchema extends ZodSchemaLike = ZodSchemaLike,
   TProvider extends string = string,
 > {
   /** Event name used for matching incoming webhooks */
   readonly name: TName;
 
-  /** Zod schema for payload validation */
+  /** Zod-compatible schema for payload validation */
   readonly schema: TSchema;
 
   /**
@@ -58,7 +61,7 @@ export interface WebhookEvent<
    * Phantom type for payload inference.
    * @internal
    */
-  readonly _output?: z.infer<TSchema>;
+  readonly _output?: InferZodSchemaLikeOutput<TSchema>;
 }
 
 /**
@@ -66,16 +69,14 @@ export interface WebhookEvent<
  */
 export type InferEventPayload<E> =
   E extends WebhookEvent<string, infer S, string>
-    ? S extends SchemaLike<infer TOutput>
-      ? TOutput
-      : never
+    ? InferZodSchemaLikeOutput<S>
     : never;
 
 /**
  * Extract the provider brand from an event definition
  */
 export type InferEventProvider<E> =
-  E extends WebhookEvent<string, SchemaLike, infer P> ? P : never;
+  E extends WebhookEvent<string, ZodSchemaLike, infer P> ? P : never;
 
 /**
  * Create a type-safe event definition for tree-shakeable imports.
@@ -92,7 +93,7 @@ export type InferEventProvider<E> =
  */
 export function defineEvent<
   TName extends string,
-  TSchema extends SchemaLike,
+  TSchema extends ZodSchemaLike,
   TProvider extends string,
 >(config: {
   name: TName;
@@ -1027,7 +1028,7 @@ export function customWebhook<TProviderBrand extends string = string>(
  * Internal storage for registered handlers including their schemas
  */
 interface HandlerEntry {
-  schema: SchemaLike;
+  schema: ZodSchemaLike;
   handlers: ((
     payload: unknown,
     context: HandlerContext,
@@ -1111,7 +1112,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
    *   });
    * ```
    */
-  event<E extends WebhookEvent<string, SchemaLike, TProviderBrand>>(
+  event<E extends WebhookEvent<string, ZodSchemaLike, TProviderBrand>>(
     event: E,
     handler: EventHandler<InferEventPayload<E>>,
   ): WebhookBuilder<TProviderBrand> {
