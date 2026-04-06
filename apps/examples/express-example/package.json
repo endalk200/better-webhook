@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/express-example",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "description": "Express example for better-webhook",
   "type": "module",

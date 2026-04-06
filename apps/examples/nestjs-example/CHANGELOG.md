@@ -1,5 +1,18 @@
 # @better-webhook/nestjs-example
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [b98de71]
+  - @better-webhook/core@0.12.2
+  - @better-webhook/github@0.9.7
+  - @better-webhook/nestjs@0.12.2
+  - @better-webhook/otel@0.1.2
+  - @better-webhook/ragie@0.6.7
+  - @better-webhook/recall@0.3.3
+  - @better-webhook/stripe@0.1.5
+
 ## 0.0.4
 
 ### Patch Changes

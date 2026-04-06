@@ -1,5 +1,12 @@
 # @better-webhook/hono
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [b98de71]
+  - @better-webhook/core@0.12.2
+
 ## 0.4.1
 
 ### Patch Changes
