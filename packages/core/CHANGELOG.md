@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.12.2
+
+### Patch Changes
+
+- b98de71: feat: widen schema inference to support schema-like validators beyond Zod
+
 ## 0.12.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @better-webhook/nextjs
 
+## 0.12.2
+
+### Patch Changes
+
+- Updated dependencies [b98de71]
+  - @better-webhook/core@0.12.2
+
 ## 0.12.1
 
 ### Patch Changes
