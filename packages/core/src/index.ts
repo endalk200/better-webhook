@@ -1,6 +1,18 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z, type ZodSchema, type ZodError } from "zod";
 
+interface SchemaLike<TOutput = unknown> {
+  safeParse(input: unknown):
+    | {
+        success: true;
+        data: TOutput;
+      }
+    | {
+        success: false;
+        error: ZodError;
+      };
+}
+
 /**
  * Normalized headers with lowercase keys
  */
@@ -26,7 +38,7 @@ export type Headers = Record<string, string | undefined>;
  */
 export interface WebhookEvent<
   TName extends string = string,
-  TSchema extends ZodSchema = ZodSchema,
+  TSchema extends SchemaLike = SchemaLike,
   TProvider extends string = string,
 > {
   /** Event name used for matching incoming webhooks */
@@ -53,13 +65,17 @@ export interface WebhookEvent<
  * Extract the payload type from an event definition
  */
 export type InferEventPayload<E> =
-  E extends WebhookEvent<string, infer S, string> ? z.infer<S> : never;
+  E extends WebhookEvent<string, infer S, string>
+    ? S extends SchemaLike<infer TOutput>
+      ? TOutput
+      : never
+    : never;
 
 /**
  * Extract the provider brand from an event definition
  */
 export type InferEventProvider<E> =
-  E extends WebhookEvent<string, ZodSchema, infer P> ? P : never;
+  E extends WebhookEvent<string, SchemaLike, infer P> ? P : never;
 
 /**
  * Create a type-safe event definition for tree-shakeable imports.
@@ -76,7 +92,7 @@ export type InferEventProvider<E> =
  */
 export function defineEvent<
   TName extends string,
-  TSchema extends ZodSchema,
+  TSchema extends SchemaLike,
   TProvider extends string,
 >(config: {
   name: TName;
@@ -1011,7 +1027,7 @@ export function customWebhook<TProviderBrand extends string = string>(
  * Internal storage for registered handlers including their schemas
  */
 interface HandlerEntry {
-  schema: ZodSchema;
+  schema: SchemaLike;
   handlers: ((
     payload: unknown,
     context: HandlerContext,
@@ -1095,7 +1111,7 @@ export class WebhookBuilder<TProviderBrand extends string = string> {
    *   });
    * ```
    */
-  event<E extends WebhookEvent<string, ZodSchema, TProviderBrand>>(
+  event<E extends WebhookEvent<string, SchemaLike, TProviderBrand>>(
     event: E,
     handler: EventHandler<InferEventPayload<E>>,
   ): WebhookBuilder<TProviderBrand> {
