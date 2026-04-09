@@ -1,68 +1,76 @@
 # Next.js Example
 
-A simple Next.js app demonstrating `@better-webhook/github`,
-`@better-webhook/stripe`, `@better-webhook/ragie`,
-`@better-webhook/recall`, `@better-webhook/resend`, and
-`@better-webhook/nextjs`.
+A Next.js App Router example showing the default route-per-provider setup for `@better-webhook/nextjs`.
+
+## Choose This Example If...
+
+- you want one route file per provider in App Router
+- you want the clearest Next.js example in the repo
+- you want to compare GitHub, Ragie, Stripe, Recall, and Resend in one app
+
+## What It Demonstrates
+
+- one `app/api/webhooks/.../route.ts` file per provider
+- provider metadata via `GET` handlers on each route
+- representative event handling for GitHub, Ragie, Stripe, Recall, and Resend
+
+Representative events in this app:
+
+- GitHub: `push`, `pull_request`, `issues`
+- Ragie: `document_status_updated`, `connection_sync_finished`, `entity_extracted`
+- Stripe: `charge.failed`, `checkout.session.completed`, `payment_intent.succeeded`
+- Recall: `participant_events.join`, `participant_events.chat_message`, `transcript.data`, `bot.done`
+- Resend: `email.delivered`, `email.bounced`, `email.received`, `domain.updated`, `contact.created`
 
 ## Quick Start
 
 ```bash
-# From the repository root
 pnpm install
 pnpm --filter @better-webhook/nextjs-example dev
 ```
 
 Server URL: `http://localhost:3002`
 
+The `dev` script is fixed to `next dev -p 3002`. If you need a different port, run a custom Next.js command instead of the package script.
+
 ## Configuration
 
-| Variable                | Required | Description                                           |
-| ----------------------- | -------- | ----------------------------------------------------- |
-| `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures               |
-| `STRIPE_WEBHOOK_SECRET` | Yes      | Secret used to verify Stripe signatures               |
-| `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures                |
-| `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures (`whsec_...`) |
-| `RESEND_WEBHOOK_SECRET` | Yes      | Secret used to verify Resend Svix signatures          |
-
-Example:
+Create your env vars before sending requests:
 
 ```bash
-GITHUB_WEBHOOK_SECRET=your-github-secret \
-STRIPE_WEBHOOK_SECRET=whsec_your-stripe-secret \
-RAGIE_WEBHOOK_SECRET=your-ragie-secret \
-RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64 \
-RESEND_WEBHOOK_SECRET=whsec_your-resend-secret-base64 \
-pnpm --filter @better-webhook/nextjs-example dev
-```
-
-Or create a `.env.local` file:
-
-```env
 GITHUB_WEBHOOK_SECRET=your-github-secret
-STRIPE_WEBHOOK_SECRET=whsec_your-stripe-secret
 RAGIE_WEBHOOK_SECRET=your-ragie-secret
-RECALL_WEBHOOK_SECRET=whsec_your-recall-secret-base64
+STRIPE_WEBHOOK_SECRET=your-stripe-secret
+RECALL_WEBHOOK_SECRET=your-recall-secret
 RESEND_WEBHOOK_SECRET=whsec_your-resend-secret-base64
 ```
 
+| Variable                | Required | Description                             |
+| ----------------------- | -------- | --------------------------------------- |
+| `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures |
+| `STRIPE_WEBHOOK_SECRET` | Yes      | Secret used to verify Stripe signatures |
+| `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures  |
+| `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures |
+| `RESEND_WEBHOOK_SECRET` | Yes      | Secret used to verify Resend signatures |
+
 ## Endpoints
 
-- `POST /api/webhooks/github` - GitHub webhook endpoint
-- `GET /api/webhooks/github` - GitHub endpoint info
-- `POST /api/webhooks/ragie` - Ragie webhook endpoint
-- `GET /api/webhooks/ragie` - Ragie endpoint info
-- `POST /api/webhooks/stripe` - Stripe webhook endpoint
-- `GET /api/webhooks/stripe` - Stripe endpoint info
-- `POST /api/webhooks/recall` - Recall.ai webhook endpoint
-- `GET /api/webhooks/recall` - Recall endpoint info
-- `POST /api/webhooks/resend` - Resend webhook endpoint
-- `GET /api/webhooks/resend` - Resend endpoint info
+- `POST /api/webhooks/github` verifies and handles GitHub webhook events
+- `GET /api/webhooks/github` returns `{ status, endpoint, supportedEvents }` for the GitHub route
+- `POST /api/webhooks/ragie` verifies and handles Ragie webhook events
+- `GET /api/webhooks/ragie` returns `{ status, endpoint, supportedEvents }` for the Ragie route
+- `POST /api/webhooks/stripe` verifies and handles Stripe webhook events
+- `GET /api/webhooks/stripe` returns `{ status, endpoint, supportedEvents }` for the Stripe route
+- `POST /api/webhooks/recall` verifies and handles Recall webhook events
+- `GET /api/webhooks/recall` returns `{ status, endpoint, supportedEvents }` for the Recall route
+- `POST /api/webhooks/resend` verifies and handles Resend webhook events
+- `GET /api/webhooks/resend` returns `{ status, endpoint, supportedEvents }` for the Resend route
 
-## Signed Testing
+There is no standalone `/health` route in this app. The `GET` route on each provider endpoint acts as the built-in status and metadata check.
 
-Unsigned requests are rejected (`401`) because verification is required by
-default. Sign test payloads with the same secret configured in your env vars.
+## Try It
+
+Send a signed GitHub `push` event:
 
 ```bash
 SECRET="your-github-secret"
@@ -77,7 +85,13 @@ curl -X POST "http://localhost:3002/api/webhooks/github" \
   -d "$PAYLOAD"
 ```
 
-For Resend, sign the Svix-style payload using the `whsec_...` secret:
+Expected result:
+
+- the request succeeds with a verified response
+- the app logs `GitHub push received`
+- the app logs `GitHub webhook processed`
+
+Send a signed Resend `email.delivered` event:
 
 ```bash
 SECRET="whsec_your-resend-secret-base64"
@@ -94,26 +108,39 @@ curl -X POST "http://localhost:3002/api/webhooks/resend" \
   -d "$PAYLOAD"
 ```
 
-For dev-only unsigned testing, use a custom provider configured with
-`verification: "disabled"`. Do not use disabled verification in production.
+Expected result:
 
-## Replay Strategy Notes
+- the request succeeds with a verified response
+- the app logs `Resend email delivered`
+- the app logs `Resend webhook processed`
 
-This example demonstrates several replay/idempotency strategies:
+## File Layout
 
-- Built-in replay store (`github` route) via `createInMemoryReplayStore()`
-- Built-in replay store (`stripe` route) via provider event ids
-- Built-in replay store (`resend` route) via `svix-id`
-- Custom replay store (`ragie` route) using provider replay metadata (`nonce`)
-- Built-in replay store (`recall` route) via `webhook-id` / `svix-id`
+- `app/api/webhooks/github/route.ts` handles GitHub events
+- `app/api/webhooks/ragie/route.ts` handles Ragie events
+- `app/api/webhooks/stripe/route.ts` handles Stripe events
+- `app/api/webhooks/recall/route.ts` handles Recall events
+- `app/api/webhooks/resend/route.ts` handles Resend events
 
-For production, use a shared persistent store (for example Redis) so replay
-state survives restarts and works across instances. Use atomic reservation
-semantics (`reserve/commit/release`) for custom stores.
+## Recall Note
+
+The Recall route shows the intended import story:
+
+- `recall` from `@better-webhook/recall`
+- event constants from `@better-webhook/recall/events`
+
+Handlers receive unwrapped `body.data`, but nested properties such as `payload.data.participant` still come from Recall's event payload schema.
+
+## Advanced Topics
+
+This app keeps the default routes minimal and easy to read. For replay protection and telemetry, use the canonical SDK docs:
+
+- `apps/docs/content/docs/sdk/providers.mdx`
+- `apps/docs/content/docs/sdk/replay-idempotency.mdx`
+- `apps/docs/content/docs/sdk/opentelemetry.mdx`
 
 ## Troubleshooting
 
-- `401` responses: verify secrets match the sender and your local env vars.
-- Signature mismatch: sign the exact raw payload bytes sent in `curl`.
-- `200`/`204` responses: verified requests may be acknowledged even when no handler is registered, depending on provider contract.
-- Duplicate events: check replay strategy and storage persistence.
+- `401` usually means the configured secret does not match the sender.
+- Sign the exact raw payload bytes you send.
+- `200` or `204` can both be valid for verified requests depending on provider behavior.

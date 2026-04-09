@@ -12,10 +12,8 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@better-webhook/core": "workspace:*",
     "@better-webhook/github": "workspace:*",
     "@better-webhook/nextjs": "workspace:*",
-    "@better-webhook/otel": "workspace:*",
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/resend": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
