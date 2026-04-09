@@ -7,6 +7,11 @@ description: Prevent duplicate webhook processing with replay protection.
 
 Enable replay protection when duplicate webhook deliveries could create unwanted side effects.
 
+Runnable examples in this repo:
+
+- `apps/examples/express-github-inmemory-replay-example` for a process-local replay store
+- `apps/examples/express-github-prisma-replay-example` for a durable Postgres-backed replay store implemented with Prisma
+
 Core replay protection uses provider-specific replay keys:
 
 - GitHub: `x-github-delivery`

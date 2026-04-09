@@ -312,35 +312,37 @@ import {
 
 **Factory:** `recall(options?: { secret?: string }): WebhookBuilder<"recall">`
 
-**Verification:** Svix-style HMAC-SHA256 via `webhook-id`, `webhook-timestamp`, `webhook-signature` headers. Secret must have `whsec_` prefix. Event type from body `event` field. Payload unwrapped from `{ event, data }`. 5-minute timestamp tolerance.
+**Verification:** Svix-style HMAC-SHA256 via `webhook-id`, `webhook-timestamp`, `webhook-signature` headers. Secret must have `whsec_` prefix. Event type from body `event` field. Handler payload is unwrapped from `{ event, data }`, so handlers receive `body.data`. 5-minute timestamp tolerance.
 
-| Event Export                         | Event Name                             | Payload Type                        |
-| ------------------------------------ | -------------------------------------- | ----------------------------------- |
-| `participant_events_join`            | `"participant_events.join"`            | `RecallParticipantEvent`            |
-| `participant_events_leave`           | `"participant_events.leave"`           | `RecallParticipantEvent`            |
-| `participant_events_update`          | `"participant_events.update"`          | `RecallParticipantEvent`            |
-| `participant_events_speech_on`       | `"participant_events.speech_on"`       | `RecallParticipantEvent`            |
-| `participant_events_speech_off`      | `"participant_events.speech_off"`      | `RecallParticipantEvent`            |
-| `participant_events_webcam_on`       | `"participant_events.webcam_on"`       | `RecallParticipantEvent`            |
-| `participant_events_webcam_off`      | `"participant_events.webcam_off"`      | `RecallParticipantEvent`            |
-| `participant_events_screenshare_on`  | `"participant_events.screenshare_on"`  | `RecallParticipantEvent`            |
-| `participant_events_screenshare_off` | `"participant_events.screenshare_off"` | `RecallParticipantEvent`            |
-| `participant_events_chat_message`    | `"participant_events.chat_message"`    | `RecallParticipantChatMessageEvent` |
-| `transcript_data`                    | `"transcript.data"`                    | `RecallTranscriptDataEvent`         |
-| `transcript_partial_data`            | `"transcript.partial_data"`            | `RecallTranscriptPartialDataEvent`  |
-| `bot_joining_call`                   | `"bot.joining_call"`                   | `RecallBotEvent`                    |
-| `bot_in_waiting_room`                | `"bot.in_waiting_room"`                | `RecallBotEvent`                    |
-| `bot_in_call_not_recording`          | `"bot.in_call_not_recording"`          | `RecallBotEvent`                    |
-| `bot_recording_permission_allowed`   | `"bot.recording_permission_allowed"`   | `RecallBotEvent`                    |
-| `bot_recording_permission_denied`    | `"bot.recording_permission_denied"`    | `RecallBotEvent`                    |
-| `bot_in_call_recording`              | `"bot.in_call_recording"`              | `RecallBotEvent`                    |
-| `bot_call_ended`                     | `"bot.call_ended"`                     | `RecallBotEvent`                    |
-| `bot_done`                           | `"bot.done"`                           | `RecallBotEvent`                    |
-| `bot_fatal`                          | `"bot.fatal"`                          | `RecallBotEvent`                    |
-| `bot_breakout_room_entered`          | `"bot.breakout_room_entered"`          | `RecallBotEvent`                    |
-| `bot_breakout_room_left`             | `"bot.breakout_room_left"`             | `RecallBotEvent`                    |
-| `bot_breakout_room_opened`           | `"bot.breakout_room_opened"`           | `RecallBotEvent`                    |
-| `bot_breakout_room_closed`           | `"bot.breakout_room_closed"`           | `RecallBotEvent`                    |
+**Handler payload note:** Recall examples often use fields like `payload.data.participant`, `payload.data.words`, or `payload.data.code`. That is expected: the SDK unwraps the outer request envelope, but the Recall event payload itself still contains nested `data` properties.
+
+| Event Export                         | Event Name                             | Handler Payload Type                         |
+| ------------------------------------ | -------------------------------------- | -------------------------------------------- |
+| `participant_events_join`            | `"participant_events.join"`            | `RecallParticipantEventsJoinEvent`           |
+| `participant_events_leave`           | `"participant_events.leave"`           | `RecallParticipantEventsLeaveEvent`          |
+| `participant_events_update`          | `"participant_events.update"`          | `RecallParticipantEventsUpdateEvent`         |
+| `participant_events_speech_on`       | `"participant_events.speech_on"`       | `RecallParticipantEventsSpeechOnEvent`       |
+| `participant_events_speech_off`      | `"participant_events.speech_off"`      | `RecallParticipantEventsSpeechOffEvent`      |
+| `participant_events_webcam_on`       | `"participant_events.webcam_on"`       | `RecallParticipantEventsWebcamOnEvent`       |
+| `participant_events_webcam_off`      | `"participant_events.webcam_off"`      | `RecallParticipantEventsWebcamOffEvent`      |
+| `participant_events_screenshare_on`  | `"participant_events.screenshare_on"`  | `RecallParticipantEventsScreenshareOnEvent`  |
+| `participant_events_screenshare_off` | `"participant_events.screenshare_off"` | `RecallParticipantEventsScreenshareOffEvent` |
+| `participant_events_chat_message`    | `"participant_events.chat_message"`    | `RecallParticipantEventsChatMessageEvent`    |
+| `transcript_data`                    | `"transcript.data"`                    | `RecallTranscriptDataEvent`                  |
+| `transcript_partial_data`            | `"transcript.partial_data"`            | `RecallTranscriptPartialDataEvent`           |
+| `bot_joining_call`                   | `"bot.joining_call"`                   | `RecallBotJoiningCallEvent`                  |
+| `bot_in_waiting_room`                | `"bot.in_waiting_room"`                | `RecallBotInWaitingRoomEvent`                |
+| `bot_in_call_not_recording`          | `"bot.in_call_not_recording"`          | `RecallBotInCallNotRecordingEvent`           |
+| `bot_recording_permission_allowed`   | `"bot.recording_permission_allowed"`   | `RecallBotRecordingPermissionAllowedEvent`   |
+| `bot_recording_permission_denied`    | `"bot.recording_permission_denied"`    | `RecallBotRecordingPermissionDeniedEvent`    |
+| `bot_in_call_recording`              | `"bot.in_call_recording"`              | `RecallBotInCallRecordingEvent`              |
+| `bot_call_ended`                     | `"bot.call_ended"`                     | `RecallBotCallEndedEvent`                    |
+| `bot_done`                           | `"bot.done"`                           | `RecallBotDoneEvent`                         |
+| `bot_fatal`                          | `"bot.fatal"`                          | `RecallBotFatalEvent`                        |
+| `bot_breakout_room_entered`          | `"bot.breakout_room_entered"`          | `RecallBotBreakoutRoomEnteredEvent`          |
+| `bot_breakout_room_left`             | `"bot.breakout_room_left"`             | `RecallBotBreakoutRoomLeftEvent`             |
+| `bot_breakout_room_opened`           | `"bot.breakout_room_opened"`           | `RecallBotBreakoutRoomOpenedEvent`           |
+| `bot_breakout_room_closed`           | `"bot.breakout_room_closed"`           | `RecallBotBreakoutRoomClosedEvent`           |
 
 ---
 

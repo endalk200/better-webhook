@@ -8,6 +8,8 @@
     "RAGIE_WEBHOOK_SECRET",
     "RECALL_WEBHOOK_SECRET",
     "RESEND_WEBHOOK_SECRET",
+    "DATABASE_URL",
+    "NODE_ENV",
     "PORT"
   ],
   "tasks": {
