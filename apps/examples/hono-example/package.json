@@ -12,10 +12,8 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@better-webhook/core": "workspace:*",
     "@better-webhook/github": "workspace:*",
     "@better-webhook/hono": "workspace:*",
-    "@better-webhook/otel": "workspace:*",
     "@better-webhook/recall": "workspace:*",
     "@better-webhook/ragie": "workspace:*",
     "@hono/node-server": "^1.19.7",

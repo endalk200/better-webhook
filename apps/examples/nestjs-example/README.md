@@ -1,49 +1,72 @@
 # NestJS Example
 
-A simple NestJS app demonstrating `@better-webhook/github`,
-`@better-webhook/ragie`, `@better-webhook/recall`, and `@better-webhook/nestjs`.
+A NestJS app showing the default multi-provider setup for `@better-webhook/nestjs`.
+
+## Choose This Example If...
+
+- you want controller-based webhook routing in NestJS
+- you want raw-body verification with Nest's Express platform
+- you want GET endpoints that expose supported event metadata
+
+## What It Demonstrates
+
+- one NestJS handler module per provider under `src/webhooks`
+- controller routing for both webhook POST handlers and metadata GET endpoints
+- representative event handling for GitHub, Ragie, Stripe, and Recall
+
+Representative events in this app:
+
+- GitHub: `push`, `pull_request`, `issues`
+- Ragie: `document_status_updated`, `connection_sync_finished`, `entity_extracted`
+- Stripe: `charge.failed`, `checkout.session.completed`, `payment_intent.succeeded`
+- Recall: `participant_events.join`, `participant_events.chat_message`, `transcript.data`, `bot.done`
 
 ## Quick Start
 
 ```bash
-# From the repository root
 pnpm install
 pnpm --filter @better-webhook/nestjs-example dev
 ```
 
 Server URL: `http://localhost:3003`
 
+If you are running multiple examples at once, override `PORT`. `3003` is also used by `express-github-inmemory-replay-example`.
+
 ## Configuration
+
+Create your env vars before sending requests:
+
+```bash
+GITHUB_WEBHOOK_SECRET=your-github-secret
+RAGIE_WEBHOOK_SECRET=your-ragie-secret
+STRIPE_WEBHOOK_SECRET=your-stripe-secret
+RECALL_WEBHOOK_SECRET=your-recall-secret
+PORT=3003
+```
 
 | Variable                | Required | Description                             |
 | ----------------------- | -------- | --------------------------------------- |
 | `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures |
 | `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures  |
+| `STRIPE_WEBHOOK_SECRET` | Yes      | Secret used to verify Stripe signatures |
 | `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures |
-
-Example:
-
-```bash
-GITHUB_WEBHOOK_SECRET=your-github-secret \
-RAGIE_WEBHOOK_SECRET=your-ragie-secret \
-RECALL_WEBHOOK_SECRET=your-recall-whsec-secret \
-pnpm --filter @better-webhook/nestjs-example dev
-```
+| `PORT`                  | No       | Override the default port (`3003`)      |
 
 ## Endpoints
 
-- `POST /webhooks/github` - GitHub webhook endpoint
-- `GET /webhooks/github` - GitHub endpoint info
-- `POST /webhooks/ragie` - Ragie webhook endpoint
-- `GET /webhooks/ragie` - Ragie endpoint info
-- `POST /webhooks/recall` - Recall.ai webhook endpoint
-- `GET /webhooks/recall` - Recall endpoint info
-- `GET /health` - Health check
+- `POST /webhooks/github` verifies and handles GitHub webhook events
+- `GET /webhooks/github` returns `{ status, endpoint, supportedEvents }` for the GitHub route
+- `POST /webhooks/ragie` verifies and handles Ragie webhook events
+- `GET /webhooks/ragie` returns `{ status, endpoint, supportedEvents }` for the Ragie route
+- `POST /webhooks/stripe` verifies and handles Stripe webhook events
+- `GET /webhooks/stripe` returns `{ status, endpoint, supportedEvents }` for the Stripe route
+- `POST /webhooks/recall` verifies and handles Recall webhook events
+- `GET /webhooks/recall` returns `{ status, endpoint, supportedEvents }` for the Recall route
+- `GET /health` returns `{ status, timestamp }` so you can confirm the app is up
 
-## Signed Testing
+## Try It
 
-Unsigned requests are rejected (`401`) because verification is required by
-default. Sign test payloads with the same secret configured in your env vars.
+Send a signed GitHub `push` event:
 
 ```bash
 SECRET="your-github-secret"
@@ -58,26 +81,36 @@ curl -X POST "http://localhost:3003/webhooks/github" \
   -d "$PAYLOAD"
 ```
 
-For dev-only unsigned testing, use a custom provider configured with
-`verification: "disabled"`. Do not use disabled verification in production.
+Expected result:
 
-## Replay Strategy Notes
+- the request succeeds with a verified response
+- the app logs `GitHub push received`
+- the app logs `GitHub webhook processed`
+- verified but unhandled events can return `204`
 
-This controller demonstrates replay protection strategies:
+## File Layout
 
-- GitHub uses the built-in replay store via `context.deliveryId`
-- Recall uses the built-in replay store via `webhook-id` / `svix-id`
-- Ragie uses `payload.nonce` from the signed envelope
+- `src/main.ts` boots Nest with `rawBody: true`
+- `src/webhooks.controller.ts` wires routes and metadata endpoints
+- `src/webhooks/github.webhook.ts` handles GitHub events and exports `githubInfo`
+- `src/webhooks/ragie.webhook.ts` handles Ragie events and exports `ragieInfo`
+- `src/webhooks/stripe.webhook.ts` handles Stripe events and exports `stripeInfo`
+- `src/webhooks/recall.webhook.ts` handles Recall events and exports `recallInfo`
 
-For production, use a shared replay store so duplicate detection works across
-multiple instances.
+## Recall Note
 
-For side-by-side examples of manual checks, `createInMemoryReplayStore`, and a
-custom `ReplayStore`, see `apps/examples/nextjs-example/app/api/webhooks`.
+The Recall example stays intentionally small and typed by inference. Handlers receive unwrapped `body.data`, but that payload still includes nested Recall-specific fields such as `payload.data.participant` and `payload.data.code`.
+
+## Advanced Topics
+
+This example keeps the default flow minimal. For replay protection and telemetry, use the canonical SDK docs:
+
+- `apps/docs/content/docs/sdk/providers.mdx`
+- `apps/docs/content/docs/sdk/replay-idempotency.mdx`
+- `apps/docs/content/docs/sdk/opentelemetry.mdx`
 
 ## Troubleshooting
 
-- `401` responses: verify secrets match the sender and your local env vars.
-- Raw body support: keep `rawBody: true` in `main.ts`.
-- `204` responses: expected for verified but unhandled event types.
-- Replays after restart: expected with in-memory dedupe; switch to shared storage.
+- Keep `rawBody: true` enabled in `src/main.ts`.
+- `401` usually means the configured secret does not match the sender.
+- `204` is expected for verified but unhandled events.

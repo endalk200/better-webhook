@@ -1,15 +1,29 @@
 # Express Example
 
-A simple Express server demonstrating `@better-webhook/github`,
-`@better-webhook/ragie`, `@better-webhook/recall`, and
-`@better-webhook/express`.
+An Express app showing the default multi-provider setup for `@better-webhook/express`.
 
-This example also boots a local OpenTelemetry SDK with console exporters so spans and metrics are visible immediately while you send test webhooks.
+## Choose This Example If...
+
+- you want the simplest Express starting point
+- you want one webhook file per provider
+- you want to compare GitHub, Ragie, Stripe, and Recall in one app
+
+## What It Demonstrates
+
+- one Express route per provider under `src/webhooks`
+- raw-body verification with `express.raw({ type: "application/json" })`
+- representative event handling for GitHub, Ragie, Stripe, and Recall
+
+Representative events in this app:
+
+- GitHub: `push`, `pull_request`, `issues`
+- Ragie: `document_status_updated`, `connection_sync_finished`, `entity_extracted`
+- Stripe: `charge.failed`, `checkout.session.completed`, `payment_intent.succeeded`
+- Recall: `participant_events.join`, `participant_events.chat_message`, `transcript.data`, `bot.done`
 
 ## Quick Start
 
 ```bash
-# From the repository root
 pnpm install
 pnpm --filter @better-webhook/express-example dev
 ```
@@ -18,33 +32,35 @@ Server URL: `http://localhost:3001`
 
 ## Configuration
 
+Create your env vars before sending requests:
+
+```bash
+GITHUB_WEBHOOK_SECRET=your-github-secret
+RAGIE_WEBHOOK_SECRET=your-ragie-secret
+STRIPE_WEBHOOK_SECRET=your-stripe-secret
+RECALL_WEBHOOK_SECRET=your-recall-secret
+PORT=3001
+```
+
 | Variable                | Required | Description                             |
 | ----------------------- | -------- | --------------------------------------- |
 | `GITHUB_WEBHOOK_SECRET` | Yes      | Secret used to verify GitHub signatures |
 | `RAGIE_WEBHOOK_SECRET`  | Yes      | Secret used to verify Ragie signatures  |
+| `STRIPE_WEBHOOK_SECRET` | Yes      | Secret used to verify Stripe signatures |
 | `RECALL_WEBHOOK_SECRET` | Yes      | Secret used to verify Recall signatures |
 | `PORT`                  | No       | Override the default port (`3001`)      |
 
-Example:
-
-```bash
-GITHUB_WEBHOOK_SECRET=your-github-secret \
-RAGIE_WEBHOOK_SECRET=your-ragie-secret \
-RECALL_WEBHOOK_SECRET=your-recall-whsec-secret \
-pnpm --filter @better-webhook/express-example dev
-```
-
 ## Endpoints
 
-- `POST /webhooks/github` - GitHub webhook endpoint
-- `POST /webhooks/ragie` - Ragie webhook endpoint
-- `POST /webhooks/recall` - Recall.ai webhook endpoint
-- `GET /health` - Health check
+- `POST /webhooks/github` verifies and handles GitHub webhook events
+- `POST /webhooks/ragie` verifies and handles Ragie webhook events
+- `POST /webhooks/stripe` verifies and handles Stripe webhook events
+- `POST /webhooks/recall` verifies and handles Recall webhook events
+- `GET /health` returns `{ status, timestamp }` so you can confirm the app is up
 
-## Signed Testing
+## Try It
 
-Unsigned requests are rejected (`401`) because verification is required by
-default. Sign test payloads with the same secret configured in your env vars.
+Send a signed GitHub `push` event:
 
 ```bash
 SECRET="your-github-secret"
@@ -59,26 +75,34 @@ curl -X POST "http://localhost:3001/webhooks/github" \
   -d "$PAYLOAD"
 ```
 
-For dev-only unsigned testing, use a custom provider configured with
-`verification: "disabled"`. Do not use disabled verification in production.
+Expected result:
 
-## Replay Strategy Notes
+- the request succeeds with a verified response
+- the app logs `GitHub push received`
+- the app logs `GitHub webhook processed`
 
-This example demonstrates manual in-memory dedupe on selected handlers:
+## File Layout
 
-- GitHub and Recall use `context.deliveryId`
-- Ragie uses `payload.nonce` from the signed envelope
+- `src/index.ts` creates the app and mounts routes
+- `src/webhooks/github.ts` handles GitHub events
+- `src/webhooks/ragie.ts` handles Ragie events
+- `src/webhooks/stripe.ts` handles Stripe events
+- `src/webhooks/recall.ts` handles Recall events
 
-For production, use a shared replay store so duplicate detection works across
-multiple instances.
+## Recall Note
 
-For side-by-side examples of manual checks, `createInMemoryReplayStore`, and a
-custom `ReplayStore`, see `apps/examples/nextjs-example/app/api/webhooks`.
+Recall sends `{ event, data }`, but your handler receives the unwrapped `data` object. That payload still contains Recall-specific nested fields such as `payload.data.participant` and `payload.data.code`.
+
+## Advanced Topics
+
+This example stays intentionally minimal. For deeper guidance, use the canonical SDK docs:
+
+- `apps/docs/content/docs/sdk/providers.mdx`
+- `apps/docs/content/docs/sdk/replay-idempotency.mdx`
+- `apps/docs/content/docs/sdk/opentelemetry.mdx`
 
 ## Troubleshooting
 
-- No telemetry output: wait a few seconds for the metric export interval, then check the server console for span and metric output.
-- `401` responses: verify secrets match the sender and your local env vars.
-- Signature mismatch: sign the exact raw payload bytes sent in `curl`.
-- Express raw body: keep `express.raw({ type: "application/json" })` on webhook routes.
-- Replays after restart: expected with in-memory dedupe; switch to shared storage.
+- `401` usually means the configured secret does not match the sender.
+- Express routes must keep `express.raw({ type: "application/json" })` for signature verification.
+- Sign the exact raw payload bytes you send.

@@ -1,257 +1,17 @@
 import { serve } from "@hono/node-server";
-import { createInMemoryReplayStore } from "@better-webhook/core";
-import { github } from "@better-webhook/github";
-import { issues, pull_request, push } from "@better-webhook/github/events";
-import { toHonoNode } from "@better-webhook/hono";
-import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
-import { recall } from "@better-webhook/recall";
-import {
-  bot_breakout_room_closed,
-  bot_breakout_room_entered,
-  bot_breakout_room_left,
-  bot_breakout_room_opened,
-  bot_call_ended,
-  bot_done,
-  bot_fatal,
-  bot_in_call_not_recording,
-  bot_in_call_recording,
-  bot_in_waiting_room,
-  bot_joining_call,
-  bot_recording_permission_allowed,
-  bot_recording_permission_denied,
-  participant_events_chat_message,
-  participant_events_join,
-  participant_events_leave,
-  participant_events_screenshare_off,
-  participant_events_screenshare_on,
-  participant_events_speech_off,
-  participant_events_speech_on,
-  participant_events_update,
-  participant_events_webcam_off,
-  participant_events_webcam_on,
-  transcript_data,
-  transcript_partial_data,
-} from "@better-webhook/recall/events";
-import { ragie } from "@better-webhook/ragie";
-import {
-  connection_sync_finished,
-  document_status_updated,
-  entity_extracted,
-} from "@better-webhook/ragie/events";
-import { stripe } from "@better-webhook/stripe";
-import {
-  charge_failed,
-  checkout_session_completed,
-  payment_intent_succeeded,
-} from "@better-webhook/stripe/events";
 import { Hono } from "hono";
+import { githubHandler } from "./webhooks/github.js";
+import { ragieHandler } from "./webhooks/ragie.js";
+import { recallHandler } from "./webhooks/recall.js";
+import { stripeHandler } from "./webhooks/stripe.js";
 
 const app = new Hono();
 const port = Number(process.env.PORT ?? "3004");
 
-const githubReplayStore = createInMemoryReplayStore();
-const ragieReplayStore = createInMemoryReplayStore();
-const stripeReplayStore = createInMemoryReplayStore();
-const recallReplayStore = createInMemoryReplayStore();
-
-const otelInstrumentation = createOpenTelemetryInstrumentation({
-  includeEventTypeAttribute: true,
-});
-
-const logRecallParticipantEvent = async (
-  payload: { data: { participant: { name: string | null } } },
-  context: { eventType: string },
-) => {
-  console.log(
-    `Recall ${context.eventType}: ${payload.data.participant.name ?? "unknown participant"}`,
-  );
-};
-
-const logRecallBotCodeEvent = async (
-  payload: { data: { code: string } },
-  context: { eventType: string },
-) => {
-  console.log(`Recall ${context.eventType}: ${payload.data.code}`);
-};
-
-const githubWebhook = github()
-  .instrument(otelInstrumentation)
-  .withReplayProtection({ store: githubReplayStore })
-  .event(push, async (payload, context) => {
-    console.log("Push event received");
-    console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`Repository: ${payload.repository.full_name}`);
-    console.log(`Branch: ${payload.ref}`);
-    console.log(`Commits: ${payload.commits.length}`);
-  })
-  .event(pull_request, async (payload, context) => {
-    console.log("Pull request event received");
-    console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`Action: ${payload.action}`);
-    console.log(
-      `PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
-    );
-  })
-  .event(issues, async (payload, context) => {
-    console.log("Issue event received");
-    console.log(`Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`Action: ${payload.action}`);
-    console.log(`Issue #${payload.issue.number}: ${payload.issue.title}`);
-  })
-  .onError(async (error, context) => {
-    console.error("GitHub webhook error:", error.message);
-    console.error("Event type:", context.eventType);
-  })
-  .onVerificationFailed(async (reason) => {
-    console.error("GitHub verification failed:", reason);
-  });
-
-const ragieWebhook = ragie()
-  .instrument(otelInstrumentation)
-  .withReplayProtection({ store: ragieReplayStore })
-  .event(document_status_updated, async (payload) => {
-    console.log("Document status updated");
-    console.log(`Document ID: ${payload.document_id}`);
-    console.log(`Status: ${payload.status}`);
-    console.log(`Partition: ${payload.partition}`);
-  })
-  .event(connection_sync_finished, async (payload) => {
-    console.log("Connection sync finished");
-    console.log(`Connection ID: ${payload.connection_id}`);
-    console.log(`Sync ID: ${payload.sync_id}`);
-    console.log(`Partition: ${payload.partition}`);
-  })
-  .event(entity_extracted, async (payload) => {
-    console.log("Entity extraction completed");
-    console.log(`Document ID: ${payload.document_id}`);
-    console.log(`Partition: ${payload.partition}`);
-  })
-  .onError(async (error, context) => {
-    console.error("Ragie webhook error:", error.message);
-    console.error("Event type:", context.eventType);
-  })
-  .onVerificationFailed(async (reason) => {
-    console.error("Ragie verification failed:", reason);
-  });
-
-const recallWebhook = recall()
-  .instrument(otelInstrumentation)
-  .withReplayProtection({ store: recallReplayStore })
-  .event(participant_events_join, async (payload, context) => {
-    await logRecallParticipantEvent(payload, context);
-  })
-  .event(participant_events_leave, logRecallParticipantEvent)
-  .event(participant_events_update, logRecallParticipantEvent)
-  .event(participant_events_speech_on, logRecallParticipantEvent)
-  .event(participant_events_speech_off, logRecallParticipantEvent)
-  .event(participant_events_webcam_on, logRecallParticipantEvent)
-  .event(participant_events_webcam_off, logRecallParticipantEvent)
-  .event(participant_events_screenshare_on, logRecallParticipantEvent)
-  .event(participant_events_screenshare_off, logRecallParticipantEvent)
-  .event(participant_events_chat_message, async (payload, context) => {
-    console.log(
-      `Recall ${context.eventType}: ${payload.data.participant.name} -> ${payload.data.data.text}`,
-    );
-  })
-  .event(transcript_data, async (payload, context) => {
-    console.log(
-      `Recall ${context.eventType}: words=${payload.data.words.length}`,
-    );
-  })
-  .event(transcript_partial_data, async (payload, context) => {
-    console.log(
-      `Recall ${context.eventType}: words=${payload.data.words.length}`,
-    );
-  })
-  .event(bot_joining_call, logRecallBotCodeEvent)
-  .event(bot_in_waiting_room, logRecallBotCodeEvent)
-  .event(bot_in_call_not_recording, logRecallBotCodeEvent)
-  .event(bot_recording_permission_allowed, logRecallBotCodeEvent)
-  .event(bot_recording_permission_denied, logRecallBotCodeEvent)
-  .event(bot_in_call_recording, logRecallBotCodeEvent)
-  .event(bot_call_ended, logRecallBotCodeEvent)
-  .event(bot_done, logRecallBotCodeEvent)
-  .event(bot_fatal, logRecallBotCodeEvent)
-  .event(bot_breakout_room_entered, logRecallBotCodeEvent)
-  .event(bot_breakout_room_left, logRecallBotCodeEvent)
-  .event(bot_breakout_room_opened, logRecallBotCodeEvent)
-  .event(bot_breakout_room_closed, logRecallBotCodeEvent)
-  .onError(async (error, context) => {
-    console.error("Recall webhook error:", error.message);
-    console.error("Event type:", context.eventType);
-  })
-  .onVerificationFailed(async (reason) => {
-    console.error("Recall verification failed:", reason);
-  });
-
-const stripeWebhook = stripe()
-  .instrument(otelInstrumentation)
-  .withReplayProtection({ store: stripeReplayStore })
-  .event(charge_failed, async (payload) => {
-    console.log("Stripe charge failed");
-    console.log(`Event ID: ${payload.id}`);
-    console.log(`Charge ID: ${payload.data.object.id}`);
-    console.log(`Failure: ${payload.data.object.failure_code}`);
-  })
-  .event(checkout_session_completed, async (payload) => {
-    console.log("Stripe checkout session completed");
-    console.log(`Event ID: ${payload.id}`);
-    console.log(`Session ID: ${payload.data.object.id}`);
-    console.log(`Payment status: ${payload.data.object.payment_status}`);
-  })
-  .event(payment_intent_succeeded, async (payload) => {
-    console.log("Stripe payment intent succeeded");
-    console.log(`Event ID: ${payload.id}`);
-    console.log(`PaymentIntent ID: ${payload.data.object.id}`);
-    console.log(`Latest charge: ${payload.data.object.latest_charge}`);
-  })
-  .onError(async (error, context) => {
-    console.error("Stripe webhook error:", error.message);
-    console.error("Event type:", context.eventType);
-  })
-  .onVerificationFailed(async (reason) => {
-    console.error("Stripe verification failed:", reason);
-  });
-
-app.post(
-  "/webhooks/github",
-  toHonoNode(githubWebhook, {
-    secret: process.env.GITHUB_WEBHOOK_SECRET,
-    onSuccess: (eventType) => {
-      console.log(`Successfully processed GitHub ${eventType} event`);
-    },
-  }),
-);
-
-app.post(
-  "/webhooks/ragie",
-  toHonoNode(ragieWebhook, {
-    secret: process.env.RAGIE_WEBHOOK_SECRET,
-    onSuccess: (eventType) => {
-      console.log(`Successfully processed Ragie ${eventType} event`);
-    },
-  }),
-);
-
-app.post(
-  "/webhooks/stripe",
-  toHonoNode(stripeWebhook, {
-    secret: process.env.STRIPE_WEBHOOK_SECRET,
-    onSuccess: (eventType) => {
-      console.log(`Successfully processed Stripe ${eventType} event`);
-    },
-  }),
-);
-
-app.post(
-  "/webhooks/recall",
-  toHonoNode(recallWebhook, {
-    secret: process.env.RECALL_WEBHOOK_SECRET,
-    onSuccess: (eventType) => {
-      console.log(`Successfully processed Recall ${eventType} event`);
-    },
-  }),
-);
+app.post("/webhooks/github", githubHandler);
+app.post("/webhooks/ragie", ragieHandler);
+app.post("/webhooks/stripe", stripeHandler);
+app.post("/webhooks/recall", recallHandler);
 
 app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -263,25 +23,12 @@ serve(
     port,
   },
   (info) => {
-    console.log("Hono webhook server running");
-    console.log(`Server: http://localhost:${info.port}`);
-    console.log(
-      `GitHub endpoint: http://localhost:${info.port}/webhooks/github`,
-    );
-    console.log(
-      `Ragie endpoint:  http://localhost:${info.port}/webhooks/ragie`,
-    );
-    console.log(
-      `Stripe endpoint: http://localhost:${info.port}/webhooks/stripe`,
-    );
-    console.log(
-      `Recall endpoint: http://localhost:${info.port}/webhooks/recall`,
-    );
-    console.log(`Health check:    http://localhost:${info.port}/health`);
-    console.log("Environment variables:");
-    console.log("- GITHUB_WEBHOOK_SECRET");
-    console.log("- RAGIE_WEBHOOK_SECRET");
-    console.log("- STRIPE_WEBHOOK_SECRET");
-    console.log("- RECALL_WEBHOOK_SECRET");
+    console.log(`Hono example listening on http://localhost:${info.port}`);
+    console.log("Endpoints:");
+    console.log(`- POST http://localhost:${info.port}/webhooks/github`);
+    console.log(`- POST http://localhost:${info.port}/webhooks/ragie`);
+    console.log(`- POST http://localhost:${info.port}/webhooks/stripe`);
+    console.log(`- POST http://localhost:${info.port}/webhooks/recall`);
+    console.log(`- GET  http://localhost:${info.port}/health`);
   },
 );
