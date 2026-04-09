@@ -1,6 +1,4 @@
-import { createInMemoryReplayStore } from "@better-webhook/core";
 import { toNextJS } from "@better-webhook/nextjs";
-import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
 import { resend } from "@better-webhook/resend";
 import {
   contact_created,
@@ -9,8 +7,6 @@ import {
   email_delivered,
   email_received,
 } from "@better-webhook/resend/events";
-
-const replayStore = createInMemoryReplayStore();
 
 const supportedEvents = [
   "email.delivered",
@@ -29,30 +25,22 @@ function countTags(tags: Record<string, string> | undefined): number {
 }
 
 const webhook = resend()
-  .instrument(
-    createOpenTelemetryInstrumentation({
-      includeEventTypeAttribute: true,
-    }),
-  )
-  .withReplayProtection({
-    store: replayStore,
-  })
   .event(email_delivered, async (payload) => {
-    console.log("✅ email.delivered", {
+    console.log("Resend email delivered", {
       emailId: payload.data.email_id,
       recipientCount: payload.data.to.length,
       tagCount: countTags(payload.data.tags),
     });
   })
   .event(email_bounced, async (payload) => {
-    console.log("⚠️ email.bounced", {
+    console.log("Resend email bounced", {
       emailId: payload.data.email_id,
       bounceType: payload.data.bounce.type,
       bounceSubType: payload.data.bounce.subType,
     });
   })
   .event(email_received, async (payload) => {
-    console.log("📨 email.received", {
+    console.log("Resend email received", {
       emailId: payload.data.email_id,
       messageId: payload.data.message_id,
       attachments: payload.data.attachments?.length ?? 0,
@@ -62,14 +50,14 @@ const webhook = resend()
     );
   })
   .event(domain_updated, async (payload) => {
-    console.log("🌐 domain.updated", {
+    console.log("Resend domain updated", {
       domainId: payload.data.id,
       status: payload.data.status,
       recordCount: payload.data.records.length,
     });
   })
   .event(contact_created, async (payload) => {
-    console.log("👤 contact.created", {
+    console.log("Resend contact created", {
       contactId: payload.data.id,
       audienceId: payload.data.audience_id,
       segmentCount: payload.data.segment_ids.length,
@@ -77,17 +65,19 @@ const webhook = resend()
     });
   })
   .onError(async (error, context) => {
-    console.error("❌ Resend webhook error:", error.message);
-    console.error("   Event type:", context.eventType);
+    console.error("Resend webhook error", {
+      eventType: context.eventType,
+      message: error.message,
+    });
   })
   .onVerificationFailed(async (reason) => {
-    console.error("🔐 Resend verification failed:", reason);
+    console.error("Resend verification failed", { reason });
   });
 
 export const POST = toNextJS(webhook, {
   secret: process.env.RESEND_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
-    console.log(`✅ Successfully processed Resend ${eventType} event`);
+    console.log("Resend webhook processed", { eventType });
   },
 });
 

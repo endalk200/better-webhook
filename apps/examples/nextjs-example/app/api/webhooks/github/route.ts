@@ -1,67 +1,49 @@
 import { github } from "@better-webhook/github";
-import { push, pull_request, issues } from "@better-webhook/github/events";
+import { issues, pull_request, push } from "@better-webhook/github/events";
 import { toNextJS } from "@better-webhook/nextjs";
-import { createInMemoryReplayStore } from "@better-webhook/core";
-import { createOpenTelemetryInstrumentation } from "@better-webhook/otel";
-
-// Core replay protection with built-in in-memory store
-const replayStore = createInMemoryReplayStore();
 
 const webhook = github()
-  .instrument(
-    createOpenTelemetryInstrumentation({
-      includeEventTypeAttribute: true,
-    }),
-  )
-  .withReplayProtection({
-    store: replayStore,
-  })
   .event(push, async (payload, context) => {
-    console.log("📦 Push event received!");
-    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`   Received at: ${context.receivedAt.toISOString()}`);
-    console.log(`   Repository: ${payload.repository.full_name}`);
-    console.log(`   Branch: ${payload.ref}`);
-    console.log(`   Commits: ${payload.commits.length}`);
-    payload.commits.forEach((commit) => {
-      console.log(`   - ${commit.message} (${commit.id.slice(0, 7)})`);
+    console.log("GitHub push received", {
+      deliveryId: context.deliveryId,
+      repository: payload.repository.full_name,
+      branch: payload.ref,
+      commits: payload.commits.length,
     });
   })
   .event(pull_request, async (payload, context) => {
-    console.log("🔀 Pull request event received!");
-    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`   Action: ${payload.action}`);
-    console.log(
-      `   PR #${payload.pull_request.number}: ${payload.pull_request.title}`,
-    );
-    console.log(`   State: ${payload.pull_request.state}`);
+    console.log("GitHub pull request received", {
+      deliveryId: context.deliveryId,
+      action: payload.action,
+      number: payload.pull_request.number,
+      title: payload.pull_request.title,
+    });
   })
   .event(issues, async (payload, context) => {
-    console.log("🎫 Issue event received!");
-    console.log(`   Delivery ID: ${context.headers["x-github-delivery"]}`);
-    console.log(`   Action: ${payload.action}`);
-    console.log(`   Issue #${payload.issue.number}: ${payload.issue.title}`);
-    console.log(`   State: ${payload.issue.state}`);
+    console.log("GitHub issue received", {
+      deliveryId: context.deliveryId,
+      action: payload.action,
+      number: payload.issue.number,
+      title: payload.issue.title,
+    });
   })
   .onError(async (error, context) => {
-    console.error("❌ Webhook error:", error.message);
-    console.error("   Event type:", context.eventType);
+    console.error("GitHub webhook error", {
+      eventType: context.eventType,
+      message: error.message,
+    });
   })
-  .onVerificationFailed(async (reason, headers) => {
-    console.error("🔐 Verification failed:", reason);
-    console.log("Headers: ", headers);
-    console.log("Received signature header: ", headers["x-hub-signature-256"]);
+  .onVerificationFailed(async (reason) => {
+    console.error("GitHub verification failed", { reason });
   });
 
-// Export the POST handler
 export const POST = toNextJS(webhook, {
   secret: process.env.GITHUB_WEBHOOK_SECRET,
   onSuccess: (eventType) => {
-    console.log(`✅ Successfully processed ${eventType} event`);
+    console.log("GitHub webhook processed", { eventType });
   },
 });
 
-// Optionally handle other methods
 export async function GET() {
   return new Response(
     JSON.stringify({
