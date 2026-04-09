@@ -1,0 +1,38 @@
+{
+  "name": "@better-webhook/express-github-otel-example",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Express GitHub OpenTelemetry example for better-webhook",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "echo 'No build needed for example'",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-webhook/express": "workspace:*",
+    "@better-webhook/github": "workspace:*",
+    "@better-webhook/otel": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/resources": "^2.6.1",
+    "@opentelemetry/sdk-metrics": "^2.6.1",
+    "@opentelemetry/sdk-node": "^0.214.0",
+    "@opentelemetry/sdk-trace-base": "^2.6.1",
+    "@opentelemetry/semantic-conventions": "^1.40.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
+    "@better-webhook/typescript-config": "workspace:*",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.3.1",
+    "eslint": "^9.35.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
