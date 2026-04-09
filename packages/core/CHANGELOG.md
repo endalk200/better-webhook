@@ -1,5 +1,11 @@
 # @better-webhook/core
 
+## 0.12.3
+
+### Patch Changes
+
+- 36e29d4: fix: improve schema inference for Zod-compatible event validators and clarify Recall payload docs
+
 ## 0.12.2
 
 ### Patch Changes

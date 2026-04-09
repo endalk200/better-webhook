@@ -1,5 +1,12 @@
 # @better-webhook/stripe
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [36e29d4]
+  - @better-webhook/core@0.12.3
+
 ## 0.1.5
 
 ### Patch Changes

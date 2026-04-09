@@ -1,6 +1,6 @@
 {
   "name": "@better-webhook/resend",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Resend module for better-webhook",
   "type": "module",
   "main": "dist/index.cjs",
