@@ -555,25 +555,45 @@ Ragie uses HMAC-SHA256 signatures sent in the `X-Signature` header.
 import { recall } from "@better-webhook/recall";
 import {
   participant_events_join,
+  participant_events_chat_message,
   transcript_data,
   bot_done,
 } from "@better-webhook/recall/events";
 
 const webhook = recall({ secret: process.env.RECALL_WEBHOOK_SECRET })
   .event(participant_events_join, async (payload) => {
-    console.log(payload.data.participant.name);
+    const participantEvent = payload.data;
+
+    console.log(participantEvent.participant.name);
+  })
+  .event(participant_events_chat_message, async (payload) => {
+    const participantEvent = payload.data;
+    const message = participantEvent.data;
+
+    console.log(message.text);
   })
   .event(transcript_data, async (payload) => {
-    console.log(payload.data.words.length);
+    const transcript = payload.data;
+
+    console.log(transcript.words.length);
   })
   .event(bot_done, async (payload) => {
-    console.log(payload.data.code);
+    const botStatus = payload.data;
+
+    console.log(botStatus.code);
   });
 ```
 
 <Callout type="info">
-  Recall events use an envelope where the SDK reads event type from `body.event`
-  and validates the unwrapped payload from `body.data`.
+  Recall events use an envelope where the SDK reads the event type from
+  `body.event` and passes the unwrapped `body.data` object to your handler as
+  `payload`.
+</Callout>
+
+<Callout type="info">
+  Recall handler payloads still include nested provider fields such as
+  `payload.data.participant`, `payload.data.words`, and `payload.data.code`.
+  The SDK unwraps the outer envelope, not the inner Recall event schema.
 </Callout>
 
 ### Events
@@ -643,9 +663,9 @@ import {
 
 **Key payload fields:**
 
-- `data.participant` - Participant identity and metadata
+- `data.participant` - Participant identity and metadata on the handler payload
 - `data.timestamp` - Absolute and relative event timestamps
-- `data.data` - Event-specific data (chat content for `chat_message`, otherwise often `null`)
+- `data.data` - Event-specific nested data such as chat content for `chat_message`
 - `realtime_endpoint` / `participant_events` / `recording` / `bot` - Related Recall resources
 
 #### transcript.*
@@ -671,7 +691,7 @@ import {
 
 **Key payload fields:**
 
-- `data.words` - Transcript word segments with relative timestamps
+- `data.words` - Transcript word segments with relative timestamps on the handler payload
 - `data.participant` - Speaker information
 - `transcript` / `recording` / `bot` - Related Recall resources
 
@@ -709,7 +729,7 @@ import {
 
 **Key payload fields:**
 
-- `data.code` - Machine-readable bot status code
+- `data.code` - Machine-readable bot status code on the handler payload
 - `data.sub_code` - Optional additional reason code
 - `data.updated_at` - Status update timestamp
 - `bot` - Bot resource metadata
