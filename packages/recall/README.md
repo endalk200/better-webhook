@@ -35,6 +35,7 @@ npm install @better-webhook/gcp-functions # GCP Cloud Functions
 import { recall } from "@better-webhook/recall";
 import {
   participant_events_join,
+  participant_events_chat_message,
   transcript_data,
   bot_done,
 } from "@better-webhook/recall/events";
@@ -44,17 +45,58 @@ const webhook = recall({
   secret: process.env.RECALL_WEBHOOK_SECRET,
 })
   .event(participant_events_join, async (payload) => {
-    console.log("participant joined:", payload.data.participant.name);
+    const participantEvent = payload.data;
+
+    console.log("participant joined:", participantEvent.participant.name);
+  })
+  .event(participant_events_chat_message, async (payload) => {
+    const participantEvent = payload.data;
+    const message = participantEvent.data;
+
+    console.log("message from:", participantEvent.participant.name);
+    console.log("message text:", message.text);
   })
   .event(transcript_data, async (payload) => {
-    console.log("transcript words:", payload.data.words.length);
+    const transcript = payload.data;
+
+    console.log("transcript words:", transcript.words.length);
   })
   .event(bot_done, async (payload) => {
-    console.log("bot status:", payload.data.code);
+    const botStatus = payload.data;
+
+    console.log("bot status:", botStatus.code);
   });
 
 export const POST = toNextJS(webhook);
 ```
+
+## Handler Payload Shape
+
+Recall sends webhook bodies shaped like this:
+
+```json
+{
+  "event": "participant_events.join",
+  "data": {
+    "data": {
+      "participant": {
+        "id": "participant_123",
+        "name": "Ada Lovelace"
+      }
+    }
+  }
+}
+```
+
+The SDK uses `body.event` for dispatch and passes the unwrapped `body.data` object to your handler as `payload`.
+
+That means these names line up like this:
+
+- `body.event` -> event name used for routing
+- `body.data` -> handler `payload`
+- `payload.data` -> Recall's nested event-specific data object
+
+This is why Recall handlers often read fields such as `payload.data.participant.name`, `payload.data.words.length`, or `payload.data.code`.
 
 ## Supported Events
 
