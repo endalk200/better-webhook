@@ -77,11 +77,14 @@ import {
   RecallTranscriptProviderDataEventSchema,
 } from "./schemas.js";
 
-function expectType<T>(_value: T): void {}
+type IsEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? (<T>() => T extends B ? 1 : 2) extends <T>() => T extends A ? 1 : 2
+      ? true
+      : false
+    : false;
 
-recall().event(bot_joining_call, (payload) => {
-  expectType<"joining_call">(payload.data.code);
-});
+type Assert<T extends true> = T;
 
 const secret = `whsec_${Buffer.from("recall-test-secret").toString("base64")}`;
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -452,6 +455,16 @@ describe("recall()", () => {
     const webhook = recall();
     expect(webhook).toBeDefined();
     expect(webhook.getProvider().name).toBe("recall");
+  });
+
+  it("infers the joining_call payload literal type", () => {
+    recall().event(bot_joining_call, (_payload) => {
+      type PayloadCode = typeof _payload.data.code;
+      const payloadCodeTypeCheck: Assert<IsEqual<PayloadCode, "joining_call">> =
+        true;
+
+      void payloadCodeTypeCheck;
+    });
   });
 
   it("exposes replay context from webhook headers", () => {
