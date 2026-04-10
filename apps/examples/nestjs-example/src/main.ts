@@ -7,7 +7,15 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  const port = Number(process.env.PORT ?? "3003");
+  const portValue = process.env.PORT ?? "3003";
+  const port = Number(portValue);
+
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new RangeError(
+      `PORT must be an integer between 1 and 65535. Received: ${portValue}`,
+    );
+  }
+
   await app.listen(port);
 
   console.log(`NestJS example listening on http://localhost:${port}`);

@@ -3,7 +3,14 @@ import { stopTelemetry, startTelemetry } from "./telemetry.js";
 import { githubHandler } from "./webhooks/github.js";
 
 const app = express();
-const port = Number(process.env.PORT ?? "3004");
+const portValue = process.env.PORT ?? "3004";
+const port = Number(portValue);
+
+if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+  throw new RangeError(
+    `PORT must be an integer between 1 and 65535. Received: ${portValue}`,
+  );
+}
 
 app.post(
   "/webhooks/github",

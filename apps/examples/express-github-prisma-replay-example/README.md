@@ -17,6 +17,7 @@ An Express app showing GitHub replay protection with a Postgres-backed replay st
 ## Quick Start
 
 This example expects an existing Postgres database.
+Set `DATABASE_URL` before running `prisma:push`, and set `GITHUB_WEBHOOK_SECRET` before sending signed requests.
 
 ```bash
 pnpm install
