@@ -3,7 +3,14 @@ import { prisma } from "./prisma.js";
 import { githubHandler } from "./webhooks/github.js";
 
 const app = express();
-const port = Number(process.env.PORT ?? "3005");
+const portValue = process.env.PORT ?? "3005";
+const port = Number(portValue);
+
+if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+  throw new RangeError(
+    `PORT must be an integer between 1 and 65535. Received: ${portValue}`,
+  );
+}
 
 app.post(
   "/webhooks/github",
@@ -12,29 +19,18 @@ app.post(
 );
 
 app.get("/health", async (_req, res) => {
-  await prisma.$queryRaw`SELECT 1`;
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  const timestamp = new Date().toISOString();
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", timestamp });
+  } catch (error) {
+    console.error("Health check failed", error);
+    res.status(503).json({ status: "error", timestamp });
+  }
 });
 
-const shutdown = async (): Promise<void> => {
-  await prisma.$disconnect();
-};
-
-process.on("beforeExit", () => {
-  void shutdown();
-});
-
-process.on("SIGINT", () => {
-  void shutdown();
-  process.exit(0);
-});
-
-process.on("SIGTERM", () => {
-  void shutdown();
-  process.exit(0);
-});
-
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(
     `Express GitHub Prisma replay example listening on http://localhost:${port}`,
   );
@@ -44,4 +40,49 @@ app.listen(port, () => {
   console.log("Required env vars:");
   console.log("- GITHUB_WEBHOOK_SECRET");
   console.log("- DATABASE_URL");
+});
+
+let shuttingDown: Promise<void> | undefined;
+
+const shutdown = async (signal: string): Promise<void> => {
+  if (shuttingDown) {
+    return shuttingDown;
+  }
+
+  shuttingDown = (async () => {
+    console.log(`Received ${signal}, shutting down Prisma replay example`);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+
+      await prisma.$disconnect();
+      process.exit(0);
+    } catch (error) {
+      console.error("Failed to shut down cleanly", error);
+      process.exit(1);
+    }
+  })();
+
+  return shuttingDown;
+};
+
+process.once("beforeExit", () => {
+  void prisma.$disconnect();
+});
+
+process.once("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+
+process.once("SIGTERM", () => {
+  void shutdown("SIGTERM");
 });

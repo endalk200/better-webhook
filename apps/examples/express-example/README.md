@@ -37,8 +37,8 @@ Create your env vars before sending requests:
 ```bash
 GITHUB_WEBHOOK_SECRET=your-github-secret
 RAGIE_WEBHOOK_SECRET=your-ragie-secret
-STRIPE_WEBHOOK_SECRET=your-stripe-secret
-RECALL_WEBHOOK_SECRET=your-recall-secret
+STRIPE_WEBHOOK_SECRET=whsec_your-stripe-secret
+RECALL_WEBHOOK_SECRET=whsec_your-recall-secret
 PORT=3001
 ```
 

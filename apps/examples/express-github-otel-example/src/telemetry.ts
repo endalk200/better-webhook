@@ -8,7 +8,7 @@ import {
   ConsoleSpanExporter,
   SimpleSpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
-import { SEMRESATTRS_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
 let telemetrySdk: NodeSDK | undefined;
 
@@ -19,7 +19,7 @@ export async function startTelemetry(): Promise<void> {
 
   telemetrySdk = new NodeSDK({
     resource: resourceFromAttributes({
-      [SEMRESATTRS_SERVICE_NAME]: "better-webhook-express-github-otel-example",
+      [ATTR_SERVICE_NAME]: "better-webhook-express-github-otel-example",
     }),
     spanProcessors: [new SimpleSpanProcessor(new ConsoleSpanExporter())],
     metricReader: new PeriodicExportingMetricReader({

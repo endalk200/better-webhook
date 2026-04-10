@@ -5,7 +5,14 @@ import { recallHandler } from "./webhooks/recall.js";
 import { stripeHandler } from "./webhooks/stripe.js";
 
 const app = express();
-const port = Number(process.env.PORT ?? "3001");
+const portValue = process.env.PORT ?? "3001";
+const port = Number(portValue);
+
+if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+  throw new RangeError(
+    `PORT must be an integer between 1 and 65535. Received: ${portValue}`,
+  );
+}
 
 app.post(
   "/webhooks/github",
