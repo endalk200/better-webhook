@@ -1,15 +1,5 @@
 import type { ReplayReserveResult, ReplayStore } from "@better-webhook/core";
 import { prisma } from "./prisma.js";
-import { Prisma } from "@prisma/client";
-
-function isPrismaRecordNotFoundError(
-  error: unknown,
-): error is Prisma.PrismaClientKnownRequestError {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2025"
-  );
-}
 
 export class PrismaReplayStore implements ReplayStore {
   async reserve(
@@ -44,7 +34,12 @@ export class PrismaReplayStore implements ReplayStore {
     try {
       await prisma.replayRecord.delete({ where: { key } });
     } catch (error) {
-      if (isPrismaRecordNotFoundError(error)) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2025"
+      ) {
         return;
       }
 
