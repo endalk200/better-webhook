@@ -1,13 +1,12 @@
 import type { ReplayReserveResult, ReplayStore } from "@better-webhook/core";
 import { prisma } from "./prisma.js";
+import { Prisma } from "@prisma/client";
 
 function isPrismaRecordNotFoundError(
   error: unknown,
-): error is { code: "P2025" } {
+): error is Prisma.PrismaClientKnownRequestError {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
+    error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2025"
   );
 }
