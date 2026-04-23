@@ -6,10 +6,20 @@
       "sourceType": "github",
       "computedHash": "784f0dbb7403b0f00324bce9a112f715342777a0daee7bbb7385f9c6f0a170ea"
     },
+    "module-design": {
+      "source": "endalk200/skills",
+      "sourceType": "github",
+      "computedHash": "9f10999f8569e0f6034c3cfb0321018d14ca952a4bea1c1c3988c8f710c6026f"
+    },
     "prd": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "computedHash": "1f3e1f005fc40fda85d250ae906c8ee4f7e8e833e23adfeca6542c19609fd7cd"
+    },
+    "source-dive": {
+      "source": "endalk200/skills",
+      "sourceType": "github",
+      "computedHash": "e2f6007330633be6cf5397d2d7d8100c5ec401773b4d114c64ff2d9c75f4e610"
     },
     "write-a-skill": {
       "source": "mattpocock/skills",
