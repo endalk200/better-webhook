@@ -3,9 +3,10 @@
 ## 1. Executive Summary
 
 - **Problem Statement**: Developers building webhook handlers lose time repeatedly triggering upstream events, reconfiguring short-lived tunnel URLs, and debugging against inconsistent or unverifiable local webhook payloads. Existing workflows make it hard to iterate quickly while preserving real provider behavior such as signatures, headers, timestamps, and delivery semantics.
-- **Proposed Solution**: Build `better-webhook` CLI v2 as an endpoint-centric local webhook development tool that lets developers create named endpoint profiles, run deeply curated provider-aware templates, capture real webhook deliveries, forward them transparently to local targets, and replay stored deliveries on demand. The CLI will be local-first, safe by default, machine-usable for agents and automation, and architected now for an optional future managed tunneling service.
+- **Proposed Solution**: Build `better-webhook` CLI v2 as a project-centric local webhook development tool. Each directory-local project contains one or more named endpoint profiles, one shared local gateway, and one project-scoped capture store. Developers can run deeply curated provider-aware templates directly against endpoint targets, receive real inbound webhook deliveries through the project gateway, capture and forward them transparently, and replay stored deliveries on demand. The CLI will be local-first, safe by default, machine-usable for agents and automation, and architected now for an optional future managed tunneling service.
 - **Success Criteria**:
   - A new user can install the CLI, create an endpoint profile, and deliver a curated template to a local endpoint in under 5 minutes.
+  - A developer can initialize one project with multiple endpoint profiles and start one gateway process that exposes all configured routes with no routing ambiguity.
   - Supported provider templates pass local signature verification in at least 95% of maintained compatibility tests.
   - Supported-provider capture replay succeeds in either `exact` or `local-verified` mode in at least 95% of maintained replay tests.
   - Security controls block delivery to public remote targets in 100% of automated safety tests.
@@ -21,7 +22,7 @@
 
 ### User Stories
 
-- **Story 1**: As a developer, I want to create a named endpoint profile so that templates, captures, replay, and future tunnel URLs all target the same local webhook endpoint configuration.
+- **Story 1**: As a developer, I want to initialize a local project and create named endpoint profiles so that templates, captures, replay, and future tunnel URLs all target the correct webhook handlers inside one workspace.
 - **Story 2**: As a developer, I want to run a curated provider/event template against my local endpoint so that I can iterate without repeatedly causing real upstream events.
 - **Story 3**: As a developer, I want supported template runs to generate verification-compatible signatures and provider-shaped metadata so that my real local verification logic succeeds in development.
 - **Story 4**: As a developer, I want to capture real incoming webhook requests and transparently forward them to my local endpoint so that I can debug real deliveries without changing delivery semantics.
@@ -33,19 +34,31 @@
 ### Acceptance Criteria
 
 - **Story 1**
+  - Users can initialize a directory-local project explicitly before adding endpoints.
   - Users can create, inspect, update, and delete named endpoint profiles.
+  - Projects can contain multiple endpoint profiles.
   - Endpoint profiles support two modes: generic and provider-aware.
+  - Endpoint ids are explicit, human-chosen, and unique within the project.
+  - Endpoint ids are not renameable through the CLI in the initial release.
   - Provider-aware profiles store provider identity, local target URL, and required secret references.
   - Each endpoint profile owns a stable inbound routing binding used to attribute live captures and future tunnel deliveries to that profile.
-  - The first shipped release supports path-based inbound routing, and the route must be unique within the local CLI instance.
+  - The first shipped release supports path-based inbound routing, and the route must be unique within the project.
+  - Routes are explicit user input; the CLI does not generate default routes.
+  - Multiple endpoint profiles may share the same provider.
+  - Multiple endpoint profiles may share the same local target URL.
   - Profiles enforce target safety rules and reject public remote targets.
   - Guided interactive setup is the default onboarding path, with non-interactive alternatives available.
+  - Deleting an endpoint through the CLI must warn if captures exist for that endpoint and require confirmation before deleting the endpoint and its related captures.
 
 - **Story 2**
   - Users can list, search, download, inspect, and run official templates from a local managed catalog.
+  - Template discovery and template management commands are global and not tied to a project.
   - Official templates are stored as user-visible JSONC files on disk.
   - Users can create explicit user-owned copies or forks of official templates.
   - Template execution renders runtime placeholders such as IDs, timestamps, and provider-specific signature placeholders at send time.
+  - Template execution is project-scoped and targets an endpoint id in the current project.
+  - Provider-aware endpoints accept only provider-compatible templates.
+  - Generic endpoints may accept arbitrary template traffic, but without provider-aware guarantees unless the template itself is fully self-contained.
   - Template execution records which template and catalog version were used.
 
 - **Story 3**
@@ -55,17 +68,23 @@
   - If a required secret or capability is missing, the CLI fails clearly instead of silently degrading.
 
 - **Story 4**
-  - The CLI can run a local capture server and receive incoming webhook deliveries.
+  - The CLI can run one shared local capture gateway per project and receive incoming webhook deliveries for all configured endpoint routes.
+  - `bw dev` requires a fully valid project configuration before startup.
+  - Unreachable local targets do not block `bw dev` startup; forwarding is still attempted per request and failures are surfaced per delivery.
   - Incoming webhook deliveries are matched to an endpoint profile using the profile's configured inbound route before capture persistence and forwarding.
+  - If no configured route matches, the CLI rejects the request clearly and does not store it as a normal capture.
   - Live forwarding preserves original request semantics as closely as possible, including method, query, headers, duplicate headers, and raw body bytes.
   - Live forwarding uses transparent proxy behavior: the upstream sender receives the local application’s actual response status and body.
   - Captured requests are stored locally as immutable raw captures with optional provider analysis metadata.
   - The CLI can surface whether provider detection succeeded and what advanced features are available for the capture.
+  - Route ownership wins for live inbound traffic; provider-detection mismatches produce warnings rather than rejections.
 
 - **Story 5**
   - Replays support `exact` mode for raw transport fidelity.
   - Replays support `local-verified` mode when provider-aware logic and required secrets are available.
   - The default replay mode is `local-verified` when supported for the endpoint profile, otherwise `exact`.
+  - Replay always targets the original endpoint associated with the capture in the initial release.
+  - Replay does not support endpoint override in the initial release.
   - The CLI clearly indicates which replay mode was used for each replay attempt.
   - Replay results include request summary, target URL, response status, duration, and failure details when applicable.
 
@@ -89,6 +108,8 @@
   - All primary commands share the same conceptual model in both modes.
   - Exit codes and output schemas remain deterministic in machine mode.
   - Breaking machine-mode schema changes require an explicit schema-version increment.
+  - Project-scoped commands resolve the nearest project config upward from the current directory by default, or use an explicit `--project` override when provided.
+  - Project-scoped commands fail clearly when no project is found or resolution is ambiguous.
 
 ### Non-Goals
 
@@ -115,43 +136,62 @@
 
 ### Architecture Overview
 
-- **Primary product object**: endpoint profile.
-  - All major workflows hang off the endpoint profile: template runs, capture, transparent forwarding, replay, and future managed tunnel attachment.
+- **Primary product objects**:
+  - `project/workspace` is the top-level directory-local object.
+  - `endpoint profile` is the primary execution object inside a project.
+  - All major workflows hang off endpoint profiles inside a project: template runs, capture, transparent forwarding, replay, and future managed tunnel attachment.
+- **Project model**:
+  - A project contains one or more endpoint profiles.
+  - A project owns one shared local gateway listener.
+  - A project owns one project-scoped capture store.
+  - A project stores narrow shared settings only: project name, capture storage override, default capture retention policy, and default gateway listen address or port.
+  - `bw dev` requires the project configuration to be fully valid before startup.
+- **Endpoint profile model**:
   - Each endpoint profile includes an inbound routing binding, a local target binding, and optional provider-aware configuration.
+  - Every saved endpoint profile is active when `bw dev` starts in the initial release.
 - **Core runtime components**:
+  - project resolver and config validator
   - endpoint profile manager
   - template catalog client and local manager
   - runtime template renderer
   - provider capability registry
-  - local capture server
+  - project gateway listener
   - transparent forwarding pipeline
   - replay engine
-  - local capture store
+  - project capture store
   - output renderer for human mode and machine mode
 - **Data flow: template run**
+  - CLI resolves the current project.
   - User selects an endpoint profile.
   - CLI resolves a local official template or user-owned copy.
+  - CLI validates provider compatibility for the targeted endpoint profile.
   - Runtime renderer fills placeholders such as IDs, timestamps, and provider-specific signatures.
-  - Delivery layer sends the rendered request to the endpoint profile’s local target.
+  - Delivery layer sends the rendered request directly to the endpoint profile’s local target.
   - CLI reports delivery result in the selected interaction mode.
 - **Data flow: live capture and forward**
-  - A real webhook request arrives at the local capture server or future managed tunnel relay.
+  - A real webhook request arrives at the project gateway listener or future managed tunnel relay.
   - The CLI resolves the inbound route to a single endpoint profile.
+  - If no endpoint profile matches, the CLI rejects the request and does not store it as a normal capture.
   - CLI persists the raw capture locally.
   - CLI optionally enriches the capture with provider detection and capability metadata.
   - CLI forwards the raw request transparently to the configured local target.
   - CLI mirrors the local application’s response back upstream.
 - **Data flow: replay**
-  - User selects a stored capture and an endpoint profile.
+  - CLI resolves the current project.
+  - User selects a stored capture.
   - CLI chooses replay mode.
   - In `exact` mode, the raw request is resent with minimal unavoidable transport changes.
   - In `local-verified` mode, the CLI preserves original request semantics where possible while regenerating volatile provider-specific values such as signatures or timestamps required for current local verification.
+  - Delivery layer sends the replay directly to the original endpoint target associated with the capture.
   - CLI reports replay result and retains the original raw capture unchanged.
 - **Storage model**:
-  - Endpoint profile metadata stored locally.
-  - Endpoint profiles store both the outbound local target and the inbound route binding used for capture attribution.
+  - Project config is stored locally in the project directory.
+  - Projects may exist independently in multiple directories within the same repository or monorepo.
+  - Endpoint profile metadata is stored inside the project config.
+  - Endpoint profiles store the outbound local target and the inbound route binding used for capture attribution.
   - Secrets stored securely by default using the OS keychain or equivalent credential store when available, with automation-safe injection paths.
-  - Captures stored locally with immutable raw request data plus optional analysis metadata.
+  - Captures are stored in one project-level capture store with immutable raw request data plus optional analysis metadata.
+  - Every capture stores mandatory endpoint attribution metadata.
   - Default capture retention is age-based, configurable, and set to 7 days.
   - Official templates stored in a managed local directory; user-owned copies stored separately.
 
@@ -166,16 +206,27 @@
   - CLI downloads a release manifest and template assets, verifies checksums and signatures, and records installed versions.
   - The product must support default storage paths with user overrides.
   - Official managed templates remain updateable artifacts; user-owned copies are the supported path for local customization.
+  - Template discovery and template management remain global rather than project-scoped.
+  - Template execution is project-scoped and requires a valid targeted endpoint id in the active project.
 - **Endpoint targets**
   - Delivery is restricted to `localhost`, loopback IPs, and private LAN targets.
   - Public IPs, public hostnames, and externally resolved remote endpoints are rejected.
+- **Project resolution**
+  - The active project is resolved from the nearest project config upward from the current directory by default.
+  - Commands may use an explicit `--project` override to target a specific project path.
+  - The CLI must fail clearly when project resolution is ambiguous or when no project is found for a project-scoped command.
 - **Inbound routing**
   - The first shipped release uses path-based routing to bind inbound requests to endpoint profiles.
   - Each endpoint profile must have a unique inbound route.
+  - Routes are explicit user input and may be nested arbitrary paths, including `/`.
+  - Route matching is exact and case-sensitive.
+  - Trailing slashes are normalized to one canonical form at config validation time, except `/`.
+  - The gateway reserves no public HTTP paths for itself in the initial release.
   - Future managed tunnel URLs must map deterministically to the same endpoint-profile routing model so that local capture, forwarding, replay attribution, and permanent endpoints share one conceptual object.
 - **Future managed tunneling service**
   - Must remain optional.
   - Default future behavior is to offer the managed tunnel while allowing users to opt out and use external tunneling tools.
+  - Future public URLs should follow one base URL per project plus endpoint paths.
   - Future service modes include ephemeral URLs without account creation and permanent URLs for account-backed users.
   - Raw webhook payloads must still be persisted locally by default even when passing through the future managed service.
 - **Distribution**
@@ -191,6 +242,9 @@
 - **Safe delivery guardrails**
   - Template execution and replay must refuse delivery to public remote targets.
   - Local and private LAN targets are allowed.
+- **Validation**
+  - The CLI validates all user input strictly, including manual edits to project config files.
+  - Invalid route definitions, duplicate endpoint ids, duplicate normalized routes, malformed targets, or otherwise invalid endpoint definitions must fail with actionable errors rather than being repaired silently.
 - **Secret handling**
   - Secrets must never be echoed in normal CLI output.
   - Secret storage must prefer OS credential stores.
@@ -208,19 +262,23 @@
 - **Behavioral honesty**
   - Live forwarding must preserve real delivery semantics and return the local application’s real response upstream.
   - The CLI must not silently change unknown-provider traffic into provider-aware behavior.
+  - The capture store contains only real inbound traffic received by the project gateway or future managed tunnel path, not synthetic template runs or replay executions.
 
 ## 5. Risks & Roadmap
 
 ### Phased Rollout
 
 - **Initial release**
-  - Endpoint-profile-first CLI UX.
+  - Project-first, endpoint-centric CLI UX.
+  - Explicit `bw init` project creation.
+  - Directory-local project resolution with optional explicit override.
   - Guided interactive setup and non-interactive alternatives.
+  - Multiple endpoint profiles per project with one shared gateway listener.
   - Local managed official template catalog with versioned release download and checksum/signature verification.
   - User-owned template copies separate from managed official templates.
   - Runtime placeholder rendering for curated provider templates.
   - Provider-aware template execution with verification-compatible signing for supported providers.
-  - Local capture server with immutable raw capture storage.
+  - Project gateway with exact path routing and immutable project-scoped raw capture storage.
   - Transparent forwarding to local and private LAN targets only.
   - Replay support with `exact` and `local-verified` modes.
   - Human mode default output and machine mode structured output.
@@ -248,5 +306,6 @@
 - **Template supply-chain risk**: Downloading catalog content from a remote source creates trust and reproducibility concerns without strong versioning and verification.
 - **Cross-platform secret storage risk**: OS credential store behavior varies across macOS, Linux, and Windows and may complicate automation-friendly defaults.
 - **Tunnel-architecture risk**: If the local-first MVP is not designed carefully, future optional managed tunneling may force breaking conceptual or storage changes.
+- **Multi-endpoint routing risk**: Projects with many endpoints raise the chance of route confusion, deletion mistakes, and config drift unless validation, attribution, and CLI messaging remain strict.
 - **Security expectation risk**: Because the product generates and relays realistic webhook traffic, any ambiguity in target restrictions or capability claims could create accidental misuse.
 - **Retention and privacy risk**: Even local captures may accumulate sensitive request data if retention defaults and cleanup behavior are not clear and reliable.
