@@ -16,12 +16,19 @@ Better Webhook has two release channels:
 
 SDK packages are published from `main` using Changesets.
 
+Publishing uses npm trusted publishing from GitHub Actions. The release workflow
+requests an OIDC token, npm verifies the GitHub identity for the configured
+packages, and npm records provenance attestations for the published artifacts.
+
 High-level flow:
 
 1. Changesets are added for package changes.
-2. CI validates formatting, linting, type checks, tests, and build.
-3. Changesets action creates a release PR or publishes packages.
-4. Tags are pushed after successful publish.
+2. Private example apps are ignored by Changesets so release PRs stay focused on
+   actual npm artifacts.
+3. CI validates formatting, linting, type checks, tests, and build.
+4. Changesets action creates a release PR or publishes packages.
+5. npm publishes with OIDC-backed provenance attestations.
+6. Tags are pushed after successful publish.
 
 Primary workflow: [`.github/workflows/release.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release.yml)
 
@@ -51,6 +58,7 @@ Primary workflows/config:
 ## Where to find release artifacts
 
 - SDK packages: npm (`@better-webhook/*`)
+- SDK provenance: npm package attestations for each trusted publish
 - CLI binaries and release notes: GitHub Releases
 - Homebrew install path:
 

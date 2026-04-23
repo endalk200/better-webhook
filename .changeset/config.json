@@ -7,5 +7,10 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@better-webhook/express-example",
+    "@better-webhook/hono-example",
+    "@better-webhook/nestjs-example",
+    "@better-webhook/nextjs-example"
+  ]
 }
