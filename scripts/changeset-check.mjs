@@ -8,6 +8,10 @@ const repoRoot = path.resolve(
   "..",
 );
 const baseRef = process.env.CHANGESET_BASE_REF || "main";
+const changesetConfig = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, ".changeset", "config.json"), "utf8"),
+);
+const ignoredPackageNames = new Set(changesetConfig.ignore ?? []);
 
 function run(command, args) {
   const result = spawnSync(command, args, {
@@ -97,6 +101,10 @@ function getChangedPublishablePackages(changedFiles) {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
     if (packageJson.private === true) {
+      continue;
+    }
+
+    if (ignoredPackageNames.has(packageJson.name)) {
       continue;
     }
 
