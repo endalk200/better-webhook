@@ -1,143 +1,95 @@
 ---
 title: CLI Getting Started
-description: Install the Better Webhook CLI and start capturing, replaying, and testing webhooks locally in minutes.
+description: Install the new bw CLI release line and verify the release contract.
 ---
-
-import { Steps, Step } from "fumadocs-ui/components/steps";
-import { Callout } from "fumadocs-ui/components/callout";
 
 # CLI Getting Started
 
-The Better Webhook CLI is a local development tool for capturing, replaying, and testing webhooks without exposing your localhost to the internet.
+The new Better Webhook CLI release line ships as `bw`.
+
+This page covers installation, release channels, and version verification for the current `2.x` CLI rollout.
 
 ## Installation
 
-### Homebrew (Recommended)
+### Homebrew (stable)
 
 ```bash
 brew install --cask endalk200/tap/better-webhook
 ```
 
-### Go install
+### npm (stable)
 
 ```bash
-go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
+npm install -g @better-webhook/cli
 ```
 
-To install a pinned release:
+### npm prerelease testing
+
+Prerelease testing should prefer `npx` instead of a global install:
 
 ```bash
-go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@vX.Y.Z
+npx @better-webhook/cli@next --version
+npx @better-webhook/cli@2.0.0-alpha.1 version --json
 ```
 
-### Manual download
+### GitHub Releases
 
-Download the latest binary for your platform from [GitHub Releases](https://github.com/endalk200/better-webhook/releases):
+Download release assets from [GitHub Releases](https://github.com/endalk200/better-webhook/releases).
 
-| Platform      | Asset Name                          |
-| ------------- | ----------------------------------- |
-| macOS (ARM)   | `better-webhook-darwin-arm64.tar.gz` |
-| macOS (Intel) | `better-webhook-darwin-x64.tar.gz`   |
-| Linux (x64)   | `better-webhook-linux-x64.tar.gz`    |
-| Linux (ARM)   | `better-webhook-linux-arm64.tar.gz`  |
-| Windows       | `better-webhook-windows-x64.zip`     |
+Expected archive names:
+
+| Platform      | Asset Name               |
+| ------------- | ------------------------ |
+| macOS (ARM)   | `bw-darwin-arm64.tar.gz` |
+| macOS (Intel) | `bw-darwin-x64.tar.gz`   |
+| Linux (ARM)   | `bw-linux-arm64.tar.gz`  |
+| Linux (x64)   | `bw-linux-x64.tar.gz`    |
+| Windows (x64) | `bw-windows-x64.zip`     |
+
+### Nix
+
+Stable installs can build from source using the repo flake:
 
 ```bash
-# Example: macOS ARM
-curl -L https://github.com/endalk200/better-webhook/releases/latest/download/better-webhook-darwin-arm64.tar.gz -o better-webhook.tar.gz
-tar -xzf better-webhook.tar.gz
-chmod +x better-webhook
-sudo mv better-webhook /usr/local/bin/
+nix run github:endalk200/better-webhook?ref=cli-v2.0.0#bw -- --version
 ```
 
-### Verify Installation
+## Verify installation
+
+Human-readable version:
 
 ```bash
-better-webhook --version
+bw --version
 ```
 
-## Quick Start
-
-Use a terminal-only workflow to capture and replay real webhook traffic:
-
-<Steps>
-  <Step>
-    ### Start capture server
-
-    ```bash
-    better-webhook capture --port 3001
-    ```
-
-    The CLI listens on `http://localhost:3001` and stores captures in `~/.better-webhook/captures`.
-
-  </Step>
-
-  <Step>
-    ### Point Webhooks to the Capture Server
-
-    Configure your webhook source (GitHub, Stripe, Ragie, Recall.ai, etc.) to send webhooks to:
-
-    ```
-    http://localhost:3001/webhooks/your-provider
-    ```
-
-    Tip: The capture server accepts **any** path and stores the request with headers and body.
-
-    <Callout type="info">
-      Use a tunnel service like ngrok or cloudflared to expose the capture server if your webhook source can't reach localhost.
-    </Callout>
-
-  </Step>
-
-  <Step>
-    ### Trigger a Webhook
-
-    Perform an action that triggers a webhook (push code, create an issue, etc.). The webhook is saved locally.
-
-  </Step>
-
-  <Step>
-    ### Replay to your local server
-
-    In a second terminal, list captures and replay one to your app:
-
-    ```bash
-    better-webhook captures list
-    better-webhook captures replay <capture-id> \
-    http://localhost:3000/api/webhooks/github
-    ```
-
-    You can replay the same webhook as many times as needed while debugging.
-
-  </Step>
-</Steps>
-
-## Using Templates
-
-Don't have real webhooks to test with? Use pre-built templates:
+Machine-readable version metadata:
 
 ```bash
-# List available templates
-better-webhook templates list
-
-# Download a template
-better-webhook templates download github-push
-better-webhook templates download stripe-charge_failed
-
-# Run a template against your endpoint
-better-webhook templates run github-push http://localhost:3000/api/webhooks/github
-better-webhook templates run stripe-charge_failed http://localhost:3000/api/webhooks/stripe
+bw version --json
 ```
 
-Templates include proper headers and can generate valid signatures when you provide a secret.
+Example JSON fields:
 
-<Callout type="info">
-  You can install the CLI via Homebrew Cask, manual release archives, or
-  `go install`.
-</Callout>
+- `schemaVersion`
+- `version`
+- `commit`
+- `date`
+- `platform`
 
-## Next Steps
+## Release behavior
 
-- [Command Reference](/docs/cli/commands) — Full documentation for all CLI commands
-- [Configuration](/docs/cli/configuration) — Config file structure, env overrides, and precedence
-- [Templates](/docs/cli/templates) — Learn about available templates and how to use them
+- Official CLI releases publish only from `cli-v*` tags.
+- Stable releases publish to GitHub Releases, npm `latest`, Homebrew, and Nix validation.
+- Prereleases publish to GitHub prereleases, npm `next`, and Nix validation.
+- Homebrew stays stable-only in the first version.
+
+## Artifact verification
+
+GitHub Releases are the canonical source for:
+
+- archives
+- checksums
+- Sigstore bundles
+- SBOMs
+
+For maintainer details, see [Release Policy](/docs/release-policy) and the internal runbook in `docs/cli-release-runbook.md`.

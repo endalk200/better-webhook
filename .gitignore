@@ -30,6 +30,8 @@ dist
 
 # CLI binaries
 apps/webhook-cli/bin/
+apps/cli/bin/
+.bin/
 
 
 # Debug

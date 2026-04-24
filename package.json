@@ -7,6 +7,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
+    "test:cli-release": "node --test scripts/cli-release.test.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version && pnpm install --lockfile-only",
@@ -43,5 +44,23 @@
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=18"
-  }
+  },
+  "version": "1.0.0",
+  "description": "[![CI](https://github.com/endalk200/better-webhook/actions/workflows/ci.yml/badge.svg)](https://github.com/endalk200/better-webhook/actions/workflows/ci.yml) [![npm Core](https://img.shields.io/npm/v/@better-webhook/core)](https://www.npmjs.com/package/@better-webhook/core) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "type": "commonjs"
 }

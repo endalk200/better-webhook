@@ -1,0 +1,29 @@
+{
+  "name": "@better-webhook/cli-darwin-arm64",
+  "version": "0.0.0",
+  "description": "Darwin arm64 binary for the Better Webhook CLI.",
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "license": "MIT",
+  "author": "Endalk <endalk200>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/endalk200/better-webhook.git",
+    "directory": "packages/cli-darwin-arm64"
+  },
+  "bugs": {
+    "url": "https://github.com/endalk200/better-webhook/issues"
+  },
+  "homepage": "https://github.com/endalk200/better-webhook#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

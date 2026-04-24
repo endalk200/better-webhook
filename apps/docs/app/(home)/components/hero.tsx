@@ -44,9 +44,7 @@ export function Hero() {
   }, []);
 
   const copyCommand = async () => {
-    await navigator.clipboard.writeText(
-      "brew install --cask endalk200/tap/better-webhook",
-    );
+    await navigator.clipboard.writeText("npm install -g @better-webhook/cli");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -95,7 +93,7 @@ export function Hero() {
               <div className="nb-install max-w-lg">
                 <div className="nb-install-text">
                   <span className="text-[var(--nb-green)]">$</span>{" "}
-                  <span>brew install --cask endalk200/tap/better-webhook</span>
+                  <span>npm install -g @better-webhook/cli</span>
                 </div>
                 <button
                   onClick={copyCommand}

@@ -1,67 +1,113 @@
 ---
 title: Release Policy
-description: How SDK packages and CLI binaries are versioned and released.
+description: How SDK packages and the new bw CLI are versioned and released.
 ---
 
 # Release Policy
 
 ## Release channels
 
-Better Webhook has two release channels:
+Better Webhook has two separate release systems:
 
-- SDK packages (npm)
-- CLI binaries (GitHub Releases + Homebrew tap)
+- SDK packages published from `main` with Changesets
+- CLI releases published from `cli-v*` tags
 
 ## SDK package releases
 
-SDK packages are published from `main` using Changesets.
+SDK packages continue to publish from `main` through `.github/workflows/release.yml`.
 
-Publishing uses npm trusted publishing from GitHub Actions. The release workflow
-requests an OIDC token, npm verifies the GitHub identity for the configured
-packages, and npm records provenance attestations for the published artifacts.
-
-High-level flow:
-
-1. Changesets are added for package changes.
-2. Private example apps are ignored by Changesets so release PRs stay focused on
-   actual npm artifacts.
-3. CI validates formatting, linting, type checks, tests, and build.
-4. Changesets action creates a release PR or publishes packages.
-5. npm publishes with OIDC-backed provenance attestations.
-6. Tags are pushed after successful publish.
+Publishing uses npm trusted publishing from GitHub Actions. The release workflow requests an OIDC token, npm verifies the GitHub identity for the configured packages, and npm records provenance attestations for the published artifacts.
 
 Primary workflow: [`.github/workflows/release.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release.yml)
 
 ## CLI releases
 
-CLI releases are tag-triggered (`v*`) and built through GoReleaser.
+The new CLI line ships as `bw`.
 
-High-level flow:
+### Tag format
 
-1. Push a semantic tag such as `v1.2.3`.
-2. CI runs format/lint/test/build.
-3. GoReleaser builds archives for macOS/Linux/Windows.
-4. Checksums and signatures are generated.
-5. Release artifacts are published and Homebrew cask is updated.
+Official CLI releases publish only from `cli-v<semver>` tags.
 
-Primary workflows/config:
+Examples:
+
+- `cli-v2.0.0-alpha.1`
+- `cli-v2.0.0-beta.2`
+- `cli-v2.0.0-rc.1`
+- `cli-v2.0.1`
+
+Versions are immutable. Fixes always ship as a new tag.
+
+### Distribution channels
+
+- GitHub Releases:
+  - archives
+  - checksums
+  - Sigstore bundles
+  - SBOMs
+  - generated release notes
+- npm:
+  - stable -> `latest`
+  - prerelease -> `next`
+- Homebrew:
+  - stable only
+  - published to `endalk200/tap`
+- Nix:
+  - validated on every CLI tag
+  - documented for stable installs only
+
+### npm packages
+
+The CLI npm path uses a wrapper package plus native platform packages:
+
+- `@better-webhook/cli`
+- `@better-webhook/cli-darwin-arm64`
+- `@better-webhook/cli-darwin-x64`
+- `@better-webhook/cli-linux-arm64`
+- `@better-webhook/cli-linux-x64`
+- `@better-webhook/cli-windows-x64`
+
+All six packages publish at the exact same version derived from the release tag.
+
+### Workflow shape
+
+Primary workflow/config:
 
 - [`.github/workflows/release-cli.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release-cli.yml)
 - [`.goreleaser.yaml`](https://github.com/endalk200/better-webhook/blob/main/.goreleaser.yaml)
+- [`docs/cli-release-runbook.md`](https://github.com/endalk200/better-webhook/blob/main/docs/cli-release-runbook.md)
+
+High-level flow:
+
+1. Validate the `cli-v*` tag and derive release metadata.
+2. Run formatting, lint, typecheck, test, build, and CLI-specific Go checks.
+3. Build archives, checksums, signatures, and SBOMs with GoReleaser.
+4. Smoke test native archives.
+5. Assemble and smoke test npm packages.
+6. Publish GitHub Release assets.
+7. Publish npm packages.
+8. Update Homebrew on stable releases only.
+9. Run Nix validation.
+
+## Install guidance
+
+Stable installs:
+
+```bash
+brew install --cask endalk200/tap/better-webhook
+npm install -g @better-webhook/cli
+bw --version
+```
+
+Prerelease testing:
+
+```bash
+npx @better-webhook/cli@next --version
+npx @better-webhook/cli@2.0.0-alpha.1 version --json
+```
 
 ## Versioning expectations
 
 - Use semantic versioning for both SDK and CLI.
-- Breaking changes should be clearly indicated in release notes.
-- Patch versions should remain backward compatible.
-
-## Where to find release artifacts
-
-- SDK packages: npm (`@better-webhook/*`)
-- SDK provenance: npm package attestations for each trusted publish
-- CLI binaries and release notes: GitHub Releases
-- Homebrew install path:
-
-```bash
-brew install --cask endalk200/tap/better-webhook
-```
+- CLI prereleases may use only `alpha`, `beta`, or `rc`.
+- `bw --version` prints only the semantic version.
+- `bw version --json` is a compatibility contract with `schemaVersion`, `version`, `commit`, `date`, and `platform`.
