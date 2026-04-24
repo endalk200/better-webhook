@@ -1,0 +1,375 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - "cli-v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify CLI release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      is_prerelease: ${{ steps.metadata.outputs.is_prerelease }}
+      npm_tag: ${{ steps.metadata.outputs.npm_tag }}
+      github_prerelease: ${{ steps.metadata.outputs.github_prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Install dependencies
+        run: devbox run -- pnpm install --frozen-lockfile
+
+      - name: Derive release metadata
+        id: metadata
+        run: devbox run -- node scripts/cli-release.mjs metadata --tag "$GITHUB_REF_NAME" --output github >> "$GITHUB_OUTPUT"
+
+      - name: Format check
+        run: devbox run -- pnpm run format:check
+
+      - name: CLI format check
+        run: devbox run -- just cli-format-check
+
+      - name: Lint
+        run: devbox run -- pnpm run lint
+
+      - name: CLI lint
+        run: devbox run -- just cli-lint
+
+      - name: Type check
+        run: devbox run -- pnpm run check-types
+
+      - name: Test
+        run: devbox run -- pnpm run test
+
+      - name: CLI release script tests
+        run: devbox run -- pnpm run test:cli-release
+
+      - name: CLI test
+        run: devbox run -- just cli-test
+
+      - name: Build packages
+        run: devbox run -- pnpm run build
+
+      - name: Build CLI
+        run: |
+          release_date="$(git log -1 --format=%cI)"
+          devbox run -- just cli-build "${{ steps.metadata.outputs.version }}" "${{ github.sha }}" "$release_date"
+
+      - name: Verify built CLI version
+        run: |
+          actual_version="$(./apps/cli/bin/bw --version)"
+          test "$actual_version" = "${{ steps.metadata.outputs.version }}"
+
+  build-release-artifacts:
+    name: Build release artifacts
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Install dependencies
+        run: devbox run -- pnpm install --frozen-lockfile
+
+      - name: Install release tools
+        run: |
+          mkdir -p .bin
+          GOBIN="$PWD/.bin" devbox run -- go install github.com/goreleaser/goreleaser/v2@v2.15.4
+          GOBIN="$PWD/.bin" devbox run -- go install github.com/anchore/syft/cmd/syft@v1.43.0
+          GOBIN="$PWD/.bin" devbox run -- go install github.com/sigstore/cosign/v2/cmd/cosign@v2.4.1
+
+      - name: Run GoReleaser
+        env:
+          CLI_RELEASE_VERSION: ${{ needs.verify.outputs.version }}
+          GORELEASER_CURRENT_TAG: v${{ needs.verify.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: devbox run -- zsh -lc 'PATH="$PWD/.bin:$PATH" goreleaser release --clean --config .goreleaser.yaml'
+
+      - name: Create or update GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          assets=(
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+            dist/*.sigstore.json
+            dist/*.sbom.json
+          )
+
+          prerelease_flag=()
+          if [ "${{ needs.verify.outputs.github_prerelease }}" = "true" ]; then
+            prerelease_flag+=(--prerelease)
+          fi
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --title "${{ needs.verify.outputs.version }}" \
+              --notes "" \
+              "${prerelease_flag[@]}"
+          fi
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+            dist/*.sbom.json
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cli-release-dist
+          path: dist
+          if-no-files-found: error
+
+  smoke-archive:
+    name: Smoke archive (${{ matrix.os }})
+    needs:
+      - verify
+      - build-release-artifacts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archive: bw-linux-x64.tar.gz
+            binary: bw
+            shell: bash
+          - os: macos-14
+            archive: bw-darwin-arm64.tar.gz
+            binary: bw
+            shell: bash
+          - os: windows-latest
+            archive: bw-windows-x64.zip
+            binary: bw.exe
+            shell: pwsh
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cli-release-dist
+          path: dist
+
+      - name: Smoke test archive (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir smoke
+          tar -xzf "dist/${{ matrix.archive }}" -C smoke
+          actual_version="$(./smoke/${{ matrix.binary }} --version)"
+          test "$actual_version" = "${{ needs.verify.outputs.version }}"
+
+      - name: Smoke test archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path smoke | Out-Null
+          Expand-Archive -Path "dist/${{ matrix.archive }}" -DestinationPath smoke
+          $actualVersion = .\smoke\${{ matrix.binary }} --version
+          if ($actualVersion -ne "${{ needs.verify.outputs.version }}") {
+            throw "Expected ${{ needs.verify.outputs.version }}, got $actualVersion"
+          }
+
+  package-npm:
+    name: Package npm artifacts
+    needs:
+      - verify
+      - build-release-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cli-release-dist
+          path: dist
+
+      - name: Assemble npm packages
+        run: devbox run -- node scripts/cli-release.mjs assemble-npm --tag "$GITHUB_REF_NAME" --artifacts-dir dist --output-dir dist/npm
+
+      - name: Pack npm packages
+        run: |
+          mkdir -p dist/npm/tarballs
+          for package_dir in \
+            dist/npm/cli \
+            dist/npm/cli-darwin-arm64 \
+            dist/npm/cli-darwin-x64 \
+            dist/npm/cli-linux-arm64 \
+            dist/npm/cli-linux-x64 \
+            dist/npm/cli-windows-x64; do
+            (
+              cd "$package_dir"
+              npm pack --pack-destination ../tarballs >/dev/null
+            )
+          done
+
+      - name: Upload npm packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cli-npm-dist
+          path: dist/npm
+          if-no-files-found: error
+
+  smoke-npm:
+    name: Smoke npm install
+    needs:
+      - verify
+      - package-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+
+      - name: Download npm packages
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cli-npm-dist
+          path: dist/npm
+
+      - name: Extract and smoke test npm wrapper
+        run: |
+          temp_dir="$(mktemp -d)"
+          mkdir -p "$temp_dir/node_modules/@better-webhook/cli" "$temp_dir/node_modules/@better-webhook/cli-linux-x64"
+          tar -xzf "$GITHUB_WORKSPACE/dist/npm/tarballs/better-webhook-cli-${{ needs.verify.outputs.version }}.tgz" -C "$temp_dir/node_modules/@better-webhook/cli" --strip-components=1
+          tar -xzf "$GITHUB_WORKSPACE/dist/npm/tarballs/better-webhook-cli-linux-x64-${{ needs.verify.outputs.version }}.tgz" -C "$temp_dir/node_modules/@better-webhook/cli-linux-x64" --strip-components=1
+          actual_version="$(node "$temp_dir/node_modules/@better-webhook/cli/bin/bw.js" --version)"
+          test "$actual_version" = "${{ needs.verify.outputs.version }}"
+
+  publish-npm:
+    name: Publish npm packages
+    needs:
+      - verify
+      - smoke-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Download npm packages
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cli-npm-dist
+          path: dist/npm
+
+      - name: Publish platform packages
+        run: |
+          npm publish dist/npm/cli-darwin-arm64 --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+          npm publish dist/npm/cli-darwin-x64 --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+          npm publish dist/npm/cli-linux-arm64 --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+          npm publish dist/npm/cli-linux-x64 --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+          npm publish dist/npm/cli-windows-x64 --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+
+      - name: Publish wrapper package
+        run: npm publish dist/npm/cli --access public --provenance --tag "${{ needs.verify.outputs.npm_tag }}"
+
+  publish-homebrew:
+    name: Publish Homebrew cask
+    needs:
+      - verify
+      - build-release-artifacts
+    if: needs.verify.outputs.is_prerelease != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cli-release-dist
+          path: dist
+
+      - name: Render cask
+        run: devbox run -- node scripts/cli-release.mjs render-homebrew-cask --tag "$GITHUB_REF_NAME" --checksums-file dist/checksums.txt --output better-webhook.rb
+
+      - name: Push cask update
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          temp_dir="$(mktemp -d)"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/endalk200/tap.git" "$temp_dir"
+          mkdir -p "$temp_dir/Casks"
+          cp better-webhook.rb "$temp_dir/Casks/better-webhook.rb"
+          git -C "$temp_dir" config user.name "github-actions[bot]"
+          git -C "$temp_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$temp_dir" add Casks/better-webhook.rb
+          git -C "$temp_dir" commit -m "chore: update better-webhook cask to $GITHUB_REF_NAME" || exit 0
+          git -C "$temp_dir" push origin HEAD:main
+
+  validate-nix:
+    name: Validate Nix flake
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25
+
+      - name: Validate flake
+        run: nix flake check path:.

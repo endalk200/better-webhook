@@ -16,7 +16,7 @@ Checklist:
 - Verify the capture server is actually running:
 
 ```bash
-better-webhook capture --port 3001
+bw capture --port 3001
 ```
 
 <Callout type="info">
@@ -28,13 +28,13 @@ better-webhook capture --port 3001
 - List captures first and copy a concrete capture ID:
 
 ```bash
-better-webhook captures list
+bw captures list
 ```
 
 - Use the full or unique prefix capture ID:
 
 ```bash
-better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
+bw captures replay <capture-id> http://localhost:3000/api/webhooks/github
 ```
 
 ## Signature verification fails in SDK handlers
@@ -59,7 +59,7 @@ Reference examples: [SDK Getting Started](/docs/sdk) and [Adapters](/docs/sdk/ad
 If a template requires provider signing placeholders, pass a secret explicitly:
 
 ```bash
-better-webhook templates run github-push http://localhost:3000/api/webhooks/github --secret "$GITHUB_WEBHOOK_SECRET"
+bw templates run github-push http://localhost:3000/api/webhooks/github --secret "$GITHUB_WEBHOOK_SECRET"
 ```
 
 Or set a provider-specific env var (or generic fallback):
@@ -67,12 +67,12 @@ Or set a provider-specific env var (or generic fallback):
 - `<PROVIDER>_WEBHOOK_SECRET` (for example `GITHUB_WEBHOOK_SECRET`)
 - `WEBHOOK_SECRET`
 
-## `better-webhook` command is not found after installation
+## `bw` command is not found after installation
 
 - Verify installation:
 
 ```bash
-better-webhook --version
+bw --version
 ```
 
 - If installed manually, make sure the binary is on your `PATH`.
@@ -80,4 +80,10 @@ better-webhook --version
 
 ```bash
 brew install --cask endalk200/tap/better-webhook
+```
+
+- If testing a prerelease, prefer:
+
+```bash
+npx @better-webhook/cli@next --version
 ```

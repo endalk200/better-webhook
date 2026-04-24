@@ -11,13 +11,13 @@ const cliSteps = [
   {
     step: 1,
     title: "Install the CLI",
-    command: "brew install --cask endalk200/tap/better-webhook",
+    command: "npm install -g @better-webhook/cli",
     isCommand: true,
   },
   {
     step: 2,
     title: "Start capture server",
-    command: "better-webhook capture --port 3001",
+    command: "bw capture --port 3001",
     note: "Stores incoming webhooks locally under ~/.better-webhook/captures",
     isCommand: true,
   },
@@ -32,7 +32,7 @@ const cliSteps = [
     step: 4,
     title: "Replay captured webhooks",
     command:
-      "better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github",
+      "bw captures replay <capture-id> http://localhost:3000/api/webhooks/github",
     note: "Replay to your local development server",
     isCommand: true,
   },

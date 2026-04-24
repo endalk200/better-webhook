@@ -131,7 +131,7 @@ function extractInternalDocsLinks(content) {
 function extractCliCommandMatches(content) {
   const matches = [];
   const commandRegex =
-    /\bbetter-webhook\s+(capture|captures|templates|--version|version)\b[^\n\r`]*/g;
+    /\b(?:better-webhook|bw)\s+(capture|captures|templates|--version|version)\b[^\n\r`]*/g;
   for (const match of content.matchAll(commandRegex)) {
     const value = match[0].trim();
     const index = match.index ?? 0;
@@ -174,7 +174,7 @@ async function run() {
     if (/\bcaptures\s+(show|search|save-as-template)\b/.test(content)) {
       errors.push(`${sourceFile}: contains unsupported captures subcommands`);
     }
-    if (/\bbetter-webhook\s+replay\b/.test(content)) {
+    if (/\b(?:better-webhook|bw)\s+replay\b/.test(content)) {
       errors.push(`${sourceFile}: contains unsupported top-level replay command`);
     }
 

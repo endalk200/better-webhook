@@ -1,19 +1,22 @@
 version: 2
 
-project_name: better-webhook
+project_name: bw
 
 builds:
-  - id: better-webhook
-    dir: ./apps/webhook-cli
-    main: ./cmd/better-webhook
-    binary: better-webhook
+  - id: bw
+    dir: ./apps/cli
+    main: .
+    binary: bw
     env:
       - CGO_ENABLED=0
     flags:
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"
     ldflags:
-      - -s -w -X github.com/endalk200/better-webhook/apps/webhook-cli/internal/version.Version={{ .Version }}
+      - -s -w
+      - -X github.com/endalk200/better-webhook/apps/cli/internal/version.Version={{ .Env.CLI_RELEASE_VERSION }}
+      - -X github.com/endalk200/better-webhook/apps/cli/internal/version.Commit={{ .Commit }}
+      - -X github.com/endalk200/better-webhook/apps/cli/internal/version.Date={{ .Date }}
     goos:
       - darwin
       - linux
@@ -28,14 +31,16 @@ builds:
 archives:
   - id: cli-archives
     ids:
-      - better-webhook
-    formats: [tar.gz]
+      - bw
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        formats: [zip]
+        formats:
+          - zip
     wrap_in_directory: false
     name_template: >-
-      {{ .Binary }}-{{ .Os }}-{{ if eq .Arch "amd64" }}x64{{ else }}{{ .Arch }}{{ end }}
+      bw-{{ .Os }}-{{ if eq .Arch "amd64" }}x64{{ else }}{{ .Arch }}{{ end }}
 
 checksum:
   name_template: checksums.txt
@@ -55,30 +60,6 @@ signs:
       - ${artifact}
     artifacts: checksum
 
-homebrew_casks:
-  - name: better-webhook
-    ids:
-      - cli-archives
-    binaries:
-      - better-webhook
-    directory: Casks
-    repository:
-      owner: endalk200
-      name: homebrew-tap
-      branch: better-webhook-{{ .Tag }}
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-      pull_request:
-        enabled: true
-        base:
-          owner: endalk200
-          name: homebrew-tap
-          branch: main
-    homepage: https://github.com/endalk200/better-webhook
-    description: Modern CLI for developing and testing webhooks
-    license: MIT
-    commit_msg_template: "chore: update better-webhook cask to {{ .Tag }}"
-    skip_upload: auto
-
 changelog:
   sort: asc
   filters:
@@ -90,6 +71,4 @@ release:
   github:
     owner: endalk200
     name: better-webhook
-  prerelease: auto
-  replace_existing_artifacts: true
-  mode: replace
+  disable: true
