@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,7 +17,7 @@ const optionalDependencies = Object.fromEntries(
 async function findBinary(platform) {
   const direct = join(binaryRoot, `${platform.goos}_${platform.goarch}`, platform.binaryName);
   try {
-    await readFile(direct);
+    await access(direct);
     return direct;
   } catch {
     const entries = await readdir(binaryRoot, { withFileTypes: true });

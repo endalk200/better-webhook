@@ -50,7 +50,3 @@ checksum:
 
 release:
   prerelease: auto
-  header: |
-    Initial better-webhook CLI v2 beta scaffold.
-
-    This release includes root help and version commands only. Project, gateway, template, capture, and replay commands are intentionally absent.

@@ -28,6 +28,8 @@ out/
 build
 dist
 bin
+!packages/cli/npm/bin/
+!packages/cli/npm/bin/bw.js
 
 # Debug
 npm-debug.log*

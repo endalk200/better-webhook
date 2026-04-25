@@ -1,9 +1,21 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
-const binary = process.platform === "win32" ? "bin/bw.exe" : "bin/bw";
+const here = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(here, "..");
+const binary = resolve(
+  packageRoot,
+  process.platform === "win32" ? "bin/bw.exe" : "bin/bw",
+);
+const packageJson = JSON.parse(
+  await readFile(resolve(packageRoot, "package.json"), "utf8"),
+);
+const expectedVersion = `bw version ${packageJson.version}\n`;
 
 test("local binary reports version from command and flag", () => {
   assert.equal(
@@ -14,9 +26,9 @@ test("local binary reports version from command and flag", () => {
 
   const command = spawnSync(binary, ["version"], { encoding: "utf8" });
   assert.equal(command.status, 0);
-  assert.equal(command.stdout, "bw version 2.0.0-beta.1\n");
+  assert.equal(command.stdout, expectedVersion);
 
   const flag = spawnSync(binary, ["--version"], { encoding: "utf8" });
   assert.equal(flag.status, 0);
-  assert.equal(flag.stdout, "bw version 2.0.0-beta.1\n");
+  assert.equal(flag.stdout, expectedVersion);
 });
