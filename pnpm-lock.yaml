@@ -421,17 +421,7 @@ importers:
         specifier: ^5.6.3
         version: 5.9.2
 
-  packages/cli: {}
-
-  packages/cli-darwin-arm64: {}
-
-  packages/cli-darwin-x64: {}
-
-  packages/cli-linux-arm64: {}
-
-  packages/cli-linux-x64: {}
-
-  packages/cli-windows-x64: {}
+  apps/webhook-cli: {}
 
   packages/core:
     dependencies:

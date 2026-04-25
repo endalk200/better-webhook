@@ -33,7 +33,7 @@ const githubWebhook = github()
 
 export const githubHandler = toExpress(githubWebhook, {
   secret: process.env.GITHUB_WEBHOOK_SECRET,
-  onSuccess: (eventType: string) => {
+  onSuccess: (eventType) => {
     console.log("GitHub webhook processed", {
       eventType,
       replayStore: "memory",

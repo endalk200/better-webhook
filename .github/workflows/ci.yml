@@ -29,21 +29,13 @@ jobs:
       - name: Install dependencies
         run: devbox run -- pnpm install --frozen-lockfile
 
-      - name: CLI release script tests
-        run: devbox run -- pnpm run test:cli-release
-
       - name: Format check
         run: |
+          devbox run -- pnpm --filter @better-webhook/cli-go format:check
           devbox run -- pnpm run format:check
-
-      - name: CLI format check
-        run: devbox run -- just cli-format-check
 
       - name: Lint
         run: devbox run -- pnpm run lint
-
-      - name: CLI lint
-        run: devbox run -- just cli-lint
 
       - name: Type check
         run: devbox run -- pnpm run check-types
@@ -51,11 +43,5 @@ jobs:
       - name: Test
         run: devbox run -- pnpm run test
 
-      - name: CLI test
-        run: devbox run -- just cli-test
-
       - name: Build
         run: devbox run -- pnpm run build
-
-      - name: CLI build
-        run: devbox run -- just cli-build
