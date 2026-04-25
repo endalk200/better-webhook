@@ -44,6 +44,3 @@ security-scan-ci:
     else \
       TRIVY_DB_REPOSITORY={{ TRIVY_DB_REPO }} TRIVY_JAVA_DB_REPOSITORY={{ TRIVY_JAVA_DB_REPO }} TRIVY_SKIP_DB_UPDATE="${TRIVY_SKIP_DB_UPDATE:-{{ TRIVY_SKIP_DB_UPDATE_VALUE }}}" TRIVY_SKIP_JAVA_DB_UPDATE="${TRIVY_SKIP_JAVA_DB_UPDATE:-{{ TRIVY_SKIP_JAVA_DB_UPDATE_VALUE }}}" trivy fs --config trivy.yaml --format sarif --output trivy-results.sarif --exit-code 0 .; \
     fi
-
-changeset-check:
-    node ./scripts/changeset-check.mjs
