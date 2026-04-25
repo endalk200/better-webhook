@@ -7,7 +7,7 @@ import { ArrowRight, Radio, RotateCcw, FileCode } from "lucide-react";
 const commands = [
   {
     prompt: "$ ",
-    command: "bw captures list",
+    command: "better-webhook captures list",
     output: [
       "",
       "\u{1F4DA} Captured webhooks:",
@@ -20,7 +20,7 @@ const commands = [
   },
   {
     prompt: "$ ",
-    command: "bw capture --port 3001",
+    command: "better-webhook capture --port 3001",
     output: [
       "",
       "\u{1F3A3} Webhook Capture Server",
@@ -37,7 +37,7 @@ const commands = [
   {
     prompt: "$ ",
     command:
-      "bw captures replay abc12345 http://localhost:3000/api/webhooks/github",
+      "better-webhook captures replay abc12345 http://localhost:3000/api/webhooks/github",
     output: [
       "",
       "\u{1F504} Replaying Webhook",
@@ -62,14 +62,14 @@ const cliFeatures = [
     title: "Capture",
     description:
       "Start a local server to intercept and store incoming webhooks",
-    command: "bw capture",
+    command: "better-webhook capture",
     color: "var(--nb-coral)",
   },
   {
     icon: RotateCcw,
     title: "Replay",
     description: "Re-send captured webhooks to any endpoint with full headers",
-    command: "bw captures replay <id> <url>",
+    command: "better-webhook captures replay <id> <url>",
     color: "var(--nb-blue)",
   },
   {
@@ -77,7 +77,7 @@ const cliFeatures = [
     title: "Templates",
     description:
       "Download and run curated templates for GitHub, Ragie, and Recall.ai",
-    command: "bw templates list",
+    command: "better-webhook templates list",
     color: "var(--nb-yellow)",
   },
 ];
@@ -215,12 +215,12 @@ export function CLISection() {
 
         <div className="mt-12 text-center">
           <p className="font-bold text-xs uppercase tracking-widest text-[var(--nb-text-muted)] mb-3">
-            Install with npm
+            Install with Homebrew
           </p>
           <code className="inline-block px-4 py-2.5 bg-[#0a0a0a] border-2 border-[var(--nb-border-color)] font-mono text-xs sm:text-sm text-[#e0e0e0] max-w-full overflow-x-auto">
             <span className="text-[var(--nb-green)]">$</span>{" "}
             <span className="text-white">
-              npm install -g @better-webhook/cli
+              brew install --cask endalk200/tap/better-webhook
             </span>
           </code>
         </div>

@@ -6,29 +6,9 @@ TRIVY_JAVA_DB_REPO := "ghcr.io/aquasecurity/trivy-java-db:1"
 TRIVY_SKIP_DB_UPDATE_VALUE := "true"
 TRIVY_SKIP_JAVA_DB_UPDATE_VALUE := "true"
 
-# Run CLI release metadata tests.
-cli-release-script-test:
-    devbox run -- node --test scripts/cli-release.test.mjs
-
-# Check formatting for the standalone Go CLI.
-cli-format-check:
-    devbox run -- zsh -lc 'files="$(cd {{ invocation_directory() }}/apps/cli && gofmt -l ./cmd ./internal ./main.go)"; if [ -n "$files" ]; then printf "%s\n" "$files"; exit 1; fi'
-
-# Lint the standalone Go CLI.
-cli-lint:
-    devbox run -- zsh -lc 'cd {{ invocation_directory() }}/apps/cli && go vet ./...'
-
-# Test the standalone Go CLI.
-cli-test:
-    devbox run -- zsh -lc 'cd {{ invocation_directory() }}/apps/cli && go test ./...'
-
-# Build the standalone Go CLI with explicit release metadata.
-cli-build version="dev" commit="unknown" date="unknown":
-    devbox run -- zsh -lc 'cd {{ invocation_directory() }}/apps/cli && mkdir -p bin && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/endalk200/better-webhook/apps/cli/internal/version.Version={{ version }} -X github.com/endalk200/better-webhook/apps/cli/internal/version.Commit={{ commit }} -X github.com/endalk200/better-webhook/apps/cli/internal/version.Date={{ date }}" -o bin/bw .'
-
-# Run a local GoReleaser CLI rehearsal from a tag-shaped version input.
-release-cli tag="cli-v2.0.0-alpha.1" args="--snapshot --clean --skip=publish,announce,sign":
-    zsh -lc 'cd {{ invocation_directory() }} && version="$$(node scripts/cli-release.mjs metadata --tag {{ tag }} --output github | grep "^version=" | cut -d= -f2-)"; test -n "$$version"; mkdir -p {{ invocation_directory() }}/.bin; GOBIN="{{ invocation_directory() }}/.bin" go install github.com/goreleaser/goreleaser/v2@v2.15.4; GOBIN="{{ invocation_directory() }}/.bin" go install github.com/anchore/syft/cmd/syft@v1.43.0; CLI_RELEASE_VERSION="$$version" PATH="{{ invocation_directory() }}/.bin:$$PATH" goreleaser release {{ args }} --config .goreleaser.yaml'
+# Run a local GoReleaser CLI release (snapshot by default)
+release-cli args="--snapshot --clean --skip=publish,announce,sign,sbom":
+    devbox run -- go run github.com/goreleaser/goreleaser/v2@latest release {{ args }}
 
 # Run configured build command for this package.
 build-package package:
@@ -36,11 +16,15 @@ build-package package:
 
 # Runs format:check for the go code using go tooling and format:check at the root level using prettier
 format-check:
+    # Run format:check for the go code using go tooling
+    pnpm --filter @better-webhook/cli-go run format:check
     # Run format:check at the root level using prettier
     pnpm run format:check
 
 # Runs format:write for the go code using go tooling and format:write at the root level using prettier
 format-write:
+    # Run format:write for the go code using go tooling
+    pnpm --filter @better-webhook/cli-go run format:write
     # Run format:write at the root level using prettier
     pnpm run format:write
 
