@@ -64,7 +64,11 @@ jobs:
           if [[ "$VERSION" == *-* ]]; then
             release_flags+=(--prerelease)
           fi
-          devbox run -- gh release create "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* "${release_flags[@]}"
+          if devbox run -- gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            devbox run -- gh release upload "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            devbox run -- gh release create "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* "${release_flags[@]}"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -83,12 +87,10 @@ jobs:
           fi
 
       - name: Publish platform packages
-        working-directory: packages/cli/dist/npm
         run: |
           for package_dir in cli-darwin-arm64 cli-darwin-x64 cli-linux-arm64 cli-linux-x64 cli-win32-x64; do
-            (cd "$package_dir" && devbox run -- npm publish --provenance --access public --tag "${{ steps.npm-tag.outputs.tag }}")
+            devbox run -- sh -c "cd packages/cli/dist/npm/$package_dir && npm publish --provenance --access public --tag '${{ steps.npm-tag.outputs.tag }}'"
           done
 
       - name: Publish wrapper package
-        working-directory: packages/cli/dist/npm/cli
-        run: devbox run -- npm publish --provenance --access public --tag "${{ steps.npm-tag.outputs.tag }}"
+        run: devbox run -- sh -c "cd packages/cli/dist/npm/cli && npm publish --provenance --access public --tag '${{ steps.npm-tag.outputs.tag }}'"
