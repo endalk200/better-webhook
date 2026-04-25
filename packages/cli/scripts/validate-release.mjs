@@ -39,7 +39,8 @@ for (const packageName of publishOrder) {
       stdio: ["ignore", "pipe", "pipe"],
     });
   } catch (error) {
-    if (error.status !== 1) {
+    const stderr = error.stderr?.toString() ?? "";
+    if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
       throw error;
     }
   }

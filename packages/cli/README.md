@@ -3,7 +3,12 @@
 Initial beta scaffold for the better-webhook v2 command line interface.
 
 ```sh
+# project-local install
 pnpm add -D @better-webhook/cli@beta
+pnpm exec bw --version
+
+# or global install
+pnpm add -g @better-webhook/cli@beta
 bw --version
 ```
 
