@@ -1,6 +1,6 @@
 ---
 name: better-webhook
-description: Type-safe webhook handler SDK and local development CLI for Node.js. Provides typed events, automatic signature verification, replay protection, and framework adapters for Next.js, Express, Hono, NestJS, and GCP Cloud Functions. Supports GitHub, Ragie, and Recall.ai providers with Zod schema validation. Use when building webhook endpoints, handling GitHub/Ragie/Recall webhooks, adding webhook signature verification, creating webhook route handlers, testing webhooks locally, or building custom webhook providers.
+description: Type-safe webhook handler SDK for Node.js. Provides typed events, automatic signature verification, replay protection, and framework adapters for Next.js, Express, Hono, NestJS, and GCP Cloud Functions. Supports GitHub, Ragie, Recall.ai, Stripe, and Resend providers with Zod schema validation. Use when building webhook endpoints, handling provider webhooks, adding webhook signature verification, creating webhook route handlers, or building custom webhook providers.
 ---
 
 # Better Webhook
@@ -105,4 +105,3 @@ const webhook = github()
 
 - [REFERENCE.md](REFERENCE.md) — Full SDK API reference
 - [EXAMPLES.md](EXAMPLES.md) — Complete framework and provider examples
-- [CLI.md](CLI.md) — CLI tool for local webhook development

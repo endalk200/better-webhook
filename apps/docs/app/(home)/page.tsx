@@ -3,7 +3,6 @@ import {
   Marquee,
   QuickStart,
   Features,
-  CLISection,
   SDKSection,
   CodeComparison,
   ProviderShowcase,
@@ -19,7 +18,6 @@ export default function HomePage() {
       </div>
       <QuickStart />
       <Features />
-      <CLISection />
       <SDKSection />
       <CodeComparison />
       <ProviderShowcase />

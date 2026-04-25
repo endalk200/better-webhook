@@ -9,7 +9,7 @@
 
 When filing an issue, include:
 
-- Package/CLI version
+- Package version
 - Node/Bun/runtime version
 - OS and architecture
 - Reproduction steps

@@ -31,7 +31,6 @@ jobs:
 
       - name: Format check
         run: |
-          devbox run -- pnpm --filter @better-webhook/cli-go format:check
           devbox run -- pnpm run format:check
 
       - name: Lint

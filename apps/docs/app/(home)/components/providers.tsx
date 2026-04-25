@@ -101,15 +101,8 @@ export function ProviderShowcase() {
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href="/templates"
-              className="nb-btn nb-btn-primary inline-flex"
-            >
-              Browse Templates
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
               href="/docs/sdk/custom-providers"
-              className="nb-btn nb-btn-ghost inline-flex"
+              className="nb-btn nb-btn-primary inline-flex"
             >
               Learn about custom providers
               <ArrowRight className="w-4 h-4" />

@@ -1,40 +1,8 @@
 "use client";
 
-import {
-  Radio,
-  RotateCcw,
-  Shield,
-  Layers,
-  Zap,
-  FileCode,
-  Code2,
-} from "lucide-react";
+import { Shield, Layers, Zap, Code2, Database, Plug } from "lucide-react";
 
 const features = [
-  {
-    icon: Radio,
-    title: "Live Capture",
-    description:
-      "Start a local server to capture incoming webhooks with headers, path, and payload preserved.",
-    badge: "CLI",
-    stripe: "nb-stripe-coral",
-  },
-  {
-    icon: RotateCcw,
-    title: "Smart Replay",
-    description:
-      "Replay captured webhooks to any endpoint with full header preservation. Test handlers without re-triggering events.",
-    badge: "CLI",
-    stripe: "nb-stripe-coral",
-  },
-  {
-    icon: Shield,
-    title: "Signature Verification",
-    description:
-      "Automatic signature verification for GitHub, Stripe, Ragie, and Recall.ai with timing-safe comparison.",
-    badge: "SDK",
-    stripe: "nb-stripe-blue",
-  },
   {
     icon: Code2,
     title: "Type-Safe Handlers",
@@ -44,12 +12,12 @@ const features = [
     stripe: "nb-stripe-blue",
   },
   {
-    icon: Zap,
-    title: "Fast Native Binary",
+    icon: Shield,
+    title: "Signature Verification",
     description:
-      "Install a prebuilt Go binary from Homebrew or GitHub Releases with no Node.js runtime requirement.",
-    badge: "CLI",
-    stripe: "nb-stripe-coral",
+      "Automatic signature verification for GitHub, Stripe, Ragie, Recall.ai, and Resend with timing-safe comparison.",
+    badge: "SDK",
+    stripe: "nb-stripe-blue",
   },
   {
     icon: Layers,
@@ -60,20 +28,28 @@ const features = [
     stripe: "nb-stripe-blue",
   },
   {
-    icon: FileCode,
-    title: "Auto Signatures",
+    icon: Database,
+    title: "Replay Protection",
     description:
-      "CLI generates valid signatures when running templates. Test signature verification without manual setup.",
-    badge: "CLI",
-    stripe: "nb-stripe-coral",
+      "Optional duplicate detection with provider replay keys and configurable duplicate handling.",
+    badge: "SDK",
+    stripe: "nb-stripe-blue",
   },
   {
-    icon: RotateCcw,
-    title: "Curated Templates",
+    icon: Zap,
+    title: "Typed Event Catalogs",
     description:
-      "Download and run built-in webhook templates for GitHub, Stripe, Ragie, and Recall.ai with realistic payloads.",
-    badge: "CLI",
-    stripe: "nb-stripe-coral",
+      "Provider packages expose curated event definitions so handlers stay precise and discoverable.",
+    badge: "SDK",
+    stripe: "nb-stripe-blue",
+  },
+  {
+    icon: Plug,
+    title: "Custom Providers",
+    description:
+      "Define your own providers with schemas, signature verification, and event matching.",
+    badge: "SDK",
+    stripe: "nb-stripe-blue",
   },
 ];
 
@@ -90,8 +66,8 @@ export function Features() {
             <span className="nb-highlight">webhook dev</span>
           </h2>
           <p className="text-base text-[var(--nb-text-muted)] max-w-2xl mx-auto">
-            A focused toolkit for fast, repeatable webhook development — from
-            local testing to production handlers.
+            A focused SDK for production webhook handlers, provider events, and
+            framework adapters.
           </p>
         </div>
 
@@ -105,13 +81,7 @@ export function Features() {
                 <div className="w-10 h-10 flex items-center justify-center border-2 border-[var(--nb-border-color)] bg-[var(--nb-cream)]">
                   <feature.icon className="w-5 h-5" />
                 </div>
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-[var(--nb-border-color)] ${
-                    feature.badge === "CLI"
-                      ? "bg-[var(--nb-coral)] text-white"
-                      : "bg-[var(--nb-blue)] text-white"
-                  }`}
-                >
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-[var(--nb-border-color)] bg-[var(--nb-blue)] text-white">
                   {feature.badge}
                 </span>
               </div>

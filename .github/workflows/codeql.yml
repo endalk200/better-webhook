@@ -20,26 +20,18 @@ jobs:
       fail-fast: false
       matrix:
         # "javascript-typescript" handles both JS and TS files
-        language: ["javascript-typescript", "go"]
+        language: ["javascript-typescript"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # Recommended: Ensure the Go environment is ready for the Go matrix leg
-      - name: Set up Go
-        if: matrix.language == 'go'
-        uses: actions/setup-go@v6.2.0
-        with:
-          go-version-file: apps/webhook-cli/go.mod
-          cache-dependency-path: apps/webhook-cli/go.mod
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
-          build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
+          build-mode: none
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { BookOpen, Github, Download, Layers } from "lucide-react";
+import { BookOpen, Github } from "lucide-react";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -21,17 +21,6 @@ export function baseOptions(): BaseLayoutProps {
         text: "Documentation",
         url: "/docs",
         icon: <BookOpen className="size-4" />,
-      },
-      {
-        text: "Templates",
-        url: "/templates",
-        icon: <Layers className="size-4" />,
-      },
-      {
-        text: "Releases",
-        url: "https://github.com/endalk200/better-webhook/releases",
-        icon: <Download className="size-4" />,
-        external: true,
       },
       {
         text: "GitHub",

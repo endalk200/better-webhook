@@ -1,14 +1,7 @@
 import Link from "next/link";
-import { Github, Download, BookOpen } from "lucide-react";
+import { Github, BookOpen } from "lucide-react";
 
 const footerLinks = {
-  cli: [
-    { name: "CLI Overview", href: "/docs/cli" },
-    { name: "Command Reference", href: "/docs/cli/commands" },
-    { name: "Configuration", href: "/docs/cli/configuration" },
-    { name: "Templates", href: "/docs/cli/templates" },
-    { name: "Template Registry", href: "/templates" },
-  ],
   sdk: [
     { name: "SDK Overview", href: "/docs/sdk" },
     { name: "Providers", href: "/docs/sdk/providers" },
@@ -109,8 +102,8 @@ export function Footer() {
               <span>better-webhook</span>
             </div>
             <p className="text-sm text-[var(--nb-text-muted)] mb-3">
-              Local-first webhook toolkit for capture, replay, and type-safe
-              handlers.
+              Webhook SDK for type-safe handlers, schema validation, and
+              signature verification.
             </p>
             <div className="flex gap-2">
               {[
@@ -118,11 +111,6 @@ export function Footer() {
                   icon: Github,
                   href: "https://github.com/endalk200/better-webhook",
                   label: "GitHub",
-                },
-                {
-                  icon: Download,
-                  href: "https://github.com/endalk200/better-webhook/releases",
-                  label: "Releases",
                 },
                 {
                   icon: BookOpen,
@@ -152,11 +140,6 @@ export function Footer() {
           </div>
 
           {[
-            {
-              title: "CLI",
-              links: footerLinks.cli,
-              color: "var(--nb-coral)",
-            },
             {
               title: "SDK",
               links: footerLinks.sdk,
