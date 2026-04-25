@@ -37,6 +37,12 @@
       "env": ["TEST_WEBHOOK_SECRET"],
       "inputs": ["$TURBO_DEFAULT$", "jest.config.*", "vitest.config.*"]
     },
+    "format:check": {
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
+    "format:write": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

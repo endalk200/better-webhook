@@ -27,6 +27,7 @@ apps/examples/nextjs-example/next-env.d.ts
 out/
 build
 dist
+bin
 
 # Debug
 npm-debug.log*

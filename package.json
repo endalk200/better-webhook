@@ -14,8 +14,8 @@
     "release:publish": "changeset publish",
     "prerelease": "pnpm build && pnpm check-types && pnpm lint",
     "clean": "turbo run clean",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache",
-    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache"
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache && turbo run format:check",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx,md,json,yml,yaml}\" --cache && turbo run format:write"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",

@@ -4,6 +4,7 @@
     "just@latest",
     "trivy@0.69.0",
     "nodejs@24.12.0",
+    "goreleaser@latest",
     "golangci-lint@2.9.0",
     "pnpm@10.28.0",
     "go@1.26.0",
