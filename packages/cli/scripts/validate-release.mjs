@@ -17,8 +17,16 @@ if (versionFromTag !== version) {
   throw new Error(`Tag ${tagName} resolves to ${versionFromTag}, but package.json is ${version}.`);
 }
 
-const tagObjectType = execFileSync("git", ["cat-file", "-t", tagName], { encoding: "utf8" }).trim();
-if (tagObjectType !== "tag") {
+const remoteTagRefs = execFileSync("git", ["ls-remote", "--tags", "origin", `refs/tags/${tagName}*`], {
+  encoding: "utf8",
+})
+  .trim()
+  .split("\n")
+  .filter(Boolean);
+const hasTagObject = remoteTagRefs.some((line) => line.endsWith(`refs/tags/${tagName}`));
+const hasPeeledCommit = remoteTagRefs.some((line) => line.endsWith(`refs/tags/${tagName}^{}`));
+
+if (!hasTagObject || !hasPeeledCommit) {
   throw new Error(`CLI release tag ${tagName} must be annotated.`);
 }
 
