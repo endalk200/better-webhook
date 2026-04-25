@@ -53,4 +53,3 @@ trivy-results.sarif
 trivy-sbom.cdx.json
 
 .tmp
-/.opencode/package-lock.json
