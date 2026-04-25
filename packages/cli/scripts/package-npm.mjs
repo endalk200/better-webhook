@@ -10,6 +10,9 @@ const binaryRoot = process.argv.find((arg, index) => index > 1 && arg !== "--") 
 const packageJson = await readCliPackage();
 const readme = await readFile(join(packageRoot, "README.md"), "utf8");
 const license = await readFile(join(packageRoot, "LICENSE"), "utf8");
+const optionalDependencies = Object.fromEntries(
+  platforms.map((platform) => [platform.packageName, packageJson.version]),
+);
 
 async function findBinary(platform) {
   const direct = join(binaryRoot, `${platform.goos}_${platform.goarch}`, platform.binaryName);
@@ -75,6 +78,7 @@ await writeFile(
   `${JSON.stringify(
     {
       ...packageJson,
+      optionalDependencies,
       scripts: undefined,
       devDependencies: undefined,
     },
