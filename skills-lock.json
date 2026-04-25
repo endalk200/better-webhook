@@ -6,11 +6,6 @@
       "sourceType": "github",
       "computedHash": "784f0dbb7403b0f00324bce9a112f715342777a0daee7bbb7385f9c6f0a170ea"
     },
-    "prd": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "computedHash": "1f3e1f005fc40fda85d250ae906c8ee4f7e8e833e23adfeca6542c19609fd7cd"
-    },
     "write-a-skill": {
       "source": "mattpocock/skills",
       "sourceType": "github",
