@@ -18,12 +18,11 @@
         bw = pkgs.buildGoModule {
           pname = "bw";
           version = "0.0.0-dev";
-          go = pkgs.go_1_25;
           src = ./.;
           modRoot = "./apps/cli";
           subPackages = [ "." ];
-          vendorHash = "sha256-9jK3jKbFp+5WSQfMbNzwIB55bC5KScZOaFHItffTF00=";
-          env.CGO_ENABLED = 0;
+          vendorHash = null;
+          CGO_ENABLED = 0;
           ldflags = [
             "-s"
             "-w"
