@@ -65,7 +65,7 @@
     "@better-webhook/eslint-config": "workspace:*",
     "@better-webhook/typescript-config": "workspace:*",
     "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
+    "@nestjs/core": "^11.1.18",
     "@types/node": "^24.3.1",
     "eslint": "^9.35.0",
     "reflect-metadata": "^0.2.2",
