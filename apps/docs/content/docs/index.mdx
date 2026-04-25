@@ -1,36 +1,28 @@
 ---
 title: Better Webhook
-description: A complete toolkit for webhook development - CLI for local testing, SDK for type-safe handlers.
+description: Type-safe webhook handlers with validation and signature verification.
 ---
 
 import { Cards, Card } from "fumadocs-ui/components/card";
-import { Terminal, Code2 } from "lucide-react";
+import { Code2 } from "lucide-react";
 
 # Better Webhook
 
-Two tools, one goal: make webhook development delightful.
+Better Webhook helps you build safer webhook handlers with typed payloads, schema validation, and signature verification.
 
 ## The Problem
 
 Building webhook handlers is painful:
 
-- **No local testing** — You need to expose localhost with ngrok or similar tools just to receive webhooks during development
-- **Trial and error** — Testing requires triggering real events (pushing code, creating issues) repeatedly
 - **No type safety** — Webhook payloads are untyped `any` objects, leading to runtime errors
 - **Manual verification** — Implementing HMAC signature verification correctly is error-prone and tedious
-- **No replay** — When something breaks, you can't easily re-test with the same payload
+- **Adapter differences** — Each framework exposes raw bodies, headers, and responses differently
 
 ## The Solution
 
-Better Webhook provides two independent tools that solve these problems:
+Better Webhook provides SDK packages that solve these problems:
 
 <Cards>
-  <Card
-    icon={<Terminal />}
-    title="CLI Tool"
-    description="Capture real webhooks, replay them locally, and test with pre-built templates. No ngrok required."
-    href="/docs/cli"
-  />
   <Card
     icon={<Code2 />}
     title="SDK Packages"
@@ -41,23 +33,16 @@ Better Webhook provides two independent tools that solve these problems:
 
 ## Quick Comparison
 
-| Need                                         | Tool |
-| -------------------------------------------- | ---- |
-| Test webhooks locally without exposing ports | CLI  |
-| Replay captured webhooks during debugging    | CLI  |
-| Use pre-built webhook templates              | CLI  |
-| Install as native binary via Homebrew/Go    | CLI  |
-| Type-safe webhook handlers in production     | SDK  |
-| Automatic signature verification             | SDK  |
-| Zod schema validation for payloads           | SDK  |
+| Need                                     | Package area |
+| ---------------------------------------- | ------------ |
+| Type-safe webhook handlers in production | SDK          |
+| Automatic signature verification         | SDK          |
+| Zod schema validation for payloads       | SDK          |
+| Framework-specific adapters              | SDK          |
 
 ## Choose Your Path
 
-**Starting local development?** → [Get started with the CLI](/docs/cli)
-
 **Building webhook handlers?** → [Get started with the SDK](/docs/sdk)
-
-Both tools work great together but are completely independent. Use whichever fits your needs.
 
 ## Additional Guides
 
@@ -65,4 +50,4 @@ Both tools work great together but are completely independent. Use whichever fit
 - [Troubleshooting](/docs/troubleshooting) — Common setup and runtime fixes
 - [FAQ](/docs/faq) — Quick answers for common questions
 - [Contributing](/docs/contributing) — Local workflow and contribution standards
-- [Release Policy](/docs/release-policy) — SDK/CLI release mechanics and versioning
+- [Release Policy](/docs/release-policy) — SDK release mechanics and versioning

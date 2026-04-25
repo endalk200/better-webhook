@@ -20,16 +20,14 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://better-webhook.com"),
   title: {
-    default: "better-webhook — Local-first Webhook Development Toolkit",
+    default: "better-webhook — Type-Safe Webhook SDK",
     template: "%s | better-webhook",
   },
   description:
-    "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally with a beautiful CLI and SDK.",
+    "Type-safe webhooks in TypeScript with schema validation, signature verification, and framework adapters.",
   keywords: [
     "webhook",
     "typescript",
-    "cli",
-    "testing",
     "development",
     "github",
     "ragie",
@@ -44,16 +42,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://better-webhook.com",
-    title: "better-webhook — Local-first Webhook Development Toolkit",
+    title: "better-webhook — Type-Safe Webhook SDK",
     description:
-      "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
+      "Type-safe webhooks in TypeScript with schema validation and signature verification.",
     siteName: "better-webhook",
   },
   twitter: {
     card: "summary_large_image",
-    title: "better-webhook — Local-first Webhook Development Toolkit",
+    title: "better-webhook — Type-Safe Webhook SDK",
     description:
-      "Type-safe webhooks in TypeScript. Capture, replay, and test webhooks locally.",
+      "Type-safe webhooks in TypeScript with schema validation and signature verification.",
     creator: "@endalk200",
   },
 };

@@ -1,18 +1,9 @@
 ---
 title: FAQ
-description: Frequently asked questions about Better Webhook CLI and SDK usage.
+description: Frequently asked questions about Better Webhook SDK usage.
 ---
 
 # FAQ
-
-## Do I need both the CLI and the SDK?
-
-No. They are independent:
-
-- Use the CLI when you need local webhook capture, replay, and repeatable template testing.
-- Use the SDK when you need type-safe, verified webhook handlers in your application.
-
-Many teams use both: CLI for local debugging, SDK for production endpoints.
 
 ## Which webhook providers are supported?
 
@@ -50,18 +41,8 @@ Yes, when secrets are configured. You can provide secrets through adapter option
 
 `204` usually means no matching handler executed for that event, or no response body is returned by design. This can be expected behavior for unhandled events.
 
-## Where are CLI captures and templates stored?
-
-By default under `~/.better-webhook/`:
-
-- `captures/`
-- `templates/`
-
-You can override paths with command flags like `--captures-dir` and `--templates-dir`.
-
 ## How are releases published?
 
-- SDK packages are published through Changesets from `main`.
-- CLI binaries are published from version tags (`v*`) via GoReleaser.
+SDK packages are published through Changesets from `main`.
 
 See [Release Policy](/docs/release-policy).

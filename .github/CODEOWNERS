@@ -6,7 +6,3 @@
 /apps/*/package.json @endalk200
 /apps/*/CHANGELOG.md @endalk200
 /.github/workflows/ @endalk200
-
-# CLI package specific
-/apps/webhook-cli/ @endalk200
-

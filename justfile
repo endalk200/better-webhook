@@ -6,25 +6,17 @@ TRIVY_JAVA_DB_REPO := "ghcr.io/aquasecurity/trivy-java-db:1"
 TRIVY_SKIP_DB_UPDATE_VALUE := "true"
 TRIVY_SKIP_JAVA_DB_UPDATE_VALUE := "true"
 
-# Run a local GoReleaser CLI release (snapshot by default)
-release-cli args="--snapshot --clean --skip=publish,announce,sign,sbom":
-    devbox run -- go run github.com/goreleaser/goreleaser/v2@latest release {{ args }}
-
 # Run configured build command for this package.
 build-package package:
     pnpm --filter {{ package }} run build
 
 # Runs format:check for the go code using go tooling and format:check at the root level using prettier
 format-check:
-    # Run format:check for the go code using go tooling
-    pnpm --filter @better-webhook/cli-go run format:check
     # Run format:check at the root level using prettier
     pnpm run format:check
 
 # Runs format:write for the go code using go tooling and format:write at the root level using prettier
 format-write:
-    # Run format:write for the go code using go tooling
-    pnpm --filter @better-webhook/cli-go run format:write
     # Run format:write at the root level using prettier
     pnpm run format:write
 

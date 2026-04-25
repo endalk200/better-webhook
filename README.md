@@ -4,46 +4,24 @@
 [![npm Core](https://img.shields.io/npm/v/@better-webhook/core)](https://www.npmjs.com/package/@better-webhook/core)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Build webhook integrations without the usual local-dev pain: capture real events, replay them instantly, and ship handlers with validation and signature verification.
+Build webhook integrations with typed handlers, schema validation, and signature verification.
 
-Most webhook workflows still require tunnel juggling, repeated provider triggers, and hand-rolled scripts for replay and verification. `better-webhook` replaces that with a local-first workflow for faster iteration and safer production handlers.
+Most webhook workflows still require hand-rolled payload parsing, provider-specific signature checks, and framework-specific raw body handling. `better-webhook` gives you SDK packages for safer production handlers.
 
 `better-webhook` gives you:
 
-- A local-first CLI to capture, inspect, and replay real webhook requests
 - SDK packages for typed events, schema validation, and signature verification
-- Flexible adoption: use only the CLI, only the SDK, or both together
+- Framework adapters for common JavaScript and TypeScript runtimes
 
 ## Why developers try better-webhook
 
-- **Faster feedback loops**: capture once, replay as many times as needed
-- **Less debugging guesswork**: inspect real payloads and headers locally
 - **Safer production handlers**: typed payloads, schema validation, signature verification
 - **Replay/idempotency controls**: provider replay keys with configurable duplicate handling (`409` by default when enabled)
 - **Fits your stack**: adapters for Next.js, Express, NestJS, Hono, and more
 
 ## Start in 60 seconds
 
-### Path 1: Local webhook testing with the CLI
-
-```bash
-# Install once (Homebrew Cask)
-brew install --cask endalk200/tap/better-webhook
-
-# Alternative install (Go)
-go install github.com/endalk200/better-webhook/apps/webhook-cli/cmd/better-webhook@latest
-
-# Start local capture API
-better-webhook capture --port 3001
-
-# Replay a captured webhook to your app
-# (Use `better-webhook captures list` to find a capture ID)
-better-webhook captures replay <capture-id> http://localhost:3000/api/webhooks/github
-```
-
-The CLI is available through Homebrew Cask, GitHub Releases binaries, and `go install`.
-
-### Path 2: Type-safe webhook handlers with the SDK
+### Type-safe webhook handlers with the SDK
 
 ```bash
 npm install @better-webhook/github @better-webhook/nextjs
@@ -64,9 +42,7 @@ export const POST = toNextJS(webhook);
 ## Documentation
 
 - **Docs source**: [`apps/docs`](apps/docs)
-- **CLI docs**: [`apps/webhook-cli/README.md`](apps/webhook-cli/README.md)
 - **SDK docs**: [`packages/core/README.md`](packages/core/README.md)
-- **Maintainer release runbook**: [`docs/cli-release-runbook.md`](docs/cli-release-runbook.md)
 
 For deep details, use the docs source and package-level READMEs. The root README stays intentionally lightweight.
 
@@ -96,7 +72,6 @@ pnpm dev:docs
 
 ### Package directory
 
-- CLI: [`better-webhook` Go CLI](apps/webhook-cli/README.md)
 - Core SDK: [`@better-webhook/core`](packages/core/README.md)
 - Providers: [`@better-webhook/github`](packages/github/README.md), [`@better-webhook/stripe`](packages/stripe/README.md), [`@better-webhook/ragie`](packages/ragie/README.md), [`@better-webhook/recall`](packages/recall/README.md), [`@better-webhook/resend`](packages/resend/README.md)
 - Adapters: [`@better-webhook/nextjs`](packages/nextjs/README.md), [`@better-webhook/express`](packages/express/README.md), [`@better-webhook/nestjs`](packages/nestjs/README.md), [`@better-webhook/hono`](packages/hono/README.md), [`@better-webhook/gcp-functions`](packages/gcp-functions/README.md)
@@ -104,7 +79,6 @@ pnpm dev:docs
 ### Monorepo layout
 
 - [`apps/docs`](apps/docs) - docs site source (`better-webhook.dev`)
-- [`apps/webhook-cli`](apps/webhook-cli) - Go CLI command implementation
 - [`apps/examples`](apps/examples) - runnable framework examples
 - [`packages`](packages) - SDK providers, adapters, and shared tooling
 
