@@ -78,6 +78,7 @@ await writeFile(
   `${JSON.stringify(
     {
       ...packageJson,
+      private: undefined,
       optionalDependencies,
       scripts: undefined,
       devDependencies: undefined,

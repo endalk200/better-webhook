@@ -1,6 +1,6 @@
 package cli
 
-const defaultVersion = "2.0.0-beta.1"
+const defaultVersion = "2.0.0-beta.2"
 
 var (
 	version = defaultVersion

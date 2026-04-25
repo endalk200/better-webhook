@@ -1,6 +1,7 @@
 {
   "name": "@better-webhook/cli",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.2",
+  "private": true,
   "description": "Command line interface for better-webhook",
   "type": "module",
   "bin": {
@@ -8,6 +9,8 @@
   },
   "scripts": {
     "build": "go build -o bin/bw ./cmd/bw",
+    "cli:dev": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; go run ./cmd/bw \"$@\"' --",
+    "cli:built": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; ./bin/bw \"$@\"' --",
     "clean": "rm -rf bin dist .turbo",
     "check-types": "go vet ./...",
     "format:check": "gofumpt -l . && test -z \"$(gofumpt -l .)\"",
