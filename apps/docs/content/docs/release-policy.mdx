@@ -18,6 +18,29 @@ High-level flow:
 
 Primary workflow: [`.github/workflows/release.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/release.yml)
 
+The SDK workflow only watches SDK package directories. The CLI package is released separately and is ignored by Changesets.
+
+## CLI releases
+
+The `@better-webhook/cli` package is released from annotated git tags, not Changesets.
+
+Tag format:
+
+- Beta releases: `cli/v2.0.0-beta.1`
+- Stable releases: `cli/v2.0.0`
+
+High-level flow:
+
+1. Merge the CLI release commit to `main`.
+2. Create an annotated `cli/v*` tag from the merged commit.
+3. Push the tag to trigger [`.github/workflows/cli-release.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/cli-release.yml).
+4. GoReleaser builds macOS, Linux, and Windows archives and publishes GitHub Release checksums.
+5. Native npm platform packages publish first, then the `@better-webhook/cli` wrapper publishes.
+
+Prerelease versions publish to the npm `beta` dist-tag and create GitHub prereleases. Stable versions publish to the npm `latest` dist-tag and create non-prerelease GitHub Releases.
+
+Maintainers can run [`.github/workflows/cli-release-dry-run.yml`](https://github.com/endalk200/better-webhook/blob/main/.github/workflows/cli-release-dry-run.yml) manually to validate GoReleaser packaging and npm pack output without publishing.
+
 ## Versioning expectations
 
 - Use semantic versioning for SDK packages.
@@ -27,3 +50,5 @@ Primary workflow: [`.github/workflows/release.yml`](https://github.com/endalk200
 ## Where to find release artifacts
 
 - SDK packages: npm (`@better-webhook/*`)
+- CLI package: npm (`@better-webhook/cli`)
+- CLI direct downloads: GitHub Releases
