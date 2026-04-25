@@ -50,11 +50,23 @@ jobs:
       - name: Test
         run: devbox run -- pnpm --filter @better-webhook/cli run test
 
-      - name: GoReleaser release
-        working-directory: packages/cli
-        run: devbox run -- goreleaser release --clean
+      - name: GoReleaser build artifacts
+        run: |
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          devbox run -- sh -c "cd packages/cli && GORELEASER_CURRENT_TAG=v${VERSION} goreleaser release --clean --skip=publish,validate"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub Release artifacts
+        run: |
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          release_flags=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "CLI v${VERSION}" --generate-notes)
+          if [[ "$VERSION" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+          devbox run -- gh release create "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* "${release_flags[@]}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate npm package directories
         run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist

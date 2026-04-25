@@ -40,8 +40,7 @@ jobs:
         run: devbox run -- pnpm --filter @better-webhook/cli run test
 
       - name: GoReleaser snapshot
-        working-directory: packages/cli
-        run: devbox run -- goreleaser release --snapshot --clean --skip=publish
+        run: devbox run -- sh -c 'cd packages/cli && goreleaser release --snapshot --clean --skip=publish'
 
       - name: Generate npm package directories
         run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist
