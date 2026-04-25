@@ -430,6 +430,8 @@ importers:
         specifier: ^5.6.3
         version: 5.9.2
 
+  packages/cli: {}
+
   packages/core:
     dependencies:
       zod:

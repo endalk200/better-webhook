@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import test from "node:test";
+
+const binary = process.platform === "win32" ? "bin/bw.exe" : "bin/bw";
+
+test("local binary reports version from command and flag", () => {
+  assert.equal(
+    existsSync(binary),
+    true,
+    "run pnpm --filter @better-webhook/cli build before smoke tests",
+  );
+
+  const command = spawnSync(binary, ["version"], { encoding: "utf8" });
+  assert.equal(command.status, 0);
+  assert.equal(command.stdout, "bw version 2.0.0-beta.1\n");
+
+  const flag = spawnSync(binary, ["--version"], { encoding: "utf8" });
+  assert.equal(flag.status, 0);
+  assert.equal(flag.stdout, "bw version 2.0.0-beta.1\n");
+});
