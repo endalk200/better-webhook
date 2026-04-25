@@ -1,0 +1,82 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - "cli/v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Publish CLI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Configure npm registry
+        uses: actions/setup-node@v4
+        with:
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: devbox run -- pnpm install --frozen-lockfile
+
+      - name: Validate release tag and npm availability
+        run: devbox run -- pnpm --filter @better-webhook/cli run release:check
+
+      - name: Format check
+        run: devbox run -- pnpm --filter @better-webhook/cli run format:check
+
+      - name: Lint
+        run: devbox run -- pnpm --filter @better-webhook/cli run lint
+
+      - name: Type check
+        run: devbox run -- pnpm --filter @better-webhook/cli run check-types
+
+      - name: Test
+        run: devbox run -- pnpm --filter @better-webhook/cli run test
+
+      - name: GoReleaser release
+        working-directory: packages/cli
+        run: devbox run -- goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate npm package directories
+        run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist
+
+      - name: Resolve npm dist-tag
+        id: npm-tag
+        working-directory: packages/cli
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish platform packages
+        working-directory: packages/cli/dist/npm
+        run: |
+          for package_dir in cli-darwin-arm64 cli-darwin-x64 cli-linux-arm64 cli-linux-x64 cli-win32-x64; do
+            (cd "$package_dir" && devbox run -- npm publish --provenance --access public --tag "${{ steps.npm-tag.outputs.tag }}")
+          done
+
+      - name: Publish wrapper package
+        working-directory: packages/cli/dist/npm/cli
+        run: devbox run -- npm publish --provenance --access public --tag "${{ steps.npm-tag.outputs.tag }}"

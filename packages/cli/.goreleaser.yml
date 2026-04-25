@@ -1,0 +1,56 @@
+version: 2
+
+project_name: bw
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: bw
+    main: ./cmd/bw
+    binary: bw
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/endalk200/better-webhook/packages/cli/internal/cli.version={{ .Version }}
+      - -X github.com/endalk200/better-webhook/packages/cli/internal/cli.commit={{ .Commit }}
+      - -X github.com/endalk200/better-webhook/packages/cli/internal/cli.date={{ .Date }}
+      - -X github.com/endalk200/better-webhook/packages/cli/internal/cli.builtBy=goreleaser
+
+archives:
+  - id: bw
+    ids:
+      - bw
+    name_template: >-
+      bw_{{ .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x64{{ else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "bw_{{ .Version }}_checksums.txt"
+
+release:
+  prerelease: auto
+  header: |
+    Initial better-webhook CLI v2 beta scaffold.
+
+    This release includes root help and version commands only. Project, gateway, template, capture, and replay commands are intentionally absent.

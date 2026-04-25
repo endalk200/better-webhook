@@ -1,0 +1,54 @@
+name: CLI Release Dry Run
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: Validate CLI release packaging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Devbox
+        uses: ./.github/actions/setup-devbox
+
+      - name: Install dependencies
+        run: devbox run -- pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: devbox run -- pnpm --filter @better-webhook/cli run format:check
+
+      - name: Lint
+        run: devbox run -- pnpm --filter @better-webhook/cli run lint
+
+      - name: Type check
+        run: devbox run -- pnpm --filter @better-webhook/cli run check-types
+
+      - name: Test
+        run: devbox run -- pnpm --filter @better-webhook/cli run test
+
+      - name: GoReleaser snapshot
+        working-directory: packages/cli
+        run: devbox run -- goreleaser release --snapshot --clean --skip=publish
+
+      - name: Generate npm package directories
+        run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist
+
+      - name: Pack npm packages
+        working-directory: packages/cli/dist/npm
+        run: |
+          for package_dir in cli-darwin-arm64 cli-darwin-x64 cli-linux-arm64 cli-linux-x64 cli-win32-x64 cli; do
+            (cd "$package_dir" && devbox run -- npm pack --dry-run)
+          done
