@@ -164,7 +164,7 @@ The CLI release workflow resolves npm tags from `packages/cli/package.json`:
 As of this audit on 2026-04-26, npm shows:
 
 - SDK package `latest` tags match the package versions in this repo.
-- `@better-webhook/cli` has `beta` at `2.0.0-beta.2`, matching this repo.
+- `@better-webhook/cli` has `beta` at `2.0.0-beta.2`; this branch prepares `2.0.0-beta.3`.
 - `@better-webhook/cli` has `latest` at `3.10.1`, which is an older npm package shape with `better-webhook` as its bin.
 - `@better-webhook/cli` also has a `dev` dist-tag at `0.0.0-dev`; it is unrelated to the current Go CLI release flow.
 - Native CLI packages are published at `2.0.0-beta.2`; their `beta` and `latest` tags both point there.
