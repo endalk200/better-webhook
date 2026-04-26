@@ -97,10 +97,25 @@ func TestVersionCommandJSONFormat(t *testing.T) {
 		"builtBy":       "test",
 	}
 
+	if len(parsed) != len(expected) {
+		t.Fatalf("expected %d JSON fields, got %d in %q", len(expected), len(parsed), output)
+	}
+
 	for key, value := range expected {
 		if parsed[key] != value {
 			t.Fatalf("expected %s to be %q, got %q in %q", key, value, parsed[key], output)
 		}
+	}
+}
+
+func TestVersionCommandRejectsVerboseJSONFormat(t *testing.T) {
+	_, err := execute("version", "--verbose", "--format", "json")
+	if err == nil {
+		t.Fatal("expected verbose JSON format to fail")
+	}
+
+	if !strings.Contains(err.Error(), "--verbose only applies to human format") {
+		t.Fatalf("expected verbose JSON format error, got %v", err)
 	}
 }
 

@@ -67,6 +67,9 @@ func printVersion(out io.Writer, build BuildInfo, opts versionOptions) error {
 	case "human":
 		return printHumanVersion(out, build, opts.verbose)
 	case "json":
+		if opts.verbose {
+			return fmt.Errorf("unsupported flag combination: --verbose only applies to human format")
+		}
 		return printJSONVersion(out, build)
 	default:
 		return fmt.Errorf("unsupported output format %q: expected human or json", opts.format)

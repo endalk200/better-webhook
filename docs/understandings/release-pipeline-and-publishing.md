@@ -161,15 +161,15 @@ The CLI release workflow resolves npm tags from `packages/cli/package.json`:
 - Stable versions publish with `--tag latest`.
 - Prerelease versions publish with `--tag beta`.
 
-As of this audit on 2026-04-26, npm shows:
+Dist-tags and published versions change over time. Verify current state before release:
 
-- SDK package `latest` tags match the package versions in this repo.
-- `@better-webhook/cli` has `beta` at `2.0.0-beta.2`; this branch prepares `2.0.0-beta.3`.
-- `@better-webhook/cli` has `latest` at `3.10.1`, which is an older npm package shape with `better-webhook` as its bin.
-- `@better-webhook/cli` also has a `dev` dist-tag at `0.0.0-dev`; it is unrelated to the current Go CLI release flow.
-- Native CLI packages are published at `2.0.0-beta.2`; their `beta` and `latest` tags both point there.
+```bash
+devbox run -- npm view @better-webhook/cli dist-tags --json
+devbox run -- npm view @better-webhook/cli@beta version
+devbox run -- npm view @better-webhook/cli@latest version
+```
 
-That means `npm install @better-webhook/cli` currently resolves the old `3.10.1` package, while `npm install @better-webhook/cli@beta` resolves the new Go CLI wrapper. The first stable Go CLI release will move the wrapper's `latest` tag if it is published successfully with a stable semver version.
+Use those results to confirm whether `latest` and `beta` point to the expected package generation. Until a stable Go CLI release moves `latest`, prefer the `beta` tag for the Go CLI wrapper.
 
 ## CI and Security Gates
 
@@ -187,6 +187,6 @@ That means `npm install @better-webhook/cli` currently resolves the old `3.10.1`
 - Do not use `pnpm dev` or `pnpm start` as part of release verification.
 - If repo-wide lint fails with an `ENOENT` for a temporary `packages/stripe` tsup config file during concurrent build-related work, rerun lint by itself after builds finish.
 - The CLI `release:check` intentionally fails if the current CLI version already exists on npm. That is expected after a tag has already published.
-- The current checkout is tagged `cli/v2.0.0-beta.2`; rerunning the CLI release check fails because `@better-webhook/cli-darwin-arm64@2.0.0-beta.2` already exists on npm.
+- For example, a checkout tagged `cli/vX.Y.Z` can fail `release:check` after publishing because `@better-webhook/cli-darwin-arm64@X.Y.Z` already exists on npm.
 - `devbox.json` currently pins `pnpm@10.28.0` while the root `packageManager` field says `pnpm@10.33.0`; CI uses the Devbox-pinned binary unless Devbox is updated.
 - SDK docs under `apps/docs/content` can drift from SDK behavior. SDK-facing changes should include a docs review before release.
