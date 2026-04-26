@@ -246,14 +246,21 @@ Also verify the GitHub Release exists for the pushed tag and contains:
 - Windows x64 zip
 - checksum file
 
-### 8. Current CLI npm State to Remember
+### 8. Verify Current CLI npm State
 
-As of 2026-04-26:
+Before installing or recommending a CLI tag, check the current npm state:
 
-- `@better-webhook/cli@beta` is `2.0.0-beta.2`; this branch prepares `2.0.0-beta.3`.
-- `@better-webhook/cli@latest` is `3.10.1`, an older package shape with the `better-webhook` bin.
-- `@better-webhook/cli@dev` is `0.0.0-dev`; it is not part of the current Go CLI release flow.
+```bash
+devbox run -- npm view @better-webhook/cli dist-tags --json
+devbox run -- npm view @better-webhook/cli@beta version
+devbox run -- npm view @better-webhook/cli@latest version
+```
+
+Durable CLI package facts:
+
 - The new Go CLI wrapper exposes the `bw` bin.
+- Older `@better-webhook/cli@latest` versions may use the legacy `better-webhook` bin until a stable Go CLI release moves `latest`.
+- `@better-webhook/cli@dev` is not part of the current Go CLI release flow.
 
 Until a stable Go CLI version is published, use:
 
