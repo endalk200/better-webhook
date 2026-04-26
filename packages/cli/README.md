@@ -26,4 +26,4 @@ bw version --format json
 
 ## Release model
 
-CLI releases are separate from SDK Changesets releases. Maintainers publish real CLI releases from annotated tags such as `cli/v2.0.0-beta.2`. Beta versions publish to the npm `beta` dist-tag and stable versions publish to `latest`.
+CLI releases are separate from SDK Changesets releases. Maintainers publish real CLI releases from annotated tags such as `cli/v2.0.0-beta.3`. Beta versions publish to the npm `beta` dist-tag and stable versions publish to `latest`.

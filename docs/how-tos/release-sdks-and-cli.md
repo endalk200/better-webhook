@@ -250,7 +250,7 @@ Also verify the GitHub Release exists for the pushed tag and contains:
 
 As of 2026-04-26:
 
-- `@better-webhook/cli@beta` is `2.0.0-beta.2`.
+- `@better-webhook/cli@beta` is `2.0.0-beta.2`; this branch prepares `2.0.0-beta.3`.
 - `@better-webhook/cli@latest` is `3.10.1`, an older package shape with the `better-webhook` bin.
 - `@better-webhook/cli@dev` is `0.0.0-dev`; it is not part of the current Go CLI release flow.
 - The new Go CLI wrapper exposes the `bw` bin.
