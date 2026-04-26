@@ -21,6 +21,7 @@ bw
 bw --version
 bw version
 bw version --verbose
+bw version --format json
 ```
 
 ## Release model

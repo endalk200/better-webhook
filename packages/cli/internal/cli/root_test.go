@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -73,6 +74,44 @@ func TestVerboseVersionCommand(t *testing.T) {
 		if !strings.Contains(output, line) {
 			t.Fatalf("expected output to contain %q, got %q", line, output)
 		}
+	}
+}
+
+func TestVersionCommandJSONFormat(t *testing.T) {
+	output, err := execute("version", "--format", "json")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var parsed map[string]string
+	if err := json.Unmarshal([]byte(output), &parsed); err != nil {
+		t.Fatalf("expected JSON output, got %q: %v", output, err)
+	}
+
+	expected := map[string]string{
+		"schemaVersion": "1",
+		"command":       "version",
+		"version":       "9.8.7-test.1",
+		"commit":        "abc123",
+		"date":          "2026-04-25T00:00:00Z",
+		"builtBy":       "test",
+	}
+
+	for key, value := range expected {
+		if parsed[key] != value {
+			t.Fatalf("expected %s to be %q, got %q in %q", key, value, parsed[key], output)
+		}
+	}
+}
+
+func TestVersionCommandRejectsUnsupportedFormat(t *testing.T) {
+	_, err := execute("version", "--format", "xml")
+	if err == nil {
+		t.Fatal("expected unsupported format to fail")
+	}
+
+	if !strings.Contains(err.Error(), "unsupported output format") {
+		t.Fatalf("expected unsupported format error, got %v", err)
 	}
 }
 
