@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -27,22 +28,52 @@ func NewRootCommand(build BuildInfo) *cobra.Command {
 
 func newVersionCommand(build BuildInfo) *cobra.Command {
 	var verbose bool
+	var format string
 
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
-			return printVersion(out, build, verbose)
+			return printVersion(out, build, versionOptions{
+				format:  format,
+				verbose: verbose,
+			})
 		},
 	}
 
+	cmd.Flags().StringVar(&format, "format", "human", "output format: human or json")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "print release metadata")
 
 	return cmd
 }
 
-func printVersion(out io.Writer, build BuildInfo, verbose bool) error {
+type versionOptions struct {
+	format  string
+	verbose bool
+}
+
+type versionOutput struct {
+	SchemaVersion string `json:"schemaVersion"`
+	Command       string `json:"command"`
+	Version       string `json:"version"`
+	Commit        string `json:"commit"`
+	Date          string `json:"date"`
+	BuiltBy       string `json:"builtBy"`
+}
+
+func printVersion(out io.Writer, build BuildInfo, opts versionOptions) error {
+	switch opts.format {
+	case "human":
+		return printHumanVersion(out, build, opts.verbose)
+	case "json":
+		return printJSONVersion(out, build)
+	default:
+		return fmt.Errorf("unsupported output format %q: expected human or json", opts.format)
+	}
+}
+
+func printHumanVersion(out io.Writer, build BuildInfo, verbose bool) error {
 	if !verbose {
 		_, err := fmt.Fprintf(out, "bw version %s\n", build.Version)
 		return err
@@ -57,4 +88,16 @@ func printVersion(out io.Writer, build BuildInfo, verbose bool) error {
 		build.BuiltBy,
 	)
 	return err
+}
+
+func printJSONVersion(out io.Writer, build BuildInfo) error {
+	encoder := json.NewEncoder(out)
+	return encoder.Encode(versionOutput{
+		SchemaVersion: "1",
+		Command:       "version",
+		Version:       build.Version,
+		Commit:        build.Commit,
+		Date:          build.Date,
+		BuiltBy:       build.BuiltBy,
+	})
 }
