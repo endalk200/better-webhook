@@ -11,7 +11,7 @@ Workflow:
 5. If a PR changes publishable packages but should not create a release, run `pnpm changeset --empty` and commit that file instead.
 6. Do not manually edit published package versions or package changelogs in feature PRs. Release automation generates those from the `.changeset/*.md` files.
 7. When ready to release run one of:
-   - `pnpm release:version` then open a PR (if using PR flow).
+   - `pnpm run changeset:version` then open a PR (if using PR flow).
    - `pnpm release` locally to version + build + publish in one go.
 8. Publish only after verifying build output.
 
