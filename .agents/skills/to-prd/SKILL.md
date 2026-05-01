@@ -1,13 +1,13 @@
 ---
 name: to-prd
-description: Turn the current conversation context into a PRD. Use when user wants to create a PRD from the current context.
+description: Turn the current conversation context into a local markdown PRD under `.workflows/prd/`. Use when user wants to create a PRD from the current context.
 ---
 
 This skill takes the current conversation context and codebase understanding and produces a PRD. Do NOT interview the user — just synthesize what you already know.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already.
+1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
 
 2. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
 
@@ -15,7 +15,18 @@ A deep module (as opposed to a shallow module) is one which encapsulates a lot o
 
 Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-3. Write the PRD using the template below.
+3. Write the PRD using the template below, then store it as local markdown under `.workflows/prd/`.
+
+Use this file convention unless the repo already has a stronger `.workflows/` convention:
+
+- PRD path: `.workflows/prd/YYYY-MM-DD/NNN-short-kebab-title/prd.md`
+- `YYYY-MM-DD` is today's date
+- `NNN` is the next available sequence number within that date folder
+- `short-kebab-title` is a concise slug derived from the PRD title
+
+Example: `.workflows/prd/2026-05-01/001-user-authentication/prd.md`
+
+If implementation tasks are later created from or for this PRD, they should be nested under this PRD folder in `tasks/`.
 
 <prd-template>
 
