@@ -118,6 +118,7 @@ _Avoid_: Idempotency store, cache, nonce database
 - **Idempotency** is disabled unless a webhook endpoint is configured with an **Idempotency Store**.
 - Provider timestamp tolerance is applied by default for **Replay Protection** when a provider supports signed timestamps.
 - A **Replay Store** is optional and only adds seen-delivery tracking with provider-derived delivery replay keys when configured.
+- A **Replay Store** remembers a signed **Webhook Delivery** only after the pipeline has accepted the delivery as processable enough to reach replay-store evaluation.
 - Ignored and duplicate **Webhook Events** return successful responses by default.
 - Failed **Event Handlers** return failure responses by default so providers can retry.
 - Rejected **Webhook Deliveries** return failure responses by default.
@@ -166,6 +167,9 @@ _Avoid_: Idempotency store, cache, nonce database
 >
 > **Dev:** "Does replay protection require a store before it does anything?"
 > **Domain expert:** "No — provider timestamp tolerance is applied by default when available; a **Replay Store** only adds seen-delivery tracking."
+>
+> **Dev:** "Should a signed delivery consume its replay key if the event envelope cannot be extracted?"
+> **Domain expert:** "No — the **Replay Store** only remembers a signed **Webhook Delivery** after the pipeline has accepted it as processable enough to reach replay-store evaluation."
 >
 > **Dev:** "Should ignored events fail so the provider retries?"
 > **Domain expert:** "No — ignored and duplicate **Webhook Events** return success by default; failed handling and rejected **Webhook Deliveries** return failure by default."
