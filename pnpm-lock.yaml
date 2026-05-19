@@ -24,10 +24,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      '@better-webhook/cli':
-        specifier: ^2.0.0-beta.4
-        version: 2.0.0-beta.4
     devDependencies:
       '@changesets/cli':
         specifier: ^2.27.9
@@ -46,6 +42,24 @@ importers:
         version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
 
   packages/cli: {}
+
+  packages/core:
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: ^9.35.0
+        version: 9.35.0(jiti@2.6.1)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
 
   packages/eslint-config:
     devDependencies:
@@ -74,6 +88,106 @@ importers:
         specifier: ^8.43.0
         version: 8.43.0(eslint@9.35.0(jiti@2.6.1))(typescript@5.9.2)
 
+  packages/express:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../stripe
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.35.0(jiti@2.6.1)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
+
+  packages/nextjs:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/stripe':
+        specifier: workspace:*
+        version: link:../stripe
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: ^9.35.0
+        version: 9.35.0(jiti@2.6.1)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
+
+  packages/otel:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: ^9.35.0
+        version: 9.35.0(jiti@2.6.1)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
+
+  packages/stripe:
+    dependencies:
+      '@better-webhook/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@better-webhook/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@better-webhook/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.4
+      eslint:
+        specifier: ^9.35.0
+        version: 9.35.0(jiti@2.6.1)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(terser@5.44.1)(tsx@4.20.5)(yaml@2.8.3)
+
   packages/typescript-config: {}
 
 packages:
@@ -81,36 +195,6 @@ packages:
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
-
-  '@better-webhook/cli-darwin-arm64@2.0.0-beta.4':
-    resolution: {integrity: sha512-iWTvLv9PZESiy997f3OwXICuUY5qG0ri5up6uEDR9QwAlNm2wsG6FrcsPcBKUo+tYPVbkpGfKnR7Na21P63shQ==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@better-webhook/cli-darwin-x64@2.0.0-beta.4':
-    resolution: {integrity: sha512-ypclCEUVcxq7isvFfGvNHZDCy2kjoq2t8GAZIB1eo+xVjZERjzI5GhVj3XUEoplsVzK/N0Lx0+E9S3rlemTcNg==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@better-webhook/cli-linux-arm64@2.0.0-beta.4':
-    resolution: {integrity: sha512-j9gAcgaSM1dpve+N162ixkfCospF+fyI2hczBvO5i4SO3Z170Yuv8oWi0yg6aRmhhuYoHpSk/hmTQgpjSli0/w==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@better-webhook/cli-linux-x64@2.0.0-beta.4':
-    resolution: {integrity: sha512-GUZLmUR3Oj2tHIxiTKbtamz9a1/6UhczFLHx5qHf5eFG47GifbzEyRA/cPtPiuQeAs8QVmSgz/DWY/r3E99LuA==}
-    cpu: [x64]
-    os: [linux]
-
-  '@better-webhook/cli-win32-x64@2.0.0-beta.4':
-    resolution: {integrity: sha512-PSbtzJ9HVaKBt069WDg8ipJoXMhSP/3aeexQ5IhcYaEVOUISWdX45/qWl/lHO1PRmtJeGTx4nw7NBt8X7sB5sw==}
-    cpu: [x64]
-    os: [win32]
-
-  '@better-webhook/cli@2.0.0-beta.4':
-    resolution: {integrity: sha512-Zhkfw4KingBNE02PsRppobWpK9iDcAGpQU9CNY9A1HO/+0/oa7mp5MGUL99YLVxk7rSQq0RQg1XGDUuRAAmaZQ==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   '@changesets/apply-release-plan@7.0.13':
     resolution: {integrity: sha512-BIW7bofD2yAWoE8H4V40FikC+1nNFEKBisMECccS16W1rt6qqhNTBDmIw5HaqmMgtLNz9e7oiALiEUuKrQ4oHg==}
@@ -1929,29 +2013,6 @@ snapshots:
 
   '@babel/runtime@7.28.4': {}
 
-  '@better-webhook/cli-darwin-arm64@2.0.0-beta.4':
-    optional: true
-
-  '@better-webhook/cli-darwin-x64@2.0.0-beta.4':
-    optional: true
-
-  '@better-webhook/cli-linux-arm64@2.0.0-beta.4':
-    optional: true
-
-  '@better-webhook/cli-linux-x64@2.0.0-beta.4':
-    optional: true
-
-  '@better-webhook/cli-win32-x64@2.0.0-beta.4':
-    optional: true
-
-  '@better-webhook/cli@2.0.0-beta.4':
-    optionalDependencies:
-      '@better-webhook/cli-darwin-arm64': 2.0.0-beta.4
-      '@better-webhook/cli-darwin-x64': 2.0.0-beta.4
-      '@better-webhook/cli-linux-arm64': 2.0.0-beta.4
-      '@better-webhook/cli-linux-x64': 2.0.0-beta.4
-      '@better-webhook/cli-win32-x64': 2.0.0-beta.4
-
   '@changesets/apply-release-plan@7.0.13':
     dependencies:
       '@changesets/config': 3.1.1
@@ -2541,7 +2602,6 @@ snapshots:
   '@types/node@24.10.4':
     dependencies:
       undici-types: 7.16.0
-    optional: true
 
   '@types/statuses@2.0.6':
     optional: true
@@ -2909,7 +2969,7 @@ snapshots:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.6
-      debug: 4.4.1
+      debug: 4.4.3
       escape-string-regexp: 4.0.0
       eslint-scope: 8.4.0
       eslint-visitor-keys: 4.2.1
@@ -3543,8 +3603,7 @@ snapshots:
 
   typescript@5.9.2: {}
 
-  undici-types@7.16.0:
-    optional: true
+  undici-types@7.16.0: {}
 
   universalify@0.1.2: {}
 
