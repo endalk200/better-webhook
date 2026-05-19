@@ -237,11 +237,11 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
       );
     }
 
-    const replay = await checkReplay(options, verification);
-    if (replay.status === "rejected") {
+    const timestampReplay = checkReplayTimestamp(options, verification);
+    if (timestampReplay.status === "rejected") {
       return finish(
         baseResult(options.provider.name, "rejected", {
-          reason: replay.reason,
+          reason: timestampReplay.reason,
           replay: "rejected",
         }),
       );
@@ -266,7 +266,7 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
     const resultBase = {
       eventType: event.type,
       eventId: event.id,
-      replay: replay.status,
+      replay: timestampReplay.status,
     } satisfies Partial<PipelineResult>;
 
     if (options.idempotencyStore && !event.id) {
@@ -277,6 +277,18 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
         }),
       );
     }
+
+    const replay = await rememberReplay(options, verification);
+    if (replay.status === "rejected") {
+      return finish(
+        baseResult(options.provider.name, "rejected", {
+          ...resultBase,
+          reason: replay.reason,
+          replay: "rejected",
+        }),
+      );
+    }
+    resultBase.replay = replay.status;
 
     const reservation = await reserveEvent(options, event);
     if (reservation?.status === "completed") {
@@ -493,13 +505,13 @@ function baseResult(
   };
 }
 
-async function checkReplay<TEvents extends WebhookEvent>(
+function checkReplayTimestamp<TEvents extends WebhookEvent>(
   options: CreateWebhookEndpointOptions<TEvents>,
   verification: ProviderVerificationSuccess,
-): Promise<{
+): {
   status: "accepted" | "not_configured" | "rejected";
   reason?: string;
-}> {
+} {
   const now = options.now?.() ?? new Date();
   const windowMs = options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS;
 
@@ -511,10 +523,23 @@ async function checkReplay<TEvents extends WebhookEvent>(
       return { status: "rejected", reason: "stale_signed_timestamp" };
   }
 
+  return verification.signedTimestamp
+    ? { status: "accepted" }
+    : { status: "not_configured" };
+}
+
+async function rememberReplay<TEvents extends WebhookEvent>(
+  options: CreateWebhookEndpointOptions<TEvents>,
+  verification: ProviderVerificationSuccess,
+): Promise<{
+  status: "accepted" | "not_configured" | "rejected";
+  reason?: string;
+}> {
   if (!options.replayStore || !verification.replayKey)
     return verification.signedTimestamp
       ? { status: "accepted" }
       : { status: "not_configured" };
+  const windowMs = options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS;
   const key = `${options.provider.name}:${options.endpointIdentity}:${verification.replayKey}`;
   const outcome = await options.replayStore.remember(key, windowMs);
   return outcome === "seen"

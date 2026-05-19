@@ -230,6 +230,68 @@ describe("createWebhookEndpoint", () => {
     expect(result.reason).toBe("missing_idempotency_event_id");
   });
 
+  it("does not remember replay keys for invalid event envelopes", async () => {
+    const replayStore = createMemoryReplayStore();
+    const endpoint = createWebhookEndpoint({
+      provider: provider({
+        verify: () => ({
+          ok: true,
+          signedTimestamp: new Date("2026-05-19T00:00:00.000Z"),
+          replayKey: "delivery-key",
+        }),
+        extractEvent: () => {
+          throw new Error("invalid envelope");
+        },
+      }),
+      endpointIdentity: "stripe-main",
+      replayStore,
+      now: () => new Date("2026-05-19T00:02:00.000Z"),
+      handlers: { "thing.created": vi.fn() },
+    });
+
+    const first = await endpoint.handleWithResult(request);
+    const retry = await endpoint.handleWithResult(request);
+
+    expect(first.result.status).toBe("unsupported");
+    expect(first.result.reason).toBe("invalid_event_envelope");
+    expect(retry.result.status).toBe("unsupported");
+    expect(retry.result.reason).toBe("invalid_event_envelope");
+    expect(replayStore.size()).toBe(0);
+  });
+
+  it("does not remember replay keys when idempotency requires a missing event id", async () => {
+    const replayStore = createMemoryReplayStore();
+    const endpoint = createWebhookEndpoint({
+      provider: provider({
+        verify: () => ({
+          ok: true,
+          signedTimestamp: new Date("2026-05-19T00:00:00.000Z"),
+          replayKey: "delivery-key",
+        }),
+        extractEvent: () => ({
+          type: "thing.created",
+          payload: { id: "thing_1" },
+          envelope: {},
+          known: true,
+        }),
+      }),
+      endpointIdentity: "stripe-main",
+      idempotencyStore: createMemoryIdempotencyStore(),
+      replayStore,
+      now: () => new Date("2026-05-19T00:02:00.000Z"),
+      handlers: { "thing.created": vi.fn() },
+    });
+
+    const first = await endpoint.handleWithResult(request);
+    const retry = await endpoint.handleWithResult(request);
+
+    expect(first.result.status).toBe("unsupported");
+    expect(first.result.reason).toBe("missing_idempotency_event_id");
+    expect(retry.result.status).toBe("unsupported");
+    expect(retry.result.reason).toBe("missing_idempotency_event_id");
+    expect(replayStore.size()).toBe(0);
+  });
+
   it("rejects stale signed timestamps and remembered replay keys before handlers", async () => {
     const handler = vi.fn();
     const replayStore = createMemoryReplayStore();
