@@ -118,14 +118,27 @@ describe("createWebhookEndpoint", () => {
       handlers: { "thing.created": handler },
     });
 
-    expect((await endpoint.handleWithResult(request)).result.status).toBe(
-      "handled",
-    );
+    const first = await endpoint.handleWithResult(request);
+    expect(first.result.status).toBe("handled");
+    expect(first.result.idempotency).toBe("completed");
     const duplicate = await endpoint.handleWithResult(request);
 
     expect(duplicate.response.status).toBe(200);
     expect(duplicate.result.status).toBe("duplicate");
     expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("reports completed idempotency for ignored events after reserving them", async () => {
+    const endpoint = createWebhookEndpoint({
+      provider: provider(),
+      endpointIdentity: "stripe-main",
+      idempotencyStore: createMemoryIdempotencyStore(),
+    });
+
+    const { result } = await endpoint.handleWithResult(request);
+
+    expect(result.status).toBe("ignored");
+    expect(result.idempotency).toBe("completed");
   });
 
   it("returns 409 when overlapping deliveries race the same event key", async () => {

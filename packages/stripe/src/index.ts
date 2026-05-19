@@ -212,9 +212,7 @@ export function createStripeReplayKey(
   return `t=${timestamp}:v1=${signature}:body=${digest}`;
 }
 
-function getStripeSignatureHeader(
-  headers: RawHeaderValue[],
-): string | undefined {
+function getStripeSignatureHeader(headers: RawHeaderValue[]): string {
   return getHeaderValues(headers, "stripe-signature").join(",");
 }
 

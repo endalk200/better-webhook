@@ -309,7 +309,7 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
       return finish(
         baseResult(options.provider.name, "ignored", {
           ...resultBase,
-          idempotency: reservation?.status ?? "not_configured",
+          idempotency: completedReservationStatus(reservation),
           handler: "ignored",
         }),
       );
@@ -330,7 +330,7 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
       return finish(
         baseResult(options.provider.name, "handled", {
           ...resultBase,
-          idempotency: reservation?.status ?? "not_configured",
+          idempotency: completedReservationStatus(reservation),
           handler: "handled",
         }),
       );
@@ -529,6 +529,13 @@ async function reserveEvent<TEvents extends WebhookEvent>(
   if (!options.idempotencyStore) return undefined;
   const key = `${options.provider.name}:${options.endpointIdentity}:${event.id}`;
   return await options.idempotencyStore.reserve(key, options.idempotencyTtlMs);
+}
+
+function completedReservationStatus(
+  reservation: IdempotencyReservation | undefined,
+): PipelineResult["idempotency"] {
+  if (!reservation) return "not_configured";
+  return reservation.status === "reserved" ? "completed" : reservation.status;
 }
 
 function getHandler<TEvents extends WebhookEvent>(
