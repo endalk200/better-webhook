@@ -11,14 +11,15 @@ created: 2026-05-19
 
 ## What to build
 
-Build the Next.js **Framework Adapter** for route handlers. The adapter should translate Next.js request and response objects to and from core while preserving raw delivery bytes and signature-relevant headers, and should prove the path with a Stripe endpoint.
+Build the Next.js **Framework Adapter** for route handlers. The adapter should translate Next.js request and response objects to and from core while preserving raw delivery bytes and signature-relevant headers available from the framework, declaring any raw header capability limits, and proving the path with a Stripe endpoint.
 
 ## Acceptance criteria
 
 - [ ] Next.js adapter exposes a route-handler-compatible API for a core webhook endpoint.
 - [ ] The adapter preserves raw body bytes and signature-relevant headers available from the Next.js request.
+- [ ] The adapter documents whether duplicate raw header lines are available or lost through the Next.js request abstraction.
 - [ ] The adapter translates core responses into framework responses without changing pipeline semantics.
-- [ ] Tests cover successful Stripe handling, rejected delivery propagation, raw body preservation, and response translation.
+- [ ] Tests cover successful Stripe handling, rejected delivery propagation, raw body preservation, declared header capability limits, and response translation.
 - [ ] Adapter docs describe raw request constraints and supported Next.js runtime expectations.
 
 ## Blocked by

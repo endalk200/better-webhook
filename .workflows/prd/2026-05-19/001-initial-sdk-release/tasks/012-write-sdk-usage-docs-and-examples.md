@@ -15,9 +15,10 @@ Write initial SDK documentation and examples that explain the **Webhook Handling
 
 ## Acceptance criteria
 
-- [ ] Core docs explain the endpoint pipeline, handler registration, handler context, response semantics, idempotency, replay protection, and extension points.
+- [ ] Core docs explain the endpoint pipeline, handler registration, handler context, exact default response statuses, idempotency, required endpoint identity for idempotency, replay protection, and extension points.
 - [ ] Stripe docs explain signing secret configuration, timestamp tolerance, curated event typing, unknown fallback events, and compile-time typing versus runtime envelope validation.
 - [ ] Next.js docs show a raw-body-safe route-handler setup with Stripe.
+- [ ] Next.js and Express docs declare raw body and raw header preservation limits.
 - [ ] Express docs show the required raw-body setup order and a working Stripe endpoint.
 - [ ] OpenTelemetry docs show `otel(...)` configuration and document sanitized payload behavior.
 - [ ] Docs clearly state initial non-goals: GitHub, exhaustive Stripe types, production storage adapters, secret resolvers, multi-provider endpoints, middleware, Edge, browser, and CommonJS.
