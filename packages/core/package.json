@@ -1,0 +1,45 @@
+{
+  "name": "@better-webhook/core",
+  "version": "0.1.0",
+  "description": "Provider-agnostic webhook handling pipeline for Better Webhook",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo tsconfig.tsbuildinfo",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:write": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "webhook",
+    "sdk"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
+    "@better-webhook/typescript-config": "workspace:*",
+    "eslint": "^9.35.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16"
+  }
+}
