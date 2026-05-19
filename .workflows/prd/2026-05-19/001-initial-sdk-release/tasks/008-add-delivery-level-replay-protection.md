@@ -11,16 +11,18 @@ created: 2026-05-19
 
 ## What to build
 
-Implement delivery-level **Replay Protection** in core. Provider timestamp tolerance should run by default when supported, and optional **Replay Store** tracking should reject previously observed signed **Webhook Deliveries** during the replay protection window.
+Implement delivery-level **Replay Protection** in core. Provider timestamp tolerance should run by default when supported, and optional **Replay Store** tracking should reject previously observed signed **Webhook Deliveries** during the replay protection window using provider-derived delivery replay keys.
 
 ## Acceptance criteria
 
 - [ ] Provider timestamp tolerance is enforced by default when a provider exposes signed timestamps.
 - [ ] Core defines a **Replay Store** contract for short-lived seen-delivery tracking.
+- [ ] Replay store keys include provider identity, **Endpoint Identity**, and provider-specific signed delivery material.
+- [ ] Stripe replay keys are derived from the Stripe timestamp, the verified Stripe signature value, and a digest of the exact raw body bytes.
 - [ ] Core includes a memory replay store for tests and local development.
 - [ ] Replay store tracking is disabled unless a replay store is configured.
 - [ ] Replay rejection happens before event handler dispatch.
-- [ ] Tests cover accepted timestamps, stale timestamps, seen-delivery rejection, no-store behavior, and separation from idempotency.
+- [ ] Tests cover accepted timestamps, stale timestamps, replay key generation, seen-delivery rejection, no-store behavior, and separation from idempotency.
 
 ## Blocked by
 

@@ -11,15 +11,16 @@ created: 2026-05-19
 
 ## What to build
 
-Build the Express **Framework Adapter** with explicit raw-body setup expectations. The adapter should translate Express request and response objects to and from core while preserving raw delivery bytes and signature-relevant headers, and should prove the path with a Stripe endpoint.
+Build the Express **Framework Adapter** with explicit raw-body setup expectations. The adapter should translate Express request and response objects to and from core while preserving raw delivery bytes and signature-relevant headers available from Express, declaring any raw header capability limits, and proving the path with a Stripe endpoint.
 
 ## Acceptance criteria
 
 - [ ] Express adapter exposes middleware or handler integration for a core webhook endpoint.
 - [ ] The adapter documents and enforces the raw-body prerequisites needed before parsed body middleware mutates the request.
 - [ ] The adapter preserves raw body bytes and duplicate or signature-relevant headers where Express exposes them.
+- [ ] The adapter documents which duplicate/raw header information is sourced from Express and where it is unavailable.
 - [ ] The adapter translates core responses into Express responses without changing pipeline semantics.
-- [ ] Tests cover successful Stripe handling, rejected delivery propagation, raw body expectations, header preservation where available, and response translation.
+- [ ] Tests cover successful Stripe handling, rejected delivery propagation, raw body expectations, declared header capability limits, header preservation where available, and response translation.
 
 ## Blocked by
 

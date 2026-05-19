@@ -20,7 +20,7 @@ Implement the OpenTelemetry package as `otel(...)` against core telemetry hooks.
 - [ ] Delivery spans or events include provider, event type when available, verification status, replay status, idempotency status, handler status, response status, and result status.
 - [ ] Errors are recorded with sanitized metadata.
 - [ ] Payload contents are not recorded by default.
-- [ ] Tests verify emitted telemetry behavior for handled, ignored, duplicate, rejected, replay rejected, and handler-error outcomes.
+- [ ] Tests verify emitted telemetry behavior for handled, ignored, completed duplicate, in-progress idempotency, rejected, replay rejected, and handler-error outcomes.
 
 ## Blocked by
 

@@ -44,6 +44,10 @@ _Avoid_: Provider config, plugin, integration adapter
 The directly configured secret a provider uses to sign webhook deliveries for one webhook endpoint.
 _Avoid_: Secret resolver, credential, token
 
+**Endpoint Identity**:
+A stable developer-configured identifier used to distinguish one webhook endpoint from another in coordination keys and observability.
+_Avoid_: Route, URL, handler name
+
 **Framework Adapter**:
 A package that translates between a framework's request/response objects and the core webhook handling pipeline.
 _Avoid_: Provider adapter, integration, plugin
@@ -72,6 +76,10 @@ _Avoid_: Logging, tracing, metrics
 A durable coordination point used to reserve provider events before application handling.
 _Avoid_: Cache, database, lock
 
+**Idempotency Reservation**:
+The in-progress claim that one webhook endpoint is currently processing one provider event.
+_Avoid_: Duplicate, completion, lock
+
 **Replay Store**:
 A short-lived coordination point used to remember signed webhook deliveries during the replay protection window.
 _Avoid_: Idempotency store, cache, nonce database
@@ -88,7 +96,9 @@ _Avoid_: Idempotency store, cache, nonce database
 - A **Provider** defines the signing, event, payload, and retry semantics interpreted by a **Webhook Handling Pipeline**.
 - A **Provider Definition** plugs provider-specific semantics into the provider-agnostic **Webhook Handling Pipeline**.
 - A **Webhook Endpoint** uses one directly configured **Provider Secret**.
+- A **Webhook Endpoint** uses one stable **Endpoint Identity** when configured coordination needs cross-delivery keys.
 - A **Framework Adapter** does not implement provider verification, replay protection, idempotency, event parsing, or event dispatch.
+- A **Framework Adapter** reports the raw header and raw body capabilities its framework can preserve.
 - A **Webhook Handling Pipeline** dispatches verified **Webhook Events** to **Event Handlers**.
 - A **Webhook Endpoint** is created with its **Event Handlers** already registered.
 - A catch-all **Event Handler** can process verified **Webhook Events** without an event-specific handler.
@@ -103,11 +113,11 @@ _Avoid_: Idempotency store, cache, nonce database
 - **Delivery Observability** describes **Webhook Delivery** processing without recording payload contents by default.
 - An **Idempotency Store** supports **Idempotency** for **Webhook Events**.
 - A **Replay Store** supports **Replay Protection** for **Webhook Deliveries**.
-- An **Idempotency Store** reserves a **Webhook Event** before handling and marks it complete only after successful handling.
-- Failed **Event Handlers** release the idempotency reservation by default.
+- An **Idempotency Store** creates an **Idempotency Reservation** before handling and marks it complete only after successful handling.
+- Failed **Event Handlers** release the **Idempotency Reservation** by default.
 - **Idempotency** is disabled unless a webhook endpoint is configured with an **Idempotency Store**.
 - Provider timestamp tolerance is applied by default for **Replay Protection** when a provider supports signed timestamps.
-- A **Replay Store** is optional and only adds seen-delivery tracking when configured.
+- A **Replay Store** is optional and only adds seen-delivery tracking with provider-derived delivery replay keys when configured.
 - Ignored and duplicate **Webhook Events** return successful responses by default.
 - Failed **Event Handlers** return failure responses by default so providers can retry.
 - Rejected **Webhook Deliveries** return failure responses by default.
@@ -166,6 +176,9 @@ _Avoid_: Idempotency store, cache, nonce database
 > **Dev:** "Can a webhook endpoint resolve different Stripe secrets per tenant?"
 > **Domain expert:** "No — a **Webhook Endpoint** uses one directly configured **Provider Secret** in the initial SDK design."
 >
+> **Dev:** "How does idempotency distinguish two endpoints receiving similar provider events?"
+> **Domain expert:** "Configured coordination uses a stable **Endpoint Identity** as part of its keys."
+>
 > **Dev:** "Can users register event handlers after endpoint creation?"
 > **Domain expert:** "No — a **Webhook Endpoint** is created with its **Event Handlers** already registered."
 >
@@ -184,6 +197,12 @@ _Avoid_: Idempotency store, cache, nonce database
 > **Dev:** "Can an adapter pass a parsed JSON body into core?"
 > **Domain expert:** "No — a **Raw Delivery Request** must preserve raw body bytes and raw headers so provider signature verification remains correct."
 >
+> **Dev:** "Can every framework adapter preserve duplicate raw header lines?"
+> **Domain expert:** "No — each **Framework Adapter** must report the raw header and raw body capabilities its framework can preserve."
+>
+> **Dev:** "Is a concurrently processing provider event a completed duplicate?"
+> **Domain expert:** "No — it is an **Idempotency Reservation** and must not be acknowledged as a completed duplicate."
+>
 > **Dev:** "Can users insert middleware before signature verification?"
 > **Domain expert:** "No — the **Webhook Handling Pipeline** is closed around security-critical ordering and exposes only narrow extension points."
 
@@ -195,10 +214,12 @@ _Avoid_: Idempotency store, cache, nonce database
 - "endpoint" was ambiguous between a generic HTTP route and a provider-specific SDK runtime object — resolved: one **Webhook Endpoint** is bound to exactly one **Provider**.
 - "provider package" was ambiguous between a framework adapter and a core-known provider switch — resolved: provider packages export **Provider Definitions** that plug into core.
 - "secret" was ambiguous between a direct value and a runtime resolver — resolved: a **Provider Secret** is directly configured for one **Webhook Endpoint**.
+- "endpoint identity" was implicit in idempotency and replay keys — resolved: use **Endpoint Identity** for stable developer-configured coordination identity.
 - "adapter" was ambiguous between provider semantics and framework integration — resolved: **Provider Definitions** handle provider semantics, while **Framework Adapters** only translate request and response types.
 - "handler" was ambiguous between the whole endpoint and application event processing code — resolved: use **Webhook Endpoint** for the HTTP-facing SDK object and **Event Handler** for application code that processes verified events.
 - "handler context" was ambiguous with framework request context — resolved: **Handler Context** is framework-neutral.
 - "idempotent endpoint" was ambiguous between accepting each delivery once and processing each event once — resolved: **Idempotency** applies to **Webhook Events**.
 - "idempotency guarantee" was overstated because idempotency is disabled without a store — resolved: **Idempotency** is a configured coordination capability, not an unconditional endpoint guarantee.
+- "duplicate" was ambiguous between an in-progress reservation and a completed event — resolved: only completed events are duplicate successes; in-progress **Idempotency Reservations** are distinct.
 - "replay protection" was ambiguous with idempotency — resolved: **Replay Protection** applies to signed **Webhook Deliveries** before event handling.
 - "store" was ambiguous between durable event coordination and short-lived delivery replay tracking — resolved: use **Idempotency Store** and **Replay Store** separately.

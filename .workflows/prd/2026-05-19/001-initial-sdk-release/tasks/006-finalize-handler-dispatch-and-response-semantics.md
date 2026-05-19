@@ -11,15 +11,16 @@ created: 2026-05-19
 
 ## What to build
 
-Complete the core dispatch and response policy behavior for handled, ignored, duplicate, rejected, unsupported, and handler-error outcomes. This slice should make provider-facing HTTP behavior consistent and minimal while leaving detailed outcome information to results and telemetry.
+Complete the core dispatch and response policy behavior for handled, ignored, duplicate, in-progress idempotency reservations, rejected, unsupported, and handler-error outcomes. This slice should make provider-facing HTTP behavior consistent and minimal while leaving detailed outcome information to results and telemetry.
 
 ## Acceptance criteria
 
 - [ ] Event-specific handlers win over catch-all handlers.
-- [ ] Verified unhandled events are ignored successfully by default.
-- [ ] Rejected deliveries return failure responses by default.
-- [ ] Handler errors return failure responses by default so providers can retry.
-- [ ] Successful, ignored, and duplicate outcomes return minimal successful response bodies.
+- [ ] Handled, ignored, and completed duplicate outcomes return `200` by default.
+- [ ] In-progress idempotency reservation outcomes return `409` by default.
+- [ ] Invalid signatures, replay rejects, and unsupported invalid input return `400` by default.
+- [ ] Handler errors return `500` by default so providers can retry.
+- [ ] Successful, ignored, and duplicate outcomes return minimal response bodies.
 - [ ] Tests cover default response mapping and configurable response policy where exposed.
 
 ## Blocked by
