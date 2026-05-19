@@ -1,7 +1,0 @@
-src/
-*.test.ts
-tsconfig.json
-tsup.config.ts
-vitest.config.ts
-.turbo/
-
