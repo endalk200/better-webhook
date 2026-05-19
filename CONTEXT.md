@@ -138,7 +138,7 @@ _Avoid_: Idempotency store, cache, nonce database
 > **Domain expert:** "No — a Stripe **Provider Definition** is imported from `@better-webhook/stripe` and passed into core."
 >
 > **Dev:** "Should users always write a switch statement over event types?"
-> **Domain expert:** "No — event-specific **Event Handlers** are the primary API, with a single broad handler available as an escape hatch."
+> **Domain expert:** "No — event-specific **Event Handlers** are the initial primary API; a broad single-handler is deferred unless it naturally falls out of lower-level primitives."
 >
 > **Dev:** "If Stripe retries the same event, should idempotency block the second HTTP attempt?"
 > **Domain expert:** "It should block repeated processing of the same **Webhook Event**, while still treating the retry as a valid **Webhook Delivery**."
