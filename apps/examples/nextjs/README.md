@@ -2,7 +2,7 @@
 
 This Example Application is a Workspace Consumer for the Next.js Framework Adapter. It is a Progressive Capability Showcase: each provider route keeps the webhook setup visible while still demonstrating signature verification, Idempotency, Replay Protection, Event Handlers, response behavior, console Manual Example Feedback, and Delivery Observability.
 
-The current provider endpoint is Stripe at `/api/webhooks/stripe`. It uses an App Router Route Handler with the Node.js runtime and keeps only the minimum Next.js surface needed to run the Webhook Endpoint. The app is intentionally self-contained and does not share helper modules with other examples.
+The current provider endpoints are Stripe at `/api/webhooks/stripe` and GitHub at `/api/webhooks/github`. They use App Router Route Handlers with the Node.js runtime and keep only the minimum Next.js surface needed to run the Webhook Endpoint. The app is intentionally self-contained and does not share helper modules with other examples.
 
 ## Run
 
@@ -13,6 +13,7 @@ pnpm --filter @better-webhook/example-nextjs run dev
 ```
 
 The default Stripe Webhook Endpoint is `http://127.0.0.1:3001/api/webhooks/stripe`.
+The default GitHub Webhook Endpoint is `http://127.0.0.1:3001/api/webhooks/github`.
 
 ## Sender Scripts
 
@@ -38,6 +39,30 @@ Expected Manual Example Feedback:
 - `send:stripe:ignored` returns `200` and logs `status=ignored` for a known verified event without a matching Event Handler.
 - `send:stripe:failure` returns `500` and logs the intentional Event Handler failure.
 
+Run these GitHub Sender Scripts while the development server is running:
+
+```sh
+pnpm --filter @better-webhook/example-nextjs run send:github:pull-request
+pnpm --filter @better-webhook/example-nextjs run send:github:issue-comment
+pnpm --filter @better-webhook/example-nextjs run send:github:check-run
+pnpm --filter @better-webhook/example-nextjs run send:github:duplicate
+pnpm --filter @better-webhook/example-nextjs run send:github:replay
+pnpm --filter @better-webhook/example-nextjs run send:github:ignored
+pnpm --filter @better-webhook/example-nextjs run send:github:unknown
+pnpm --filter @better-webhook/example-nextjs run send:github:failure
+```
+
+Expected GitHub Manual Example Feedback:
+
+- `send:github:pull-request` returns `200` and logs `handled pull_request`.
+- `send:github:issue-comment` returns `200` and logs `handled issue_comment`.
+- `send:github:check-run` returns `200` and logs `handled check_run`.
+- `send:github:duplicate` returns `200` twice; the second delivery logs `status=duplicate`.
+- `send:github:replay` returns `200` then `400`; the second exact signed Webhook Delivery logs `reason=replayed_delivery`.
+- `send:github:ignored` returns `200` and logs `status=ignored` for a known verified event without a matching Event Handler.
+- `send:github:unknown` returns `200` and logs `catch-all handled unknown verified`.
+- `send:github:failure` returns `500` and logs the intentional Event Handler failure.
+
 ## Local Telemetry Sink
 
 The application configures OpenTelemetry export itself and wires the SDK OpenTelemetry bridge into the Webhook Endpoint. The default Local Telemetry Sink is motel at `http://127.0.0.1:27686`.
@@ -58,9 +83,15 @@ Stripe endpoint overrides:
 
 - `STRIPE_WEBHOOK_SECRET`: Provider Secret used by both server and Stripe Sender Scripts.
 - `STRIPE_WEBHOOK_URL`: full Stripe Sender Script target URL.
-- `STRIPE_WEBHOOK_ENDPOINT_IDENTITY`: Endpoint Identity used in coordination keys.
 - `STRIPE_WEBHOOK_IDEMPOTENCY_TTL_MS`: in-memory Idempotency Store TTL.
 - `STRIPE_WEBHOOK_REPLAY_WINDOW_MS`: Replay Protection window and in-memory Replay Store TTL.
+
+GitHub endpoint overrides:
+
+- `GITHUB_WEBHOOK_SECRET`: Provider Secret used by both server and GitHub Sender Scripts.
+- `GITHUB_WEBHOOK_URL`: full GitHub Sender Script target URL.
+- `GITHUB_WEBHOOK_IDEMPOTENCY_TTL_MS`: in-memory Idempotency Store TTL.
+- `GITHUB_WEBHOOK_REPLAY_WINDOW_MS`: Replay Protection window and in-memory Replay Store TTL.
 
 ## Local-Only Configuration
 

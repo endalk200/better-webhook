@@ -17,10 +17,19 @@
     "send:stripe:duplicate": "tsx scripts/stripe/send.ts duplicate",
     "send:stripe:replay": "tsx scripts/stripe/send.ts replay",
     "send:stripe:ignored": "tsx scripts/stripe/send.ts ignored",
-    "send:stripe:failure": "tsx scripts/stripe/send.ts failure"
+    "send:stripe:failure": "tsx scripts/stripe/send.ts failure",
+    "send:github:pull-request": "tsx scripts/github/send.ts pull-request",
+    "send:github:issue-comment": "tsx scripts/github/send.ts issue-comment",
+    "send:github:check-run": "tsx scripts/github/send.ts check-run",
+    "send:github:duplicate": "tsx scripts/github/send.ts duplicate",
+    "send:github:replay": "tsx scripts/github/send.ts replay",
+    "send:github:ignored": "tsx scripts/github/send.ts ignored",
+    "send:github:unknown": "tsx scripts/github/send.ts unknown",
+    "send:github:failure": "tsx scripts/github/send.ts failure"
   },
   "dependencies": {
     "@better-webhook/core": "workspace:*",
+    "@better-webhook/github": "workspace:*",
     "@better-webhook/nextjs": "workspace:*",
     "@better-webhook/otel": "workspace:*",
     "@better-webhook/stripe": "workspace:*",

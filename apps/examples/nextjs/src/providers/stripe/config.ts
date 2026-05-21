@@ -1,9 +1,8 @@
 import { config } from "../../config.js";
 
 export const stripeConfig = {
-  endpointIdentity:
-    process.env.STRIPE_WEBHOOK_ENDPOINT_IDENTITY ??
-    "example-nextjs-stripe-local",
+  // Namespaces local idempotency and replay keys for this specific Webhook Endpoint.
+  endpointIdentity: "example-nextjs-stripe-local",
   idempotencyTtlMs: readNumber("STRIPE_WEBHOOK_IDEMPOTENCY_TTL_MS", 600_000),
   replayWindowMs: readNumber("STRIPE_WEBHOOK_REPLAY_WINDOW_MS", 300_000),
   signingSecret:
