@@ -5,7 +5,7 @@ import { stripeConfig } from "./providers/stripe/config.js";
 import { stripeWebhookRouter } from "./routes/stripe-webhook.js";
 import { shutdownTelemetry, startTelemetry } from "./telemetry.js";
 
-await startTelemetry();
+startTelemetry();
 
 const app = express();
 

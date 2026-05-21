@@ -9,7 +9,6 @@ let sdk: NodeSDK | undefined;
 
 export function startTelemetry(): void {
   if (started) return;
-  started = true;
 
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
@@ -21,6 +20,7 @@ export function startTelemetry(): void {
   });
 
   sdk.start();
+  started = true;
   console.log(
     `[example:nextjs] exporting Delivery Observability to ${config.otelEndpoint} as ${config.otelServiceName}`,
   );
