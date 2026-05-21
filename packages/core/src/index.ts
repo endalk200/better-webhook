@@ -122,7 +122,7 @@ export type PipelineResult = {
   eventId?: string;
   verification: "accepted" | "rejected";
   replay: "accepted" | "rejected" | "not_configured";
-  idempotency: "reserved" | "completed" | "in_progress" | "not_configured";
+  idempotency: "released" | "completed" | "in_progress" | "not_configured";
   handler: "handled" | "ignored" | "failed" | "skipped";
   reason?: string;
   error?: unknown;
@@ -357,7 +357,7 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
       return finish(
         baseResult(options.provider.name, "handler_error", {
           ...resultBase,
-          idempotency: reservation?.status ?? "not_configured",
+          idempotency: releasedReservationStatus(reservation),
           handler: "failed",
           error,
         }),
@@ -561,6 +561,13 @@ function completedReservationStatus(
 ): PipelineResult["idempotency"] {
   if (!reservation) return "not_configured";
   return reservation.status === "reserved" ? "completed" : reservation.status;
+}
+
+function releasedReservationStatus(
+  reservation: IdempotencyReservation | undefined,
+): PipelineResult["idempotency"] {
+  if (!reservation) return "not_configured";
+  return reservation.status === "reserved" ? "released" : reservation.status;
 }
 
 function getHandler<TEvents extends WebhookEvent>(
