@@ -30,6 +30,8 @@ Default responses are `200` for handled, ignored, and completed duplicate events
 
 Idempotency is disabled unless an `IdempotencyStore` is configured. When configured, `endpointIdentity` is required and keys are based on provider, endpoint identity, and provider event id. Replay stores are also explicit. Provider timestamp tolerance still runs by default when the provider exposes a signed timestamp.
 
+Pipeline results report the final idempotency state as `completed`, `in_progress`, `released`, or `not_configured`.
+
 Adapters must pass unmodified raw body bytes and signature-relevant headers. Duplicate raw headers should be preserved when the framework exposes them, and adapter packages declare their capability limits.
 
 Initial non-goals include production storage adapters, secret resolvers, multi-provider endpoints, general middleware, Edge, browser, and CommonJS support.

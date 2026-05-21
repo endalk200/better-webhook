@@ -35,7 +35,7 @@ describe("otel", () => {
         eventId: "evt_123",
         verification: "accepted",
         replay: "accepted",
-        idempotency: "reserved",
+        idempotency: "released",
         handler: "failed",
         responseStatus: 500,
         error: new Error("handler failed"),
@@ -48,7 +48,7 @@ describe("otel", () => {
       "webhook.event.type": "invoice.paid",
       "webhook.verification": "accepted",
       "webhook.replay": "accepted",
-      "webhook.idempotency": "reserved",
+      "webhook.idempotency": "released",
       "webhook.handler": "failed",
       "http.response.status_code": 500,
     });
