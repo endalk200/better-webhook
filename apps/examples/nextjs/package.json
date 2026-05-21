@@ -1,5 +1,5 @@
 {
-  "name": "@better-webhook/example-nextjs-stripe",
+  "name": "@better-webhook/example-nextjs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,15 +9,15 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "test": "echo \"No automated behavioral tests for this Example Application\"",
-    "format:check": "prettier --check \"app/**/*.ts\" \"src/**/*.ts\" README.md next.config.mjs",
-    "format:write": "prettier --write \"app/**/*.ts\" \"src/**/*.ts\" README.md next.config.mjs",
-    "send:checkout": "tsx src/send.ts checkout",
-    "send:invoice": "tsx src/send.ts invoice",
-    "send:unknown": "tsx src/send.ts unknown",
-    "send:duplicate": "tsx src/send.ts duplicate",
-    "send:replay": "tsx src/send.ts replay",
-    "send:ignored": "tsx src/send.ts ignored",
-    "send:failure": "tsx src/send.ts failure"
+    "format:check": "prettier --check \"app/**/*.ts\" \"src/**/*.ts\" \"scripts/**/*.ts\" README.md next.config.mjs",
+    "format:write": "prettier --write \"app/**/*.ts\" \"src/**/*.ts\" \"scripts/**/*.ts\" README.md next.config.mjs",
+    "send:stripe:checkout": "tsx scripts/stripe/send.ts checkout",
+    "send:stripe:invoice": "tsx scripts/stripe/send.ts invoice",
+    "send:stripe:unknown": "tsx scripts/stripe/send.ts unknown",
+    "send:stripe:duplicate": "tsx scripts/stripe/send.ts duplicate",
+    "send:stripe:replay": "tsx scripts/stripe/send.ts replay",
+    "send:stripe:ignored": "tsx scripts/stripe/send.ts ignored",
+    "send:stripe:failure": "tsx scripts/stripe/send.ts failure"
   },
   "dependencies": {
     "@better-webhook/core": "workspace:*",
