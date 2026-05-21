@@ -60,8 +60,8 @@ export const stripeEndpoint = createWebhookEndpoint({
       event.type;
     },
   },
-  // Optional: use "unknown" when the catch-all is only for provider events
-  // outside the curated known event map.
+  // Optional: "all" is the default. Use "unknown" when the catch-all is only
+  // for provider events outside the curated known event map.
   catchAllHandlerScope: "all",
 });
 ```
