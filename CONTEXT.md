@@ -84,6 +84,14 @@ _Avoid_: Duplicate, completion, lock
 A short-lived coordination point used to remember signed webhook deliveries during the replay protection window.
 _Avoid_: Idempotency store, cache, nonce database
 
+**GitHub Delivery ID**:
+The provider-assigned GUID in `X-GitHub-Delivery` that identifies a GitHub webhook delivery and is reused for GitHub manual redelivery.
+_Avoid_: GitHub event id, request id
+
+**GitHub Event Action**:
+The provider-defined action field inside a GitHub webhook payload that qualifies a GitHub webhook event name without replacing it as the **Webhook Event** type.
+_Avoid_: Event type, handler name, subtype
+
 ## Relationships
 
 - A **Webhook Endpoint** runs one **Webhook Handling Pipeline** for each incoming delivery.
@@ -119,6 +127,8 @@ _Avoid_: Idempotency store, cache, nonce database
 - Provider timestamp tolerance is applied by default for **Replay Protection** when a provider supports signed timestamps.
 - A **Replay Store** is optional and only adds seen-delivery tracking with provider-derived delivery replay keys when configured.
 - A **Replay Store** remembers a signed **Webhook Delivery** only after the pipeline has accepted the delivery as processable enough to reach replay-store evaluation.
+- A GitHub **Provider Definition** treats the **GitHub Delivery ID** as the **Webhook Event** id and the delivery replay key.
+- A GitHub **Provider Definition** uses the GitHub webhook event name as the **Webhook Event** type and exposes the **GitHub Event Action** as event metadata.
 - Ignored and duplicate **Webhook Events** return successful responses by default.
 - Failed **Event Handlers** return failure responses by default so providers can retry.
 - Rejected **Webhook Deliveries** return failure responses by default.
@@ -186,6 +196,12 @@ _Avoid_: Idempotency store, cache, nonce database
 > **Dev:** "Can users register event handlers after endpoint creation?"
 > **Domain expert:** "No — a **Webhook Endpoint** is created with its **Event Handlers** already registered."
 >
+> **Dev:** "If GitHub manually redelivers the same payload, is that a new **Webhook Event**?"
+> **Domain expert:** "No — GitHub reuses the **GitHub Delivery ID**, so Better Webhook treats it as the same **Webhook Event** and, with replay tracking, the same signed **Webhook Delivery**."
+>
+> **Dev:** "Should a `pull_request.opened` GitHub delivery dispatch to a `pull_request.opened` handler?"
+> **Domain expert:** "No — the **Webhook Event** type is `pull_request`; `opened` is the **GitHub Event Action** exposed as metadata."
+>
 > **Dev:** "What happens to a verified event type without a specific handler?"
 > **Domain expert:** "It is ignored by default, unless the **Webhook Endpoint** was created with a catch-all **Event Handler**."
 >
@@ -227,3 +243,5 @@ _Avoid_: Idempotency store, cache, nonce database
 - "duplicate" was ambiguous between an in-progress reservation and a completed event — resolved: only completed events are duplicate successes; in-progress **Idempotency Reservations** are distinct.
 - "replay protection" was ambiguous with idempotency — resolved: **Replay Protection** applies to signed **Webhook Deliveries** before event handling.
 - "store" was ambiguous between durable event coordination and short-lived delivery replay tracking — resolved: use **Idempotency Store** and **Replay Store** separately.
+- "GitHub delivery id" was ambiguous between a delivery attempt id and a business event id — resolved: use **GitHub Delivery ID** for the `X-GitHub-Delivery` GUID that GitHub reuses for manual redelivery, and let the GitHub **Provider Definition** expose it as the core **Webhook Event** id.
+- "GitHub event type" was ambiguous between the webhook event name and its payload action — resolved: the GitHub webhook event name is the **Webhook Event** type, while the **GitHub Event Action** remains metadata.
