@@ -9,7 +9,8 @@ import {
 
 type TestEvent =
   | (WebhookEvent<"thing.created", { id: string }> & { known: true })
-  | (WebhookEvent<"thing.updated", { id: string }> & { known: true });
+  | (WebhookEvent<"thing.updated", { id: string }> & { known: true })
+  | (WebhookEvent<"thing.unknown", { id: string }> & { known: false });
 
 function provider(
   overrides: Partial<ProviderDefinition<TestEvent>> = {},
@@ -74,6 +75,37 @@ describe("createWebhookEndpoint", () => {
 
     expect(specific).toHaveBeenCalledOnce();
     expect(catchAll).not.toHaveBeenCalled();
+  });
+
+  it("can scope catch-all handlers to unknown events", async () => {
+    const catchAll = vi.fn();
+    const endpoint = createWebhookEndpoint({
+      provider: provider(),
+      catchAllHandlerScope: "unknown",
+      handlers: { "*": catchAll },
+    });
+
+    const known = await endpoint.handleWithResult(request);
+    expect(known.result.status).toBe("ignored");
+    expect(catchAll).not.toHaveBeenCalled();
+
+    const unknownEndpoint = createWebhookEndpoint({
+      provider: provider({
+        extractEvent: () => ({
+          id: "evt_2",
+          type: "thing.unknown",
+          payload: { id: "thing_2" },
+          envelope: {},
+          known: false,
+        }),
+      }),
+      catchAllHandlerScope: "unknown",
+      handlers: { "*": catchAll },
+    });
+
+    const unknown = await unknownEndpoint.handleWithResult(request);
+    expect(unknown.result.status).toBe("handled");
+    expect(catchAll).toHaveBeenCalledOnce();
   });
 
   it("rejects failed verification before extracting events", async () => {
