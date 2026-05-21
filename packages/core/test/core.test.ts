@@ -77,6 +77,19 @@ describe("createWebhookEndpoint", () => {
     expect(catchAll).not.toHaveBeenCalled();
   });
 
+  it("dispatches catch-all handlers for known events by default", async () => {
+    const catchAll = vi.fn();
+    const endpoint = createWebhookEndpoint({
+      provider: provider(),
+      handlers: { "*": catchAll },
+    });
+
+    const { result } = await endpoint.handleWithResult(request);
+
+    expect(result.status).toBe("handled");
+    expect(catchAll).toHaveBeenCalledOnce();
+  });
+
   it("can scope catch-all handlers to unknown events", async () => {
     const catchAll = vi.fn();
     const endpoint = createWebhookEndpoint({
