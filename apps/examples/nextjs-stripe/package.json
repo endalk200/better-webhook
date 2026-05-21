@@ -1,0 +1,46 @@
+{
+  "name": "@better-webhook/example-nextjs-stripe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port ${PORT:-3001}",
+    "build": "next build",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "echo \"No automated behavioral tests for this Example Application\"",
+    "format:check": "prettier --check \"app/**/*.ts\" \"src/**/*.ts\" README.md next.config.mjs",
+    "format:write": "prettier --write \"app/**/*.ts\" \"src/**/*.ts\" README.md next.config.mjs",
+    "send:checkout": "tsx src/send.ts checkout",
+    "send:invoice": "tsx src/send.ts invoice",
+    "send:unknown": "tsx src/send.ts unknown",
+    "send:duplicate": "tsx src/send.ts duplicate",
+    "send:replay": "tsx src/send.ts replay",
+    "send:ignored": "tsx src/send.ts ignored",
+    "send:failure": "tsx src/send.ts failure"
+  },
+  "dependencies": {
+    "@better-webhook/core": "workspace:*",
+    "@better-webhook/nextjs": "workspace:*",
+    "@better-webhook/otel": "workspace:*",
+    "@better-webhook/stripe": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
+    "next": "^16.0.7",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
+  },
+  "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
+    "@better-webhook/typescript-config": "workspace:*",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.4",
+    "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
