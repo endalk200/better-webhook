@@ -59,6 +59,17 @@ function request(
 }
 
 describe("github provider", () => {
+  it("requires a configured webhook secret", () => {
+    expect(() => github({ webhookSecret: "" })).toThrow(
+      "GitHub Provider Secret is required",
+    );
+    expect(() =>
+      github({
+        webhookSecret: undefined as unknown as string,
+      }),
+    ).toThrow("GitHub Provider Secret is required");
+  });
+
   it("verifies GitHub HMAC-SHA256 over exact raw bytes", async () => {
     const handler = vi.fn();
     const endpoint = createWebhookEndpoint({

@@ -144,7 +144,10 @@ export type GitHubProviderOptions = {
 export function github(
   options: GitHubProviderOptions,
 ): ProviderDefinition<GitHubWebhookEvent> {
-  if (options.webhookSecret.length === 0) {
+  if (
+    typeof options.webhookSecret !== "string" ||
+    options.webhookSecret.length === 0
+  ) {
     throw new Error("GitHub Provider Secret is required");
   }
 
