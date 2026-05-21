@@ -36,7 +36,7 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@opentelemetry/api@1.9.1)(@types/node@25.9.1)(tsx@4.22.3)(yaml@2.9.0)
 
-  apps/examples/express-stripe:
+  apps/examples/express:
     dependencies:
       '@better-webhook/core':
         specifier: workspace:*
@@ -91,7 +91,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  apps/examples/nextjs-stripe:
+  apps/examples/nextjs:
     dependencies:
       '@better-webhook/core':
         specifier: workspace:*
