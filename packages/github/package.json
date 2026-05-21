@@ -1,0 +1,45 @@
+{
+  "name": "@better-webhook/github",
+  "version": "1.0.0",
+  "description": "GitHub provider definition for Better Webhook",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "check-types": "tsc --noEmit -p tsconfig.test.json",
+    "clean": "rm -rf dist .turbo tsconfig.tsbuildinfo",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" README.md CHANGELOG.md",
+    "format:write": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" README.md CHANGELOG.md",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@better-webhook/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@better-webhook/eslint-config": "workspace:*",
+    "@better-webhook/typescript-config": "workspace:*",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.35.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16"
+  }
+}
