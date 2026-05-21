@@ -9,7 +9,7 @@ The current provider endpoint is Stripe at `/webhooks/stripe`. The app is intent
 Start the Express development server:
 
 ```sh
-devbox run -- pnpm --filter @better-webhook/example-express run dev
+pnpm --filter @better-webhook/example-express run dev
 ```
 
 The default Stripe Webhook Endpoint is `http://127.0.0.1:3000/webhooks/stripe`.
@@ -19,13 +19,13 @@ The default Stripe Webhook Endpoint is `http://127.0.0.1:3000/webhooks/stripe`.
 Run these Stripe Sender Scripts while the development server is running:
 
 ```sh
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:checkout
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:invoice
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:unknown
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:duplicate
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:replay
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:ignored
-devbox run -- pnpm --filter @better-webhook/example-express run send:stripe:failure
+pnpm --filter @better-webhook/example-express run send:stripe:checkout
+pnpm --filter @better-webhook/example-express run send:stripe:invoice
+pnpm --filter @better-webhook/example-express run send:stripe:unknown
+pnpm --filter @better-webhook/example-express run send:stripe:duplicate
+pnpm --filter @better-webhook/example-express run send:stripe:replay
+pnpm --filter @better-webhook/example-express run send:stripe:ignored
+pnpm --filter @better-webhook/example-express run send:stripe:failure
 ```
 
 Expected Manual Example Feedback:

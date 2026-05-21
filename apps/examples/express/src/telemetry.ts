@@ -6,7 +6,7 @@ import { config } from "./config.js";
 
 let sdk: NodeSDK | undefined;
 
-export async function startTelemetry(): Promise<void> {
+export function startTelemetry(): void {
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
       "service.name": config.otelServiceName,
