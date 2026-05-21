@@ -1,6 +1,9 @@
 import { createStripeSignatureHeader } from "@better-webhook/stripe";
 
-import { config, webhookUrl } from "./config.js";
+import {
+  stripeConfig,
+  stripeWebhookUrl,
+} from "../../src/providers/stripe/config.js";
 
 type Scenario =
   | "checkout"
@@ -15,7 +18,7 @@ const scenario = process.argv[2] as Scenario | undefined;
 
 if (!scenario) {
   console.error(
-    "Usage: pnpm run send:<checkout|invoice|unknown|duplicate|replay|ignored|failure>",
+    "Usage: pnpm run send:stripe:<checkout|invoice|unknown|duplicate|replay|ignored|failure>",
   );
   process.exit(1);
 }
@@ -94,7 +97,7 @@ if (scenario === "duplicate") {
   const rawBody = JSON.stringify(event);
   const signature = createStripeSignatureHeader({
     rawBody,
-    secret: config.signingSecret,
+    secret: stripeConfig.signingSecret,
     timestamp: now,
   });
   await postDelivery("replay:first", rawBody, signature);
@@ -134,7 +137,7 @@ async function sendSignedDelivery(
   const rawBody = JSON.stringify(event);
   const signature = createStripeSignatureHeader({
     rawBody,
-    secret: config.signingSecret,
+    secret: stripeConfig.signingSecret,
     timestamp,
   });
   await postDelivery(label, rawBody, signature);
@@ -145,7 +148,7 @@ async function postDelivery(
   rawBody: string,
   signature: string,
 ): Promise<void> {
-  const response = await fetch(webhookUrl(), {
+  const response = await fetch(stripeWebhookUrl(), {
     body: rawBody,
     headers: {
       "content-type": "application/json",
@@ -154,6 +157,6 @@ async function postDelivery(
     method: "POST",
   });
   console.log(
-    `[sender:nextjs] ${label} status=${response.status} body=${await response.text()}`,
+    `[sender:nextjs:stripe] ${label} status=${response.status} body=${await response.text()}`,
   );
 }
