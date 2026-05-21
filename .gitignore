@@ -52,3 +52,4 @@ trivy-results.sarif
 trivy-sbom.cdx.json
 
 .tmp
+/.motel-data
