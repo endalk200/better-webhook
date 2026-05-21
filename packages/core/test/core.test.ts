@@ -188,9 +188,10 @@ describe("createWebhookEndpoint", () => {
       },
     });
 
-    await endpoint.handle(request);
+    const { result } = await endpoint.handleWithResult(request);
 
     expect(store.size()).toBe(0);
+    expect(result.idempotency).toBe("released");
   });
 
   it("requires endpoint identity when stores are configured", () => {
