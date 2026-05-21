@@ -85,6 +85,8 @@ export type EventHandlerMap<TEvents extends WebhookEvent> = {
   "*"?: EventHandler<TEvents>;
 };
 
+export type CatchAllHandlerScope = "all" | "unknown";
+
 export type IdempotencyReservation =
   | { status: "reserved"; key: string }
   | { status: "completed"; key: string }
@@ -177,6 +179,7 @@ export type CreateWebhookEndpointOptions<TEvents extends WebhookEvent> = {
   now?: () => Date;
   responsePolicy?: ResponsePolicy;
   telemetry?: DeliveryTelemetry;
+  catchAllHandlerScope?: CatchAllHandlerScope;
 };
 
 export type WebhookEndpoint = {
@@ -310,7 +313,11 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
       );
     }
 
-    const handler = getHandler(options.handlers, event);
+    const handler = getHandler(
+      options.handlers,
+      event,
+      options.catchAllHandlerScope ?? "all",
+    );
     if (!handler) {
       if (reservation?.status === "reserved") {
         await options.idempotencyStore?.complete(
@@ -573,12 +580,15 @@ function releasedReservationStatus(
 function getHandler<TEvents extends WebhookEvent>(
   handlers: EventHandlerMap<TEvents> | undefined,
   event: TEvents,
+  catchAllHandlerScope: CatchAllHandlerScope,
 ): EventHandler<TEvents> | undefined {
   if (!handlers) return undefined;
   const specific = handlers[event.type as TEvents["type"]] as
     | EventHandler<TEvents>
     | undefined;
-  return specific ?? (handlers["*"] as EventHandler<TEvents> | undefined);
+  if (specific) return specific;
+  if (catchAllHandlerScope === "unknown" && event.known) return undefined;
+  return handlers["*"] as EventHandler<TEvents> | undefined;
 }
 
 function sanitizeError(

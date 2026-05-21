@@ -60,6 +60,9 @@ export const stripeEndpoint = createWebhookEndpoint({
       event.type;
     },
   },
+  // Optional: use "unknown" when the catch-all is only for provider events
+  // outside the curated known event map.
+  catchAllHandlerScope: "all",
 });
 ```
 
@@ -94,7 +97,10 @@ back to the provider.
 
 Ignored events and completed duplicate events return successful responses by
 default. Failed handlers and rejected deliveries return failure responses by
-default so providers can retry when appropriate.
+default so providers can retry when appropriate. The `*` handler catches all
+events without a specific handler by default; set `catchAllHandlerScope` to
+`"unknown"` when you want known events without a specific handler to be ignored
+while still observing unknown provider events.
 
 Idempotency is disabled unless an `IdempotencyStore` is configured. When
 idempotency or replay-store tracking is configured, `endpointIdentity` is
