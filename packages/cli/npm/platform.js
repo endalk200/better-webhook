@@ -1,9 +1,9 @@
 const platformPackages = {
-  "darwin-arm64": "@better-webhook/cli-darwin-arm64",
-  "darwin-x64": "@better-webhook/cli-darwin-x64",
-  "linux-arm64": "@better-webhook/cli-linux-arm64",
-  "linux-x64": "@better-webhook/cli-linux-x64",
-  "win32-x64": "@better-webhook/cli-win32-x64",
+	"darwin-arm64": "@better-webhook/cli-darwin-arm64",
+	"darwin-x64": "@better-webhook/cli-darwin-x64",
+	"linux-arm64": "@better-webhook/cli-linux-arm64",
+	"linux-x64": "@better-webhook/cli-linux-x64",
+	"win32-x64": "@better-webhook/cli-win32-x64",
 };
 
 /**
@@ -14,7 +14,7 @@ const platformPackages = {
  * @returns {string} Platform package lookup key.
  */
 export function platformKey(platform = process.platform, arch = process.arch) {
-  return `${platform}-${arch}`;
+	return `${platform}-${arch}`;
 }
 
 /**
@@ -25,20 +25,17 @@ export function platformKey(platform = process.platform, arch = process.arch) {
  * @returns {string} Scoped native npm package name.
  * @throws {Error} When the platform/architecture pair is unsupported.
  */
-export function packageNameForPlatform(
-  platform = process.platform,
-  arch = process.arch,
-) {
-  const key = platformKey(platform, arch);
-  const packageName = platformPackages[key];
+export function packageNameForPlatform(platform = process.platform, arch = process.arch) {
+	const key = platformKey(platform, arch);
+	const packageName = platformPackages[key];
 
-  if (!packageName) {
-    throw new Error(
-      `Unsupported platform ${key}. Supported platforms: ${Object.keys(platformPackages).join(", ")}.`,
-    );
-  }
+	if (!packageName) {
+		throw new Error(
+			`Unsupported platform ${key}. Supported platforms: ${Object.keys(platformPackages).join(", ")}.`,
+		);
+	}
 
-  return packageName;
+	return packageName;
 }
 
 /**
@@ -48,7 +45,7 @@ export function packageNameForPlatform(
  * @returns {"bw" | "bw.exe"} Binary filename.
  */
 export function binaryName(platform = process.platform) {
-  return platform === "win32" ? "bw.exe" : "bw";
+	return platform === "win32" ? "bw.exe" : "bw";
 }
 
 /**
@@ -57,5 +54,5 @@ export function binaryName(platform = process.platform) {
  * @returns {Record<string, string>} Platform lookup keys mapped to package names.
  */
 export function platformPackageMap() {
-  return { ...platformPackages };
+	return { ...platformPackages };
 }

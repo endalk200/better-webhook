@@ -1,33 +1,33 @@
 {
-  "method": "POST",
-  "headers": [
-    {
-      "key": "Content-Type",
-      "value": "application/json"
-    },
-    {
-      "key": "X-Signature",
-      "value": "placeholder"
-    },
-    {
-      "key": "User-Agent",
-      "value": "Python/3.12 aiohttp/3.12.15"
-    }
-  ],
-  "body": {
-    "type": "connection_limit_exceeded",
-    "payload": {
-      "connection_id": "fb283324-d6ad-4803-ba4b-3cb32e46e5ae",
-      "partition": "default",
-      "connection_metadata": {
-        "source": "notion",
-        "workspace_id": "workspace-abc123"
-      },
-      "limit_type": "page_limit"
-    },
-    "nonce": "a05K4SVYjEbq6n5KBZ2pxA"
-  },
-  "provider": "ragie",
-  "event": "connection_limit_exceeded",
-  "description": "Ragie connection limit exceeded - page limit reached"
+	"method": "POST",
+	"headers": [
+		{
+			"key": "Content-Type",
+			"value": "application/json"
+		},
+		{
+			"key": "X-Signature",
+			"value": "placeholder"
+		},
+		{
+			"key": "User-Agent",
+			"value": "Python/3.12 aiohttp/3.12.15"
+		}
+	],
+	"body": {
+		"type": "connection_limit_exceeded",
+		"payload": {
+			"connection_id": "fb283324-d6ad-4803-ba4b-3cb32e46e5ae",
+			"partition": "default",
+			"connection_metadata": {
+				"source": "notion",
+				"workspace_id": "workspace-abc123"
+			},
+			"limit_type": "page_limit"
+		},
+		"nonce": "a05K4SVYjEbq6n5KBZ2pxA"
+	},
+	"provider": "ragie",
+	"event": "connection_limit_exceeded",
+	"description": "Ragie connection limit exceeded - page limit reached"
 }

@@ -4,58 +4,64 @@ import { npmTagForVersion, platforms, readCliPackage, tagVersion } from "./relea
 
 const packageJson = await readCliPackage();
 const version = packageJson.version;
-const tagName = process.env.GITHUB_REF_NAME ?? execFileSync("git", ["tag", "--points-at", "HEAD"], { encoding: "utf8" })
-  .split("\n")
-  .find((tag) => tag.startsWith("cli/v"));
+const tagName =
+	process.env.GITHUB_REF_NAME ??
+	execFileSync("git", ["tag", "--points-at", "HEAD"], { encoding: "utf8" })
+		.split("\n")
+		.find((tag) => tag.startsWith("cli/v"));
 
 if (!tagName) {
-  throw new Error("Could not find a cli/v* tag for the current release.");
+	throw new Error("Could not find a cli/v* tag for the current release.");
 }
 
 const versionFromTag = tagVersion(tagName);
 if (versionFromTag !== version) {
-  throw new Error(`Tag ${tagName} resolves to ${versionFromTag}, but package.json is ${version}.`);
+	throw new Error(`Tag ${tagName} resolves to ${versionFromTag}, but package.json is ${version}.`);
 }
 
-const remoteTagRefs = execFileSync("git", ["ls-remote", "--tags", "origin", `refs/tags/${tagName}*`], {
-  encoding: "utf8",
-})
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+const remoteTagRefs = execFileSync(
+	"git",
+	["ls-remote", "--tags", "origin", `refs/tags/${tagName}*`],
+	{
+		encoding: "utf8",
+	},
+)
+	.trim()
+	.split("\n")
+	.filter(Boolean);
 const hasTagObject = remoteTagRefs.some((line) => line.endsWith(`refs/tags/${tagName}`));
 const hasPeeledCommit = remoteTagRefs.some((line) => line.endsWith(`refs/tags/${tagName}^{}`));
 
-if (!hasTagObject || !hasPeeledCommit) {
-  throw new Error(`CLI release tag ${tagName} must be annotated.`);
+if (!(hasTagObject && hasPeeledCommit)) {
+	throw new Error(`CLI release tag ${tagName} must be annotated.`);
 }
 
 execFileSync("git", ["fetch", "origin", "main", "--quiet"], { stdio: "inherit" });
 execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", "origin/main"], {
-  stdio: "inherit",
+	stdio: "inherit",
 });
 
 const publishOrder = [...platforms.map((platform) => platform.packageName), packageJson.name];
 const npmTag = npmTagForVersion(version);
 
 for (const packageName of publishOrder) {
-  let exists = "";
+	let exists = "";
 
-  try {
-    exists = execFileSync("npm", ["view", `${packageName}@${version}`, "version", "--json"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch (error) {
-    const stderr = error.stderr?.toString() ?? "";
-    if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
-      throw error;
-    }
-  }
+	try {
+		exists = execFileSync("npm", ["view", `${packageName}@${version}`, "version", "--json"], {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+	} catch (error) {
+		const stderr = error.stderr?.toString() ?? "";
+		if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
+			throw error;
+		}
+	}
 
-  if (exists.trim()) {
-    throw new Error(`${packageName}@${version} already exists on npm.`);
-  }
+	if (exists.trim()) {
+		throw new Error(`${packageName}@${version} already exists on npm.`);
+	}
 }
 
 console.log(`Validated ${tagName} for npm dist-tag ${npmTag}.`);

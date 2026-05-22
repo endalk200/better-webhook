@@ -1,20 +1,20 @@
 {
-  "method": "POST",
-  "headers": [
-    { "key": "Content-Type", "value": "application/json" },
-    { "key": "Webhook-Id", "value": "msg_recall_calendar_update_001" },
-    { "key": "Webhook-Timestamp", "value": "1770894420" },
-    { "key": "Webhook-Signature", "value": "placeholder" },
-    { "key": "User-Agent", "value": "Recall.ai/Webhooks" },
-  ],
-  // Calendar fixtures have no event-body timestamp, so the header carries the sample delivery time.
-  "body": {
-    "event": "calendar.update",
-    "data": {
-      "calendar_id": "cal_123",
-    },
-  },
-  "provider": "recall",
-  "event": "calendar.update",
-  "description": "Recall calendar update webhook",
+	"method": "POST",
+	"headers": [
+		{ "key": "Content-Type", "value": "application/json" },
+		{ "key": "Webhook-Id", "value": "msg_recall_calendar_update_001" },
+		{ "key": "Webhook-Timestamp", "value": "1770894420" },
+		{ "key": "Webhook-Signature", "value": "placeholder" },
+		{ "key": "User-Agent", "value": "Recall.ai/Webhooks" }
+	],
+	// Calendar fixtures have no event-body timestamp, so the header carries the sample delivery time.
+	"body": {
+		"event": "calendar.update",
+		"data": {
+			"calendar_id": "cal_123"
+		}
+	},
+	"provider": "recall",
+	"event": "calendar.update",
+	"description": "Recall calendar update webhook"
 }
