@@ -14,9 +14,10 @@ jobs:
   dry-run:
     name: Validate CLI release packaging
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -25,7 +26,7 @@ jobs:
         uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: devbox run -- bun install --frozen-lockfile
+        run: devbox run -- bun install --frozen-lockfile --ignore-scripts
 
       - name: Format check
         run: devbox run -- bun --filter @better-webhook/cli run format:check

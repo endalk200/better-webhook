@@ -1,10 +1,11 @@
 name: Security
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,14 +19,17 @@ jobs:
   trivy-fs:
     name: Trivy Filesystem Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Setup Devbox
         uses: ./.github/actions/setup-devbox
+        with:
+          enable-cache: "false"
 
       - name: Get cache key date
         id: cache-date
@@ -33,7 +37,7 @@ jobs:
 
       - name: Restore Trivy cache
         id: trivy-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ github.workspace }}/.cache/trivy
           key: cache-trivy-${{ steps.cache-date.outputs.date }}
@@ -49,7 +53,7 @@ jobs:
 
       - name: Upload Trivy SARIF report
         if: always() && hashFiles('trivy-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           sarif_file: trivy-results.sarif
           category: trivy
