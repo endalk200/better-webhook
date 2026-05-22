@@ -1,0 +1,26 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Etc/UTC
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "07:00"
+      timezone: Etc/UTC
+    groups:
+      bun-dependencies:
+        patterns:
+          - "*"

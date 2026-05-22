@@ -1,13 +1,19 @@
 name: Setup Devbox
 description: Install and validate the Devbox toolchain for CI jobs.
 
+inputs:
+  enable-cache:
+    description: Enable Devbox package caching for non-release jobs.
+    default: "true"
+
 runs:
   using: composite
   steps:
     - name: Install Devbox
-      uses: jetify-com/devbox-install-action@22b0f5500b14df4ea357ce673fbd4ced940ed6a1 # v0.13.0
+      uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
       with:
-        enable-cache: "true"
+        devbox-version: 0.17.2
+        enable-cache: ${{ inputs.enable-cache }}
 
     - name: Verify Devbox toolchain
       shell: bash
