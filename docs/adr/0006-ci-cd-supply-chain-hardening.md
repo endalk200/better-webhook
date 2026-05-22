@@ -28,6 +28,8 @@ Keep Trivy report-only by default for pull requests and pushes. The `TRIVY_ENFOR
 
 Use explicit job timeouts and least-privilege workflow permissions. Release workflows follow the same action-pinning and timeout standards as CI because they publish packages, create releases, and use elevated permissions.
 
+Do not use shared package/tool caches inside publishing workflows. SDK and CLI release jobs disable Devbox caching and `actions/setup-node` package-manager caching, and dependency installation uses `bun install --frozen-lockfile --ignore-scripts` so install-time dependency lifecycle scripts cannot execute before OIDC-backed npm publishing.
+
 ## Consequences
 
 CI and release workflows are more reproducible and less exposed to upstream tag movement in third-party actions.
@@ -39,3 +41,5 @@ Devbox CLI and tool upgrades require intentional maintenance until a reliable up
 Dependency advisories and repository security findings are easier to triage because Bun audit and Trivy scans fail or report independently.
 
 The repository has a simpler branch model. Long-lived feature work should use branches and pull requests into `main` rather than a separate `develop` branch.
+
+Publishing jobs may be slower because they rebuild their toolchain and vulnerability database state instead of restoring shared caches. This is intentional: release jobs trade speed for a smaller trust boundary.
