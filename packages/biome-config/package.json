@@ -1,8 +1,11 @@
 {
-	"name": "@better-webhook/typescript-config",
+	"name": "@better-webhook/biome-config",
 	"version": "0.0.0",
 	"private": true,
 	"license": "MIT",
+	"exports": {
+		"./base": "./base.json"
+	},
 	"publishConfig": {
 		"access": "public"
 	}

@@ -11,7 +11,6 @@ scan:
     - secret
   skip-dirs:
     - .git
-    - .pnpm-store
     - .turbo
     - .next
     - node_modules

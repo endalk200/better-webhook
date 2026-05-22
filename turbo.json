@@ -1,63 +1,57 @@
 {
-  "$schema": "https://v2-8-13.turborepo.dev/schema.json",
-  "ui": "stream",
-  "globalEnv": [
-    "WEBHOOK_SECRET",
-    "GITHUB_WEBHOOK_SECRET",
-    "GITHUB_WEBHOOK_IDEMPOTENCY_TTL_MS",
-    "GITHUB_WEBHOOK_REPLAY_WINDOW_MS",
-    "GITHUB_WEBHOOK_URL",
-    "STRIPE_WEBHOOK_SECRET",
-    "RAGIE_WEBHOOK_SECRET",
-    "RECALL_WEBHOOK_SECRET",
-    "RESEND_WEBHOOK_SECRET",
-    "DATABASE_URL",
-    "NODE_ENV",
-    "PORT",
-    "BETTER_WEBHOOK_OTEL_ENDPOINT",
-    "OTEL_SERVICE_NAME",
-    "STRIPE_WEBHOOK_IDEMPOTENCY_TTL_MS",
-    "STRIPE_WEBHOOK_REPLAY_WINDOW_MS",
-    "STRIPE_WEBHOOK_URL"
-  ],
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [
-        "dist/**",
-        "build/**",
-        "bin/**",
-        ".next/**",
-        "!.next/cache/**"
-      ]
-    },
-    "lint": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*"]
-    },
-    "check-types": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
-    },
-    "test": {
-      "dependsOn": ["^build", "^test"],
-      "env": ["TEST_WEBHOOK_SECRET"],
-      "inputs": ["$TURBO_DEFAULT$", "jest.config.*", "vitest.config.*"]
-    },
-    "format:check": {
-      "inputs": ["$TURBO_DEFAULT$"]
-    },
-    "format:write": {
-      "cache": false
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "clean": {
-      "cache": false,
-      "outputs": ["dist/**", "build/**", ".turbo/**"]
-    }
-  }
+	"$schema": "https://v2-8-13.turborepo.dev/schema.json",
+	"ui": "stream",
+	"globalEnv": [
+		"WEBHOOK_SECRET",
+		"GITHUB_WEBHOOK_SECRET",
+		"GITHUB_WEBHOOK_IDEMPOTENCY_TTL_MS",
+		"GITHUB_WEBHOOK_REPLAY_WINDOW_MS",
+		"GITHUB_WEBHOOK_URL",
+		"STRIPE_WEBHOOK_SECRET",
+		"RAGIE_WEBHOOK_SECRET",
+		"RECALL_WEBHOOK_SECRET",
+		"RESEND_WEBHOOK_SECRET",
+		"DATABASE_URL",
+		"NODE_ENV",
+		"PORT",
+		"BETTER_WEBHOOK_OTEL_ENDPOINT",
+		"OTEL_SERVICE_NAME",
+		"STRIPE_WEBHOOK_IDEMPOTENCY_TTL_MS",
+		"STRIPE_WEBHOOK_REPLAY_WINDOW_MS",
+		"STRIPE_WEBHOOK_URL"
+	],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env*"],
+			"outputs": ["dist/**", "build/**", "bin/**", ".next/**", "!.next/cache/**"]
+		},
+		"lint": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", "biome.json", "packages/biome-config/**"]
+		},
+		"check-types": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
+		},
+		"test": {
+			"dependsOn": ["^build", "^test"],
+			"env": ["TEST_WEBHOOK_SECRET"],
+			"inputs": ["$TURBO_DEFAULT$", "jest.config.*", "vitest.config.*"]
+		},
+		"format:check": {
+			"inputs": ["$TURBO_DEFAULT$", "biome.json", "packages/biome-config/**"]
+		},
+		"format:write": {
+			"cache": false
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"clean": {
+			"cache": false,
+			"outputs": ["dist/**", "build/**", ".turbo/**"]
+		}
+	}
 }
