@@ -15,4 +15,4 @@ runs:
         devbox version
         devbox run -- just --version
         devbox run -- node --version
-        devbox run -- pnpm --version
+        devbox run -- bun --version

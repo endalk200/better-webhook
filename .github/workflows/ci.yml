@@ -27,20 +27,20 @@ jobs:
         uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: devbox run -- pnpm install --frozen-lockfile
+        run: devbox run -- bun install --frozen-lockfile
 
       - name: Format check
         run: |
-          devbox run -- pnpm run format:check
+          devbox run -- bun run format:check
 
       - name: Lint
-        run: devbox run -- pnpm run lint
+        run: devbox run -- bun run lint
 
       - name: Type check
-        run: devbox run -- pnpm run check-types
+        run: devbox run -- bun run check-types
 
       - name: Test
-        run: devbox run -- pnpm run test
+        run: devbox run -- bun run test
 
       - name: Build
-        run: devbox run -- pnpm run build
+        run: devbox run -- bun run build

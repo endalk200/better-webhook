@@ -25,25 +25,25 @@ jobs:
         uses: ./.github/actions/setup-devbox
 
       - name: Install dependencies
-        run: devbox run -- pnpm install --frozen-lockfile
+        run: devbox run -- bun install --frozen-lockfile
 
       - name: Format check
-        run: devbox run -- pnpm --filter @better-webhook/cli run format:check
+        run: devbox run -- bun --filter @better-webhook/cli run format:check
 
       - name: Lint
-        run: devbox run -- pnpm --filter @better-webhook/cli run lint
+        run: devbox run -- bun --filter @better-webhook/cli run lint
 
       - name: Type check
-        run: devbox run -- pnpm --filter @better-webhook/cli run check-types
+        run: devbox run -- bun --filter @better-webhook/cli run check-types
 
       - name: Test
-        run: devbox run -- pnpm --filter @better-webhook/cli run test
+        run: devbox run -- bun --filter @better-webhook/cli run test
 
       - name: GoReleaser snapshot
         run: devbox run -- sh -c 'cd packages/cli && goreleaser release --snapshot --clean --skip=publish'
 
       - name: Generate npm package directories
-        run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist
+        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
 
       - name: Pack npm packages
         working-directory: packages/cli/dist/npm
