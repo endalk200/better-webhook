@@ -18,8 +18,7 @@ on:
       - "packages/resend/**"
       - "packages/stripe/**"
       - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
+      - "bun.lock"
       - "justfile"
       - ".github/workflows/release.yml"
 
@@ -50,7 +49,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: devbox run -- pnpm install --frozen-lockfile
+        run: devbox run -- bun install --frozen-lockfile
 
       - name: Get cache key date
         id: cache-date
@@ -80,22 +79,22 @@ jobs:
           TRIVY_SKIP_JAVA_DB_UPDATE: ${{ steps.trivy-cache.outputs.cache-hit == 'true' && 'true' || 'false' }}
 
       - name: Lint
-        run: devbox run -- pnpm run lint
+        run: devbox run -- bun run lint
 
       - name: Type check
-        run: devbox run -- pnpm run check-types
+        run: devbox run -- bun run check-types
 
       - name: Test
-        run: devbox run -- pnpm run test
+        run: devbox run -- bun run test
 
       - name: Build packages
-        run: devbox run -- pnpm run build
+        run: devbox run -- bun run build
 
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf # v1.7.0
         with:
-          publish: devbox run -- pnpm release:publish
+          publish: devbox run -- bun run release:publish
           title: "chore: release packages"
           commit: "chore: release packages"
           createGithubReleases: false

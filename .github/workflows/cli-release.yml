@@ -33,22 +33,22 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: devbox run -- pnpm install --frozen-lockfile
+        run: devbox run -- bun install --frozen-lockfile
 
       - name: Validate release tag and npm availability
-        run: devbox run -- pnpm --filter @better-webhook/cli run release:check
+        run: devbox run -- bun --filter @better-webhook/cli run release:check
 
       - name: Format check
-        run: devbox run -- pnpm --filter @better-webhook/cli run format:check
+        run: devbox run -- bun --filter @better-webhook/cli run format:check
 
       - name: Lint
-        run: devbox run -- pnpm --filter @better-webhook/cli run lint
+        run: devbox run -- bun --filter @better-webhook/cli run lint
 
       - name: Type check
-        run: devbox run -- pnpm --filter @better-webhook/cli run check-types
+        run: devbox run -- bun --filter @better-webhook/cli run check-types
 
       - name: Test
-        run: devbox run -- pnpm --filter @better-webhook/cli run test
+        run: devbox run -- bun --filter @better-webhook/cli run test
 
       - name: GoReleaser build artifacts
         run: |
@@ -73,7 +73,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate npm package directories
-        run: devbox run -- pnpm --filter @better-webhook/cli run release:package-npm -- dist
+        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
 
       - name: Resolve npm dist-tag
         id: npm-tag
