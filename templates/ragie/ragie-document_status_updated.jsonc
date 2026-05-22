@@ -1,37 +1,37 @@
 {
-  "method": "POST",
-  "headers": [
-    {
-      "key": "Content-Type",
-      "value": "application/json"
-    },
-    {
-      "key": "X-Signature",
-      "value": "placeholder"
-    },
-    {
-      "key": "User-Agent",
-      "value": "Python/3.12 aiohttp/3.12.15"
-    }
-  ],
-  "body": {
-    "type": "document_status_updated",
-    "payload": {
-      "document_id": "aa9a87d5-fbfa-4b48-8db3-b88a0d5826d4",
-      "status": "ready",
-      "partition": "default",
-      "metadata": {
-        "key": "value"
-      },
-      "external_id": "ext_123",
-      "name": "Test Document.pdf",
-      "connection_id": null,
-      "sync_id": null,
-      "error": null
-    },
-    "nonce": "8YVyKf1vKqErhhaQ9U55uw"
-  },
-  "provider": "ragie",
-  "event": "document_status_updated",
-  "description": "Ragie document status updated - document is now ready for retrieval"
+	"method": "POST",
+	"headers": [
+		{
+			"key": "Content-Type",
+			"value": "application/json"
+		},
+		{
+			"key": "X-Signature",
+			"value": "placeholder"
+		},
+		{
+			"key": "User-Agent",
+			"value": "Python/3.12 aiohttp/3.12.15"
+		}
+	],
+	"body": {
+		"type": "document_status_updated",
+		"payload": {
+			"document_id": "aa9a87d5-fbfa-4b48-8db3-b88a0d5826d4",
+			"status": "ready",
+			"partition": "default",
+			"metadata": {
+				"key": "value"
+			},
+			"external_id": "ext_123",
+			"name": "Test Document.pdf",
+			"connection_id": null,
+			"sync_id": null,
+			"error": null
+		},
+		"nonce": "8YVyKf1vKqErhhaQ9U55uw"
+	},
+	"provider": "ragie",
+	"event": "document_status_updated",
+	"description": "Ragie document status updated - document is now ready for retrieval"
 }

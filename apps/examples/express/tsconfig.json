@@ -1,11 +1,11 @@
 {
-  "extends": "@better-webhook/typescript-config/base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": ".",
-    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
-    "types": ["node"]
-  },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"],
-  "exclude": ["dist"]
+	"extends": "@better-webhook/typescript-config/base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": ".",
+		"tsBuildInfoFile": "tsconfig.tsbuildinfo",
+		"types": ["node"]
+	},
+	"include": ["src/**/*.ts", "scripts/**/*.ts"],
+	"exclude": ["dist"]
 }

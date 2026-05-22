@@ -1,28 +1,28 @@
 {
-  "method": "POST",
-  "headers": [
-    {
-      "key": "Content-Type",
-      "value": "application/json"
-    },
-    {
-      "key": "X-Signature",
-      "value": "placeholder"
-    },
-    {
-      "key": "User-Agent",
-      "value": "Python/3.12 aiohttp/3.12.15"
-    }
-  ],
-  "body": {
-    "type": "partition_limit_exceeded",
-    "payload": {
-      "partition": "default",
-      "limit_type": "document_limit"
-    },
-    "nonce": "partition-limit-nonce-123"
-  },
-  "provider": "ragie",
-  "event": "partition_limit_exceeded",
-  "description": "Ragie partition limit exceeded - document limit reached for partition"
+	"method": "POST",
+	"headers": [
+		{
+			"key": "Content-Type",
+			"value": "application/json"
+		},
+		{
+			"key": "X-Signature",
+			"value": "placeholder"
+		},
+		{
+			"key": "User-Agent",
+			"value": "Python/3.12 aiohttp/3.12.15"
+		}
+	],
+	"body": {
+		"type": "partition_limit_exceeded",
+		"payload": {
+			"partition": "default",
+			"limit_type": "document_limit"
+		},
+		"nonce": "partition-limit-nonce-123"
+	},
+	"provider": "ragie",
+	"event": "partition_limit_exceeded",
+	"description": "Ragie partition limit exceeded - document limit reached for partition"
 }

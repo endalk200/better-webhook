@@ -1,35 +1,35 @@
 {
-  "method": "POST",
-  "headers": [
-    {
-      "key": "Content-Type",
-      "value": "application/json"
-    },
-    {
-      "key": "X-Signature",
-      "value": "placeholder"
-    },
-    {
-      "key": "User-Agent",
-      "value": "Python/3.12 aiohttp/3.12.15"
-    }
-  ],
-  "body": {
-    "type": "document_deleted",
-    "payload": {
-      "document_id": "f16812e2-9159-4de7-be62-5c19010582a5",
-      "partition": "default",
-      "metadata": {
-        "key": "value"
-      },
-      "external_id": "ext_123",
-      "name": "Test Document.pdf",
-      "connection_id": null,
-      "sync_id": null
-    },
-    "nonce": "MPuABh9SZ-ua_qJooQ49Iw"
-  },
-  "provider": "ragie",
-  "event": "document_deleted",
-  "description": "Ragie document deleted"
+	"method": "POST",
+	"headers": [
+		{
+			"key": "Content-Type",
+			"value": "application/json"
+		},
+		{
+			"key": "X-Signature",
+			"value": "placeholder"
+		},
+		{
+			"key": "User-Agent",
+			"value": "Python/3.12 aiohttp/3.12.15"
+		}
+	],
+	"body": {
+		"type": "document_deleted",
+		"payload": {
+			"document_id": "f16812e2-9159-4de7-be62-5c19010582a5",
+			"partition": "default",
+			"metadata": {
+				"key": "value"
+			},
+			"external_id": "ext_123",
+			"name": "Test Document.pdf",
+			"connection_id": null,
+			"sync_id": null
+		},
+		"nonce": "MPuABh9SZ-ua_qJooQ49Iw"
+	},
+	"provider": "ragie",
+	"event": "document_deleted",
+	"description": "Ragie document deleted"
 }
