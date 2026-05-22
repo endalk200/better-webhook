@@ -28,6 +28,15 @@
 		"sdk"
 	],
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/endalk200/better-webhook",
+		"directory": "packages/core"
+	},
+	"bugs": {
+		"url": "https://github.com/endalk200/better-webhook/issues"
+	},
+	"homepage": "https://github.com/endalk200/better-webhook#readme",
 	"publishConfig": {
 		"access": "public",
 		"provenance": true
