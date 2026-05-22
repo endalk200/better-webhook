@@ -33,21 +33,21 @@ The CLI npm packages are:
 - `@better-webhook/cli-linux-x64`
 - `@better-webhook/cli-win32-x64`
 
-Workspace-only packages such as `@better-webhook/eslint-config` and `@better-webhook/typescript-config` are private/internal support packages and are not part of the release flow.
+Workspace-only packages such as `@better-webhook/biome-config` and `@better-webhook/typescript-config` are private/internal support packages and are not part of the release flow.
 
 ## Shared Tooling
 
 All repo commands are expected to run through Devbox:
 
 ```bash
-devbox run -- pnpm run format:check
-devbox run -- pnpm run lint
-devbox run -- pnpm run check-types
-devbox run -- pnpm run test
-devbox run -- pnpm run build
+devbox run -- bun run format:check
+devbox run -- bun run lint
+devbox run -- bun run check-types
+devbox run -- bun run test
+devbox run -- bun run build
 ```
 
-`devbox.json` pins the toolchain used by local work and CI, including Node, pnpm, Go, GoReleaser, golangci-lint, gofumpt, goimports, just, and Trivy. The root `packageManager` field is advisory for package-manager metadata; Devbox controls the `pnpm` binary used by release commands in CI.
+`devbox.json` pins the toolchain used by local work and CI, including Node, Bun, Go, GoReleaser, golangci-lint, gofumpt, goimports, just, and Trivy. The root `packageManager` field is advisory for package-manager metadata; Devbox controls the `bun` binary used by release commands in CI.
 
 `turbo.json` defines the repo task graph. `build` depends on upstream package builds and emits `dist/**`, `build/**`, `bin/**`, and `.next/**`. `lint`, `check-types`, and `test` depend on upstream builds, which means release verification can rebuild dependencies even when a command looks package-scoped.
 
@@ -70,7 +70,7 @@ The SDK workflow does this:
 1. Checks out the repo with full history.
 2. Installs and validates Devbox.
 3. Configures npm registry access.
-4. Installs dependencies with `pnpm install --frozen-lockfile`.
+4. Installs dependencies with `bun install --frozen-lockfile`.
 5. Restores the Trivy cache.
 6. Runs Trivy as a blocking gate only when `TRIVY_ENFORCE=1`; otherwise it records a release report without failing the publish.
 7. Runs lint, type check, test, and build. The release workflow does not run `format:check`; formatting is enforced by CI and local release readiness.
@@ -99,7 +99,7 @@ When the release PR is created by the Changesets action, it applies the accumula
 The root script for local versioning is:
 
 ```bash
-devbox run -- pnpm run changeset:version
+devbox run -- bun run changeset:version
 ```
 
 The matching root script is `changeset:version`; there is no `release:version` script.
@@ -117,8 +117,8 @@ The CLI workflow does this:
 1. Checks out the repo with full history and no persisted GitHub credentials.
 2. Installs and validates Devbox.
 3. Configures npm registry access.
-4. Installs dependencies with `pnpm install --frozen-lockfile`.
-5. Runs `pnpm --filter @better-webhook/cli run release:check`.
+4. Installs dependencies with `bun install --frozen-lockfile`.
+5. Runs `bun --filter @better-webhook/cli run release:check`.
 6. Runs CLI format, lint, type check, and test.
 7. Runs GoReleaser to run `go mod tidy` and build archives without publishing.
 8. Creates or updates the GitHub Release for the tag.
@@ -184,9 +184,8 @@ Use those results to confirm whether `latest` and `beta` point to the expected p
 ## Operational Watch Points
 
 - Run all release commands through `devbox run --`.
-- Do not use `pnpm dev` or `pnpm start` as part of release verification.
-- If repo-wide lint fails with an `ENOENT` for a temporary `packages/stripe` tsup config file during concurrent build-related work, rerun lint by itself after builds finish.
+- Do not use `bun run dev` or `bun run start` as part of release verification.
 - The CLI `release:check` intentionally fails if the current CLI version already exists on npm. That is expected after a tag has already published.
 - For example, a checkout tagged `cli/vX.Y.Z` can fail `release:check` after publishing because `@better-webhook/cli-darwin-arm64@X.Y.Z` already exists on npm.
-- `devbox.json` currently pins `pnpm@10.28.0` while the root `packageManager` field says `pnpm@10.33.0`; CI uses the Devbox-pinned binary unless Devbox is updated.
+- `devbox.json` and the root `packageManager` field both pin `bun@1.3.3`; update them together when changing the package manager version.
 - SDK docs under `apps/docs/content` can drift from SDK behavior. SDK-facing changes should include a docs review before release.

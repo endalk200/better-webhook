@@ -10,17 +10,17 @@ This branch is the v2 SDK reset. The previous core, provider, adapter, example, 
 ## Current workspace
 
 - [`packages/cli`](packages/cli) - command line interface
-- [`packages/eslint-config`](packages/eslint-config) - shared lint configuration
+- [`packages/biome-config`](packages/biome-config) - shared Biome configuration
 - [`packages/typescript-config`](packages/typescript-config) - shared TypeScript configuration
 
 ## Local development
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm check-types
-pnpm test
-pnpm build
+bun install --frozen-lockfile
+bun run lint
+bun run check-types
+bun run test
+bun run build
 ```
 
 ## Contributing and community

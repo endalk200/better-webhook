@@ -18,13 +18,13 @@ Add or update the SDK code and tests. If the change affects public SDK behavior 
 Add a changeset:
 
 ```bash
-devbox run -- pnpm changeset
+devbox run -- bun run changeset
 ```
 
 Select every affected public SDK package and choose the semver bump. Use an empty changeset only when the PR touches release-watched files but should not publish an SDK package:
 
 ```bash
-devbox run -- pnpm changeset --empty
+devbox run -- bun run changeset --empty
 ```
 
 Do not manually edit SDK package versions or SDK changelogs in the feature PR. Changesets generates those in the release PR.
@@ -34,11 +34,11 @@ Do not manually edit SDK package versions or SDK changelogs in the feature PR. C
 Run the full release-quality check set:
 
 ```bash
-devbox run -- pnpm run format:check
-devbox run -- pnpm run lint
-devbox run -- pnpm run check-types
-devbox run -- pnpm run test
-devbox run -- pnpm run build
+devbox run -- bun run format:check
+devbox run -- bun run lint
+devbox run -- bun run check-types
+devbox run -- bun run test
+devbox run -- bun run build
 ```
 
 The SDK release workflow itself runs lint, type check, test, and build after the Trivy gate. It does not run `format:check`, so run formatting checks before merging.
@@ -46,16 +46,16 @@ The SDK release workflow itself runs lint, type check, test, and build after the
 If formatting fails, apply it and rerun the checks:
 
 ```bash
-devbox run -- pnpm run format:write
+devbox run -- bun run format:write
 ```
 
 For a narrow package check, use:
 
 ```bash
-devbox run -- pnpm --filter @better-webhook/core run build
-devbox run -- pnpm --filter @better-webhook/core run check-types
-devbox run -- pnpm --filter @better-webhook/core run lint
-devbox run -- pnpm --filter @better-webhook/core run test
+devbox run -- bun --filter @better-webhook/core run build
+devbox run -- bun --filter @better-webhook/core run check-types
+devbox run -- bun --filter @better-webhook/core run lint
+devbox run -- bun --filter @better-webhook/core run test
 ```
 
 Replace `@better-webhook/core` with the package being released.
@@ -79,7 +79,7 @@ Review the release PR for:
 The actual local command behind the versioning step is:
 
 ```bash
-devbox run -- pnpm run changeset:version
+devbox run -- bun run changeset:version
 ```
 
 You usually do not need to run it manually because the GitHub workflow handles the release PR.
@@ -91,7 +91,7 @@ Merge the release PR to `main`.
 The next `Release SDK Packages` workflow run publishes packages with:
 
 ```bash
-devbox run -- pnpm release:publish
+devbox run -- bun run release:publish
 ```
 
 through `changesets/action`.
@@ -136,27 +136,27 @@ CLI prereleases must use the `beta` channel. Other prerelease identifiers are re
 Run the CLI check set:
 
 ```bash
-devbox run -- pnpm --filter @better-webhook/cli run format:check
-devbox run -- pnpm --filter @better-webhook/cli run lint
-devbox run -- pnpm --filter @better-webhook/cli run check-types
-devbox run -- pnpm --filter @better-webhook/cli run test
+devbox run -- bun --filter @better-webhook/cli run format:check
+devbox run -- bun --filter @better-webhook/cli run lint
+devbox run -- bun --filter @better-webhook/cli run check-types
+devbox run -- bun --filter @better-webhook/cli run test
 ```
 
 Build and smoke-test the local binary:
 
 ```bash
-devbox run -- pnpm --filter @better-webhook/cli run build
-devbox run -- pnpm --filter @better-webhook/cli run cli:built -- version --verbose
+devbox run -- bun --filter @better-webhook/cli run build
+devbox run -- bun --filter @better-webhook/cli run cli:built -- version --verbose
 ```
 
 Run full repo verification before merging:
 
 ```bash
-devbox run -- pnpm run format:check
-devbox run -- pnpm run lint
-devbox run -- pnpm run check-types
-devbox run -- pnpm run test
-devbox run -- pnpm run build
+devbox run -- bun run format:check
+devbox run -- bun run lint
+devbox run -- bun run check-types
+devbox run -- bun run test
+devbox run -- bun run build
 ```
 
 ### 3. Run the Dry Run Workflow
