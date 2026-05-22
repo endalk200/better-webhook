@@ -1,15 +1,15 @@
 {
-	"$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+	"$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.2/.schema/devbox.schema.json",
 	"packages": [
-		"just@latest",
-		"trivy@0.69.0",
+		"just@1.51.0",
+		"trivy@0.69.3",
 		"nodejs@24.12.0",
-		"goreleaser@latest",
-		"golangci-lint@2.9.0",
-		"bun@1.3.3",
-		"go@1.26.0",
-		"gofumpt@latest",
-		"goimports@latest"
+		"goreleaser@2.15.4",
+		"golangci-lint@2.12.2",
+		"bun@1.3.13",
+		"go@1.26.2",
+		"gofumpt@0.10.0",
+		"gotools@0.44.0"
 	],
 	"env": {
 		"TRIVY_CACHE_DIR": "$PWD/.cache/trivy"
