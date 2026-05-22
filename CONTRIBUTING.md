@@ -11,16 +11,16 @@ This repo uses devbox to manage tools and dependencies.
 2. Install dependencies:
 
    ```bash
-   devbox run -- pnpm install --frozen-lockfile
+   devbox run -- bun install --frozen-lockfile
    ```
 
 3. Build and run tests before opening a pull request:
 
    ```bash
-   devbox run -- pnpm run format:check
-   devbox run -- pnpm run lint
-   devbox run -- pnpm run check-types
-   devbox run -- pnpm run build
+   devbox run -- bun run format:check
+   devbox run -- bun run lint
+   devbox run -- bun run check-types
+   devbox run -- bun run build
    ```
 
 4. Run security scan for the changes you added

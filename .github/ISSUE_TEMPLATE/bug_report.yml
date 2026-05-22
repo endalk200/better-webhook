@@ -119,7 +119,7 @@ body:
       label: Package Manager
       description: Which package manager are you using?
       options:
-        - "pnpm"
+        - "bun"
         - "npm"
         - "yarn"
         - "bun"

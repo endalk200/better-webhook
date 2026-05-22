@@ -9,7 +9,7 @@ The current provider endpoints are Stripe at `/api/webhooks/stripe` and GitHub a
 Start the Next.js development server:
 
 ```sh
-pnpm --filter @better-webhook/example-nextjs run dev
+bun --filter @better-webhook/example-nextjs run dev
 ```
 
 The default Stripe Webhook Endpoint is `http://127.0.0.1:3001/api/webhooks/stripe`.
@@ -20,13 +20,13 @@ The default GitHub Webhook Endpoint is `http://127.0.0.1:3001/api/webhooks/githu
 Run these Stripe Sender Scripts while the development server is running:
 
 ```sh
-pnpm --filter @better-webhook/example-nextjs run send:stripe:checkout
-pnpm --filter @better-webhook/example-nextjs run send:stripe:invoice
-pnpm --filter @better-webhook/example-nextjs run send:stripe:unknown
-pnpm --filter @better-webhook/example-nextjs run send:stripe:duplicate
-pnpm --filter @better-webhook/example-nextjs run send:stripe:replay
-pnpm --filter @better-webhook/example-nextjs run send:stripe:ignored
-pnpm --filter @better-webhook/example-nextjs run send:stripe:failure
+bun --filter @better-webhook/example-nextjs run send:stripe:checkout
+bun --filter @better-webhook/example-nextjs run send:stripe:invoice
+bun --filter @better-webhook/example-nextjs run send:stripe:unknown
+bun --filter @better-webhook/example-nextjs run send:stripe:duplicate
+bun --filter @better-webhook/example-nextjs run send:stripe:replay
+bun --filter @better-webhook/example-nextjs run send:stripe:ignored
+bun --filter @better-webhook/example-nextjs run send:stripe:failure
 ```
 
 Expected Manual Example Feedback:
@@ -42,14 +42,14 @@ Expected Manual Example Feedback:
 Run these GitHub Sender Scripts while the development server is running:
 
 ```sh
-pnpm --filter @better-webhook/example-nextjs run send:github:pull-request
-pnpm --filter @better-webhook/example-nextjs run send:github:issue-comment
-pnpm --filter @better-webhook/example-nextjs run send:github:check-run
-pnpm --filter @better-webhook/example-nextjs run send:github:duplicate
-pnpm --filter @better-webhook/example-nextjs run send:github:replay
-pnpm --filter @better-webhook/example-nextjs run send:github:ignored
-pnpm --filter @better-webhook/example-nextjs run send:github:unknown
-pnpm --filter @better-webhook/example-nextjs run send:github:failure
+bun --filter @better-webhook/example-nextjs run send:github:pull-request
+bun --filter @better-webhook/example-nextjs run send:github:issue-comment
+bun --filter @better-webhook/example-nextjs run send:github:check-run
+bun --filter @better-webhook/example-nextjs run send:github:duplicate
+bun --filter @better-webhook/example-nextjs run send:github:replay
+bun --filter @better-webhook/example-nextjs run send:github:ignored
+bun --filter @better-webhook/example-nextjs run send:github:unknown
+bun --filter @better-webhook/example-nextjs run send:github:failure
 ```
 
 Expected GitHub Manual Example Feedback:
