@@ -8,17 +8,15 @@ TRIVY_SKIP_JAVA_DB_UPDATE_VALUE := "true"
 
 # Run configured build command for this package.
 build-package package:
-    pnpm --filter {{ package }} run build
+    bun --filter {{ package }} run build
 
-# Runs format:check for the go code using go tooling and format:check at the root level using prettier
+# Runs format:check at the root level using Biome and package format checks.
 format-check:
-    # Run format:check at the root level using prettier
-    pnpm run format:check
+    bun run format:check
 
-# Runs format:write for the go code using go tooling and format:write at the root level using prettier
+# Runs format:write at the root level using Biome and package format writes.
 format-write:
-    # Run format:write at the root level using prettier
-    pnpm run format:write
+    bun run format:write
 
 security-scan:
     TRIVY_DB_REPOSITORY={{ TRIVY_DB_REPO }} TRIVY_JAVA_DB_REPOSITORY={{ TRIVY_JAVA_DB_REPO }} trivy fs --config trivy.yaml .
