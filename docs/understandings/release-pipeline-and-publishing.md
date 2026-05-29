@@ -13,15 +13,9 @@ The public SDK packages are:
 
 - `@better-webhook/core`
 - `@better-webhook/express`
-- `@better-webhook/gcp-functions`
 - `@better-webhook/github`
-- `@better-webhook/hono`
-- `@better-webhook/nestjs`
 - `@better-webhook/nextjs`
 - `@better-webhook/otel`
-- `@better-webhook/ragie`
-- `@better-webhook/recall`
-- `@better-webhook/resend`
 - `@better-webhook/stripe`
 
 The CLI npm packages are:
@@ -73,7 +67,7 @@ The SDK workflow does this:
 4. Installs dependencies with `bun install --frozen-lockfile`.
 5. Restores the Trivy cache.
 6. Runs Trivy as a blocking gate only when `TRIVY_ENFORCE=1`; otherwise it records a release report without failing the publish.
-7. Runs lint, type check, test, and build. The release workflow does not run `format:check`; formatting is enforced by CI and local release readiness.
+7. Runs format check, lint, type check, test, and build.
 8. Runs `changesets/action`.
 9. Either opens/updates a release PR or publishes packages.
 10. Pushes tags after a successful publish.
@@ -86,9 +80,20 @@ Changesets config:
 - `updateInternalDependencies` is `patch`, so dependents get patch bumps when internal workspace dependencies change.
 - `@better-webhook/cli` is ignored.
 
-Each SDK package builds with `tsup` into `dist`, publishes ESM, CJS, and TypeScript declarations, and restricts npm package contents to `dist`, `README.md`, and `LICENSE`.
+Each SDK package builds with `tsc --build` into `dist`, publishes ESM-only JavaScript plus TypeScript declarations, and exposes a single root package export:
 
-Provider packages with event subpath exports include additional `tsup` entries and package `exports` entries. The current event subpaths are `@better-webhook/github/events`, `@better-webhook/ragie/events`, `@better-webhook/recall/events`, `@better-webhook/resend/events`, and `@better-webhook/stripe/events`. Release checks should verify those subpath artifacts exist in `dist`.
+```json
+{
+  ".": {
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
+  }
+}
+```
+
+The SDK packages currently restrict npm package contents to `dist`, `docs`, `README.md`, and `LICENSE`. Provider packages do not publish event subpath exports in the current SDK shape.
+
+Publishable SDK package runtime dependencies must use npm-installable semver ranges. Do not publish `workspace:*` in `dependencies`; npm consumers cannot install packages whose runtime dependency metadata contains the workspace protocol. Workspace protocol ranges are acceptable for local-only `devDependencies` and example applications.
 
 ## SDK Versioning and Changelogs
 
