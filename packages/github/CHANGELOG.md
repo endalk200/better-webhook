@@ -1,5 +1,13 @@
 # @better-webhook/github
 
+## 1.0.1
+
+### Patch Changes
+
+- f23d1eb: Bundle agent-oriented SDK reference docs under `docs/index.md` in each TypeScript SDK package.
+- Updated dependencies [f23d1eb]
+  - @better-webhook/core@1.0.1
+
 ## 1.0.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
 	"name": "@better-webhook/core",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Provider-agnostic webhook handling pipeline for Better Webhook",
 	"type": "module",
 	"exports": {
