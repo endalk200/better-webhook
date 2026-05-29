@@ -117,6 +117,12 @@ export type GitHubEventPayloads = {
 
 export type KnownGitHubEventType = keyof GitHubEventPayloads;
 
+function defineKnownGitHubEventTypes<const TTypes extends readonly KnownGitHubEventType[]>(
+	types: Exclude<KnownGitHubEventType, TTypes[number]> extends never ? TTypes : never,
+): TTypes {
+	return types;
+}
+
 export type KnownGitHubEvent = {
 	[TType in KnownGitHubEventType]: WebhookEvent<
 		TType,
@@ -279,7 +285,7 @@ export function isKnownGitHubEventType(type: string): type is KnownGitHubEventTy
 	return knownGitHubEventTypes.includes(type as KnownGitHubEventType);
 }
 
-export const knownGitHubEventTypes = [
+export const knownGitHubEventTypes = defineKnownGitHubEventTypes([
 	"ping",
 	"installation",
 	"installation_repositories",
@@ -294,7 +300,7 @@ export const knownGitHubEventTypes = [
 	"workflow_run",
 	"workflow_job",
 	"merge_group",
-] as const satisfies readonly string[];
+] as const);
 
 function getGitHubSignatureHeader(headers: RawHeaderValue[]): string {
 	return getHeaderValues(headers, "x-hub-signature-256").join(",");

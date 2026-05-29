@@ -8,6 +8,7 @@ import {
 	createGitHubSignatureHeader,
 	type GitHubWebhookEvent,
 	github,
+	type KnownGitHubEventType,
 	knownGitHubEventTypes,
 	parseGitHubSignatureHeader,
 	type UnknownGitHubEvent,
@@ -235,6 +236,8 @@ describe("github provider", () => {
 	});
 
 	it("classifies known events without inspecting action values", async () => {
+		expectTypeOf<(typeof knownGitHubEventTypes)[number]>().toEqualTypeOf<KnownGitHubEventType>();
+
 		const handler = vi.fn();
 		const endpoint = createWebhookEndpoint({
 			provider: github({ webhookSecret: secret }),

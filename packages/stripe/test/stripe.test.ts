@@ -40,6 +40,15 @@ function request(
 }
 
 describe("stripe provider", () => {
+	it("requires a configured signing secret", () => {
+		expect(() => stripe({ signingSecret: "" })).toThrow("Stripe Provider Secret is required");
+		expect(() =>
+			stripe({
+				signingSecret: undefined as unknown as string,
+			}),
+		).toThrow("Stripe Provider Secret is required");
+	});
+
 	it("verifies real Stripe HMAC semantics over raw bytes", async () => {
 		const handler = vi.fn();
 		const endpoint = createWebhookEndpoint({

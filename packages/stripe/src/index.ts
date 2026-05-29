@@ -93,6 +93,10 @@ export type StripeProviderOptions = {
 };
 
 export function stripe(options: StripeProviderOptions): ProviderDefinition<StripeWebhookEvent> {
+	if (typeof options.signingSecret !== "string" || options.signingSecret.length === 0) {
+		throw new Error("Stripe Provider Secret is required");
+	}
+
 	return {
 		name: "stripe",
 		capabilities: {
