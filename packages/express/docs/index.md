@@ -74,9 +74,7 @@ app.post(
 The adapter reports:
 
 - `preservesRawBodyBytes: true`
-- `preservesDuplicateHeaders: true`
-
-Duplicate-header preservation depends on Express exposing `req.rawHeaders`.
+- `preservesDuplicateHeaders: true` when Express exposes `req.rawHeaders`; otherwise the `req.headers` fallback may collapse duplicate header lines.
 
 ## Gotchas
 
