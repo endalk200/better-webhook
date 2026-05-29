@@ -41,7 +41,7 @@ devbox run -- bun run test
 devbox run -- bun run build
 ```
 
-The SDK release workflow itself runs lint, type check, test, and build after the Trivy gate. It does not run `format:check`, so run formatting checks before merging.
+The SDK release workflow itself runs format check, lint, type check, test, and build after the Trivy gate.
 
 If formatting fails, apply it and rerun the checks:
 
@@ -73,6 +73,7 @@ Review the release PR for:
 - Correct package version bumps.
 - Correct changelog entries.
 - Correct workspace dependency updates.
+- No `workspace:*` ranges in published runtime `dependencies`.
 - Docs changes when SDK behavior changed.
 - Passing CI and release workflow checks.
 
