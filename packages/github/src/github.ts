@@ -5,51 +5,24 @@ import type {
 	WebhookDelivery,
 	WebhookEvent,
 } from "@better-webhook/core";
+import type { webhooks as GitHubWebhookDefinitions } from "@octokit/openapi-webhooks-types";
 
-export type GitHubPayload = Record<string, unknown>;
+export type GitHubPayload = object;
 
-export type GitHubUser = {
-	id?: number;
-	login?: string;
-	type?: string;
-	[key: string]: unknown;
-};
+type GitHubWebhookPayload<TName extends keyof GitHubWebhookDefinitions> =
+	GitHubWebhookDefinitions[TName]["post"]["requestBody"]["content"]["application/json"];
 
-export type GitHubRepository = {
-	id: number;
-	full_name?: string;
-	name?: string;
-	[key: string]: unknown;
-};
+export type GitHubUser = GitHubEventPayloads["ping"]["sender"];
 
-export type GitHubInstallation = {
-	id: number;
-	[key: string]: unknown;
-};
+export type GitHubRepository = GitHubEventPayloads["pull_request"]["repository"];
 
-export type GitHubPullRequest = {
-	id?: number;
-	number?: number;
-	title?: string;
-	state?: string;
-	user?: GitHubUser;
-	[key: string]: unknown;
-};
+export type GitHubInstallation = NonNullable<GitHubEventPayloads["installation"]["installation"]>;
 
-export type GitHubIssueComment = {
-	id?: number;
-	body?: string;
-	user?: GitHubUser;
-	[key: string]: unknown;
-};
+export type GitHubPullRequest = GitHubEventPayloads["pull_request"]["pull_request"];
 
-export type GitHubCheckRun = {
-	id?: number;
-	name?: string;
-	status?: string;
-	conclusion?: string | null;
-	[key: string]: unknown;
-};
+export type GitHubIssueComment = GitHubEventPayloads["issue_comment"]["comment"];
+
+export type GitHubCheckRun = GitHubEventPayloads["check_run"]["check_run"];
 
 export type GitHubEventEnvelope<
 	TType extends string = string,
@@ -75,43 +48,75 @@ export type GitHubEventEnvelope<
 };
 
 export type GitHubEventPayloads = {
-	ping: GitHubPayload & { zen?: string; hook_id?: number };
-	installation: GitHubPayload & {
-		action?: string;
-		installation?: GitHubInstallation;
-	};
-	installation_repositories: GitHubPayload & {
-		action?: string;
-		installation?: GitHubInstallation;
-	};
-	pull_request: GitHubPayload & {
-		action?: string;
-		number?: number;
-		pull_request?: GitHubPullRequest;
-		repository?: GitHubRepository;
-		installation?: GitHubInstallation;
-	};
-	issue_comment: GitHubPayload & {
-		action?: string;
-		comment?: GitHubIssueComment;
-		issue?: Record<string, unknown>;
-		repository?: GitHubRepository;
-		installation?: GitHubInstallation;
-	};
-	pull_request_review: GitHubPayload;
-	pull_request_review_comment: GitHubPayload;
-	pull_request_review_thread: GitHubPayload;
-	check_run: GitHubPayload & {
-		action?: string;
-		check_run?: GitHubCheckRun;
-		repository?: GitHubRepository;
-		installation?: GitHubInstallation;
-	};
-	check_suite: GitHubPayload;
-	status: GitHubPayload;
-	workflow_run: GitHubPayload;
-	workflow_job: GitHubPayload;
-	merge_group: GitHubPayload;
+	ping: GitHubWebhookPayload<"ping">;
+	installation:
+		| GitHubWebhookPayload<"installation-created">
+		| GitHubWebhookPayload<"installation-deleted">
+		| GitHubWebhookPayload<"installation-new-permissions-accepted">
+		| GitHubWebhookPayload<"installation-suspend">
+		| GitHubWebhookPayload<"installation-unsuspend">;
+	installation_repositories:
+		| GitHubWebhookPayload<"installation-repositories-added">
+		| GitHubWebhookPayload<"installation-repositories-removed">;
+	pull_request:
+		| GitHubWebhookPayload<"pull-request-assigned">
+		| GitHubWebhookPayload<"pull-request-auto-merge-disabled">
+		| GitHubWebhookPayload<"pull-request-auto-merge-enabled">
+		| GitHubWebhookPayload<"pull-request-closed">
+		| GitHubWebhookPayload<"pull-request-converted-to-draft">
+		| GitHubWebhookPayload<"pull-request-demilestoned">
+		| GitHubWebhookPayload<"pull-request-dequeued">
+		| GitHubWebhookPayload<"pull-request-edited">
+		| GitHubWebhookPayload<"pull-request-enqueued">
+		| GitHubWebhookPayload<"pull-request-labeled">
+		| GitHubWebhookPayload<"pull-request-locked">
+		| GitHubWebhookPayload<"pull-request-milestoned">
+		| GitHubWebhookPayload<"pull-request-opened">
+		| GitHubWebhookPayload<"pull-request-ready-for-review">
+		| GitHubWebhookPayload<"pull-request-reopened">
+		| GitHubWebhookPayload<"pull-request-review-request-removed">
+		| GitHubWebhookPayload<"pull-request-review-requested">
+		| GitHubWebhookPayload<"pull-request-synchronize">
+		| GitHubWebhookPayload<"pull-request-unassigned">
+		| GitHubWebhookPayload<"pull-request-unlabeled">
+		| GitHubWebhookPayload<"pull-request-unlocked">;
+	issue_comment:
+		| GitHubWebhookPayload<"issue-comment-created">
+		| GitHubWebhookPayload<"issue-comment-deleted">
+		| GitHubWebhookPayload<"issue-comment-edited">;
+	pull_request_review:
+		| GitHubWebhookPayload<"pull-request-review-dismissed">
+		| GitHubWebhookPayload<"pull-request-review-edited">
+		| GitHubWebhookPayload<"pull-request-review-submitted">;
+	pull_request_review_comment:
+		| GitHubWebhookPayload<"pull-request-review-comment-created">
+		| GitHubWebhookPayload<"pull-request-review-comment-deleted">
+		| GitHubWebhookPayload<"pull-request-review-comment-edited">;
+	pull_request_review_thread:
+		| GitHubWebhookPayload<"pull-request-review-thread-resolved">
+		| GitHubWebhookPayload<"pull-request-review-thread-unresolved">;
+	check_run:
+		| GitHubWebhookPayload<"check-run-completed">
+		| GitHubWebhookPayload<"check-run-created">
+		| GitHubWebhookPayload<"check-run-requested-action">
+		| GitHubWebhookPayload<"check-run-rerequested">;
+	check_suite:
+		| GitHubWebhookPayload<"check-suite-completed">
+		| GitHubWebhookPayload<"check-suite-requested">
+		| GitHubWebhookPayload<"check-suite-rerequested">;
+	status: GitHubWebhookPayload<"status">;
+	workflow_run:
+		| GitHubWebhookPayload<"workflow-run-completed">
+		| GitHubWebhookPayload<"workflow-run-in-progress">
+		| GitHubWebhookPayload<"workflow-run-requested">;
+	workflow_job:
+		| GitHubWebhookPayload<"workflow-job-completed">
+		| GitHubWebhookPayload<"workflow-job-in-progress">
+		| GitHubWebhookPayload<"workflow-job-queued">
+		| GitHubWebhookPayload<"workflow-job-waiting">;
+	merge_group:
+		| GitHubWebhookPayload<"merge-group-checks-requested">
+		| GitHubWebhookPayload<"merge-group-destroyed">;
 };
 
 export type KnownGitHubEventType = keyof GitHubEventPayloads;
@@ -134,8 +139,8 @@ export type KnownGitHubEvent = {
 
 export type UnknownGitHubEvent = WebhookEvent<
 	string,
-	GitHubPayload,
-	GitHubEventEnvelope<string, GitHubPayload>
+	Record<string, unknown>,
+	GitHubEventEnvelope<string, Record<string, unknown>>
 > & {
 	known: false;
 };

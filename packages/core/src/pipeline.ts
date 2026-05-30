@@ -73,8 +73,19 @@ export type EventHandler<TEvent extends WebhookEvent = WebhookEvent> = (
 	context: HandlerContext<TEvent>,
 ) => unknown | Promise<unknown>;
 
+type LiteralEventType<TType extends string> = string extends TType ? never : TType;
+
+type LiteralEventTypes<TEvents extends WebhookEvent> =
+	TEvents extends WebhookEvent<infer TType> ? LiteralEventType<TType> : never;
+
+type EventHandlerTypeKeys<TEvents extends WebhookEvent> = [LiteralEventTypes<TEvents>] extends [
+	never,
+]
+	? TEvents["type"]
+	: LiteralEventTypes<TEvents>;
+
 export type EventHandlerMap<TEvents extends WebhookEvent> = {
-	[TType in TEvents["type"]]?: EventHandler<Extract<TEvents, { type: TType }>>;
+	[TType in EventHandlerTypeKeys<TEvents>]?: EventHandler<Extract<TEvents, { type: TType }>>;
 } & {
 	"*"?: EventHandler<TEvents>;
 };

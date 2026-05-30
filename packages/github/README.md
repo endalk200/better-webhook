@@ -65,6 +65,8 @@ Unknown GitHub event names remain verified and catch-all handleable with `known:
 
 Runtime validation is envelope-only: the provider requires a non-empty `X-GitHub-Delivery`, a non-empty `X-GitHub-Event`, a JSON object body, optional string `action`, optional numeric `installation.id`, and optional numeric `repository.id`. GitHub payload objects stay permissive so GitHub can add fields without forcing package updates.
 
+Known event payload types are sourced from GitHub's generated OpenAPI webhook schemas via `@octokit/openapi-webhooks-types`. Event Handler payloads are compile-time typed by GitHub webhook event name and action-specific payload unions, while runtime validation remains limited to the Event Envelope.
+
 ## Idempotency And Replay Protection
 
 `X-GitHub-Delivery` becomes the core Webhook Event id and the provider replay key. With an Idempotency Store, a second processed delivery with the same GitHub Delivery ID is treated as a duplicate completed Webhook Event. With a Replay Store, the repeated delivery key is rejected as `replayed_delivery` before application handling.

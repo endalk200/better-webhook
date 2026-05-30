@@ -6,6 +6,7 @@ import {
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { createGitHubSignatureHeader, parseGitHubSignatureHeader } from "../src/github.js";
 import {
+	type GitHubEventPayloads,
 	type GitHubWebhookEvent,
 	github,
 	type KnownGitHubEventType,
@@ -322,7 +323,7 @@ describe("github provider", () => {
 			provider: github({ webhookSecret: secret }),
 			handlers: {
 				pull_request: ({ event }) => {
-					expectTypeOf(event.payload.pull_request?.title).toEqualTypeOf<string | undefined>();
+					expectTypeOf(event.payload.pull_request.title).toEqualTypeOf<string>();
 				},
 				"*": ({ event }) => {
 					expectTypeOf(event).toEqualTypeOf<GitHubWebhookEvent>();
@@ -333,5 +334,81 @@ describe("github provider", () => {
 		expectTypeOf<Extract<GitHubWebhookEvent, UnknownGitHubEvent>["payload"]>().toEqualTypeOf<
 			Record<string, unknown>
 		>();
+	});
+
+	it("uses generated GitHub webhook payload types for known events", () => {
+		createWebhookEndpoint({
+			provider: github({ webhookSecret: secret }),
+			handlers: {
+				ping: ({ event }) => {
+					expectTypeOf(event.payload.hook_id).toEqualTypeOf<number>();
+					expectTypeOf(event.payload.zen).toEqualTypeOf<string>();
+				},
+				installation: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<
+						"created" | "deleted" | "new_permissions_accepted" | "suspend" | "unsuspend"
+					>();
+					expectTypeOf(event.payload.installation.id).toEqualTypeOf<number>();
+				},
+				installation_repositories: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"added" | "removed">();
+					expectTypeOf(event.payload.repositories_added).toEqualTypeOf<
+						GitHubEventPayloads["installation_repositories"]["repositories_added"]
+					>();
+				},
+				issue_comment: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"created" | "deleted" | "edited">();
+					expectTypeOf(event.payload.comment.body).toEqualTypeOf<string>();
+				},
+				pull_request_review: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"dismissed" | "edited" | "submitted">();
+					expectTypeOf(event.payload.review.id).toEqualTypeOf<number>();
+				},
+				pull_request_review_comment: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"created" | "deleted" | "edited">();
+					expectTypeOf(event.payload.comment.path).toEqualTypeOf<string>();
+				},
+				pull_request_review_thread: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"resolved" | "unresolved">();
+					expectTypeOf(event.payload.thread.id).toEqualTypeOf<number>();
+				},
+				check_run: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<
+						"completed" | "created" | "requested_action" | "rerequested"
+					>();
+					expectTypeOf(event.payload.check_run.name).toEqualTypeOf<string>();
+				},
+				check_suite: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<
+						"completed" | "requested" | "rerequested"
+					>();
+					expectTypeOf(event.payload.check_suite.id).toEqualTypeOf<number>();
+				},
+				status: ({ event }) => {
+					expectTypeOf(event.payload.state).toEqualTypeOf<
+						"error" | "failure" | "pending" | "success"
+					>();
+					expectTypeOf(event.payload.sha).toEqualTypeOf<string>();
+				},
+				workflow_run: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<
+						"completed" | "in_progress" | "requested"
+					>();
+					expectTypeOf(event.payload.workflow_run.id).toEqualTypeOf<number>();
+				},
+				workflow_job: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<
+						"completed" | "in_progress" | "queued" | "waiting"
+					>();
+					expectTypeOf(event.payload.workflow_job.status).toEqualTypeOf<
+						"completed" | "in_progress" | "queued" | "waiting"
+					>();
+				},
+				merge_group: ({ event }) => {
+					expectTypeOf(event.payload.action).toEqualTypeOf<"checks_requested" | "destroyed">();
+					expectTypeOf(event.payload.merge_group.head_sha).toEqualTypeOf<string>();
+				},
+			},
+		});
 	});
 });
