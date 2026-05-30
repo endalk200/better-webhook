@@ -1,6 +1,6 @@
 {
 	"name": "@better-webhook/otel",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "OpenTelemetry bridge for Better Webhook delivery observability",
 	"type": "module",
 	"exports": {
