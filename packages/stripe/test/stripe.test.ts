@@ -1,12 +1,7 @@
 import { createMemoryIdempotencyStore, createWebhookEndpoint } from "@better-webhook/core";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import {
-	createStripeReplayKey,
-	createStripeSignatureHeader,
-	type StripeWebhookEvent,
-	stripe,
-	type UnknownStripeEvent,
-} from "../src/index.js";
+import { type StripeWebhookEvent, stripe, type UnknownStripeEvent } from "../src/index.js";
+import { createStripeReplayKey, createStripeSignatureHeader } from "../src/stripe.js";
 
 const secret = "whsec_test_secret";
 const timestamp = 1_779_145_200;

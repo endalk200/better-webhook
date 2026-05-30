@@ -111,13 +111,6 @@ Known event handlers get compile-time payload ergonomics for those event types.
 ## API summary
 
 - `stripe(options)`: creates the Stripe Provider Definition.
-- `parseStripeSignatureHeader(header)`: parses Stripe signature header parts.
-- `computeStripeSignature(secret, timestamp, rawBody)`: computes the expected
-  Stripe signature.
-- `createStripeSignatureHeader(options)`: creates a Stripe-style signature
-  header, mainly useful for tests.
-- `createStripeReplayKey(timestamp, signature, rawBody)`: creates the replay key
-  used for seen-delivery tracking.
 
 The package also exports Stripe event, envelope, payload, and provider option
 types.

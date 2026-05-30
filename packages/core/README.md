@@ -112,13 +112,10 @@ They are not durable production coordination stores.
 ## API summary
 
 - `createWebhookEndpoint(options)`: creates a Webhook Endpoint.
-- `toWebhookDelivery(request)`: converts a Raw Delivery Request into a delivery
-  with raw bytes.
 - `defaultResponsePolicy(result)`: maps pipeline results to default HTTP
   responses.
 - `createMemoryIdempotencyStore()`: creates an in-memory Idempotency Store.
 - `createMemoryReplayStore()`: creates an in-memory Replay Store.
-- `getHeaderValues(headers, name)`: reads case-insensitive raw header values.
 
 Core also exports the TypeScript contracts used by providers, adapters, stores,
 response policies, and telemetry integrations.

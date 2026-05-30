@@ -1,4 +1,4 @@
-import { createGitHubSignatureHeader } from "@better-webhook/github";
+import { createHmac } from "node:crypto";
 
 import { githubConfig, githubWebhookUrl } from "../../src/providers/github/config.js";
 
@@ -115,6 +115,17 @@ async function sendSignedDelivery(
 		rawBody,
 		signature,
 	);
+}
+
+function createGitHubSignatureHeader(options: {
+	rawBody: Uint8Array | string;
+	secret: string;
+}): string {
+	const body =
+		typeof options.rawBody === "string"
+			? new TextEncoder().encode(options.rawBody)
+			: options.rawBody;
+	return `sha256=${createHmac("sha256", options.secret).update(body).digest("hex")}`;
 }
 
 async function postDelivery(

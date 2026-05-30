@@ -39,10 +39,8 @@ npm install @better-webhook/core @better-webhook/stripe @better-webhook/nextjs
 - `telemetry`: optional Delivery Observability hooks.
 - `catchAllHandlerScope`: `"all"` by default; `"unknown"` means the catch-all only handles unknown provider event types.
 
-## Adapter and provider authoring APIs
+## Adapter and provider authoring contracts
 
-- `toWebhookDelivery(request)`: converts a `RawDeliveryRequest` body into raw bytes.
-- `getHeaderValues(headers, name)`: reads raw header values case-insensitively while preserving multiple values.
 - `ProviderDefinition`: provider contract with `verify(delivery)` and `extractEvent(delivery)`.
 - `RawDeliveryRequest`: framework-neutral request shape with method, URL, raw headers, body, and optional abort signal.
 - `RawHeaderCapabilities`: adapter metadata describing raw body and duplicate-header preservation.

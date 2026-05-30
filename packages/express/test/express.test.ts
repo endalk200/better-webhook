@@ -1,5 +1,6 @@
+import { createHmac } from "node:crypto";
 import { createWebhookEndpoint } from "@better-webhook/core";
-import { createStripeSignatureHeader, stripe } from "@better-webhook/stripe";
+import { stripe } from "@better-webhook/stripe";
 import { describe, expect, it, vi } from "vitest";
 import {
 	createExpressMiddleware,
@@ -25,6 +26,23 @@ function expressRequest(signature = createStripeSignatureHeader({ secret, timest
 		rawHeaders: ["Stripe-Signature", signature, "Stripe-Signature", "v0=legacy"],
 		rawBody: Buffer.from(rawBody),
 	};
+}
+
+function createStripeSignatureHeader(options: {
+	secret: string;
+	timestamp: number;
+	rawBody: Uint8Array | string;
+}): string {
+	const rawBody =
+		typeof options.rawBody === "string"
+			? new TextEncoder().encode(options.rawBody)
+			: options.rawBody;
+	const timestampBytes = new TextEncoder().encode(`${options.timestamp}.`);
+	const payload = new Uint8Array(timestampBytes.length + rawBody.length);
+	payload.set(timestampBytes, 0);
+	payload.set(rawBody, timestampBytes.length);
+	const signature = createHmac("sha256", options.secret).update(payload).digest("hex");
+	return `t=${options.timestamp},v1=${signature}`;
 }
 
 describe("Express adapter", () => {

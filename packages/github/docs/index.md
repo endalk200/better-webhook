@@ -30,15 +30,6 @@ npm install @better-webhook/core @better-webhook/github @better-webhook/express
 
 The returned provider has `name: "github"` and reports replay key support. GitHub signatures do not include a signed timestamp.
 
-## Testing and low-level helpers
-
-- `computeGitHubSignature(secret, rawBody)`: computes the HMAC-SHA256 digest.
-- `createGitHubSignatureHeader(options)`: creates a `sha256=` signature header.
-- `parseGitHubSignatureHeader(header)`: parses and validates a `sha256=` signature header.
-- `createGitHubReplayKey(delivery)`: returns the `X-GitHub-Delivery` value or throws if missing.
-- `parseGitHubEnvelope(delivery)`: parses and validates the GitHub Event Envelope from raw delivery bytes and headers.
-- `readGitHubHeaders(headers)`: reads GitHub-specific raw headers.
-
 ## Types and contracts
 
 Important exported types include `GitHubWebhookEvent`, `KnownGitHubEvent`, `UnknownGitHubEvent`, `KnownGitHubEventType`, `GitHubEventPayloads`, `GitHubEventEnvelope`, `GitHubPayload`, `GitHubUser`, `GitHubRepository`, `GitHubInstallation`, `GitHubPullRequest`, `GitHubIssueComment`, `GitHubCheckRun`, and `GitHubProviderOptions`.
