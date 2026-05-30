@@ -76,7 +76,7 @@
     },
     "packages/core": {
       "name": "@better-webhook/core",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "devDependencies": {
         "@better-webhook/biome-config": "workspace:*",
         "@better-webhook/typescript-config": "workspace:*",
@@ -86,7 +86,7 @@
     },
     "packages/express": {
       "name": "@better-webhook/express",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "dependencies": {
         "@better-webhook/core": "workspace:*",
       },
@@ -101,9 +101,10 @@
     },
     "packages/github": {
       "name": "@better-webhook/github",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "dependencies": {
         "@better-webhook/core": "workspace:*",
+        "@octokit/openapi-webhooks-types": "^12.1.0",
       },
       "devDependencies": {
         "@better-webhook/biome-config": "workspace:*",
@@ -115,7 +116,7 @@
     },
     "packages/nextjs": {
       "name": "@better-webhook/nextjs",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "dependencies": {
         "@better-webhook/core": "workspace:*",
       },
@@ -129,7 +130,7 @@
     },
     "packages/otel": {
       "name": "@better-webhook/otel",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "dependencies": {
         "@better-webhook/core": "workspace:*",
       },
@@ -142,7 +143,7 @@
     },
     "packages/stripe": {
       "name": "@better-webhook/stripe",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "dependencies": {
         "@better-webhook/core": "workspace:*",
       },
@@ -394,6 +395,8 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@octokit/openapi-webhooks-types": ["@octokit/openapi-webhooks-types@12.1.0", "", {}, "sha512-WiuzhOsiOvb7W3Pvmhf8d2C6qaLHXrWiLBP4nJ/4kydu+wpagV5Fkz9RfQwV2afYzv3PB+3xYgp4mAdNGjDprA=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
 

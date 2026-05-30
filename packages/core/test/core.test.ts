@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import {
 	createMemoryIdempotencyStore,
 	createMemoryReplayStore,
@@ -11,6 +11,11 @@ type TestEvent =
 	| (WebhookEvent<"thing.created", { id: string }> & { known: true })
 	| (WebhookEvent<"thing.updated", { id: string }> & { known: true })
 	| (WebhookEvent<"thing.unknown", { id: string }> & { known: false });
+
+type TestEventWithUnknown =
+	| (WebhookEvent<"thing.created", { createdId: string }> & { known: true })
+	| (WebhookEvent<"thing.updated", { updatedId: string }> & { known: true })
+	| (WebhookEvent<string, Record<string, unknown>> & { known: false });
 
 function provider(
 	overrides: Partial<ProviderDefinition<TestEvent>> = {},
@@ -54,6 +59,25 @@ describe("createWebhookEndpoint", () => {
 				delivery: expect.objectContaining({ method: "POST" }),
 			}),
 		);
+	});
+
+	it("narrows literal handlers when an event union includes an unknown string event", () => {
+		const testProvider = provider() as unknown as ProviderDefinition<TestEventWithUnknown>;
+
+		createWebhookEndpoint<TestEventWithUnknown>({
+			provider: testProvider,
+			handlers: {
+				"thing.created": ({ event }) => {
+					expectTypeOf(event.payload).toEqualTypeOf<{ createdId: string }>();
+				},
+				"thing.updated": ({ event }) => {
+					expectTypeOf(event.payload).toEqualTypeOf<{ updatedId: string }>();
+				},
+				"*": ({ event }) => {
+					expectTypeOf(event).toEqualTypeOf<TestEventWithUnknown>();
+				},
+			},
+		});
 	});
 
 	it("ignores verified events without a handler", async () => {
