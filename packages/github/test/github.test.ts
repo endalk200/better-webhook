@@ -4,13 +4,12 @@ import {
 	createWebhookEndpoint,
 } from "@better-webhook/core";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { createGitHubSignatureHeader, parseGitHubSignatureHeader } from "../src/github.js";
 import {
-	createGitHubSignatureHeader,
 	type GitHubWebhookEvent,
 	github,
 	type KnownGitHubEventType,
 	knownGitHubEventTypes,
-	parseGitHubSignatureHeader,
 	type UnknownGitHubEvent,
 } from "../src/index.js";
 

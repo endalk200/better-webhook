@@ -1,4 +1,4 @@
-import { createStripeSignatureHeader } from "@better-webhook/stripe";
+import { createHmac } from "node:crypto";
 
 import { stripeConfig, stripeWebhookUrl } from "../../src/providers/stripe/config.js";
 
@@ -127,6 +127,23 @@ async function sendSignedDelivery(
 		timestamp,
 	});
 	await postDelivery(label, rawBody, signature);
+}
+
+function createStripeSignatureHeader(options: {
+	rawBody: Uint8Array | string;
+	secret: string;
+	timestamp: number;
+}): string {
+	const rawBody =
+		typeof options.rawBody === "string"
+			? new TextEncoder().encode(options.rawBody)
+			: options.rawBody;
+	const timestampBytes = new TextEncoder().encode(`${options.timestamp}.`);
+	const payload = new Uint8Array(timestampBytes.length + rawBody.length);
+	payload.set(timestampBytes, 0);
+	payload.set(rawBody, timestampBytes.length);
+	const signature = createHmac("sha256", options.secret).update(payload).digest("hex");
+	return `t=${options.timestamp},v1=${signature}`;
 }
 
 async function postDelivery(label: string, rawBody: string, signature: string): Promise<void> {

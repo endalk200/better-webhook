@@ -28,13 +28,6 @@ npm install @better-webhook/core @better-webhook/stripe @better-webhook/nextjs
 
 The returned provider has `name: "stripe"` and reports support for signed timestamps and replay keys.
 
-## Testing helpers
-
-- `parseStripeSignatureHeader(header)`: parses `Stripe-Signature` into `{ timestamp, signatures }`.
-- `computeStripeSignature(secret, timestamp, rawBody)`: computes the HMAC-SHA256 `v1` signature for `{timestamp}.{rawBodyBytes}`.
-- `createStripeSignatureHeader(options)`: creates a Stripe-style signature header; useful in tests.
-- `createStripeReplayKey(timestamp, signature, rawBody)`: creates the replay key shape used by this provider.
-
 ## Types and contracts
 
 Important exported types include `StripeWebhookEvent`, `KnownStripeEvent`, `UnknownStripeEvent`, `KnownStripeEventType`, `StripeEventPayloads`, `StripeEventEnvelope`, `StripeObject`, `StripeCheckoutSession`, `StripeInvoice`, `StripeSubscription`, `StripePaymentIntent`, and `StripeProviderOptions`.
