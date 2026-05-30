@@ -343,9 +343,12 @@ function readNestedNumber(
 }
 
 function secureEqualHex(left: string, right: string): boolean {
+	if (left.length !== right.length || left.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(left)) {
+		return false;
+	}
 	const leftBuffer = Buffer.from(left, "hex");
 	const rightBuffer = Buffer.from(right, "hex");
-	return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+	return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -86,6 +86,19 @@ describe("stripe provider", () => {
 		).toMatchObject({
 			ok: false,
 		});
+		expect(
+			await provider.verify({
+				...validDelivery,
+				headers: [
+					{
+						name: "stripe-signature",
+						value: `t=${timestamp},v1=${"g".repeat(64)}`,
+					},
+				],
+			}),
+		).toMatchObject({
+			ok: false,
+		});
 
 		const wrongSecretHeader = createStripeSignatureHeader({
 			secret: "wrong",

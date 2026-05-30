@@ -124,6 +124,7 @@ describe("github provider", () => {
 			reason: "malformed_github_signature_header",
 		});
 		expect(parseGitHubSignatureHeader("sha256=abc")).toBeUndefined();
+		expect(parseGitHubSignatureHeader(`sha256=${"g".repeat(64)}`)).toBeUndefined();
 		expect(
 			await provider.verify({
 				...delivery,
