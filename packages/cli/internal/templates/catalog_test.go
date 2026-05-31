@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/endalk200/better-webhook/packages/cli/internal/domain"
 )
 
 func TestInstallBuiltinCatalogWritesVisibleJSONCTemplates(t *testing.T) {
@@ -69,6 +71,37 @@ func TestRenderReplacesPathAndQueryPlaceholders(t *testing.T) {
 	}
 	if rendered.Query != "created=1700000000" {
 		t.Fatalf("expected rendered query placeholder, got %q", rendered.Query)
+	}
+	pathID := strings.TrimPrefix(rendered.Path, "/deliveries/")
+	if strings.Contains(string(rendered.Body), pathID) {
+		t.Fatalf("expected uuid placeholders to be generated per occurrence, got path=%q body=%s", rendered.Path, rendered.Body)
+	}
+}
+
+func TestLoadTemplateFileStripsInlineAndBlockJSONComments(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "template.jsonc")
+	data := []byte(`{
+		"schemaVersion": "1", /* inline block */
+		"id": "custom/commented",
+		"name": "Commented",
+		"version": "1.0.0",
+		"source": "user",
+		"verificationCompatible": false,
+		/* multi
+		   line */
+		"method": "POST", // line comment
+		"headers": [],
+		"body": "{\"url\":\"http://127.0.0.1/callback\"}"
+	}`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	template, err := LoadTemplateFile(path)
+	if err != nil {
+		t.Fatalf("expected commented JSONC to load: %v", err)
+	}
+	if template.ID != "custom/commented" {
+		t.Fatalf("unexpected template: %#v", template)
 	}
 }
 
@@ -147,6 +180,68 @@ func TestInstallFromManifestRequiresAndVerifiesSignature(t *testing.T) {
 	}
 	if len(installed.Templates) != 1 || !installed.Templates[0].Verified {
 		t.Fatalf("expected verified installed template, got %#v", installed.Templates)
+	}
+}
+
+func TestFindPathLocatesNestedOfficialTemplates(t *testing.T) {
+	sourceDir := t.TempDir()
+	template := Template{
+		SchemaVersion:          "1",
+		ID:                     "custom/nested/event",
+		Name:                   "Nested Event",
+		Version:                "1.0.0",
+		Source:                 "official",
+		VerificationCompatible: false,
+		Method:                 "POST",
+		Headers:                []domain.Header{},
+		Body:                   `{"ok":true}`,
+	}
+	templateBytes, err := json.Marshal(template)
+	if err != nil {
+		t.Fatal(err)
+	}
+	templatePath := filepath.Join(sourceDir, "nested", "custom.jsonc")
+	if err := os.MkdirAll(filepath.Dir(templatePath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(templatePath, templateBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(templateBytes)
+	manifest := Manifest{
+		SchemaVersion:  "1",
+		CatalogVersion: "2026.01.03",
+		Templates: []ManifestEntry{
+			{ID: template.ID, Path: "nested/custom.jsonc", SHA256: hex.EncodeToString(sum[:])},
+		},
+	}
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest.Signature = hex.EncodeToString(ed25519.Sign(privateKey, canonicalManifestPayload(manifest)))
+	manifestBytes, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(sourceDir, "manifest.json")
+	if err := os.WriteFile(manifestPath, manifestBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	manager, err := NewManager(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.InstallFromManifest(manifestPath, hex.EncodeToString(publicKey)); err != nil {
+		t.Fatalf("expected install to succeed: %v", err)
+	}
+	loaded, path, err := manager.Get(template.ID)
+	if err != nil {
+		t.Fatalf("expected nested template lookup to succeed: %v", err)
+	}
+	if loaded.ID != template.ID || path == "" {
+		t.Fatalf("expected nested path, got template=%#v path=%q", loaded, path)
 	}
 }
 

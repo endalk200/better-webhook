@@ -61,7 +61,7 @@ func NewRootCommand(build BuildInfo) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&options.projectPath, "project", "", "project directory or config path for project-scoped commands")
 	cmd.PersistentFlags().StringVar(&options.templateHome, "template-home", "", "override template storage directory")
 
-	cmd.AddCommand(newVersionCommand(build))
+	cmd.AddCommand(newVersionCommand(build, options))
 	cmd.AddCommand(newInitCommand(options))
 	cmd.AddCommand(newEndpointCommand(options))
 	cmd.AddCommand(newTemplatesCommand(options))
@@ -72,7 +72,7 @@ func NewRootCommand(build BuildInfo) *cobra.Command {
 	return cmd
 }
 
-func newVersionCommand(build BuildInfo) *cobra.Command {
+func newVersionCommand(build BuildInfo, options *appOptions) *cobra.Command {
 	var verbose bool
 	var localFormat string
 
@@ -81,6 +81,9 @@ func newVersionCommand(build BuildInfo) *cobra.Command {
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			format := localFormat
+			if !cmd.Flags().Changed("format") {
+				format = options.format
+			}
 			if format == "" {
 				format = "human"
 			}
@@ -220,12 +223,16 @@ func newEndpointCreateCommand(options *appOptions, update bool) *cobra.Command {
 			}
 			input.Mode = domain.EndpointMode(mode)
 			input.Now = time.Now()
-			_, exists := project.EndpointByID(resolved.Config, input.ID)
+			existing, exists := project.EndpointByID(resolved.Config, input.ID)
 			if update && !exists {
 				return fmt.Errorf("endpoint %q did not exist; use bw endpoint create", input.ID)
 			}
 			if !update && exists {
 				return fmt.Errorf("endpoint %q already exists; use bw endpoint update", input.ID)
+			}
+			if update {
+				applyEndpointUpdateDefaults(cmd, &input, &mode, existing)
+				input.Mode = domain.EndpointMode(mode)
 			}
 			next, endpoint, existed, err := store.UpsertEndpoint(resolved, input)
 			if err != nil {
@@ -242,7 +249,7 @@ func newEndpointCreateCommand(options *appOptions, update bool) *cobra.Command {
 			}, fmt.Sprintf("%s endpoint %s at route %s -> %s\n", action, endpoint.ID, endpoint.Route, endpoint.TargetURL))
 		},
 	}
-	addEndpointFlags(cmd, &input, &mode)
+	addEndpointFlags(cmd, &input, &mode, update)
 	return cmd
 }
 
@@ -683,6 +690,11 @@ func newDevCommand(options *appOptions) *cobra.Command {
 				Project:    resolved,
 				Captures:   captureStore,
 				HTTPClient: &http.Client{Timeout: 30 * time.Second},
+				OnListen: func(addr string) {
+					if options.format != "json" {
+						_, _ = fmt.Fprintf(out, "Gateway listening on %s\n", addr)
+					}
+				},
 			}
 			return server.ListenAndServe(cmd.Context())
 		},
@@ -690,7 +702,7 @@ func newDevCommand(options *appOptions) *cobra.Command {
 	return cmd
 }
 
-func addEndpointFlags(cmd *cobra.Command, input *project.EndpointInput, mode *string) {
+func addEndpointFlags(cmd *cobra.Command, input *project.EndpointInput, mode *string, update bool) {
 	cmd.Flags().StringVar(&input.ID, "id", "", "endpoint id")
 	cmd.Flags().StringVar(mode, "mode", string(domain.EndpointModeGeneric), "endpoint mode: generic or provider")
 	cmd.Flags().StringVar(&input.Provider, "provider", "", "provider name for provider-aware endpoints")
@@ -698,8 +710,28 @@ func addEndpointFlags(cmd *cobra.Command, input *project.EndpointInput, mode *st
 	cmd.Flags().StringVar(&input.Route, "route", "", "explicit inbound gateway route")
 	cmd.Flags().StringVar(&input.SecretEnv, "secret-env", "", "environment variable containing the Provider Secret")
 	_ = cmd.MarkFlagRequired("id")
-	_ = cmd.MarkFlagRequired("target")
-	_ = cmd.MarkFlagRequired("route")
+	if !update {
+		_ = cmd.MarkFlagRequired("target")
+		_ = cmd.MarkFlagRequired("route")
+	}
+}
+
+func applyEndpointUpdateDefaults(cmd *cobra.Command, input *project.EndpointInput, mode *string, existing domain.EndpointProfile) {
+	if !cmd.Flags().Changed("mode") {
+		*mode = string(existing.Mode)
+	}
+	if domain.EndpointMode(*mode) == domain.EndpointModeProvider && !cmd.Flags().Changed("provider") {
+		input.Provider = existing.Provider
+	}
+	if domain.EndpointMode(*mode) == domain.EndpointModeProvider && !cmd.Flags().Changed("secret-env") && existing.Secret != nil {
+		input.SecretEnv = existing.Secret.Env
+	}
+	if !cmd.Flags().Changed("target") {
+		input.TargetURL = existing.TargetURL
+	}
+	if !cmd.Flags().Changed("route") {
+		input.Route = existing.Route
+	}
 }
 
 func resolveProject(options *appOptions) (project.ResolvedProject, project.Store, error) {

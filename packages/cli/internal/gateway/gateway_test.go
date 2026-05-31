@@ -15,11 +15,13 @@ import (
 )
 
 func TestGatewayCapturesAndTransparentlyForwardsKnownRoute(t *testing.T) {
-	var receivedMethod, receivedQuery, receivedBody, receivedHeader string
+	var receivedMethod, receivedQuery, receivedBody, receivedHeader, receivedConnectionScopedHeader, receivedConnection string
 	upstream := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		receivedMethod = request.Method
 		receivedQuery = request.URL.RawQuery
 		receivedHeader = request.Header.Get("X-Test")
+		receivedConnectionScopedHeader = request.Header.Get("X-Connection-Scoped")
+		receivedConnection = request.Header.Get("Connection")
 		body, _ := io.ReadAll(request.Body)
 		receivedBody = string(body)
 		writer.WriteHeader(http.StatusAccepted)
@@ -41,7 +43,7 @@ func TestGatewayCapturesAndTransparentlyForwardsKnownRoute(t *testing.T) {
 					ID:        "stripe-main",
 					Mode:      domain.EndpointModeProvider,
 					Provider:  "stripe",
-					TargetURL: upstream.URL + "/target",
+					TargetURL: upstream.URL + "/target?token=keep",
 					Route:     "/webhooks/stripe",
 				},
 			},
@@ -58,6 +60,8 @@ func TestGatewayCapturesAndTransparentlyForwardsKnownRoute(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodPost, "/webhooks/stripe?debug=1", stringsReader("raw-body"))
 	request.Header.Add("X-Test", "preserved")
+	request.Header.Add("Connection", "X-Connection-Scoped")
+	request.Header.Add("X-Connection-Scoped", "drop")
 	recorder := httptest.NewRecorder()
 	server.Handler().ServeHTTP(recorder, request)
 
@@ -67,8 +71,11 @@ func TestGatewayCapturesAndTransparentlyForwardsKnownRoute(t *testing.T) {
 	if recorder.Body.String() != "accepted" {
 		t.Fatalf("expected upstream body to be mirrored, got %q", recorder.Body.String())
 	}
-	if receivedMethod != http.MethodPost || receivedBody != "raw-body" || receivedHeader != "preserved" || receivedQuery != "debug=1" {
+	if receivedMethod != http.MethodPost || receivedBody != "raw-body" || receivedHeader != "preserved" || receivedQuery != "debug=1&token=keep" {
 		t.Fatalf("unexpected forwarded request method=%s query=%s header=%s body=%s", receivedMethod, receivedQuery, receivedHeader, receivedBody)
+	}
+	if receivedConnection != "" || receivedConnectionScopedHeader != "" {
+		t.Fatalf("expected hop-by-hop headers to be filtered, got connection=%q scoped=%q", receivedConnection, receivedConnectionScopedHeader)
 	}
 
 	captures, err := store.List("stripe-main")

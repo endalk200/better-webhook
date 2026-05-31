@@ -19,7 +19,7 @@ func TestStripeSigningUsesTimestampDotRawBody(t *testing.T) {
 			ID:       "stripe-main",
 			Mode:     domain.EndpointModeProvider,
 			Provider: "stripe",
-			Secret:   domain.ProviderSecret{Env: "STRIPE_SECRET"},
+			Secret:   &domain.ProviderSecret{Env: "STRIPE_SECRET"},
 		},
 		Body: body,
 		Headers: []domain.Header{
@@ -50,9 +50,13 @@ func TestGitHubSigningUsesRawBody(t *testing.T) {
 			ID:       "github-main",
 			Mode:     domain.EndpointModeProvider,
 			Provider: "github",
-			Secret:   domain.ProviderSecret{Env: "GITHUB_SECRET"},
+			Secret:   &domain.ProviderSecret{Env: "GITHUB_SECRET"},
 		},
 		Body: body,
+		Headers: []domain.Header{
+			{Name: "X-Hub-Signature", Value: "sha1=stale"},
+			{Name: "X-Hub-Signature-256", Value: "sha256=stale"},
+		},
 	})
 	if err != nil {
 		t.Fatalf("expected signing to succeed: %v", err)
@@ -63,6 +67,9 @@ func TestGitHubSigningUsesRawBody(t *testing.T) {
 	}
 	if headerValue(headers, "X-GitHub-Delivery") == "" {
 		t.Fatalf("expected GitHub delivery id to be generated: %#v", headers)
+	}
+	if headerValue(headers, "X-Hub-Signature") != "" {
+		t.Fatalf("expected legacy GitHub signature header to be removed: %#v", headers)
 	}
 }
 

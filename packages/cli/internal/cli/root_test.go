@@ -113,6 +113,21 @@ func TestVersionCommandJSONFormat(t *testing.T) {
 	}
 }
 
+func TestVersionCommandHonorsPersistentJSONFormat(t *testing.T) {
+	output, err := execute("--format", "json", "version")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var parsed map[string]string
+	if err := json.Unmarshal([]byte(output), &parsed); err != nil {
+		t.Fatalf("expected JSON output, got %q: %v", output, err)
+	}
+	if parsed["command"] != "version" || parsed["version"] != "9.8.7-test.1" {
+		t.Fatalf("unexpected version JSON: %#v", parsed)
+	}
+}
+
 func TestVersionCommandRejectsVerboseJSONFormat(t *testing.T) {
 	_, err := execute("version", "--verbose", "--format", "json")
 	if err == nil {
@@ -294,6 +309,58 @@ func TestEndpointCreateAndUpdateHaveDistinctSemantics(t *testing.T) {
 		"--route", "/webhooks/missing",
 	); err == nil || !strings.Contains(err.Error(), "did not exist") {
 		t.Fatalf("expected missing update to fail, got %v", err)
+	}
+}
+
+func TestEndpointUpdatePreservesProviderFieldsByDefault(t *testing.T) {
+	projectDir := t.TempDir()
+	if _, err := execute("init", "--dir", projectDir, "--name", "demo"); err != nil {
+		t.Fatalf("expected init to succeed: %v", err)
+	}
+
+	if _, err := execute(
+		"--project", projectDir,
+		"endpoint", "create",
+		"--id", "stripe-main",
+		"--mode", "provider",
+		"--provider", "stripe",
+		"--secret-env", "STRIPE_WEBHOOK_SECRET",
+		"--target", "http://127.0.0.1:3000/webhook",
+		"--route", "/webhooks/stripe",
+	); err != nil {
+		t.Fatalf("expected endpoint create to succeed: %v", err)
+	}
+
+	if _, err := execute(
+		"--project", projectDir,
+		"endpoint", "update",
+		"--id", "stripe-main",
+		"--target", "http://127.0.0.1:3001/webhook",
+		"--route", "/webhooks/stripe-updated",
+	); err != nil {
+		t.Fatalf("expected endpoint update to succeed: %v", err)
+	}
+
+	output, err := execute("--format", "json", "--project", projectDir, "endpoint", "show", "stripe-main")
+	if err != nil {
+		t.Fatalf("expected endpoint show to succeed: %v", err)
+	}
+	var envelope struct {
+		Data struct {
+			Endpoint struct {
+				Mode     string `json:"mode"`
+				Provider string `json:"provider"`
+				Secret   struct {
+					Env string `json:"env"`
+				} `json:"secret"`
+			} `json:"endpoint"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
+		t.Fatalf("expected endpoint JSON, got %q: %v", output, err)
+	}
+	if envelope.Data.Endpoint.Mode != "provider" || envelope.Data.Endpoint.Provider != "stripe" || envelope.Data.Endpoint.Secret.Env != "STRIPE_WEBHOOK_SECRET" {
+		t.Fatalf("expected provider fields to be preserved, got %#v", envelope.Data.Endpoint)
 	}
 }
 

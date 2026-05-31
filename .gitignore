@@ -54,3 +54,6 @@ trivy-sbom.cdx.json
 .tmp
 /.motel-data
 /research.md
+
+# Local better-webhook CLI state
+.better-webhook/

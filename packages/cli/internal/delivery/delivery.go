@@ -34,7 +34,7 @@ func (c Client) Send(ctx context.Context, request Request) domain.DeliveryResult
 	if err != nil {
 		return domain.DeliveryResult{TargetURL: request.URL, DurationMillis: elapsed(start), Error: err.Error()}
 	}
-	applyHeaders(httpRequest.Header, request.Headers)
+	ApplyRequestHeaders(httpRequest.Header, request.Headers)
 	response, err := client.Do(httpRequest)
 	if err != nil {
 		return domain.DeliveryResult{TargetURL: request.URL, DurationMillis: elapsed(start), Error: err.Error()}
@@ -43,14 +43,18 @@ func (c Client) Send(ctx context.Context, request Request) domain.DeliveryResult
 		_ = response.Body.Close()
 	}()
 
-	body, _ := io.ReadAll(io.LimitReader(response.Body, 64*1024))
-	return domain.DeliveryResult{
+	body, readErr := io.ReadAll(io.LimitReader(response.Body, 64*1024))
+	result := domain.DeliveryResult{
 		TargetURL:      request.URL,
 		StatusCode:     response.StatusCode,
 		DurationMillis: elapsed(start),
 		ResponseBody:   string(body),
 		Headers:        responseHeaders(response.Header),
 	}
+	if readErr != nil {
+		result.Error = fmt.Errorf("reading upstream response body: %w", readErr).Error()
+	}
+	return result
 }
 
 func URLWithRequestTarget(targetURL, path, rawQuery string) (string, error) {
@@ -68,7 +72,18 @@ func URLWithRequestTarget(targetURL, path, rawQuery string) (string, error) {
 		}
 	}
 	if rawQuery != "" {
-		parsed.RawQuery = rawQuery
+		query, err := url.ParseQuery(parsed.RawQuery)
+		if err != nil {
+			return "", err
+		}
+		inbound, err := url.ParseQuery(rawQuery)
+		if err != nil {
+			return "", err
+		}
+		for key, values := range inbound {
+			query[key] = append(query[key], values...)
+		}
+		parsed.RawQuery = query.Encode()
 	}
 	return parsed.String(), nil
 }
@@ -84,9 +99,10 @@ func ForwardURL(targetURL, inboundPath, route, rawQuery string) (string, error) 
 	return URLWithRequestTarget(targetURL, relative, rawQuery)
 }
 
-func applyHeaders(header http.Header, values []domain.Header) {
+func ApplyRequestHeaders(header http.Header, values []domain.Header) {
+	skip := requestHeaderSkipSet(values)
 	for _, item := range values {
-		if shouldSkipRequestHeader(item.Name) {
+		if shouldSkipRequestHeader(skip, item.Name) {
 			continue
 		}
 		header.Add(item.Name, item.Value)
@@ -127,7 +143,37 @@ func CopyResponse(writer http.ResponseWriter, result *http.Response) error {
 	return nil
 }
 
-func shouldSkipRequestHeader(name string) bool {
+func requestHeaderSkipSet(values []domain.Header) map[string]struct{} {
+	skip := map[string]struct{}{
+		"connection":          {},
+		"content-length":      {},
+		"host":                {},
+		"keep-alive":          {},
+		"proxy-authenticate":  {},
+		"proxy-authorization": {},
+		"te":                  {},
+		"trailer":             {},
+		"transfer-encoding":   {},
+		"upgrade":             {},
+	}
+	for _, item := range values {
+		if !strings.EqualFold(item.Name, "Connection") {
+			continue
+		}
+		for _, token := range strings.Split(item.Value, ",") {
+			token = strings.ToLower(strings.TrimSpace(token))
+			if token != "" {
+				skip[token] = struct{}{}
+			}
+		}
+	}
+	return skip
+}
+
+func shouldSkipRequestHeader(skip map[string]struct{}, name string) bool {
+	if _, ok := skip[strings.ToLower(name)]; ok {
+		return true
+	}
 	switch strings.ToLower(name) {
 	case "connection", "content-length", "host", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade":
 		return true

@@ -42,7 +42,7 @@ type EndpointProfile struct {
 	Provider  string           `json:"provider,omitempty"`
 	TargetURL string           `json:"targetUrl"`
 	Route     string           `json:"route"`
-	Secret    ProviderSecret   `json:"secret,omitempty"`
+	Secret    *ProviderSecret  `json:"secret,omitempty"`
 	CreatedAt string           `json:"createdAt"`
 	UpdatedAt string           `json:"updatedAt"`
 	Metadata  map[string]any   `json:"metadata,omitempty"`

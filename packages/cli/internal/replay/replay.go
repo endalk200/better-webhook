@@ -47,6 +47,9 @@ func (e Engine) Replay(ctx context.Context, endpoint domain.EndpointProfile, cap
 		if endpoint.Mode != domain.EndpointModeProvider {
 			return Result{}, fmt.Errorf("local-verified replay requires a provider-aware endpoint")
 		}
+		if !captureAllowsReplayMode(captured, domain.ReplayModeLocalVerified) {
+			return Result{}, fmt.Errorf("capture %q does not allow local-verified replay; use exact mode", captured.ID)
+		}
 		signed, err := e.Providers.Sign(provider.SigningContext{
 			Endpoint: endpoint,
 			Body:     body,
@@ -86,8 +89,22 @@ func (e Engine) Replay(ctx context.Context, endpoint domain.EndpointProfile, cap
 func defaultMode(registry provider.Registry, endpoint domain.EndpointProfile) domain.ReplayMode {
 	if endpoint.Mode == domain.EndpointModeProvider {
 		if capabilities, ok := registry.Capabilities(endpoint.Provider); ok && capabilities.LocalVerifiedReplay {
-			return domain.ReplayModeLocalVerified
+			if _, err := provider.SecretValue(endpoint); err == nil {
+				return domain.ReplayModeLocalVerified
+			}
 		}
 	}
 	return domain.ReplayModeExact
+}
+
+func captureAllowsReplayMode(captured domain.Capture, mode domain.ReplayMode) bool {
+	if len(captured.Analysis.Capabilities) == 0 {
+		return true
+	}
+	for _, capability := range captured.Analysis.Capabilities {
+		if capability == string(mode) {
+			return true
+		}
+	}
+	return false
 }

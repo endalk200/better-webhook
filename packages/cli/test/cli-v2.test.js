@@ -14,7 +14,6 @@ const binary = resolve(packageRoot, process.platform === "win32" ? "bin/bw.exe" 
 test("project, template run, gateway capture, and replay work through the built binary", async (t) => {
 	const projectDir = await mkdtemp(resolve(tmpdir(), "bw-project-"));
 	const templateHome = await mkdtemp(resolve(tmpdir(), "bw-templates-"));
-	const gatewayPort = await freePort();
 	const deliveries = [];
 	const target = http.createServer((request, response) => {
 		let body = "";
@@ -48,7 +47,7 @@ test("project, template run, gateway capture, and replay work through the built 
 		"--name",
 		"node-smoke",
 		"--port",
-		String(gatewayPort),
+		"0",
 	]);
 	assert.equal(init.command, "init");
 
@@ -87,9 +86,6 @@ test("project, template run, gateway capture, and replay work through the built 
 	const gateway = spawn(binary, ["--project", projectDir, "dev"], {
 		stdio: ["ignore", "pipe", "pipe"],
 	});
-	t.after(() => {
-		gateway.kill();
-	});
 	let stdout = "";
 	let stderr = "";
 	gateway.stdout.on("data", (chunk) => {
@@ -98,9 +94,10 @@ test("project, template run, gateway capture, and replay work through the built 
 	gateway.stderr.on("data", (chunk) => {
 		stderr += chunk;
 	});
+	const gatewayURL = await waitForGatewayURL(gateway, () => ({ stdout, stderr }));
 
 	try {
-		const live = await postWithRetry(`http://127.0.0.1:${gatewayPort}/incoming?real=1`, {
+		const live = await postWithRetry(`${gatewayURL}/incoming?real=1`, {
 			body: "raw-capture",
 			headers: { "x-manual": "yes" },
 			method: "POST",
@@ -131,11 +128,7 @@ test("project, template run, gateway capture, and replay work through the built 
 		assert.equal(deliveries[1].manual, "yes");
 		assert.equal(deliveries[2].body, "raw-capture");
 	} finally {
-		gateway.kill();
-	}
-
-	if (gateway.exitCode && gateway.exitCode !== 0) {
-		assert.fail(`gateway failed with stdout=${stdout} stderr=${stderr}`);
+		await terminate(gateway);
 	}
 });
 
@@ -206,18 +199,6 @@ function listen(server) {
 	});
 }
 
-function close(server) {
-	return new Promise((resolvePromise, rejectPromise) => {
-		server.close((error) => {
-			if (error) {
-				rejectPromise(error);
-				return;
-			}
-			resolvePromise();
-		});
-	});
-}
-
 async function postWithRetry(url, options) {
 	let lastError;
 	for (let attempt = 0; attempt < 30; attempt++) {
@@ -231,10 +212,44 @@ async function postWithRetry(url, options) {
 	throw lastError;
 }
 
-async function freePort() {
-	const server = http.createServer();
-	await listen(server);
-	const { port } = server.address();
-	await close(server);
-	return port;
+function waitForGatewayURL(child, captureOutput) {
+	return new Promise((resolvePromise, rejectPromise) => {
+		let listenOutput = "";
+		const onData = (chunk) => {
+			listenOutput += chunk;
+			const match = listenOutput.match(/Gateway listening on ([^\s]+)/);
+			if (!match) {
+				return;
+			}
+			child.stdout.off("data", onData);
+			resolvePromise(`http://${match[1]}`);
+		};
+		child.stdout.on("data", onData);
+		child.once("exit", (code, signal) => {
+			child.stdout.off("data", onData);
+			const output = captureOutput();
+			rejectPromise(
+				new Error(
+					`gateway exited before listening: code=${code} signal=${signal}\nstdout=${output.stdout}\nstderr=${output.stderr}`,
+				),
+			);
+		});
+	});
+}
+
+function terminate(child) {
+	return new Promise((resolvePromise, rejectPromise) => {
+		if (child.exitCode !== null) {
+			resolvePromise();
+			return;
+		}
+		child.once("close", (code, signal) => {
+			if (code === 0 || signal === "SIGTERM") {
+				resolvePromise();
+				return;
+			}
+			rejectPromise(new Error(`gateway exited unexpectedly: code=${code} signal=${signal}`));
+		});
+		child.kill();
+	});
 }

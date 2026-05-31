@@ -104,7 +104,7 @@ func (r Registry) Sign(ctx SigningContext) ([]domain.Header, error) {
 }
 
 func SecretValue(endpoint domain.EndpointProfile) (string, error) {
-	if endpoint.Secret.Env == "" {
+	if endpoint.Secret == nil || endpoint.Secret.Env == "" {
 		return "", fmt.Errorf("endpoint %q has no configured secret env reference", endpoint.ID)
 	}
 	value := os.Getenv(endpoint.Secret.Env)
@@ -171,7 +171,7 @@ func removeProviderSignatureHeaders(providerName string, headers []domain.Header
 	case "stripe":
 		signatureHeaders = []string{"stripe-signature"}
 	case "github":
-		signatureHeaders = []string{"x-hub-signature-256"}
+		signatureHeaders = []string{"x-hub-signature", "x-hub-signature-256"}
 	default:
 		return headers
 	}

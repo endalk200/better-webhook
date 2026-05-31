@@ -23,25 +23,32 @@ func Render(template Template, now time.Time) RenderedRequest {
 		now = time.Now()
 	}
 	replacements := map[string]string{
-		"{{uuid}}":           randomID(),
 		"{{timestamp_unix}}": strconv.FormatInt(now.UTC().Unix(), 10),
 		"{{timestamp_iso}}":  now.UTC().Format(time.RFC3339),
 	}
-	body := replaceAll(string(template.Body), replacements)
+	body := replaceRuntimePlaceholders(string(template.Body), replacements)
 	headers := make([]domain.Header, 0, len(template.Headers))
 	for _, header := range template.Headers {
 		headers = append(headers, domain.Header{
 			Name:  header.Name,
-			Value: replaceAll(header.Value, replacements),
+			Value: replaceRuntimePlaceholders(header.Value, replacements),
 		})
 	}
 	return RenderedRequest{
 		Method:  template.Method,
-		Path:    replaceAll(template.Path, replacements),
-		Query:   replaceAll(template.Query, replacements),
+		Path:    replaceRuntimePlaceholders(template.Path, replacements),
+		Query:   replaceRuntimePlaceholders(template.Query, replacements),
 		Headers: headers,
 		Body:    []byte(body),
 	}
+}
+
+func replaceRuntimePlaceholders(value string, replacements map[string]string) string {
+	value = replaceAll(value, replacements)
+	for strings.Contains(value, "{{uuid}}") {
+		value = strings.Replace(value, "{{uuid}}", randomID(), 1)
+	}
+	return value
 }
 
 func replaceAll(value string, replacements map[string]string) string {

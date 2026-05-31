@@ -23,6 +23,7 @@ type Server struct {
 	Captures   capture.Store
 	HTTPClient *http.Client
 	Now        func() time.Time
+	OnListen   func(string)
 }
 
 func (s Server) Handler() http.Handler {
@@ -31,14 +32,21 @@ func (s Server) Handler() http.Handler {
 
 func (s Server) ListenAndServe(ctx context.Context) error {
 	addr := fmt.Sprintf("%s:%d", s.Project.Config.Gateway.ListenAddress, s.Project.Config.Gateway.Port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	if s.OnListen != nil {
+		s.OnListen(listener.Addr().String())
+	}
 	server := &http.Server{
-		Addr:              addr,
+		Addr:              listener.Addr().String(),
 		Handler:           s.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- server.ListenAndServe()
+		errCh <- server.Serve(listener)
 	}()
 
 	select {
@@ -120,9 +128,7 @@ func (s Server) forward(ctx context.Context, method, targetURL string, headers [
 	if err != nil {
 		return nil, err
 	}
-	for _, header := range headers {
-		httpRequest.Header.Add(header.Name, header.Value)
-	}
+	delivery.ApplyRequestHeaders(httpRequest.Header, headers)
 	return client.Do(httpRequest)
 }
 

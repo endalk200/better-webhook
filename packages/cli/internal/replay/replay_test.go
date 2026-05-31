@@ -32,7 +32,7 @@ func TestLocalVerifiedReplayRegeneratesProviderSignature(t *testing.T) {
 		Mode:      domain.EndpointModeProvider,
 		Provider:  "stripe",
 		TargetURL: upstream.URL,
-		Secret:    domain.ProviderSecret{Env: "STRIPE_SECRET"},
+		Secret:    &domain.ProviderSecret{Env: "STRIPE_SECRET"},
 	}
 	item := capture.BuildCapture(
 		"cap_1",
@@ -65,6 +65,43 @@ func TestLocalVerifiedReplayRegeneratesProviderSignature(t *testing.T) {
 	expected := stripeSignature("whsec_test", timestamp, body)
 	if parts[1] != expected {
 		t.Fatalf("expected signature %q, got %q", expected, parts[1])
+	}
+}
+
+func TestLocalVerifiedReplayRejectsExactOnlyCapture(t *testing.T) {
+	t.Setenv("STRIPE_SECRET", "whsec_test")
+	item := capture.BuildCapture(
+		"cap_1",
+		"stripe-main",
+		"stripe",
+		capture.CapturedRequest(http.MethodPost, "/webhooks/stripe", "", []domain.Header{{Name: "Stripe-Signature", Value: "captured"}}, []byte(`{}`)),
+		domain.CaptureAnalysis{Capabilities: []string{string(domain.ReplayModeExact)}},
+		nil,
+		time.Unix(1, 0),
+	)
+
+	_, err := Engine{Providers: provider.NewRegistry()}.Replay(t.Context(), domain.EndpointProfile{
+		ID:        "stripe-main",
+		Mode:      domain.EndpointModeProvider,
+		Provider:  "stripe",
+		TargetURL: "http://127.0.0.1:1",
+		Secret:    &domain.ProviderSecret{Env: "STRIPE_SECRET"},
+	}, item, domain.ReplayModeLocalVerified)
+	if err == nil || !strings.Contains(err.Error(), "does not allow local-verified replay") {
+		t.Fatalf("expected exact-only replay error, got %v", err)
+	}
+}
+
+func TestDefaultReplayModeFallsBackToExactWhenSecretIsMissing(t *testing.T) {
+	mode := defaultMode(provider.NewRegistry(), domain.EndpointProfile{
+		ID:        "stripe-main",
+		Mode:      domain.EndpointModeProvider,
+		Provider:  "stripe",
+		TargetURL: "http://127.0.0.1:1",
+		Secret:    &domain.ProviderSecret{Env: "MISSING_SECRET"},
+	})
+	if mode != domain.ReplayModeExact {
+		t.Fatalf("expected exact replay without secret, got %q", mode)
 	}
 }
 

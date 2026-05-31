@@ -8,17 +8,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/endalk200/better-webhook/packages/cli/internal/domain"
 )
 
-const BuiltinCatalogVersion = "2026.05.31"
+const (
+	BuiltinCatalogVersion   = "2026.05.31"
+	catalogMaxResponseBytes = 32 * 1024 * 1024
+)
 
 type Manager struct {
 	Home string
@@ -352,17 +357,25 @@ func (m Manager) findPath(id, source string) (string, error) {
 	if source == "user" {
 		return filepath.Join(m.Home, "user", name), nil
 	}
-	templates, err := filepath.Glob(filepath.Join(m.Home, "official", "*", "**", "*.jsonc"))
+	var found string
+	err := filepath.WalkDir(filepath.Join(m.Home, "official"), func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if entry.IsDir() || filepath.Ext(path) != ".jsonc" {
+			return nil
+		}
+		template, err := LoadTemplateFile(path)
+		if err == nil && template.ID == id && template.Source == source {
+			found = path
+			return fs.SkipAll
+		}
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
-	for _, path := range templates {
-		template, err := LoadTemplateFile(path)
-		if err == nil && template.ID == id && template.Source == source {
-			return path, nil
-		}
-	}
-	return "", nil
+	return found, nil
 }
 
 func safeCatalogPath(root, relative string) (string, error) {
@@ -460,38 +473,69 @@ func manifestWithoutBytes(manifest Manifest) Manifest {
 }
 
 func stripJSONComments(data []byte) []byte {
-	lines := bytes.Split(data, []byte("\n"))
-	out := make([][]byte, 0, len(lines))
+	out := make([]byte, 0, len(data))
+	inString := false
+	escaped := false
 	inBlock := false
-	for _, line := range lines {
-		trimmed := bytes.TrimSpace(line)
-		if inBlock {
-			if idx := bytes.Index(trimmed, []byte("*/")); idx >= 0 {
-				inBlock = false
-				trimmed = trimmed[idx+2:]
-			} else {
-				continue
-			}
+	inLine := false
+	for i := 0; i < len(data); i++ {
+		current := data[i]
+		var next byte
+		if i+1 < len(data) {
+			next = data[i+1]
 		}
-		if bytes.HasPrefix(trimmed, []byte("/*")) {
-			if idx := bytes.Index(trimmed, []byte("*/")); idx >= 0 {
-				trimmed = trimmed[idx+2:]
-			} else {
-				inBlock = true
-				continue
+		if inLine {
+			if current == '\n' {
+				inLine = false
+				out = append(out, current)
 			}
-		}
-		if bytes.HasPrefix(trimmed, []byte("//")) {
 			continue
 		}
-		out = append(out, line)
+		if inBlock {
+			if current == '*' && next == '/' {
+				inBlock = false
+				i++
+			}
+			continue
+		}
+		if inString {
+			out = append(out, current)
+			if escaped {
+				escaped = false
+				continue
+			}
+			switch current {
+			case '\\':
+				escaped = true
+			case '"':
+				inString = false
+			}
+			continue
+		}
+		if current == '"' {
+			inString = true
+			out = append(out, current)
+			continue
+		}
+		if current == '/' && next == '/' {
+			inLine = true
+			i++
+			continue
+		}
+		if current == '/' && next == '*' {
+			inBlock = true
+			i++
+			continue
+		}
+		out = append(out, current)
 	}
-	return bytes.Join(out, []byte("\n"))
+	return out
 }
 
 func readURLOrFile(location string) ([]byte, string, error) {
 	if strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") {
-		response, err := http.Get(location)
+		client := &http.Client{Timeout: 30 * time.Second}
+		response, err := client.Get(location)
 		if err != nil {
 			return nil, "", err
 		}
@@ -502,8 +546,11 @@ func readURLOrFile(location string) ([]byte, string, error) {
 			return nil, "", fmt.Errorf("GET %s returned %s", location, response.Status)
 		}
 		var buf bytes.Buffer
-		if _, err := buf.ReadFrom(response.Body); err != nil {
+		if _, err := buf.ReadFrom(io.LimitReader(response.Body, catalogMaxResponseBytes+1)); err != nil {
 			return nil, "", err
+		}
+		if buf.Len() > catalogMaxResponseBytes {
+			return nil, "", fmt.Errorf("GET %s exceeded %d bytes", location, catalogMaxResponseBytes)
 		}
 		return buf.Bytes(), location, nil
 	}

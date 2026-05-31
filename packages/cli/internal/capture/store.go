@@ -47,16 +47,22 @@ func (s Store) Save(capture domain.Capture) error {
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("capture %q already exists and captures are immutable", capture.ID)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
 	data, err := json.MarshalIndent(capture, "", "\t")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '\n'), 0o600)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return fmt.Errorf("capture %q already exists and captures are immutable", capture.ID)
+		}
+		return err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+	_, err = file.Write(append(data, '\n'))
+	return err
 }
 
 func (s Store) Load(id string) (domain.Capture, error) {

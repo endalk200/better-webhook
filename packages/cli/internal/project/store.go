@@ -54,13 +54,17 @@ type EndpointInput struct {
 var endpointIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$`)
 
 func NewStore(resolver Resolver) Store {
+	return Store{resolver: withDefaultResolver(resolver)}
+}
+
+func withDefaultResolver(resolver Resolver) Resolver {
 	if resolver.LookupIP == nil {
 		resolver.LookupIP = func(ctx context.Context, host string) ([]net.IP, error) {
 			return net.DefaultResolver.LookupIP(ctx, "ip", host)
 		}
 	}
 
-	return Store{resolver: resolver}
+	return resolver
 }
 
 func (s Store) Init(options InitOptions) (ResolvedProject, error) {
@@ -259,6 +263,7 @@ func EndpointByID(cfg domain.ProjectConfig, endpointID string) (domain.EndpointP
 }
 
 func BuildEndpoint(ctx context.Context, resolver Resolver, input EndpointInput) (domain.EndpointProfile, error) {
+	resolver = withDefaultResolver(resolver)
 	if input.Now.IsZero() {
 		input.Now = time.Now()
 	}
@@ -293,21 +298,23 @@ func BuildEndpoint(ctx context.Context, resolver Resolver, input EndpointInput) 
 	}
 
 	now := domain.NowString(input.Now)
-	return domain.EndpointProfile{
+	endpoint := domain.EndpointProfile{
 		ID:        input.ID,
 		Mode:      input.Mode,
 		Provider:  provider,
 		TargetURL: target,
 		Route:     route,
-		Secret: domain.ProviderSecret{
-			Env: input.SecretEnv,
-		},
 		CreatedAt: now,
 		UpdatedAt: now,
-	}, nil
+	}
+	if input.Mode == domain.EndpointModeProvider {
+		endpoint.Secret = &domain.ProviderSecret{Env: input.SecretEnv}
+	}
+	return endpoint, nil
 }
 
 func ValidateConfig(ctx context.Context, resolver Resolver, cfg domain.ProjectConfig) error {
+	resolver = withDefaultResolver(resolver)
 	if cfg.SchemaVersion == "" {
 		return errors.New("schemaVersion is required")
 	}
@@ -360,7 +367,7 @@ func ValidateConfig(ctx context.Context, resolver Resolver, cfg domain.ProjectCo
 			if endpoint.Provider == "" {
 				return fmt.Errorf("endpoint %q provider is required", endpoint.ID)
 			}
-			if endpoint.Secret.Env == "" {
+			if endpoint.Secret == nil || endpoint.Secret.Env == "" {
 				return fmt.Errorf("endpoint %q secret.env is required", endpoint.ID)
 			}
 		}
@@ -387,6 +394,7 @@ func NormalizeRoute(route string) (string, error) {
 }
 
 func NormalizeAndValidateTarget(ctx context.Context, resolver Resolver, raw string) (string, error) {
+	resolver = withDefaultResolver(resolver)
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "", errors.New("target URL is required")
