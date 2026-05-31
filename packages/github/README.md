@@ -24,6 +24,11 @@ const endpoint = createWebhookEndpoint({
       console.log("verified unknown GitHub event", event.type);
     },
   },
+  unknownHandlers: {
+    repository_ruleset: ({ event }) => {
+      console.log("specific unknown GitHub event", event.payload);
+    },
+  },
   catchAllHandlerScope: "unknown",
 });
 ```
@@ -62,6 +67,8 @@ Known event names in this release are:
 - `merge_group`
 
 Unknown GitHub event names remain verified and catch-all handleable with `known: false`.
+Use `unknownHandlers` when you want to handle a specific verified GitHub event
+name that is not in this package's curated known event map.
 
 Runtime validation is envelope-only: the provider requires a non-empty `X-GitHub-Delivery`, a non-empty `X-GitHub-Event`, a JSON object body, optional string `action`, optional numeric `installation.id`, and optional numeric `repository.id`. GitHub payload objects stay permissive so GitHub can add fields without forcing package updates.
 

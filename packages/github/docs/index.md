@@ -71,6 +71,11 @@ export const endpoint = createWebhookEndpoint({
       event.type;
     },
   },
+  unknownHandlers: {
+    repository_ruleset: async ({ event }) => {
+      event.payload;
+    },
+  },
   catchAllHandlerScope: "unknown",
 });
 ```

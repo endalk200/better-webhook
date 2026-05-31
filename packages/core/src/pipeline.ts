@@ -90,6 +90,13 @@ export type EventHandlerMap<TEvents extends WebhookEvent> = {
 	"*"?: EventHandler<TEvents>;
 };
 
+type UnknownEvents<TEvents extends WebhookEvent> =
+	Extract<TEvents, { known: false }> extends never ? TEvents : Extract<TEvents, { known: false }>;
+
+export type UnknownEventHandlerMap<TEvents extends WebhookEvent> = {
+	[eventType: string]: EventHandler<UnknownEvents<TEvents>>;
+};
+
 export type CatchAllHandlerScope = "all" | "unknown";
 
 export type IdempotencyReservation =
@@ -168,6 +175,7 @@ export type DeliveryTelemetry = {
 export type CreateWebhookEndpointOptions<TEvents extends WebhookEvent> = {
 	provider: ProviderDefinition<TEvents>;
 	handlers?: EventHandlerMap<TEvents>;
+	unknownHandlers?: UnknownEventHandlerMap<TEvents>;
 	endpointIdentity?: string;
 	idempotencyStore?: IdempotencyStore;
 	idempotencyTtlMs?: number;
@@ -304,7 +312,12 @@ export function createWebhookEndpoint<TEvents extends WebhookEvent>(
 			);
 		}
 
-		const handler = getHandler(options.handlers, event, options.catchAllHandlerScope ?? "all");
+		const handler = getHandler(
+			options.handlers,
+			options.unknownHandlers,
+			event,
+			options.catchAllHandlerScope ?? "all",
+		);
 		if (!handler) {
 			if (reservation?.status === "reserved") {
 				await options.idempotencyStore?.complete(reservation.key, options.idempotencyTtlMs);
@@ -564,20 +577,25 @@ function releasedReservationStatus(
 
 function getHandler<TEvents extends WebhookEvent>(
 	handlers: EventHandlerMap<TEvents> | undefined,
+	unknownHandlers: UnknownEventHandlerMap<TEvents> | undefined,
 	event: TEvents,
 	catchAllHandlerScope: CatchAllHandlerScope,
 ): EventHandler<TEvents> | undefined {
-	if (!handlers) {
-		return undefined;
-	}
-	const specific = handlers[event.type as TEvents["type"]] as EventHandler<TEvents> | undefined;
+	const specific = handlers?.[event.type as TEvents["type"]] as EventHandler<TEvents> | undefined;
 	if (specific) {
 		return specific;
+	}
+	const unknownSpecific =
+		event.known === false
+			? (unknownHandlers?.[event.type] as EventHandler<TEvents> | undefined)
+			: undefined;
+	if (unknownSpecific) {
+		return unknownSpecific;
 	}
 	if (catchAllHandlerScope === "unknown" && event.known) {
 		return undefined;
 	}
-	return handlers["*"] as EventHandler<TEvents> | undefined;
+	return handlers?.["*"] as EventHandler<TEvents> | undefined;
 }
 
 function sanitizeError(

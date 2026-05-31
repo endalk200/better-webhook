@@ -77,6 +77,12 @@ describe("createWebhookEndpoint", () => {
 					expectTypeOf(event).toEqualTypeOf<TestEventWithUnknown>();
 				},
 			},
+			unknownHandlers: {
+				"thing.archived": ({ event }) => {
+					expectTypeOf(event.known).toEqualTypeOf<false>();
+					expectTypeOf(event.payload).toEqualTypeOf<Record<string, unknown>>();
+				},
+			},
 		});
 	});
 
@@ -143,6 +149,30 @@ describe("createWebhookEndpoint", () => {
 		const unknown = await unknownEndpoint.handleWithResult(request);
 		expect(unknown.result.status).toBe("handled");
 		expect(catchAll).toHaveBeenCalledOnce();
+	});
+
+	it("dispatches named unknown event handlers before catch-all handlers", async () => {
+		const unknownSpecific = vi.fn();
+		const catchAll = vi.fn();
+		const endpoint = createWebhookEndpoint<TestEventWithUnknown>({
+			provider: provider({
+				extractEvent: () => ({
+					id: "evt_2",
+					type: "thing.archived",
+					payload: { archivedId: "thing_2" },
+					envelope: {},
+					known: false,
+				}),
+			}) as unknown as ProviderDefinition<TestEventWithUnknown>,
+			unknownHandlers: { "thing.archived": unknownSpecific },
+			handlers: { "*": catchAll },
+		});
+
+		const result = await endpoint.handleWithResult(request);
+
+		expect(result.result.status).toBe("handled");
+		expect(unknownSpecific).toHaveBeenCalledOnce();
+		expect(catchAll).not.toHaveBeenCalled();
 	});
 
 	it("rejects failed verification before extracting events", async () => {

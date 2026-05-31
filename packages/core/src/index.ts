@@ -21,6 +21,7 @@ export type {
 	ResponsePolicy,
 	TelemetryDeliveryEnd,
 	TelemetryDeliveryStart,
+	UnknownEventHandlerMap,
 	WebhookDelivery,
 	WebhookEndpoint,
 	WebhookEvent,

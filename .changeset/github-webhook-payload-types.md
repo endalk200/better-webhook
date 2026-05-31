@@ -6,3 +6,5 @@
 Use GitHub's generated OpenAPI webhook schemas for known event payload types so handlers receive action-aware, fully typed payloads.
 
 Fix Event Handler map narrowing when a provider event union includes both literal known events and an unknown catch-all string event.
+
+Add `unknownHandlers` so applications can still register handlers for specific verified event names outside a provider's curated known event map.

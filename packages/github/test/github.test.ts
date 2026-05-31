@@ -4,7 +4,11 @@ import {
 	createWebhookEndpoint,
 } from "@better-webhook/core";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { createGitHubSignatureHeader, parseGitHubSignatureHeader } from "../src/github.js";
+import {
+	createGitHubSignatureHeader,
+	parseGitHubEnvelope,
+	parseGitHubSignatureHeader,
+} from "../src/github.js";
 import {
 	type GitHubEventPayloads,
 	type GitHubWebhookEvent,
@@ -270,6 +274,40 @@ describe("github provider", () => {
 
 		expect(result.response.status).toBe(200);
 		expect(catchAll.mock.calls[0]?.[0].event.known).toBe(false);
+	});
+
+	it("dispatches named unknown GitHub event handlers", async () => {
+		const unknownSpecific = vi.fn();
+		const catchAll = vi.fn();
+		const endpoint = createWebhookEndpoint({
+			provider: github({ webhookSecret: secret }),
+			unknownHandlers: {
+				repository_ruleset: ({ event }) => {
+					expectTypeOf(event.known).toEqualTypeOf<false>();
+					expectTypeOf(event.payload).toEqualTypeOf<Record<string, unknown>>();
+					unknownSpecific(event.type);
+				},
+			},
+			handlers: { "*": catchAll },
+		});
+
+		const result = await endpoint.handleWithResult(request({ event: "repository_ruleset" }));
+
+		expect(result.response.status).toBe(200);
+		expect(unknownSpecific).toHaveBeenCalledWith("repository_ruleset");
+		expect(catchAll).not.toHaveBeenCalled();
+	});
+
+	it("keeps parsed GitHub payloads indexable", () => {
+		const rawBody = body();
+		const delivery = request({ rawBody });
+		const envelope = parseGitHubEnvelope({
+			...delivery,
+			rawBody: new TextEncoder().encode(rawBody),
+		});
+		const key = "action" as string;
+
+		expectTypeOf(envelope.payload[key]).toEqualTypeOf<unknown>();
 	});
 
 	it("uses GitHub Delivery ID for idempotency and replay keys", async () => {

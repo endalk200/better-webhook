@@ -60,6 +60,11 @@ export const stripeEndpoint = createWebhookEndpoint({
       event.type;
     },
   },
+  unknownHandlers: {
+    "customer.subscription.paused": async ({ event }) => {
+      event.type;
+    },
+  },
   // Optional: "all" is the default. Use "unknown" when the catch-all is only
   // for provider events outside the curated known event map.
   catchAllHandlerScope: "all",
@@ -101,6 +106,10 @@ default so providers can retry when appropriate. The `*` handler catches all
 events without a specific handler by default; set `catchAllHandlerScope` to
 `"unknown"` when you want known events without a specific handler to be ignored
 while still observing unknown provider events.
+
+Use `unknownHandlers` to register handlers for specific verified event names
+outside a provider's curated known event map. These handlers run before the `*`
+catch-all and receive the provider's unknown-event type.
 
 Idempotency is disabled unless an `IdempotencyStore` is configured. When
 idempotency or replay-store tracking is configured, `endpointIdentity` is

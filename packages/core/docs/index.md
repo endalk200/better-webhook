@@ -29,6 +29,7 @@ npm install @better-webhook/core @better-webhook/stripe @better-webhook/nextjs
 
 - `provider`: required `ProviderDefinition`.
 - `handlers`: event-specific handlers plus optional `"*"` catch-all handler.
+- `unknownHandlers`: event-specific handlers for verified event names outside the provider's curated known event map.
 - `endpointIdentity`: required when `idempotencyStore` or `replayStore` is configured.
 - `idempotencyStore`: optional event-level coordination store.
 - `idempotencyTtlMs`: optional TTL passed to the idempotency store.
@@ -74,6 +75,7 @@ Handler and endpoint contracts:
 - `HandlerContext`
 - `EventHandler`
 - `EventHandlerMap`
+- `UnknownEventHandlerMap`
 - `CatchAllHandlerScope`
 - `CreateWebhookEndpointOptions`
 - `WebhookEndpoint`
@@ -115,6 +117,11 @@ export const endpoint = createWebhookEndpoint({
       event.payload.status;
     },
     "*": async ({ event }) => {
+      event.type;
+    },
+  },
+  unknownHandlers: {
+    "customer.subscription.paused": async ({ event }) => {
       event.type;
     },
   },
