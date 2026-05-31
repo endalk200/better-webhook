@@ -28,6 +28,7 @@
 		"release:publish": "changeset publish",
 		"prerelease": "bun run build && bun run check-types && bun run lint",
 		"clean": "turbo run clean",
+		"format": "bun run format:write",
 		"format:check": "biome check . && turbo run format:check",
 		"format:write": "biome check --write . && turbo run format:write"
 	},
