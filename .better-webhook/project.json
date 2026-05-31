@@ -1,0 +1,26 @@
+{
+	"schemaVersion": "1",
+	"name": "better-webhook",
+	"gateway": {
+		"listenAddress": "127.0.0.1",
+		"port": 4242
+	},
+	"capture": {
+		"retentionDays": 7
+	},
+	"endpoints": [
+		{
+			"id": "pull_request",
+			"mode": "provider",
+			"provider": "github",
+			"targetUrl": "http://localhost:3000/api/github",
+			"route": "/api/github",
+			"secret": {
+				"env": "asafa"
+			},
+			"createdAt": "2026-05-31T11:42:36.271663Z",
+			"updatedAt": "2026-05-31T11:42:36.271663Z"
+		}
+	],
+	"lastTemplateRunPrune": "2026-05-31T11:40:23.243788Z"
+}
