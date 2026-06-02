@@ -7,7 +7,7 @@ import type {
 } from "@better-webhook/core";
 import type { webhooks as GitHubWebhookDefinitions } from "@octokit/openapi-webhooks-types";
 
-export type GitHubPayload = object;
+export type GitHubPayload = Record<string, unknown>;
 
 type GitHubWebhookPayload<TName extends keyof GitHubWebhookDefinitions> =
 	GitHubWebhookDefinitions[TName]["post"]["requestBody"]["content"]["application/json"];
@@ -26,7 +26,7 @@ export type GitHubCheckRun = GitHubEventPayloads["check_run"]["check_run"];
 
 export type GitHubEventEnvelope<
 	TType extends string = string,
-	TPayload extends GitHubPayload = GitHubPayload,
+	TPayload extends object = GitHubPayload,
 > = {
 	id: string;
 	type: TType;

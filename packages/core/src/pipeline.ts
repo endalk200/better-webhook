@@ -78,6 +78,9 @@ type LiteralEventType<TType extends string> = string extends TType ? never : TTy
 type LiteralEventTypes<TEvents extends WebhookEvent> =
 	TEvents extends WebhookEvent<infer TType> ? LiteralEventType<TType> : never;
 
+type BroadStringEvents<TEvents extends WebhookEvent> =
+	TEvents extends WebhookEvent<infer TType> ? (string extends TType ? TEvents : never) : never;
+
 type EventHandlerTypeKeys<TEvents extends WebhookEvent> = [LiteralEventTypes<TEvents>] extends [
 	never,
 ]
@@ -87,6 +90,9 @@ type EventHandlerTypeKeys<TEvents extends WebhookEvent> = [LiteralEventTypes<TEv
 export type EventHandlerMap<TEvents extends WebhookEvent> = {
 	[TType in EventHandlerTypeKeys<TEvents>]?: EventHandler<Extract<TEvents, { type: TType }>>;
 } & {
+	unknown?: [BroadStringEvents<TEvents>] extends [never]
+		? never
+		: Record<string, EventHandler<BroadStringEvents<TEvents>>>;
 	"*"?: EventHandler<TEvents>;
 };
 
@@ -573,6 +579,12 @@ function getHandler<TEvents extends WebhookEvent>(
 	const specific = handlers[event.type as TEvents["type"]] as EventHandler<TEvents> | undefined;
 	if (specific) {
 		return specific;
+	}
+	if (!event.known) {
+		const unknownSpecific = handlers.unknown?.[event.type] as EventHandler<TEvents> | undefined;
+		if (unknownSpecific) {
+			return unknownSpecific;
+		}
 	}
 	if (catchAllHandlerScope === "unknown" && event.known) {
 		return undefined;

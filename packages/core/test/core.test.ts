@@ -73,11 +73,46 @@ describe("createWebhookEndpoint", () => {
 				"thing.updated": ({ event }) => {
 					expectTypeOf(event.payload).toEqualTypeOf<{ updatedId: string }>();
 				},
+				unknown: {
+					"thing.deleted": ({ event }) => {
+						expectTypeOf(event.payload).toEqualTypeOf<Record<string, unknown>>();
+					},
+				},
 				"*": ({ event }) => {
 					expectTypeOf(event).toEqualTypeOf<TestEventWithUnknown>();
 				},
 			},
 		});
+	});
+
+	it("prefers specific unknown event handlers over catch-all handlers", async () => {
+		const specificUnknown = vi.fn();
+		const catchAll = vi.fn();
+		const testProvider = provider({
+			extractEvent: () => ({
+				id: "evt_2",
+				type: "thing.deleted",
+				payload: { deletedId: "thing_2" },
+				envelope: {},
+				known: false,
+			}),
+		}) as unknown as ProviderDefinition<TestEventWithUnknown>;
+
+		const endpoint = createWebhookEndpoint<TestEventWithUnknown>({
+			provider: testProvider,
+			handlers: {
+				unknown: {
+					"thing.deleted": specificUnknown,
+				},
+				"*": catchAll,
+			},
+		});
+
+		const { result } = await endpoint.handleWithResult(request);
+
+		expect(result.status).toBe("handled");
+		expect(specificUnknown).toHaveBeenCalledOnce();
+		expect(catchAll).not.toHaveBeenCalled();
 	});
 
 	it("ignores verified events without a handler", async () => {

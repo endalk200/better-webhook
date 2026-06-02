@@ -6,7 +6,13 @@ import {
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { createGitHubSignatureHeader, parseGitHubSignatureHeader } from "../src/github.js";
 import {
+	type GitHubCheckRun,
 	type GitHubEventPayloads,
+	type GitHubIssueComment,
+	type GitHubPayload,
+	type GitHubPullRequest,
+	type GitHubRepository,
+	type GitHubUser,
 	type GitHubWebhookEvent,
 	github,
 	type KnownGitHubEventType,
@@ -325,6 +331,13 @@ describe("github provider", () => {
 				pull_request: ({ event }) => {
 					expectTypeOf(event.payload.pull_request.title).toEqualTypeOf<string>();
 				},
+				unknown: {
+					push: ({ event }) => {
+						const actionKey: string = "action";
+						expectTypeOf(event).toEqualTypeOf<UnknownGitHubEvent>();
+						expectTypeOf(event.payload[actionKey]).toEqualTypeOf<unknown>();
+					},
+				},
 				"*": ({ event }) => {
 					expectTypeOf(event).toEqualTypeOf<GitHubWebhookEvent>();
 				},
@@ -334,6 +347,17 @@ describe("github provider", () => {
 		expectTypeOf<Extract<GitHubWebhookEvent, UnknownGitHubEvent>["payload"]>().toEqualTypeOf<
 			Record<string, unknown>
 		>();
+		expectTypeOf<GitHubPayload>().toEqualTypeOf<Record<string, unknown>>();
+		expectTypeOf<GitHubPayload>().toHaveProperty("action").toEqualTypeOf<unknown>();
+		expectTypeOf<GitHubUser>().toHaveProperty("login").toEqualTypeOf<string>();
+		expectTypeOf<GitHubRepository>().toHaveProperty("id").toEqualTypeOf<number>();
+		expectTypeOf<GitHubPullRequest>().toHaveProperty("title").toEqualTypeOf<string>();
+		expectTypeOf<GitHubIssueComment>().toHaveProperty("body").toEqualTypeOf<string>();
+		expectTypeOf<GitHubCheckRun>()
+			.toHaveProperty("status")
+			.toEqualTypeOf<
+				"completed" | "in_progress" | "pending" | "queued" | "requested" | "waiting"
+			>();
 	});
 
 	it("uses generated GitHub webhook payload types for known events", () => {
