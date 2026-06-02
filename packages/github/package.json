@@ -43,7 +43,7 @@
 	},
 	"dependencies": {
 		"@better-webhook/core": "workspace:*",
-		"@octokit/openapi-webhooks-types": "^12.1.0"
+		"@octokit/openapi-webhooks-types": "12.1.0"
 	},
 	"devDependencies": {
 		"@better-webhook/biome-config": "workspace:*",

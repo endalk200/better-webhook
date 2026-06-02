@@ -1,5 +1,5 @@
 ---
-"@better-webhook/github": minor
+"@better-webhook/github": major
 "@better-webhook/core": minor
 ---
 
