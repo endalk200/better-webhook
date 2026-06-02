@@ -1,6 +1,6 @@
 {
 	"name": "@better-webhook/github",
-	"version": "1.0.2",
+	"version": "2.0.0",
 	"description": "GitHub provider definition for Better Webhook",
 	"type": "module",
 	"exports": {

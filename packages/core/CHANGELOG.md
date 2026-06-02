@@ -1,5 +1,13 @@
 # @better-webhook/core
 
+## 1.1.0
+
+### Minor Changes
+
+- 0ddba61: Use GitHub's generated OpenAPI webhook schemas for known event payload types so handlers receive action-aware, fully typed payloads.
+
+  Fix Event Handler map narrowing when a provider event union includes both literal known events and an unknown catch-all string event.
+
 ## 1.0.2
 
 ### Patch Changes
