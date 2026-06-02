@@ -1,6 +1,6 @@
 {
 	"name": "@better-webhook/nextjs",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Next.js framework adapter for Better Webhook",
 	"type": "module",
 	"exports": {
