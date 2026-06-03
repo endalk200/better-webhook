@@ -37,17 +37,17 @@
 		"@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
 		"@opentelemetry/resources": "^2.2.0",
 		"@opentelemetry/sdk-node": "^0.218.0",
-		"next": "^16.0.7",
-		"react": "^19.2.1",
-		"react-dom": "^19.2.1"
+		"next": "^16.2.7",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7"
 	},
 	"devDependencies": {
 		"@better-webhook/biome-config": "workspace:*",
 		"@better-webhook/typescript-config": "workspace:*",
 		"@types/node": "^25.9.1",
-		"@types/react": "^19.2.15",
+		"@types/react": "^19.2.16",
 		"@types/react-dom": "^19.2.3",
-		"tsx": "^4.21.0",
+		"tsx": "^4.22.4",
 		"typescript": "6.0.3"
 	}
 }
