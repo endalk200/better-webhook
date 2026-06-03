@@ -49,6 +49,6 @@
 		"@better-webhook/stripe": "workspace:*",
 		"@better-webhook/typescript-config": "workspace:*",
 		"typescript": "6.0.3",
-		"vitest": "^4.0.16"
+		"vitest": "^4.1.8"
 	}
 }
