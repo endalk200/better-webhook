@@ -1,8 +1,8 @@
 # @better-webhook/github
 
-## 2.0.0
+## 1.1.0
 
-### Major Changes
+### Minor Changes
 
 - 0ddba61: Use GitHub's generated OpenAPI webhook schemas for known event payload types so handlers receive action-aware, fully typed payloads.
 

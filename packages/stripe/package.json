@@ -1,6 +1,6 @@
 {
 	"name": "@better-webhook/stripe",
-	"version": "1.0.3",
+	"version": "1.1.0",
 	"description": "Stripe provider definition for Better Webhook",
 	"type": "module",
 	"exports": {
