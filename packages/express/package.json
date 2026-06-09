@@ -48,7 +48,7 @@
 		"@better-webhook/biome-config": "workspace:*",
 		"@better-webhook/stripe": "workspace:*",
 		"@better-webhook/typescript-config": "workspace:*",
-		"@types/node": "^24.10.1",
+		"@types/node": "^25.9.2",
 		"typescript": "6.0.3",
 		"vitest": "^4.1.8"
 	}
