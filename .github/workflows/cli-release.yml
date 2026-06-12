@@ -40,25 +40,25 @@ jobs:
         run: devbox run -- bun install --frozen-lockfile --ignore-scripts
 
       - name: Validate release tag and npm availability
-        run: devbox run -- bun --filter @better-webhook/cli run release:check
+        run: devbox run -- bun run --filter @better-webhook/cli release:check
 
       - name: Format check
-        run: devbox run -- bun --filter @better-webhook/cli run format:check
+        run: devbox run -- bun run --filter @better-webhook/cli format:check
 
       - name: Lint
-        run: devbox run -- bun --filter @better-webhook/cli run lint
+        run: devbox run -- bun run --filter @better-webhook/cli lint
 
       - name: Type check
-        run: devbox run -- bun --filter @better-webhook/cli run check-types
+        run: devbox run -- bun run --filter @better-webhook/cli check-types
 
       - name: Test
-        run: devbox run -- bun --filter @better-webhook/cli run test
+        run: devbox run -- bun run --filter @better-webhook/cli test
 
       - name: Build CLI package
-        run: devbox run -- bun --filter @better-webhook/cli run build
+        run: devbox run -- bun run --filter @better-webhook/cli build
 
       - name: Generate npm package directories
-        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
+        run: devbox run -- bun run --filter @better-webhook/cli release:package-npm -- dist
 
       - name: Pack npm package for GitHub Release
         run: devbox run -- sh -c "cd packages/cli/dist/npm/cli && npm pack --ignore-scripts"
