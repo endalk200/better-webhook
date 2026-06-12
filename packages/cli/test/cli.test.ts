@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Effect, FileSystem, Layer, Path, Stdio, Terminal } from "effect";
 import { TestConsole } from "effect/testing";
 import { CliOutput, Command } from "effect/unstable/cli";
@@ -20,6 +20,17 @@ const builtBin = resolve(packageRoot, "dist/bin.js");
 const packageJson = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8")) as {
 	readonly version: string;
 };
+
+interface GeneratedBuildInfo {
+	readonly COMMIT: string;
+	readonly DATE: string;
+	readonly BUILT_BY: string;
+}
+
+const readGeneratedBuildInfo = async () =>
+	(await import(
+		pathToFileURL(resolve(packageRoot, "dist/version.generated.js")).href
+	)) as GeneratedBuildInfo;
 
 const testBuild: BuildInfo = {
 	version: "9.8.7-test.1",
@@ -162,8 +173,9 @@ describe("built bw CLI", () => {
 		expect(flag.stdout).toBe(`bw version ${packageJson.version}\n`);
 	});
 
-	it("reports machine-readable version metadata", () => {
+	it("reports machine-readable version metadata", async () => {
 		expect(existsSync(builtBin), "run bun --filter @better-webhook/cli build first").toBe(true);
+		const generated = await readGeneratedBuildInfo();
 
 		const command = spawnSync(process.execPath, [builtBin, "version", "--format", "json"], {
 			encoding: "utf8",
@@ -174,9 +186,19 @@ describe("built bw CLI", () => {
 			schemaVersion: "1",
 			command: "version",
 			version: packageJson.version,
-			commit: "unknown",
-			date: "unknown",
-			builtBy: "source",
+			commit: generated.COMMIT,
+			date: generated.DATE,
+			builtBy: generated.BUILT_BY,
 		});
+	});
+
+	it("reports parse errors and exits nonzero", () => {
+		expect(existsSync(builtBin), "run bun --filter @better-webhook/cli build first").toBe(true);
+
+		const command = spawnSync(process.execPath, [builtBin, "missing"], { encoding: "utf8" });
+		const output = `${command.stdout}${command.stderr}`;
+
+		expect(command.status).toBe(1);
+		expect(output).toContain('Unknown subcommand "missing" for "bw"');
 	});
 });
