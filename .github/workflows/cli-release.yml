@@ -54,14 +54,16 @@ jobs:
       - name: Test
         run: devbox run -- bun --filter @better-webhook/cli run test
 
-      - name: GoReleaser build artifacts
-        run: |
-          VERSION=$(node -p "require('./packages/cli/package.json').version")
-          devbox run -- sh -c "cd packages/cli && GORELEASER_CURRENT_TAG=v${VERSION} goreleaser release --clean --skip=publish,validate"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build CLI package
+        run: devbox run -- bun --filter @better-webhook/cli run build
 
-      - name: Publish GitHub Release artifacts
+      - name: Generate npm package directories
+        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
+
+      - name: Pack npm package for GitHub Release
+        run: devbox run -- sh -c "cd packages/cli/dist/npm/cli && npm pack --ignore-scripts"
+
+      - name: Publish GitHub Release artifact
         run: |
           VERSION=$(node -p "require('./packages/cli/package.json').version")
           release_flags=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "CLI v${VERSION}" --generate-notes)
@@ -69,15 +71,12 @@ jobs:
             release_flags+=(--prerelease)
           fi
           if devbox run -- gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            devbox run -- gh release upload "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* --repo "$GITHUB_REPOSITORY" --clobber
+            devbox run -- gh release upload "$GITHUB_REF_NAME" packages/cli/dist/npm/cli/*.tgz --repo "$GITHUB_REPOSITORY" --clobber
           else
-            devbox run -- gh release create "$GITHUB_REF_NAME" packages/cli/dist/bw_${VERSION}_* "${release_flags[@]}"
+            devbox run -- gh release create "$GITHUB_REF_NAME" packages/cli/dist/npm/cli/*.tgz "${release_flags[@]}"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate npm package directories
-        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
 
       - name: Resolve npm dist-tag
         id: npm-tag
@@ -90,11 +89,5 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish platform packages
-        run: |
-          for package_dir in cli-darwin-arm64 cli-darwin-x64 cli-linux-arm64 cli-linux-x64 cli-win32-x64; do
-            devbox run -- sh -c "cd packages/cli/dist/npm/$package_dir && npm publish --provenance --access public --tag '${{ steps.npm-tag.outputs.tag }}'"
-          done
-
-      - name: Publish wrapper package
+      - name: Publish npm package
         run: devbox run -- sh -c "cd packages/cli/dist/npm/cli && npm publish --provenance --access public --tag '${{ steps.npm-tag.outputs.tag }}'"

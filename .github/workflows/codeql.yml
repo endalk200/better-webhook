@@ -22,26 +22,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # "javascript-typescript" handles both JS and TS files
-        language: ["javascript-typescript", "go"]
+        language: ["javascript-typescript"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-
-      - name: Set up Go
-        if: matrix.language == 'go'
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        with:
-          go-version-file: packages/cli/go.mod
-          cache-dependency-path: packages/cli/go.sum
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
-          build-mode: ${{ matrix.language == 'go' && 'autobuild' || 'none' }}
+          build-mode: none
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
