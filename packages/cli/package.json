@@ -1,27 +1,27 @@
 {
 	"name": "@better-webhook/cli",
-	"version": "2.0.0-beta.4",
+	"version": "2.0.0-beta.5",
 	"private": true,
 	"description": "Command line interface for better-webhook",
 	"type": "module",
 	"bin": {
-		"bw": "npm/bin/bw.js"
+		"bw": "./dist/bin.js"
 	},
 	"scripts": {
-		"build": "go build -o bin/bw ./cmd/bw",
-		"cli:dev": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; go run ./cmd/bw \"$@\"' --",
-		"cli:built": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; ./bin/bw \"$@\"' --",
-		"clean": "rm -rf bin dist .turbo",
-		"check-types": "go vet ./...",
-		"format:check": "gofumpt -l . && test -z \"$(gofumpt -l .)\"",
-		"format:write": "gofumpt -w . && goimports -w .",
-		"lint": "golangci-lint run ./...",
-		"test": "go test ./... && bun run build && node --test test/*.test.js",
+		"build": "tsc --build tsconfig.json && chmod +x dist/bin.js",
+		"cli:dev": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; bun src/bin.ts \"$@\"' --",
+		"cli:built": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; node dist/bin.js \"$@\"' --",
+		"clean": "rm -rf dist .turbo tsconfig.tsbuildinfo",
+		"check-types": "tsc --noEmit -p tsconfig.test.json",
+		"format:check": "biome check package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
+		"format:write": "biome check --write package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
+		"lint": "biome lint package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
+		"test": "vitest run",
 		"release:check": "node scripts/validate-release.mjs",
 		"release:package-npm": "node scripts/package-npm.mjs"
 	},
 	"files": [
-		"npm",
+		"dist",
 		"README.md",
 		"LICENSE"
 	],
@@ -47,5 +47,16 @@
 	},
 	"engines": {
 		"node": ">=18"
+	},
+	"dependencies": {
+		"@effect/platform-node": "4.0.0-beta.78",
+		"effect": "4.0.0-beta.78"
+	},
+	"devDependencies": {
+		"@better-webhook/biome-config": "workspace:*",
+		"@better-webhook/typescript-config": "workspace:*",
+		"@types/node": "^25.9.2",
+		"typescript": "6.0.3",
+		"vitest": "^4.1.8"
 	}
 }

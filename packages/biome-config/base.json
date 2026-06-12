@@ -15,8 +15,7 @@
 			"!**/build/**",
 			"!**/bin/**",
 			"!**/coverage/**",
-			"!**/.cache/**",
-			"!packages/cli/npm/bin/bw.js"
+			"!**/.cache/**"
 		]
 	},
 	"formatter": {

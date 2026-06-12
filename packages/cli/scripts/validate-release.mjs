@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { npmTagForVersion, platforms, readCliPackage, tagVersion } from "./release-utils.mjs";
+import { npmTagForVersion, readCliPackage, tagVersion } from "./release-utils.mjs";
 
 const packageJson = await readCliPackage();
 const version = packageJson.version;
@@ -41,28 +41,25 @@ execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", "origin/main"], {
 	stdio: "inherit",
 });
 
-const publishOrder = [...platforms.map((platform) => platform.packageName), packageJson.name];
 const npmTag = npmTagForVersion(version);
 
-for (const packageName of publishOrder) {
-	let exists = "";
+let exists = "";
 
-	try {
-		exists = execFileSync("npm", ["view", `${packageName}@${version}`, "version", "--json"], {
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-	} catch (error) {
-		const stderr = error.stderr?.toString() ?? "";
-		if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
-			throw error;
-		}
-	}
-
-	if (exists.trim()) {
-		throw new Error(`${packageName}@${version} already exists on npm.`);
+try {
+	exists = execFileSync("npm", ["view", `${packageJson.name}@${version}`, "version", "--json"], {
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+} catch (error) {
+	const stderr = error.stderr?.toString() ?? "";
+	if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
+		throw error;
 	}
 }
 
+if (exists.trim()) {
+	throw new Error(`${packageJson.name}@${version} already exists on npm.`);
+}
+
 console.log(`Validated ${tagName} for npm dist-tag ${npmTag}.`);
-console.log(`Publish order: ${publishOrder.join(", ")}`);
+console.log(`Publish package: ${packageJson.name}`);
