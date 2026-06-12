@@ -16,7 +16,7 @@
 		"format:check": "biome check package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
 		"format:write": "biome check --write package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
 		"lint": "biome lint package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
-		"test": "vitest run",
+		"test": "bun run build && vitest run",
 		"release:check": "node scripts/validate-release.mjs",
 		"release:package-npm": "node scripts/package-npm.mjs"
 	},
