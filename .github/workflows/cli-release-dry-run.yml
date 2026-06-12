@@ -40,15 +40,12 @@ jobs:
       - name: Test
         run: devbox run -- bun --filter @better-webhook/cli run test
 
-      - name: GoReleaser snapshot
-        run: devbox run -- sh -c 'cd packages/cli && goreleaser release --snapshot --clean --skip=publish'
+      - name: Build CLI package
+        run: devbox run -- bun --filter @better-webhook/cli run build
 
       - name: Generate npm package directories
         run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
 
       - name: Pack npm packages
-        working-directory: packages/cli/dist/npm
-        run: |
-          for package_dir in cli-darwin-arm64 cli-darwin-x64 cli-linux-arm64 cli-linux-x64 cli-win32-x64 cli; do
-            (cd "$package_dir" && devbox run -- npm pack --dry-run)
-          done
+        working-directory: packages/cli/dist/npm/cli
+        run: devbox run -- npm pack --dry-run
