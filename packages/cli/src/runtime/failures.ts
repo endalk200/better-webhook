@@ -1,14 +1,18 @@
-import { Console, Data, Effect } from "effect";
+import { Console, Data, Effect, Runtime } from "effect";
 
 export class UnsupportedVersionFormat extends Data.TaggedError("UnsupportedVersionFormat")<{
 	readonly format: string;
-}> {}
+}> {
+	readonly [Runtime.errorReported] = false;
+}
 
 export class UnsupportedVersionFlagCombination extends Data.TaggedError(
 	"UnsupportedVersionFlagCombination",
 )<{
 	readonly message: string;
-}> {}
+}> {
+	readonly [Runtime.errorReported] = false;
+}
 
 const printAndFail = <E>(error: E, message: string) =>
 	Console.error(`Error: ${message}`).pipe(Effect.andThen(Effect.fail(error)));

@@ -8,7 +8,7 @@
 		"bw": "./dist/bin.js"
 	},
 	"scripts": {
-		"build": "tsc --build tsconfig.json && chmod +x dist/bin.js",
+		"build": "rm -rf dist tsconfig.tsbuildinfo && tsc --build tsconfig.json && node scripts/generate-build-info.mjs && chmod +x dist/bin.js",
 		"cli:dev": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; bun src/bin.ts \"$@\"' --",
 		"cli:built": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; node dist/bin.js \"$@\"' --",
 		"clean": "rm -rf dist .turbo tsconfig.tsbuildinfo",

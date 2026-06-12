@@ -1,3 +1,10 @@
+import { createRequire } from "node:module";
+
+import { BUILT_BY, COMMIT, DATE } from "./version.generated.js";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { readonly version: string };
+
 export interface BuildInfo {
 	readonly version: string;
 	readonly commit: string;
@@ -5,9 +12,8 @@ export interface BuildInfo {
 	readonly builtBy: string;
 }
 
-import { BUILT_BY, COMMIT, DATE, VERSION } from "./version.generated.js";
-
-export { BUILT_BY, COMMIT, DATE, VERSION } from "./version.generated.js";
+export { BUILT_BY, COMMIT, DATE } from "./version.generated.js";
+export const VERSION = packageJson.version;
 
 export const buildInfo: BuildInfo = {
 	version: VERSION,
