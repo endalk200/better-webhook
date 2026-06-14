@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Effect, FileSystem, Layer, Path, Stdio, Terminal } from "effect";
@@ -201,4 +202,85 @@ describe("built bw CLI", () => {
 		expect(command.status).toBe(1);
 		expect(output).toContain('Unknown subcommand "missing" for "bw"');
 	});
+
+	it("initializes a project and adds an endpoint", async () => {
+		const project = await mkdtemp(resolve(tmpdir(), "bw-project-"));
+		try {
+			const init = runBuilt(["init", "--project", project, "--format", "json"]);
+			expect(init.status).toBe(0);
+			expect(JSON.parse(init.stdout)).toMatchObject({
+				schemaVersion: "1",
+				command: "init",
+				data: {
+					projectRoot: project,
+				},
+			});
+
+			const added = runBuilt([
+				"endpoint",
+				"add",
+				"--project",
+				project,
+				"--id",
+				"stripe-main",
+				"--route",
+				"/stripe",
+				"--target",
+				"http://127.0.0.1:3000/webhook",
+				"--provider",
+				"stripe",
+				"--secret-env",
+				"STRIPE_SECRET",
+				"--format",
+				"json",
+			]);
+			expect(added.status).toBe(0);
+			expect(JSON.parse(added.stdout)).toMatchObject({
+				schemaVersion: "1",
+				command: "endpoint.add",
+				data: {
+					endpoint: {
+						id: "stripe-main",
+						provider: "stripe",
+						route: "/stripe",
+						targetUrl: "http://127.0.0.1:3000/webhook",
+					},
+				},
+			});
+		} finally {
+			await rm(project, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects public remote endpoint targets", async () => {
+		const project = await mkdtemp(resolve(tmpdir(), "bw-project-"));
+		try {
+			expect(runBuilt(["init", "--project", project]).status).toBe(0);
+			const result = runBuilt([
+				"endpoint",
+				"add",
+				"--project",
+				project,
+				"--id",
+				"unsafe",
+				"--route",
+				"/unsafe",
+				"--target",
+				"https://example.com/webhook",
+			]);
+			expect(result.status).toBe(1);
+			expect(result.stderr).toContain("public remote targets are blocked");
+		} finally {
+			await rm(project, { recursive: true, force: true });
+		}
+	});
 });
+
+const runBuilt = (
+	args: readonly string[],
+	options: { readonly env?: Record<string, string> } = {},
+) =>
+	spawnSync(process.execPath, [builtBin, ...args], {
+		encoding: "utf8",
+		env: { ...process.env, ...options.env },
+	});
