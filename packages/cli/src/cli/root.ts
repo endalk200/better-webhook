@@ -1,13 +1,11 @@
 import { Command } from "effect/unstable/cli";
 
-import type { BuildInfo } from "../version.js";
-import { buildInfo } from "../version.js";
-import { makeVersionCommand } from "./commands/version.cmd.js";
+import { versionCommand } from "./commands/version.cmd.js";
 
-export const makeRootCommand = (build: BuildInfo = buildInfo) =>
+export const makeRootCommand = () =>
 	Command.make("bw").pipe(
 		Command.withDescription("better-webhook command line interface"),
-		Command.withSubcommands([makeVersionCommand(build)]),
+		Command.withSubcommands([versionCommand]),
 	);
 
 export const rootCommand = makeRootCommand();

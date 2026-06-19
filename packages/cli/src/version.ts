@@ -12,11 +12,8 @@ export interface BuildInfo {
 	readonly builtBy: string;
 }
 
-export { BUILT_BY, COMMIT, DATE } from "./version.generated.js";
-export const VERSION = packageJson.version;
-
 export const buildInfo: BuildInfo = {
-	version: VERSION,
+	version: packageJson.version,
 	commit: COMMIT,
 	date: DATE,
 	builtBy: BUILT_BY,

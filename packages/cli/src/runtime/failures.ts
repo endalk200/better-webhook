@@ -1,28 +1,24 @@
 import { Console, Data, Effect, Runtime } from "effect";
 
-export class UnsupportedVersionFormat extends Data.TaggedError("UnsupportedVersionFormat")<{
-	readonly format: string;
-}> {
-	readonly [Runtime.errorReported] = false;
-}
-
-export class UnsupportedVersionFlagCombination extends Data.TaggedError(
-	"UnsupportedVersionFlagCombination",
-)<{
+class CliFailure extends Data.TaggedError("CliFailure")<{
 	readonly message: string;
+	readonly exitCode?: number;
+}> {}
+
+class ReportedCliFailure extends Data.TaggedError("ReportedCliFailure")<{
+	readonly exitCode: number;
 }> {
 	readonly [Runtime.errorReported] = false;
+	readonly [Runtime.errorExitCode] = this.exitCode;
 }
 
-const printAndFail = <E>(error: E, message: string) =>
-	Console.error(`Error: ${message}`).pipe(Effect.andThen(Effect.fail(error)));
+const printAndExit = (error: CliFailure) =>
+	Console.error(`Error: ${error.message}`).pipe(
+		Effect.andThen(Effect.fail(new ReportedCliFailure({ exitCode: error.exitCode ?? 1 }))),
+	);
 
-export const handleCliFailure = {
-	UnsupportedVersionFlagCombination: (error: UnsupportedVersionFlagCombination) =>
-		printAndFail(error, error.message),
-	UnsupportedVersionFormat: (error: UnsupportedVersionFormat) =>
-		printAndFail(
-			error,
-			`unsupported output format ${JSON.stringify(error.format)}: expected human or json`,
-		),
+const handleCliFailure = {
+	CliFailure: printAndExit,
 } as const;
+
+export { CliFailure, handleCliFailure };
