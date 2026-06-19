@@ -1,90 +1,62 @@
 import { Console, Effect } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 
-import {
-	UnsupportedVersionFlagCombination,
-	UnsupportedVersionFormat,
-} from "../../runtime/failures.js";
-import type { BuildInfo } from "../../version.js";
+import { CliFailure } from "../../runtime/failures.js";
 import { buildInfo, versionBanner } from "../../version.js";
 
-const formatFlag = Flag.choice("format", ["human", "json"]).pipe(
-	Flag.withDefault("human" as const),
-	Flag.withDescription("output format: human or json"),
+export const versionCommand = Command.make("version", {
+	format: Flag.choice("format", ["human", "json"]).pipe(
+		Flag.withDefault("human" as const),
+		Flag.withDescription("output format: human or json"),
+	),
+
+	verbose: Flag.boolean("verbose").pipe(
+		Flag.withDefault(false),
+		Flag.withDescription("print release metadata"),
+	),
+}).pipe(
+	Command.withDescription("Print version information"),
+	Command.withShortDescription("Print version information"),
+	Command.withHandler((input) =>
+		Effect.gen(function* () {
+			if (input.format === "json") {
+				if (input.verbose) {
+					return yield* Effect.fail(
+						new CliFailure({
+							message: "unsupported flag combination: --verbose only applies to human format",
+							exitCode: 1,
+						}),
+					);
+				}
+
+				return yield* Console.log(
+					JSON.stringify({
+						schemaVersion: "1",
+						command: "version",
+						version: buildInfo.version,
+						commit: buildInfo.commit,
+						date: buildInfo.date,
+						builtBy: buildInfo.builtBy,
+					}),
+				);
+			}
+
+			if (input.verbose) {
+				return yield* Effect.forEach(
+					[
+						versionBanner(buildInfo),
+						`commit: ${buildInfo.commit}`,
+						`date: ${buildInfo.date}`,
+						`built-by: ${buildInfo.builtBy}`,
+					],
+					(line) => Console.log(line),
+					{
+						discard: true,
+					},
+				);
+			}
+
+			return yield* Console.log(versionBanner(buildInfo));
+		}),
+	),
 );
-
-const verboseFlag = Flag.boolean("verbose").pipe(
-	Flag.withDefault(false),
-	Flag.withDescription("print release metadata"),
-);
-
-export interface VersionOutput {
-	readonly schemaVersion: "1";
-	readonly command: "version";
-	readonly version: string;
-	readonly commit: string;
-	readonly date: string;
-	readonly builtBy: string;
-}
-
-export const versionOutput = (build: BuildInfo): VersionOutput => ({
-	schemaVersion: "1",
-	command: "version",
-	version: build.version,
-	commit: build.commit,
-	date: build.date,
-	builtBy: build.builtBy,
-});
-
-export const formatHumanVersion = (build: BuildInfo, verbose: boolean): readonly string[] =>
-	verbose
-		? [
-				versionBanner(build),
-				`commit: ${build.commit}`,
-				`date: ${build.date}`,
-				`built-by: ${build.builtBy}`,
-			]
-		: [versionBanner(build)];
-
-export const printVersion = (
-	build: BuildInfo,
-	options: {
-		readonly format: "human" | "json" | string;
-		readonly verbose: boolean;
-	},
-): Effect.Effect<void, UnsupportedVersionFlagCombination | UnsupportedVersionFormat> => {
-	if (options.format === "json") {
-		if (options.verbose) {
-			return Effect.fail(
-				new UnsupportedVersionFlagCombination({
-					message: "unsupported flag combination: --verbose only applies to human format",
-				}),
-			);
-		}
-
-		return Console.log(JSON.stringify(versionOutput(build)));
-	}
-
-	if (options.format === "human") {
-		return Effect.forEach(formatHumanVersion(build, options.verbose), (line) => Console.log(line), {
-			discard: true,
-		});
-	}
-
-	return Effect.fail(new UnsupportedVersionFormat({ format: options.format }));
-};
-
-export const makeVersionCommand = (build: BuildInfo = buildInfo) =>
-	Command.make(
-		"version",
-		{
-			format: formatFlag,
-			verbose: verboseFlag,
-		},
-		({ format, verbose }) => printVersion(build, { format, verbose }),
-	).pipe(
-		Command.withDescription("Print version information"),
-		Command.withShortDescription("Print version information"),
-	);
-
-export const versionCommand = makeVersionCommand();

@@ -3,7 +3,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.4.16",
 		"@changesets/cli": "^2.27.9",
-		"turbo": "^2.9.16",
+		"turbo": "^2.9.18",
 		"typescript": "6.0.3",
 		"vitest": "^4.1.8"
 	},
@@ -17,9 +17,9 @@
 		"check-types": "turbo run check-types",
 		"dev": "turbo run dev",
 		"build": "turbo run build",
-		"cli:dev": "bun --filter @better-webhook/cli run cli:dev",
-		"cli:build": "bun --filter @better-webhook/cli run build",
-		"cli:built": "bun --filter @better-webhook/cli run cli:built",
+		"cli:dev": "bun --cwd packages/cli src/bin.ts --",
+		"cli:build": "bun --cwd packages/cli run build",
+		"cli:built": "node packages/cli/dist/bin.js",
 		"test": "turbo run test",
 		"changeset": "changeset",
 		"changeset:status": "changeset status",

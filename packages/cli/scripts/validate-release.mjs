@@ -4,6 +4,7 @@ import { npmTagForVersion, readCliPackage, tagVersion } from "./release-utils.mj
 
 const packageJson = await readCliPackage();
 const version = packageJson.version;
+const publishablePackageNames = [packageJson.name];
 const tagName =
 	process.env.GITHUB_REF_NAME ??
 	execFileSync("git", ["tag", "--points-at", "HEAD"], { encoding: "utf8" })
@@ -43,23 +44,25 @@ execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", "origin/main"], {
 
 const npmTag = npmTagForVersion(version);
 
-let exists = "";
+for (const packageName of publishablePackageNames) {
+	let exists = "";
 
-try {
-	exists = execFileSync("npm", ["view", `${packageJson.name}@${version}`, "version", "--json"], {
-		encoding: "utf8",
-		stdio: ["ignore", "pipe", "pipe"],
-	});
-} catch (error) {
-	const stderr = error.stderr?.toString() ?? "";
-	if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
-		throw error;
+	try {
+		exists = execFileSync("npm", ["view", `${packageName}@${version}`, "version", "--json"], {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+	} catch (error) {
+		const stderr = error.stderr?.toString() ?? "";
+		if (error.status !== 1 || !/E404|not found/i.test(stderr)) {
+			throw error;
+		}
+	}
+
+	if (exists.trim()) {
+		throw new Error(`${packageName}@${version} already exists on npm.`);
 	}
 }
 
-if (exists.trim()) {
-	throw new Error(`${packageJson.name}@${version} already exists on npm.`);
-}
-
 console.log(`Validated ${tagName} for npm dist-tag ${npmTag}.`);
-console.log(`Publish package: ${packageJson.name}`);
+console.log(`Publish package: ${publishablePackageNames.join(", ")}`);

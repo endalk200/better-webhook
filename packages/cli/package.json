@@ -8,10 +8,10 @@
 		"bw": "./dist/bin.js"
 	},
 	"scripts": {
-		"build": "rm -rf dist tsconfig.tsbuildinfo && tsc --build tsconfig.json && node scripts/generate-build-info.mjs && chmod +x dist/bin.js",
-		"cli:dev": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; bun src/bin.ts \"$@\"' --",
-		"cli:built": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; node dist/bin.js \"$@\"' --",
-		"clean": "rm -rf dist .turbo tsconfig.tsbuildinfo",
+		"build": "node scripts/clean-build-output.mjs && tsc --build tsconfig.json && node scripts/generate-build-info.mjs && node scripts/make-bin-executable.mjs",
+		"cli:dev": "bun src/bin.ts --",
+		"cli:built": "node dist/bin.js",
+		"clean": "node scripts/clean-build-output.mjs --cache",
 		"check-types": "tsc --noEmit -p tsconfig.test.json",
 		"format:check": "biome check package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",
 		"format:write": "biome check --write package.json tsconfig.json tsconfig.test.json vitest.config.ts src test scripts",

@@ -29,23 +29,22 @@ jobs:
         run: devbox run -- bun install --frozen-lockfile --ignore-scripts
 
       - name: Format check
-        run: devbox run -- bun --filter @better-webhook/cli run format:check
+        run: devbox run -- bun run --filter @better-webhook/cli format:check
 
       - name: Lint
-        run: devbox run -- bun --filter @better-webhook/cli run lint
+        run: devbox run -- bun run --filter @better-webhook/cli lint
 
       - name: Type check
-        run: devbox run -- bun --filter @better-webhook/cli run check-types
+        run: devbox run -- bun run --filter @better-webhook/cli check-types
 
       - name: Test
-        run: devbox run -- bun --filter @better-webhook/cli run test
+        run: devbox run -- bun run --filter @better-webhook/cli test
 
       - name: Build CLI package
-        run: devbox run -- bun --filter @better-webhook/cli run build
+        run: devbox run -- bun run --filter @better-webhook/cli build
 
       - name: Generate npm package directories
-        run: devbox run -- bun --filter @better-webhook/cli run release:package-npm -- dist
+        run: devbox run -- bun run --filter @better-webhook/cli release:package-npm
 
-      - name: Pack npm packages
-        working-directory: packages/cli/dist/npm/cli
-        run: devbox run -- npm pack --dry-run
+      - name: Pack npm package
+        run: devbox run -- npm pack packages/cli/dist/npm/cli --dry-run
