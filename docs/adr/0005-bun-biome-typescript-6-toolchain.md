@@ -28,4 +28,4 @@ The repo has one Bun lockfile and no pnpm workspace or lockfile metadata.
 
 Biome lint failures are treated as errors, and Biome write mode is the supported formatting path.
 
-Node.js remains the runtime boundary for package consumers and Node-based scripts. Vitest remains the TypeScript package test runner, Node's built-in test runner remains where already used, and Go tooling remains responsible for CLI build, lint, type-check, test, and packaging behavior.
+Node.js remains the runtime boundary for package consumers and Node-based scripts. Vitest remains the TypeScript package test runner, Node's built-in test runner remains where already used, and the CLI build, lint, type-check, test, and packaging behavior now runs through the TypeScript/Bun toolchain.
