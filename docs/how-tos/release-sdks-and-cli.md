@@ -109,14 +109,13 @@ Check every package included in the release, not only these examples.
 
 ## Release the CLI
 
-Use this flow for `@better-webhook/cli` and its native platform packages. The CLI is not released by Changesets.
+Use this flow for `@better-webhook/cli`. The CLI is not released by Changesets.
 
 ### 1. Choose the Version
 
-Edit both version locations so they match:
+Edit the CLI package version:
 
 - `packages/cli/package.json`
-- `packages/cli/internal/cli/version.go`
 
 Use beta prereleases for beta tags:
 
@@ -137,17 +136,17 @@ CLI prereleases must use the `beta` channel. Other prerelease identifiers are re
 Run the CLI check set:
 
 ```bash
-devbox run -- bun --filter @better-webhook/cli run format:check
-devbox run -- bun --filter @better-webhook/cli run lint
-devbox run -- bun --filter @better-webhook/cli run check-types
-devbox run -- bun --filter @better-webhook/cli run test
+devbox run -- bun run --filter @better-webhook/cli format:check
+devbox run -- bun run --filter @better-webhook/cli lint
+devbox run -- bun run --filter @better-webhook/cli check-types
+devbox run -- bun run --filter @better-webhook/cli test
 ```
 
 Build and smoke-test the local binary:
 
 ```bash
-devbox run -- bun --filter @better-webhook/cli run build
-devbox run -- bun --filter @better-webhook/cli run cli:built -- version --verbose
+devbox run -- bun run --filter @better-webhook/cli build
+devbox run -- bun run --filter @better-webhook/cli cli:built -- version --verbose
 ```
 
 Run full repo verification before merging:
@@ -168,7 +167,7 @@ Before publishing, run the manual GitHub workflow:
 CLI Release Dry Run
 ```
 
-It validates formatting, linting, type checks, tests, GoReleaser snapshot packaging, generated npm package directories, and `npm pack --dry-run` for every CLI npm package.
+It validates formatting, linting, type checks, tests, generated npm package directories, and `npm pack --dry-run` for the CLI npm package.
 
 ### 4. Merge to Main
 
@@ -212,11 +211,10 @@ The workflow will:
 
 - Validate the tag and npm availability.
 - Run CLI format, lint, type check, and tests.
-- Run GoReleaser, which runs `go mod tidy` and builds release artifacts.
+- Build the TypeScript CLI.
+- Generate the npm package directory.
 - Create or update the GitHub Release for the tag.
-- Generate npm package directories.
-- Publish native platform packages.
-- Publish the wrapper package last.
+- Publish `@better-webhook/cli` to npm.
 
 If `release:check` says a package version already exists on npm, do not rerun the same version as a new release. Bump the CLI version and create a new annotated tag.
 
@@ -226,26 +224,15 @@ For a beta release:
 
 ```bash
 devbox run -- npm view @better-webhook/cli@beta version dist-tags --json
-devbox run -- npm view @better-webhook/cli-darwin-arm64@beta version dist-tags --json
-devbox run -- npm view @better-webhook/cli-linux-x64@beta version dist-tags --json
 ```
 
 For a stable release:
 
 ```bash
 devbox run -- npm view @better-webhook/cli version dist-tags --json
-devbox run -- npm view @better-webhook/cli-darwin-arm64 version dist-tags --json
-devbox run -- npm view @better-webhook/cli-linux-x64 version dist-tags --json
 ```
 
-Also verify the GitHub Release exists for the pushed tag and contains:
-
-- macOS arm64 tarball
-- macOS x64 tarball
-- Linux arm64 tarball
-- Linux x64 tarball
-- Windows x64 zip
-- checksum file
+Also verify the GitHub Release exists for the pushed tag and contains the packed `@better-webhook/cli` npm tarball.
 
 ### 8. Verify Current CLI npm State
 
@@ -259,11 +246,11 @@ devbox run -- npm view @better-webhook/cli@latest version
 
 Durable CLI package facts:
 
-- The new Go CLI wrapper exposes the `bw` bin.
-- Older `@better-webhook/cli@latest` versions may use the legacy `better-webhook` bin until a stable Go CLI release moves `latest`.
-- `@better-webhook/cli@dev` is not part of the current Go CLI release flow.
+- The TypeScript CLI package exposes the `bw` bin.
+- Older `@better-webhook/cli@latest` versions may use older package contents until a stable CLI release moves `latest`.
+- `@better-webhook/cli@dev` is not part of the current CLI release flow.
 
-Until a stable Go CLI version is published, use:
+Until a stable CLI version is published, use:
 
 ```bash
 npm install @better-webhook/cli@beta
@@ -275,7 +262,7 @@ or:
 npx @better-webhook/cli@beta
 ```
 
-After the first stable Go CLI release, verify that `@better-webhook/cli@latest` points to the stable Go CLI version.
+After the first stable CLI release, verify that `@better-webhook/cli@latest` points to the stable CLI version.
 
 ## Failure Recovery
 
@@ -283,6 +270,6 @@ If an SDK publish fails before any package is published, fix the issue and rerun
 
 If an SDK publish partially succeeds, inspect npm for every package in the release. Changesets will skip already-published versions on rerun, but verify the workflow logs before assuming rerun safety.
 
-If a CLI release fails after some native platform packages publish but before the wrapper publishes, keep the same version only if `release:check` is adjusted or bypassed intentionally by a maintainer. The normal validator rejects any already-published package version, so the safer path is usually a new patch or beta version.
+If a CLI release fails after the npm package publishes, do not rerun the same version as a new release. The normal validator rejects already-published package versions, so the safer path is usually a new patch or beta version.
 
 If the CLI GitHub Release exists but npm publish failed, compare the release artifacts with the npm package version before deciding whether to delete/recreate anything. Avoid moving or deleting published npm versions; npm package versions are effectively immutable.

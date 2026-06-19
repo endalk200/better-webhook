@@ -3,7 +3,7 @@
 This repo has two separate publishing systems:
 
 - SDK packages are TypeScript npm packages published with Changesets from `main`.
-- The CLI is a Go binary distributed through GitHub Releases and npm wrapper packages from annotated `cli/v*` tags.
+- The CLI is a TypeScript/Node package distributed through npm and GitHub Releases from annotated `cli/v*` tags.
 
 The split is intentional. `.changeset/config.json` ignores `@better-webhook/cli`, so CLI releases never flow through Changesets.
 
@@ -18,14 +18,9 @@ The public SDK packages are:
 - `@better-webhook/otel`
 - `@better-webhook/stripe`
 
-The CLI npm packages are:
+The CLI npm package is:
 
 - `@better-webhook/cli`
-- `@better-webhook/cli-darwin-arm64`
-- `@better-webhook/cli-darwin-x64`
-- `@better-webhook/cli-linux-arm64`
-- `@better-webhook/cli-linux-x64`
-- `@better-webhook/cli-win32-x64`
 
 Workspace-only packages such as `@better-webhook/biome-config` and `@better-webhook/typescript-config` are private/internal support packages and are not part of the release flow.
 
@@ -41,7 +36,7 @@ devbox run -- bun run test
 devbox run -- bun run build
 ```
 
-`devbox.json` pins the toolchain used by local work and CI, including Node, Bun, Go, GoReleaser, golangci-lint, gofumpt, goimports, just, and Trivy. The root `packageManager` field is advisory for package-manager metadata; Devbox controls the `bun` binary used by release commands in CI.
+`devbox.json` pins the toolchain used by local work and CI, including Node, Bun, just, and Trivy. The root `packageManager` field is advisory for package-manager metadata; Devbox controls the `bun` binary used by release commands in CI.
 
 `turbo.json` defines the repo task graph. `build` depends on upstream package builds and emits `dist/**`, `build/**`, `bin/**`, and `.next/**`. `lint`, `check-types`, and `test` depend on upstream builds, which means release verification can rebuild dependencies even when a command looks package-scoped.
 
@@ -115,7 +110,7 @@ CLI releases are controlled by `.github/workflows/cli-release.yml`.
 
 The workflow runs only when a tag matching `cli/v*` is pushed. The release tag must be annotated, must point to a commit reachable from `origin/main`, and must match the version in `packages/cli/package.json`.
 
-The CLI is a Go module in `packages/cli`. The npm package is private in the workspace so it is not accidentally published by workspace or Changesets tooling. The release workflow generates publishable npm package directories under `packages/cli/dist/npm`.
+The CLI is a TypeScript package in `packages/cli`. The npm package is private in the workspace so it is not accidentally published by workspace or Changesets tooling. The release workflow generates a publishable npm package directory under `packages/cli/dist/npm/cli`.
 
 The CLI workflow does this:
 
@@ -123,13 +118,13 @@ The CLI workflow does this:
 2. Installs and validates Devbox.
 3. Configures npm registry access.
 4. Installs dependencies with `bun install --frozen-lockfile`.
-5. Runs `bun --filter @better-webhook/cli run release:check`.
+5. Runs `bun run --filter @better-webhook/cli release:check`.
 6. Runs CLI format, lint, type check, and test.
-7. Runs GoReleaser to run `go mod tidy` and build archives without publishing.
-8. Creates or updates the GitHub Release for the tag.
-9. Generates npm wrapper and platform package directories.
-10. Publishes native platform packages first.
-11. Publishes `@better-webhook/cli` last.
+7. Builds the TypeScript CLI.
+8. Generates the npm package directory.
+9. Packs the npm package for the GitHub Release.
+10. Creates or updates the GitHub Release for the tag.
+11. Publishes `@better-webhook/cli`.
 
 `packages/cli/scripts/validate-release.mjs` enforces:
 
@@ -137,27 +132,12 @@ The CLI workflow does this:
 - The tag version equals `packages/cli/package.json`.
 - The remote tag is annotated.
 - The tagged commit is an ancestor of `origin/main`.
-- None of the wrapper or platform packages already exists on npm at that version.
+- `@better-webhook/cli` does not already exist on npm at that version.
 - Prerelease versions use the `beta` npm dist-tag.
 
-`packages/cli/.goreleaser.yml` runs `go mod tidy` before building and builds five targets:
+The npm package exposes the `bw` bin at `dist/bin.js`. Build metadata is generated into `dist/version.generated.js` during the TypeScript build.
 
-- macOS arm64
-- macOS x64
-- Linux arm64
-- Linux x64
-- Windows x64
-
-Windows arm64 is intentionally ignored. GoReleaser injects version, commit, date, and `builtBy=goreleaser` through linker flags.
-
-The npm wrapper package exposes the `bw` bin at `npm/bin/bw.js`. That script resolves the current platform-specific optional dependency and executes its native binary. Unsupported platforms fail with a clear error before trying to spawn a binary.
-
-`packages/cli/scripts/package-npm.mjs` creates:
-
-- One native npm package per supported platform, each containing only `bin`, `README.md`, and `LICENSE`.
-- One wrapper package, `@better-webhook/cli`, with `optionalDependencies` pointing to every native platform package at the same version.
-
-Native packages publish before the wrapper so users installing the wrapper can resolve the optional dependency immediately.
+`packages/cli/scripts/package-npm.mjs` creates one publishable package directory for `@better-webhook/cli` containing `dist`, `README.md`, `LICENSE`, runtime dependencies, and package metadata.
 
 ## CLI Dist-Tags
 
@@ -174,7 +154,7 @@ devbox run -- npm view @better-webhook/cli@beta version
 devbox run -- npm view @better-webhook/cli@latest version
 ```
 
-Use those results to confirm whether `latest` and `beta` point to the expected package generation. Until a stable Go CLI release moves `latest`, prefer the `beta` tag for the Go CLI wrapper.
+Use those results to confirm whether `latest` and `beta` point to the expected package generation. Until a stable CLI release moves `latest`, prefer the `beta` tag.
 
 ## CI and Security Gates
 
@@ -184,13 +164,13 @@ Use those results to confirm whether `latest` and `beta` point to the expected p
 
 `.github/workflows/security-cache.yml` refreshes Trivy DB caches daily and on manual dispatch.
 
-`.github/workflows/cli-release-dry-run.yml` is a manual packaging rehearsal for the CLI. It runs CLI checks, GoReleaser snapshot packaging, npm package generation, and `npm pack --dry-run` for all generated npm package directories. It does not publish.
+`.github/workflows/cli-release-dry-run.yml` is a manual packaging rehearsal for the CLI. It runs CLI checks, npm package generation, and `npm pack --dry-run` for the generated package directory. It does not publish.
 
 ## Operational Watch Points
 
 - Run all release commands through `devbox run --`.
 - Do not use `bun run dev` or `bun run start` as part of release verification.
 - The CLI `release:check` intentionally fails if the current CLI version already exists on npm. That is expected after a tag has already published.
-- For example, a checkout tagged `cli/vX.Y.Z` can fail `release:check` after publishing because `@better-webhook/cli-darwin-arm64@X.Y.Z` already exists on npm.
+- For example, a checkout tagged `cli/vX.Y.Z` can fail `release:check` after publishing because `@better-webhook/cli@X.Y.Z` already exists on npm.
 - `devbox.json` and the root `packageManager` field both pin `bun@1.3.3`; update them together when changing the package manager version.
 - SDK docs under `apps/docs/content` can drift from SDK behavior. SDK-facing changes should include a docs review before release.
