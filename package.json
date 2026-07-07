@@ -1,11 +1,11 @@
 {
 	"name": "better-webhook",
 	"devDependencies": {
-		"@biomejs/biome": "2.5.0",
+		"@biomejs/biome": "2.5.2",
 		"@changesets/cli": "^2.27.9",
-		"turbo": "^2.9.18",
+		"turbo": "^2.10.4",
 		"typescript": "6.0.3",
-		"vitest": "^4.1.9"
+		"vitest": "^4.1.10"
 	},
 	"engines": {
 		"node": ">=18"
