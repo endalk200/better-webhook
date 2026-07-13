@@ -97,8 +97,9 @@ When staging:
 
 When committing:
 
-- Use `git commit -m "<conventional subject>"` for simple commits.
-- Use multiple `-m` flags when a body or footer is needed.
+- Decide whether the commit needs a body by applying the Commit Body criteria below.
+- Use `git commit -m "<conventional subject>"` when the subject fully communicates the change and its rationale is self-evident.
+- Use multiple `-m` flags when adding a body or footer.
 - Do not bypass hooks with `--no-verify` unless the user explicitly asks.
 - Do not amend unless the user explicitly asks.
 - Do not push unless the user explicitly asks.
@@ -127,18 +128,25 @@ Use this decision process:
 
 If multiple unrelated changes are present, ask whether to split them into separate commits unless the user already specified grouping.
 
-## Commit Body
+## Commit Body (Optional)
 
-Add a body only when it adds useful context that the subject cannot capture.
+A commit body explains the reasoning or context behind the change. Consider one for every commit, but include it only when it adds durable information beyond the subject and diff.
 
-Use the body to explain why the change was needed, notable behavior changes, migrations, or tradeoffs. Do not restate the file list.
+Use a body when it helps a future reader understand one or more of:
+
+- why the change was needed
+- why this approach was chosen over an obvious alternative
+- constraints, assumptions, or tradeoffs that shaped the implementation
+- non-obvious behavior changes, side effects, or migration context
+
+Write the body as concise prose focused on cause and intent. A body is unnecessary when the rationale is self-evident from the subject and diff.
 
 Example:
 
 ```text
 fix(cache): avoid stale project permissions
 
-Permission checks now include the role version in the cache key so role updates take effect without waiting for TTL expiry.
+Role updates were leaving cached permissions valid until their TTL expired. Include the role version in the cache key so permission changes take effect immediately without requiring broad cache invalidation.
 ```
 
 ## Footers
