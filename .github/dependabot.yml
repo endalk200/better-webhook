@@ -24,3 +24,5 @@ updates:
       bun-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: typescript

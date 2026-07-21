@@ -1,8 +1,12 @@
 import { Effect, Stdio } from "effect";
-import { Command } from "effect/unstable/cli";
+import { CliConfig, Command, GlobalFlag } from "effect/unstable/cli";
 
 import { buildInfo } from "../version.js";
 import { rootCommand } from "./root.js";
+
+export const cliConfigLayer = CliConfig.layer({
+	builtIns: [GlobalFlag.Help, GlobalFlag.Version, GlobalFlag.Completions, GlobalFlag.LogLevel],
+});
 
 export const normalizeCliArgs = (args: readonly string[]) => {
 	if (args.length === 0) {
@@ -19,6 +23,6 @@ export const normalizeCliArgs = (args: readonly string[]) => {
 export const runCliWithArgs = (args: readonly string[]) =>
 	Command.runWith(rootCommand, {
 		version: buildInfo.version,
-	})(normalizeCliArgs(args));
+	})(normalizeCliArgs(args)).pipe(Effect.provide(cliConfigLayer));
 
 export const runCli = Stdio.Stdio.use(({ args }) => Effect.flatMap(args, runCliWithArgs));
