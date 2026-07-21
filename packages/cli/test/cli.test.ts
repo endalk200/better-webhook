@@ -10,7 +10,7 @@ import { ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect, it } from "vitest";
 
 import { makeRootCommand } from "../src/cli/root.js";
-import { normalizeCliArgs, runCliWithArgs } from "../src/cli/run.js";
+import { cliConfigLayer, normalizeCliArgs, runCliWithArgs } from "../src/cli/run.js";
 import { handleCliFailure } from "../src/runtime/failures.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +64,7 @@ const cliTestLayer = Layer.mergeAll(
 	CliOutput.layer(CliOutput.defaultFormatter({ colors: false })),
 	spawnerLayer,
 	Stdio.layerTest({}),
+	cliConfigLayer,
 );
 
 const runTestCommand = (args: readonly string[]) =>
@@ -86,6 +87,7 @@ describe("bw CLI", () => {
 		expect(stdoutText).toContain("bw <subcommand> [flags]");
 		expect(stdoutText).toContain("better-webhook command line interface");
 		expect(stdoutText).toContain("version");
+		expect(stdoutText).not.toContain("--wizard");
 	});
 
 	it("prints the version from the built-in version flag", async () => {
@@ -168,6 +170,7 @@ describe("built bw CLI", () => {
 		expect(command.status).toBe(0);
 		expect(command.stdout).toContain("bw <subcommand> [flags]");
 		expect(command.stdout).toContain("better-webhook command line interface");
+		expect(command.stdout).not.toContain("--wizard");
 	});
 
 	it("reports version from command and flag", () => {
@@ -231,7 +234,7 @@ describe("built bw CLI", () => {
 
 		expect(command.status).toBe(1);
 		expect(output).toContain('Invalid value for flag --format: "xml"');
-		expect(output).toContain('Expected "human" | "json"');
+		expect(output).toContain('Expected: "human" | "json"');
 	});
 
 	it("reports parse errors and exits nonzero", () => {
