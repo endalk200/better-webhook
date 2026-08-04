@@ -34,16 +34,16 @@
 		"@better-webhook/otel": "workspace:*",
 		"@better-webhook/stripe": "workspace:*",
 		"@opentelemetry/api": "^1.9.0",
-		"@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
+		"@opentelemetry/exporter-trace-otlp-http": "^0.221.0",
 		"@opentelemetry/resources": "^2.2.0",
-		"@opentelemetry/sdk-node": "^0.220.0",
+		"@opentelemetry/sdk-node": "^0.221.0",
 		"express": "^5.2.1"
 	},
 	"devDependencies": {
 		"@better-webhook/biome-config": "workspace:*",
 		"@better-webhook/typescript-config": "workspace:*",
 		"@types/express": "^5.0.6",
-		"@types/node": "^26.1.1",
+		"@types/node": "^26.1.2",
 		"tsx": "^4.23.1",
 		"typescript": "6.0.3"
 	}
